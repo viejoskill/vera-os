@@ -1,4 +1,4 @@
-import type { WorkspaceAssessment, ChecklistItem } from '@vera/types';
+import type { WorkspaceAssessment, ChecklistItem, DocumentType } from '@vera/types';
 
 export interface AssistantFormValues {
   title?: string;
@@ -13,12 +13,12 @@ export interface AssistantFormValues {
   ownerId?: string;
   yearBuilt?: string;
   videoUrl?: string;
-  floorPlanUrl?: string;
 }
 
 export interface AssessInput {
   values: AssistantFormValues;
   photoCount: number;
+  documentTypes?: DocumentType[];
 }
 
 const MIN_DESCRIPTION = 120;
@@ -41,14 +41,14 @@ const NEXT_STEP: Record<string, string> = {
  * Philosophy: never surface "empty fields" — surface "next actions".
  */
 export class VeraAssistantService {
-  assess({ values, photoCount }: AssessInput): WorkspaceAssessment {
+  assess({ values, photoCount, documentTypes = [] }: AssessInput): WorkspaceAssessment {
     const done = {
       datos: (values.title?.trim().length ?? 0) >= 3 && !!values.type && !!values.operation,
       propietario: !!values.ownerId?.trim(),
       fotos: photoCount >= MIN_PHOTOS,
       precio: !!values.price?.trim(),
       descripcion: (values.description?.trim().length ?? 0) >= MIN_DESCRIPTION,
-      plano: !!values.floorPlanUrl?.trim(),
+      plano: documentTypes.includes('plano'),
       video: !!values.videoUrl?.trim(),
       anio: !!values.yearBuilt?.trim(),
     };

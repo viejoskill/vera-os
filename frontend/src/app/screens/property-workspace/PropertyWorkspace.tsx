@@ -6,12 +6,14 @@ import { ArrowLeft } from 'lucide-react';
 import { Button, Panel, Progress, Toast } from '@vera/ui';
 import { assistantService } from '@vera/services';
 import { useVeraStudio } from '@app/hooks/useVeraStudio';
+import { useDocuments } from '@app/hooks/useDocuments';
 import { propertyFormSchema, defaultPropertyForm, type PropertyFormValues } from './form-schema';
 import { BasicInfoSection } from './BasicInfoSection';
 import { FeaturesSection } from './FeaturesSection';
 import { DescriptionSection } from './DescriptionSection';
 import { OwnerSection } from './OwnerSection';
 import { PhotosSection } from './PhotosSection';
+import { DocumentsSection } from './DocumentsSection';
 import { VeraStudioSection } from './VeraStudioSection';
 import { PublicationSection } from './PublicationSection';
 import { HealthScoreSection } from './HealthScoreSection';
@@ -24,6 +26,7 @@ interface ToastState {
 export const PropertyWorkspace = () => {
   const navigate = useNavigate();
   const studio = useVeraStudio();
+  const documents = useDocuments();
   const [toast, setToast] = useState<ToastState | null>(null);
 
   const form = useForm<PropertyFormValues>({
@@ -35,8 +38,13 @@ export const PropertyWorkspace = () => {
   const values = form.watch();
 
   const assessment = useMemo(
-    () => assistantService.assess({ values, photoCount: studio.photos.length }),
-    [values, studio.photos.length],
+    () =>
+      assistantService.assess({
+        values,
+        photoCount: studio.photos.length,
+        documentTypes: documents.documents.map((d) => d.type),
+      }),
+    [values, studio.photos.length, documents.documents],
   );
 
   const showToast = (state: ToastState) => {
@@ -115,6 +123,13 @@ export const PropertyWorkspace = () => {
                 onRemove={studio.removePhoto}
                 onSetCover={studio.setCover}
                 onMove={studio.movePhoto}
+              />
+            </Panel>
+            <Panel title="Documentos" description="Sumá el plano y otros documentos (PDF, JPG o PNG).">
+              <DocumentsSection
+                documents={documents.documents}
+                onAdd={documents.addDocument}
+                onRemove={documents.removeDocument}
               />
             </Panel>
             <Panel title="Vera Studio" description="VERA analiza tus fotos y sugiere mejoras.">

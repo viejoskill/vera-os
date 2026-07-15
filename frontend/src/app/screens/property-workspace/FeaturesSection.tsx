@@ -43,7 +43,7 @@ export const FeaturesSection = () => {
 
       <div className="vera-field">
         <span className="vera-field__label">Multimedia y detalles</span>
-        <div className="vera-form-grid vera-form-grid--3">
+        <div className="vera-form-grid">
           <Input
             label="Año de construcción"
             inputMode="numeric"
@@ -56,12 +56,6 @@ export const FeaturesSection = () => {
             placeholder="https://youtube.com/…"
             data-testid="input-video"
             {...register('videoUrl')}
-          />
-          <Input
-            label="Plano (link)"
-            placeholder="Link al plano"
-            data-testid="input-floorplan"
-            {...register('floorPlanUrl')}
           />
         </div>
       </div>

@@ -841,6 +841,92 @@ p {
   color: var(--vera-color-text-secondary);
 }
 
+/* ------------------------------ Documents ------------------------------- */
+.vera-doc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-sm);
+  padding: var(--vera-space-md);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-surface);
+}
+.vera-doc__head {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+}
+.vera-doc__icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: var(--vera-radius-md);
+  border: 1px solid var(--vera-color-border);
+  color: var(--vera-color-text-secondary);
+  display: grid;
+  place-items: center;
+}
+.vera-doc__label {
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-semibold);
+  color: var(--vera-color-text);
+}
+.vera-doc__upload {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--vera-space-xs);
+  align-self: flex-start;
+  padding: var(--vera-space-xs) var(--vera-space-md);
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-medium);
+  color: var(--vera-color-text);
+  background: transparent;
+  border: 1px dashed var(--vera-color-border);
+  border-radius: var(--vera-radius-pill);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+.vera-doc__upload:hover {
+  border-color: var(--vera-color-primary);
+  color: var(--vera-color-primary);
+}
+.vera-doc__file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vera-space-sm);
+  padding: var(--vera-space-xs) var(--vera-space-sm);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-background);
+}
+.vera-doc__name {
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vera-doc__remove {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  color: var(--vera-color-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--vera-radius-pill);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.vera-doc__remove:hover {
+  color: var(--vera-color-text);
+}
+
+
 /* ----------------------------- Health Score ----------------------------- */
 .vera-health {
   display: flex;

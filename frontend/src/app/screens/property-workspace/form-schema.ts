@@ -18,7 +18,6 @@ export const propertyFormSchema = z.object({
   ownerObservations: z.string(),
   yearBuilt: z.string(),
   videoUrl: z.string(),
-  floorPlanUrl: z.string(),
 });
 
 export type PropertyFormValues = z.infer<typeof propertyFormSchema>;
@@ -41,7 +40,6 @@ export const defaultPropertyForm: PropertyFormValues = {
   ownerObservations: '',
   yearBuilt: '',
   videoUrl: '',
-  floorPlanUrl: '',
 };
 
 export const PROPERTY_TYPE_OPTIONS = [
