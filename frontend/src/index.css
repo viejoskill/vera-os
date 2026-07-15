@@ -16,8 +16,8 @@ body,
 body {
   margin: 0;
   font-family: var(--vera-font-family, 'DM Sans', sans-serif);
-  background-color: var(--vera-color-background, #1c1c1c);
-  color: var(--vera-color-text, #ffffff);
+  background-color: var(--vera-color-background);
+  color: var(--vera-color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -64,7 +64,7 @@ p {
 .vera-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--vera-color-overlay);
   z-index: 25;
 }
 
@@ -238,7 +238,7 @@ p {
   font-weight: var(--vera-font-weight-semibold);
   padding: var(--vera-space-xxs) var(--vera-space-xs);
   border-radius: var(--vera-radius-pill);
-  background: rgba(28, 28, 28, 0.78);
+  background: var(--vera-color-glass);
   backdrop-filter: blur(8px);
   border: 1px solid var(--vera-color-border);
 }

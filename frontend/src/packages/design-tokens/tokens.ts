@@ -14,6 +14,11 @@ export const color = {
   border: '#3A3A3A',
   text: '#FFFFFF',
   textSecondary: '#B9B9B9',
+  /** Semantic + derived tokens — the single source for these values (no CSS literals). */
+  danger: '#EF4444',
+  overlay: 'rgba(0, 0, 0, 0.5)',
+  glass: 'rgba(28, 28, 28, 0.72)',
+  focusRing: 'rgba(246, 230, 58, 0.15)',
 } as const;
 
 /** 8px grid with a 4px baseline half-step. */
