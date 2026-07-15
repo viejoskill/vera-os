@@ -78,6 +78,14 @@ screen validating the full stack end-to-end. Quality tooling from day one.
 - Manual cover + drag-reorder preserved; cover choice always wins over AI suggestion.
 - Tested: iteration_6.json — frontend 100% (21/21). Zero console errors.
 
+## Implemented (Sprint 2.4 — Workspace refinements)
+- Cover rule made consistent: drag & drop (and ↑/↓ buttons) only REORDER; cover is set ONLY by clicking a photo ("VERA sugiere, el usuario decide"). No drag-to-cover.
+- Real property fields added: Año de construcción, Video (link), Plano (link). Publicación checklist + Health Score derive from them (no hardcoded states).
+- Mobile reorder: ↑ Subir / ↓ Bajar buttons on each photo (disabled at ends, stopPropagation so they never change cover); desktop keeps drag & drop.
+- Health Score now shows "¿Qué falta para llegar a Excelente?" with the full 8-item checklist + next step; celebratory state at 100.
+- Publicación focuses on the 5 core publish requirements + summary line.
+- Tested: iteration_7.json — frontend 100% (21/21). Zero console errors.
+
 ## Backlog (prioritized)
 - **P1**: `Hoy` App (AI-first daily dashboard); Property detail screen; extract PropertyCard.
 - **P1**: Real backend + `SupabasePropertyRepository` (swap behind existing interface).
