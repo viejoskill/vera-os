@@ -1,0 +1,70 @@
+{
+  "summary": "Sprint 2.4 'Nueva Propiedad' refinements fully verified. All 21+ acceptance assertions PASS: (a) new real fields input-year/input-video/input-floorplan drive Health Score checklist items health-check-anio/-video/-plano (state derived from real data, not hardcoded); (b) Health Score renders all 8 checklist items with '¿Qué falta para llegar a Excelente?' label, score/label increase correctly (0->20 with 3 optional filled, 100/Excelente with all 8); (c) Publicación checklist shows ONLY 5 core items (datos/propietario/fotos/precio/descripcion) — plano/video/anio correctly excluded; publication-summary shows 'N de 5 requisitos listos para publicar.' and flips to 'Cumple todos los requisitos para publicarse.' + status 'Lista para Publicar' when core done; (d) CRITICAL cover rule verified: first photo auto-covered after upload, move-down/move-up buttons reorder without changing cover (cover stays glued to original photo object), click still sets cover explicitly, exactly one cover badge maintained across all operations; (e) mobile move-up disabled on first, move-down disabled on last, stopPropagation confirmed (cover unchanged after reorder clicks); (f) remove button works and doesn't duplicate/move cover; (g) health-nextstep flips to celebratory '¡Excelente! La propiedad alcanzó su mejor versión.' when all 8 done. Zero console errors, zero page errors. VERA design tokens (dark #1C1C1C, yellow #F6E63A, DM Sans) intact.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "useVeraStudio.ts L104-107: setCover uses userChoseCoverRef to lock user pick against Vera's auto-suggestion during re-processing. Clean separation between user intent and Vera suggestion — aligns with 'VERA sugiere, el usuario decide' philosophy.",
+    "PhotosSection.tsx L127-142: move-up/move-down handlers correctly call stopPropagation() before onMove, preventing tile click from bubbling and changing cover. Verified in tests.",
+    "assistant-service.ts: done.plano/video/anio now derived from string presence of floorPlanUrl/videoUrl/yearBuilt via optional chaining + trim. Deterministic, no hardcoded false. Health formula unchanged: coreDone/5*80 + extrasDone/3*20 → 100 when all 8 done → 'Excelente'.",
+    "PublicationSection.tsx L8: core = checklist.filter(!optional) correctly limits summary + checklist to the 5 required items. publication-summary microcopy is calm ('N de 5 requisitos listos para publicar.') — no error language.",
+    "PhotosSection.tsx L109-119: remove button already had stopPropagation; consistent pattern applied to move buttons. Good defensive UX."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100% (21/21 acceptance assertions pass)"},
+  "test_credentials": "N/A - no auth required",
+  "seed_data_creation": "Regenerated /tmp/vera_test_imgs/img1..img7.png (1x1 PNGs, red pixel).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Sprint 2.4 acceptance fully verified. Key testids validated: input-year, input-video, input-floorplan, health-checklist, health-check-{datos|propietario|fotos|precio|descripcion|plano|video|anio}, publication-summary, move-up-<id>, move-down-<id>. Photo pipeline ~4.5s; use wait_for_timeout(6500) after set_input_files. Photo ids look like '<timestamp>-<i>-<filename>.png' — dots inside require attribute selector form, not CSS `.` escape. To reach 100/Excelente: title>=3 chars + type + operation (all preset defaults exist) + price + owner select (own-1) + generate-description button (click) + 5 photos + year + video + floorplan. Reorder via move-up/move-down uses same movePhoto handler as drag-drop, so tests validate both simultaneously. Cover invariance verified across: reorder (buttons and drag-analog), remove, and re-processing after add.",
+  "detailed_results": {
+    "real_field_binding": {
+      "input_year_toggles_health_check_anio": "PASS",
+      "input_video_toggles_health_check_video": "PASS",
+      "input_floorplan_toggles_health_check_plano": "PASS",
+      "score_increases_20_with_3_optional": "PASS (0 -> 20)"
+    },
+    "health_score_block": {
+      "renders_health_score_container": "PASS",
+      "shows_que_falta_checklist": "PASS",
+      "all_8_items_present": "PASS",
+      "score_100_when_all_done": "PASS",
+      "label_Excelente_when_all_done": "PASS",
+      "nextstep_celebratory_when_all_done": "PASS ('¡Excelente! La propiedad alcanzó su mejor versión.')"
+    },
+    "publication_block": {
+      "publication_section_renders": "PASS",
+      "publication_status_present": "PASS",
+      "publication_summary_shows_N_de_5": "PASS ('0 de 5 requisitos listos para publicar.')",
+      "checklist_has_only_5_core": "PASS",
+      "no_plano_video_anio_in_publication": "PASS",
+      "status_flips_to_Lista_para_Publicar": "PASS"
+    },
+    "cover_rule": {
+      "first_photo_auto_cover_after_upload": "PASS",
+      "exactly_one_cover_badge": "PASS",
+      "move_down_does_not_change_cover": "PASS (cover glued to original photo object)",
+      "move_up_reorder_does_not_change_cover": "PASS",
+      "click_sets_cover_explicitly": "PASS",
+      "remove_does_not_change_cover": "PASS"
+    },
+    "mobile_reorder_buttons": {
+      "move_up_and_move_down_present_per_photo": "PASS",
+      "move_up_disabled_on_first": "PASS",
+      "move_down_disabled_on_last": "PASS",
+      "stopPropagation_prevents_cover_change_on_reorder_click": "PASS"
+    },
+    "regression": {
+      "click_photo_sets_cover": "PASS",
+      "remove_button_works": "PASS",
+      "no_console_errors": "PASS (0 errors)",
+      "no_page_errors": "PASS (0 errors)",
+      "vera_design_tokens_intact": "PASS (verified visually — dark bg, yellow accent, DM Sans)"
+    }
+  }
+}

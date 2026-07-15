@@ -40,6 +40,31 @@ export const FeaturesSection = () => {
           })}
         </div>
       </div>
+
+      <div className="vera-field">
+        <span className="vera-field__label">Multimedia y detalles</span>
+        <div className="vera-form-grid vera-form-grid--3">
+          <Input
+            label="Año de construcción"
+            inputMode="numeric"
+            placeholder="2018"
+            data-testid="input-year"
+            {...register('yearBuilt')}
+          />
+          <Input
+            label="Video (link)"
+            placeholder="https://youtube.com/…"
+            data-testid="input-video"
+            {...register('videoUrl')}
+          />
+          <Input
+            label="Plano (link)"
+            placeholder="Link al plano"
+            data-testid="input-floorplan"
+            {...register('floorPlanUrl')}
+          />
+        </div>
+      </div>
     </div>
   );
 };

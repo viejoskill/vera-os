@@ -621,6 +621,43 @@ p {
 .vera-photo:hover .vera-photo__hint {
   opacity: 1;
 }
+.vera-photo__move {
+  position: absolute;
+  bottom: var(--vera-space-xs);
+  right: var(--vera-space-xs);
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+.vera-photo:hover .vera-photo__move {
+  opacity: 1;
+}
+.vera-photo__move button {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--vera-radius-pill);
+  border: none;
+  background: var(--vera-color-glass);
+  color: var(--vera-color-text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.vera-photo__move button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.vera-health__path {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-xs);
+}
+@media (max-width: 900px) {
+  .vera-photo__move {
+    opacity: 1;
+  }
+}
 
 /* ---------------------------- Progress bar (top) ------------------------ */
 .vera-workspace__progress {

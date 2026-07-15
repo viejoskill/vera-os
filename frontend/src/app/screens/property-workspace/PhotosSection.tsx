@@ -1,5 +1,5 @@
 import { useRef, useState, type DragEvent } from 'react';
-import { UploadCloud, X, Loader2, Star } from 'lucide-react';
+import { UploadCloud, X, Loader2, Star, ArrowUp, ArrowDown } from 'lucide-react';
 import type { PhotoAsset } from '@vera/types';
 
 interface PhotosSectionProps {
@@ -118,6 +118,32 @@ export const PhotosSection = ({
                 >
                   <X size={14} />
                 </button>
+                <div className="vera-photo__move">
+                  <button
+                    type="button"
+                    aria-label="Subir foto"
+                    data-testid={`move-up-${p.id}`}
+                    disabled={index === 0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMove(index, index - 1);
+                    }}
+                  >
+                    <ArrowUp size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Bajar foto"
+                    data-testid={`move-down-${p.id}`}
+                    disabled={index === photos.length - 1}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMove(index, index + 1);
+                    }}
+                  >
+                    <ArrowDown size={13} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

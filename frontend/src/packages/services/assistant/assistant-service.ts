@@ -11,6 +11,9 @@ export interface AssistantFormValues {
   areaM2?: string;
   description?: string;
   ownerId?: string;
+  yearBuilt?: string;
+  videoUrl?: string;
+  floorPlanUrl?: string;
 }
 
 export interface AssessInput {
@@ -45,9 +48,9 @@ export class VeraAssistantService {
       fotos: photoCount >= MIN_PHOTOS,
       precio: !!values.price?.trim(),
       descripcion: (values.description?.trim().length ?? 0) >= MIN_DESCRIPTION,
-      plano: false,
-      video: false,
-      anio: false,
+      plano: !!values.floorPlanUrl?.trim(),
+      video: !!values.videoUrl?.trim(),
+      anio: !!values.yearBuilt?.trim(),
     };
 
     const checklist: ChecklistItem[] = [

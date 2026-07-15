@@ -1,9 +1,10 @@
-import { Sparkles, PartyPopper } from 'lucide-react';
+import { Sparkles, PartyPopper, Check, Circle } from 'lucide-react';
 import { Card, Progress } from '@vera/ui';
 import type { WorkspaceAssessment } from '@vera/types';
 
 export const HealthScoreSection = ({ assessment }: { assessment: WorkspaceAssessment }) => {
-  const { health, nextStep } = assessment;
+  const { health, nextStep, checklist } = assessment;
+  const allDone = checklist.every((c) => c.done);
 
   return (
     <Card className="vera-health" data-testid="health-score">
@@ -17,8 +18,26 @@ export const HealthScoreSection = ({ assessment }: { assessment: WorkspaceAssess
       <Progress value={health.score} />
       <p className="vera-health__message">{health.message}</p>
 
+      <div className="vera-health__path">
+        <span className="vera-field__label">¿Qué falta para llegar a Excelente?</span>
+        <div className="vera-checklist" data-testid="health-checklist">
+          {checklist.map((item) => (
+            <div
+              key={item.id}
+              className={`vera-check ${item.done ? 'vera-check--done' : ''}`.trim()}
+              data-testid={`health-check-${item.id}`}
+            >
+              <span className="vera-check__icon">
+                {item.done ? <Check size={14} /> : <Circle size={14} />}
+              </span>
+              <span className="vera-check__label">{item.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="vera-nextstep" data-testid="health-nextstep">
-        {nextStep ? (
+        {nextStep && !allDone ? (
           <>
             <span className="vera-nextstep__icon">
               <Sparkles size={15} />
@@ -34,8 +53,8 @@ export const HealthScoreSection = ({ assessment }: { assessment: WorkspaceAssess
               <PartyPopper size={15} />
             </span>
             <div>
-              <span className="vera-nextstep__title">¡Todo listo!</span>
-              <p className="vera-nextstep__text">La propiedad quedó lista para publicarse.</p>
+              <span className="vera-nextstep__title">¡Excelente!</span>
+              <p className="vera-nextstep__text">La propiedad alcanzó su mejor versión.</p>
             </div>
           </>
         )}
