@@ -27,10 +27,19 @@ simulated insights (quality score, detected rooms, missing fields, recommendatio
 services: `StudioService` (Provider Pattern) + `VeraAssistantService`. UI Kit extended
 (Textarea, Select, Badge, Panel, Progress, Toast). All simulated — no persistence. Tested 17/17.
 
-## ▶️ Sprint 0B · Next phases
+## ✅ Sprint 2.3 — Property Workspace complete
 
-- Persist the new property (real backend + `SupabasePropertyRepository`).
-- Property detail screen + edit workspace reuse.
+`New Property Workspace` organized into 6 blocks: Información, Propietario, Fotografías,
+Vera Studio, Publicación, Health Score. Discreet top progress bar (% completado, no wizard).
+Health Score reimagined as a **diagnosis** (number + label + calm message + "Siguiente paso
+recomendado"). Publicación shows readiness status + automatic checklist. Product principle
+applied throughout: **never show "empty fields" — show "next actions"**. New: `OwnerService`
+(mock, ready for multiple owners) + `assistantService.assess()`. Tested 21/21.
+
+## ▶️ Next phases
+
+- **Persist** the new property (real backend + `SupabasePropertyRepository`).
+- **Property detail** screen + edit workspace reuse.
 
 ## Prioritized backlog
 

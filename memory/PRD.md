@@ -68,6 +68,16 @@ screen validating the full stack end-to-end. Quality tooling from day one.
 - UI Kit extended: Textarea, Select, Badge, Panel, Progress, Toast. Zero hardcoded colors.
 - All simulated — no persistence/publishing. Tested: iteration_3.json — frontend 100% (17/17).
 
+## Implemented (Sprint 2.3 — Property Workspace complete)
+- Workspace reorganized into 6 blocks: Información, Propietario, Fotografías, Vera Studio, Publicación, Health Score.
+- Discreet top progress bar (% completado, not a wizard). Calm, non-technical microcopy.
+- Health Score as a diagnosis (number + label + message + "Siguiente paso recomendado").
+- Publicación: readiness status ("Lista para Publicar" / "En preparación") + automatic checklist (core + optional).
+- Product principle applied: never show "empty fields" — show "next actions".
+- New `OwnerService` (mock, list API ready for multiple owners) + `assistantService.assess()` (completion/health/checklist/nextStep).
+- Manual cover + drag-reorder preserved; cover choice always wins over AI suggestion.
+- Tested: iteration_6.json — frontend 100% (21/21). Zero console errors.
+
 ## Backlog (prioritized)
 - **P1**: `Hoy` App (AI-first daily dashboard); Property detail screen; extract PropertyCard.
 - **P1**: Real backend + `SupabasePropertyRepository` (swap behind existing interface).
