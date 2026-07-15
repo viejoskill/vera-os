@@ -28,6 +28,15 @@ export function useVeraStudio() {
     countRef.current = photos.length;
   }, [photos]);
 
+  const photosRef = useRef<PhotoAsset[]>([]);
+  photosRef.current = photos;
+  useEffect(
+    () => () => {
+      photosRef.current.forEach((p) => URL.revokeObjectURL(p.url));
+    },
+    [],
+  );
+
   const runProcessing = useCallback(async () => {
     const myRun = ++runId.current;
     setProcessing(true);
@@ -63,7 +72,11 @@ export function useVeraStudio() {
           isCover: false,
         }));
       if (!incoming.length) return;
-      setPhotos((prev) => [...prev, ...incoming]);
+      setPhotos((prev) => {
+        const next = [...prev, ...incoming];
+        countRef.current = next.length;
+        return next;
+      });
       void runProcessing();
     },
     [runProcessing],

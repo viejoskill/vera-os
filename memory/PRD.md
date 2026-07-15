@@ -58,8 +58,17 @@ screen validating the full stack end-to-end. Quality tooling from day one.
 - Per-package READMEs + root architecture README. Branding (title/description/font).
 - Testing: iteration_1.json — frontend 100% (7/7 acceptance checks), no console/page errors.
 
+## Implemented (Sprint 0B · Phase 1 — Property Workspace)
+- `New Property Workspace` at `/propiedades/nueva`: header actions (draft/save/cancel), basic
+  data form (react-hook-form + zod), features + amenities, description editor with
+  "Generar con VERA", drag & drop photo area.
+- Vera Studio: simulated photo pipeline (lighting → perspective → rooms → duplicates → cover).
+- Vera side panel: live simulated insights (quality score, detected rooms, missing fields, recommendations).
+- New services: `StudioService` (Provider Pattern + MockStudioProvider) + `VeraAssistantService`.
+- UI Kit extended: Textarea, Select, Badge, Panel, Progress, Toast. Zero hardcoded colors.
+- All simulated — no persistence/publishing. Tested: iteration_3.json — frontend 100% (17/17).
+
 ## Backlog (prioritized)
-- **P0**: Architecture review checkpoint with user before Sprint 0B (agreed working style).
 - **P1**: `Hoy` App (AI-first daily dashboard); Property detail screen; extract PropertyCard.
 - **P1**: Real backend + `SupabasePropertyRepository` (swap behind existing interface).
 - **P2**: `Operaciones` (pipeline), `Studio` (content/distribution), Insight Service.

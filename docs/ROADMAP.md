@@ -17,14 +17,20 @@ tokens consolidated (zero hardcoded colors), backend cleaned (`/api/health`).
 
 Frozen on GitHub as the stable baseline before the business domain.
 
-## ▶️ Sprint 0B — Business domain (next)
+## ✅ Sprint 0B · Phase 1 — Property Workspace (done)
 
-Build VERA's domain on top of the stable base. Candidates:
+`New Property Workspace` at `/propiedades/nueva`: header actions (draft/save/cancel), basic
+data form (react-hook-form + zod), features + amenities, description editor with "Generar con
+VERA", and a big drag & drop photo area. **Vera Studio** simulates background processing
+(lighting → perspective → rooms → duplicates → cover). **Vera side panel** shows live
+simulated insights (quality score, detected rooms, missing fields, recommendations). New
+services: `StudioService` (Provider Pattern) + `VeraAssistantService`. UI Kit extended
+(Textarea, Select, Badge, Panel, Progress, Toast). All simulated — no persistence. Tested 17/17.
 
-- **Today App** — AI-first dashboard with the daily briefing and quick actions.
-- **Property detail** — full record + gallery (extract `PropertyCard`).
-- **Real persistence** — `SupabasePropertyRepository` behind the existing interface.
-- Extend the UI Kit as needed (Modal, Badge, Tabs, Panel, Timeline, FAB).
+## ▶️ Sprint 0B · Next phases
+
+- Persist the new property (real backend + `SupabasePropertyRepository`).
+- Property detail screen + edit workspace reuse.
 
 ## Prioritized backlog
 
