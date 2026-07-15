@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from '@app/layout/AppLayout';
 import { PropertiesScreen } from '@app/screens/PropertiesScreen';
+import { PropertyWorkspace } from '@app/screens/property-workspace';
 import { PlaceholderScreen } from '@app/screens/PlaceholderScreen';
 
 const queryClient = new QueryClient({
@@ -18,6 +19,7 @@ export const VeraOS = () => (
         <Route element={<AppLayout />}>
           <Route index element={<Navigate to="/propiedades" replace />} />
           <Route path="propiedades" element={<PropertiesScreen />} />
+          <Route path="propiedades/nueva" element={<PropertyWorkspace />} />
           <Route path="hoy" element={<PlaceholderScreen title="Hoy" />} />
           <Route path="operaciones" element={<PlaceholderScreen title="Operaciones" />} />
           <Route path="studio" element={<PlaceholderScreen title="Studio" />} />

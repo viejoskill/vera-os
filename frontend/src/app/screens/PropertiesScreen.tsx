@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Bed, Bath, Maximize, MapPin, Sparkles, Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bed, Bath, Maximize, MapPin, Sparkles, Search, Plus } from 'lucide-react';
 import { Card, Input, Button } from '@vera/ui';
 import { appConfig } from '@vera/config';
 import type { Property, PropertyStatus } from '@vera/types';
@@ -63,6 +64,7 @@ const PropertyCard = ({ property }: { property: Property }) => {
 };
 
 export const PropertiesScreen = () => {
+  const navigate = useNavigate();
   const [status, setStatus] = useState<StatusFilter>('all');
   const [query, setQuery] = useState('');
 
@@ -110,6 +112,13 @@ export const PropertiesScreen = () => {
             </Button>
           ))}
         </div>
+        <Button
+          size="md"
+          data-testid="new-property-button"
+          onClick={() => navigate('/propiedades/nueva')}
+        >
+          <Plus size={16} /> Nueva propiedad
+        </Button>
       </div>
 
       {isLoading ? (

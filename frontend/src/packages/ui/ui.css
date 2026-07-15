@@ -306,3 +306,170 @@
     display: inline-flex;
   }
 }
+
+/* ------------------------------ Textarea ------------------------------ */
+.vera-textarea {
+  padding: var(--vera-space-sm) var(--vera-space-md);
+  min-height: 120px;
+  resize: vertical;
+  font-family: var(--vera-font-family);
+  font-size: var(--vera-font-size-sm);
+  line-height: var(--vera-font-line-height-normal);
+  color: var(--vera-color-text);
+  background-color: var(--vera-color-surface);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  width: 100%;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.vera-textarea:focus {
+  outline: none;
+  border-color: var(--vera-color-primary);
+  box-shadow: 0 0 0 3px var(--vera-color-focus-ring);
+}
+.vera-textarea::placeholder {
+  color: var(--vera-color-text-secondary);
+  opacity: 0.7;
+}
+
+/* ------------------------------- Select ------------------------------- */
+.vera-select-wrap {
+  position: relative;
+}
+.vera-select {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 40px;
+  padding: 0 var(--vera-space-xl) 0 var(--vera-space-md);
+  font-family: var(--vera-font-family);
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text);
+  background-color: var(--vera-color-surface);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  width: 100%;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.vera-select:focus {
+  outline: none;
+  border-color: var(--vera-color-primary);
+  box-shadow: 0 0 0 3px var(--vera-color-focus-ring);
+}
+.vera-select option {
+  background: var(--vera-color-surface);
+  color: var(--vera-color-text);
+}
+.vera-select-caret {
+  position: absolute;
+  right: var(--vera-space-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--vera-color-text-secondary);
+  pointer-events: none;
+}
+
+/* --------------------------------- Tag --------------------------------- */
+.vera-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-medium);
+  padding: var(--vera-space-xxs) var(--vera-space-sm);
+  border-radius: var(--vera-radius-pill);
+  border: 1px solid var(--vera-color-border);
+  color: var(--vera-color-text-secondary);
+  background: transparent;
+}
+.vera-tag--primary {
+  color: var(--vera-color-primary-foreground);
+  background: var(--vera-color-primary);
+  border-color: var(--vera-color-primary);
+}
+.vera-tag--muted {
+  color: var(--vera-color-text-secondary);
+  background: var(--vera-color-surface);
+}
+
+/* -------------------------------- Panel -------------------------------- */
+.vera-panel {
+  display: flex;
+  flex-direction: column;
+}
+.vera-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--vera-space-md);
+  padding: var(--vera-space-lg) var(--vera-space-lg) 0;
+}
+.vera-panel__title {
+  font-size: var(--vera-font-size-lg);
+  font-weight: var(--vera-font-weight-semibold);
+  color: var(--vera-color-text);
+}
+.vera-panel__desc {
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text-secondary);
+  margin-top: var(--vera-space-xxs);
+}
+.vera-panel__body {
+  padding: var(--vera-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-md);
+}
+
+/* ------------------------------ Progress ------------------------------- */
+.vera-progress {
+  width: 100%;
+  height: 8px;
+  border-radius: var(--vera-radius-pill);
+  background: var(--vera-color-surface);
+  overflow: hidden;
+}
+.vera-progress__fill {
+  height: 100%;
+  background: var(--vera-color-primary);
+  border-radius: var(--vera-radius-pill);
+  transition: width 0.4s ease;
+}
+
+/* --------------------------------- Toast ------------------------------- */
+.vera-toast {
+  position: fixed;
+  bottom: var(--vera-space-lg);
+  right: var(--vera-space-lg);
+  z-index: 60;
+  padding: var(--vera-space-sm) var(--vera-space-md);
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-card);
+  border: 1px solid var(--vera-color-border);
+  color: var(--vera-color-text);
+  font-size: var(--vera-font-size-sm);
+  box-shadow: var(--vera-shadow-md);
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-xs);
+}
+.vera-toast--success {
+  border-color: var(--vera-color-primary);
+}
+.vera-toast--success svg {
+  color: var(--vera-color-primary);
+}
+
+/* --------------------------------- Spin -------------------------------- */
+@keyframes vera-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.vera-spin {
+  animation: vera-spin 1s linear infinite;
+}
