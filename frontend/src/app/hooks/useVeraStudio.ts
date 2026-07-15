@@ -40,9 +40,12 @@ export function useVeraStudio() {
 
   const runProcessing = useCallback(async () => {
     const myRun = ++runId.current;
+    const userCoverId = userChoseCoverRef.current
+      ? (photosRef.current.find((p) => p.isCover)?.id ?? null)
+      : null;
     setProcessing(true);
     setAnalysis(null);
-    setPhotos((prev) => prev.map((p) => ({ ...p, status: 'processing', isCover: false })));
+    setPhotos((prev) => prev.map((p) => ({ ...p, status: 'processing' })));
     setStageStates(Object.fromEntries(stageDefs.map((s) => [s.id, 'pending'])));
 
     for (const stage of stageDefs) {
@@ -56,11 +59,11 @@ export function useVeraStudio() {
     const result = studioService.analyze(countRef.current);
     setPhotos((prev) => {
       // Vera suggests a cover, but the user's manual choice always wins.
-      const keepUserCover = userChoseCoverRef.current && prev.some((p) => p.isCover);
+      const coverStillExists = userCoverId !== null && prev.some((p) => p.id === userCoverId);
       return prev.map((p, i) => ({
         ...p,
         status: 'ready',
-        isCover: keepUserCover ? p.isCover : i === result.suggestedCoverIndex,
+        isCover: coverStillExists ? p.id === userCoverId : i === result.suggestedCoverIndex,
       }));
     });
     setAnalysis(result);

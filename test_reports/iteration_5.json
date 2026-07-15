@@ -1,0 +1,35 @@
+{
+  "summary": "Sprint 0B Phase 2 retest — CRITICAL FIX VERIFIED. All 7 acceptance checks + edge case now PASS. User's manual cover on 3rd photo now persists across Vera Studio re-processing (previously reverted to index 0). Fix in useVeraStudio.ts (capture userCoverId from photosRef at start of runProcessing and reapply after pipeline) is correct.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/sprint0b_retest_after_reproc.png"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "useVeraStudio.ts L43-45: fix correctly reads userCoverId from photosRef.current at pipeline start, then reapplies it in the final map only if the photo still exists. Handles edge case (user's cover removed) correctly — Vera's suggestedCoverIndex takes over.",
+    "userChoseCoverRef never resets to false. Not user-observable now (because coverStillExists guard prevents stale lock when cover was removed), but the ref is functionally dead-weight once set. Consider resetting when the covered photo is removed for cleaner state.",
+    "runProcessing captures userCoverId from photosRef at start; if the user changes the cover WHILE processing runs (still ~4.5s window), the mid-pipeline click will be overwritten by the captured earlier value at pipeline end. Low probability, but a small race condition worth noting."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100% (all acceptance checks + edge case pass)"},
+  "test_credentials": "N/A",
+  "seed_data_creation": "Reused /tmp/vera_test_imgs/ (img1..img7.png + img_0.png tiny 1x1 PNGs).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Pipeline is ~4.5s (5 stages × 900ms), wait 6.5s after each upload. File input has hidden attribute — use wait_for_selector state='attached'. Photo ids contain dots (from filename img3.png) → CSS selectors MUST quote the value: [data-testid=\"photo-<id>\"]. drag_to on locators works reliably for DnD reorder.",
+  "test_results_detail": {
+    "1_upload_6_photos_and_first_gets_auto_cover": "PASS",
+    "2_manual_cover_click_changes_cover_and_exactly_one_exists": "PASS (clicked 3rd photo)",
+    "3_manual_cover_persists_over_AI_after_reupload_CRITICAL": "PASS (cover stayed on 3rd photo after 7th upload + 6.5s re-processing)",
+    "4_order_index_badges_1_to_N": "PASS ('1'..'7', renumbers to '1'..'6' after remove)",
+    "5_tiles_are_draggable_and_reorder_via_dnd": "PASS (drag_to moved img1 from index 0 to index 2)",
+    "6_remove_button_does_not_trigger_cover_selection": "PASS (removed non-cover photo, cover id unchanged)",
+    "7_no_console_errors_and_design_tokens": "PASS (0 page errors, body bg rgb(28,28,28)=#1C1C1C)",
+    "edge_case_remove_user_cover_then_upload": "PASS (Vera picked a new cover, exactly 1 cover exists, no crash)"
+  }
+}
