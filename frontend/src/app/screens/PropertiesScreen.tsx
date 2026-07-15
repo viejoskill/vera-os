@@ -30,11 +30,18 @@ function formatPrice(property: Property): string {
 
 const PropertyCard = ({ property }: { property: Property }) => {
   const meta = STATUS_META[property.status];
+  const [imgFailed, setImgFailed] = useState(false);
+  const showImage = property.coverImage && !imgFailed;
   return (
     <Card interactive className="vera-prop" data-testid={`property-card-${property.id}`}>
       <div className="vera-prop__media">
-        {property.coverImage ? (
-          <img src={property.coverImage} alt={property.title} loading="lazy" />
+        {showImage ? (
+          <img
+            src={property.coverImage}
+            alt={property.title}
+            loading="lazy"
+            onError={() => setImgFailed(true)}
+          />
         ) : (
           <div className="vera-prop__media-empty" data-testid={`property-noimage-${property.id}`}>
             <Building2 size={28} />

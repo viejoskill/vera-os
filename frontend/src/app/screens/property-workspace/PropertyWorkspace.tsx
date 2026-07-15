@@ -93,7 +93,8 @@ export const PropertyWorkspace = () => {
         await queryClient.invalidateQueries({ queryKey: ['properties'] });
         showToast({ message: 'Listo, guardamos la propiedad en VERA.', tone: 'success' });
         window.setTimeout(() => navigate('/propiedades'), 800);
-      } catch {
+      } catch (error) {
+        console.error('VERA save property failed:', error);
         showToast({
           message: 'No pudimos guardar la propiedad. Reintentá en un momento.',
           tone: 'default',
