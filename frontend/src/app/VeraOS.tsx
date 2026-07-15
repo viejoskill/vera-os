@@ -1,0 +1,29 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AppLayout } from '@app/layout/AppLayout';
+import { PropertiesScreen } from '@app/screens/PropertiesScreen';
+import { PlaceholderScreen } from '@app/screens/PlaceholderScreen';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { staleTime: 60_000, refetchOnWindowFocus: false },
+  },
+});
+
+/** VERA OS root: providers + router + shell. */
+export const VeraOS = () => (
+  <QueryClientProvider client={queryClient}>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route index element={<Navigate to="/propiedades" replace />} />
+          <Route path="propiedades" element={<PropertiesScreen />} />
+          <Route path="hoy" element={<PlaceholderScreen title="Hoy" />} />
+          <Route path="operaciones" element={<PlaceholderScreen title="Operaciones" />} />
+          <Route path="studio" element={<PlaceholderScreen title="Studio" />} />
+          <Route path="*" element={<Navigate to="/propiedades" replace />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  </QueryClientProvider>
+);
