@@ -1,16 +1,17 @@
 """VERA OS API entrypoint.
 
-Sprint 0A: the frontend runs on mock data, so this exposes only a health check.
-The VERA backend structure (database.py, models.py, services/) is preserved and ready
-to be mounted when real persistence is introduced.
+Persistence lives behind repositories (Supabase Postgres) and files behind a
+StorageService abstraction (private Supabase buckets + signed URLs). The app boots
+even when credentials are missing; data routes then return 503 until configured.
 """
 import logging
-import os
 
 from fastapi import APIRouter, FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from database import close_client
+import config
+import routes_files
+import routes_properties
 
 app = FastAPI(title="VERA OS API")
 
@@ -20,15 +21,22 @@ api_router = APIRouter(prefix="/api")
 
 @api_router.get("/health")
 async def health():
-    return {"status": "ok", "service": "vera-os"}
+    return {
+        "status": "ok",
+        "service": "vera-os",
+        "db_configured": config.db_configured(),
+        "storage_configured": config.storage_configured(),
+    }
 
 
+api_router.include_router(routes_properties.router)
+api_router.include_router(routes_files.router)
 app.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),
+    allow_origins=config.CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -38,8 +46,3 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger("vera")
-
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    close_client()
