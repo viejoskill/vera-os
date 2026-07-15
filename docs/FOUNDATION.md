@@ -1,55 +1,54 @@
 # FOUNDATION (Sprint 0A · v0.1)
 
-Base técnica de VERA OS: desacoplada, portable y mantenible. Arquitectura independiente de
-la infraestructura del entorno.
+VERA OS technical base: decoupled, portable and maintainable. The architecture is
+independent from the environment's infrastructure.
 
-## Monorepo lógico
+## Logical monorepo
 
-Implementado dentro de `frontend/src` con aliases `@vera/*` y fronteras estrictas.
-Promoción a monorepo físico (pnpm/Turborepo) = mover carpetas + agregar `package.json`,
-**sin reescribir lógica**.
+Implemented inside `frontend/src` with `@vera/*` aliases and strict boundaries. Promotion to
+a physical monorepo (pnpm/Turborepo) = move folders + add `package.json`, **no logic rewrite**.
 
 ```
 app/                 apps/vera-os (Shell, routing, screens, hooks)
 packages/
-  design-tokens/     tokens en TS → CSS variables (única fuente de verdad)
+  design-tokens/     TS tokens → CSS variables (single source of truth)
   ui/                VERA UI Kit: Button, Card, Input, Sidebar, TopBar
   types/             Property, User, Role, Permission
   config/            env, appConfig, featureFlags
-  events/            DomainEvent + EventBus (solo contratos)
+  events/            DomainEvent + EventBus (contracts only)
   repositories/      Repository Pattern + InMemoryPropertyRepository (mock)
   services/          PropertyService, AIService + AIProvider, composition root
 ```
 
-## Dirección de dependencias (una sola vía)
+## Dependency direction (one-way)
 
 ```
 app → services → repositories → types
- └→ ui → design-tokens        (config, events = hojas)
+ └→ ui → design-tokens        (config, events = leaf packages)
 ```
 
-Las Apps nunca tocan la persistencia; los Services nunca tocan la UI.
+Apps never touch persistence; Services never touch the UI.
 
-## Patrones clave
+## Key patterns
 
-- **Repository Pattern** — persistencia detrás de interfaces; swap a Supabase/PostgreSQL sin tocar Apps.
-- **Provider Pattern (IA)** — `AIProvider` abstrae el LLM; hoy `MockAIProvider`, mañana OpenAI/Anthropic/Gemini cambiando **una línea**.
-- **Composition Root** — `services/service-container.ts`: único lugar que cablea implementaciones concretas.
-- **Feature-flag-driven navigation** — activar una App = flip de flag en `@vera/config`.
-- **Design Tokens** — cada valor visual definido una sola vez; cero colores hardcodeados.
+- **Repository Pattern** — persistence behind interfaces; swap to Supabase/PostgreSQL without touching Apps.
+- **Provider Pattern (AI)** — `AIProvider` abstracts the LLM; `MockAIProvider` today, OpenAI/Anthropic/Gemini tomorrow by changing **one line**.
+- **Composition Root** — `services/service-container.ts`: the only place wiring concrete implementations.
+- **Feature-flag-driven navigation** — enabling an App = flipping a flag in `@vera/config`.
+- **Design Tokens** — every visual value defined once; zero hardcoded colors.
 
-## Calidad y estándares
+## Quality & standards
 
-- **TypeScript strict** (`tsc --noEmit` limpio), sin `.js/.jsx` en `src`.
-- ESLint (flat, estándar), Prettier, Husky + lint-staged (se activan en Git/Cursor/VS Code).
-- Backend FastAPI con estructura VERA preservada; solo expone `GET /api/health` en esta etapa.
+- **TypeScript strict** (`tsc --noEmit` clean), no `.js/.jsx` under `src`.
+- ESLint (flat, standard), Prettier, Husky + lint-staged (active in Git/Cursor/VS Code).
+- FastAPI backend with VERA structure preserved; exposes only `GET /api/health` at this stage.
 
-## Vertical slice validado
+## Validated vertical slice
 
-`Propiedades`: UI (UI Kit) → hook → PropertyService → Repository → datos mock, con filtros,
-búsqueda y briefing de VERA AI (mock). Testeado: frontend 100%, backend 100%.
+`Properties`: UI (UI Kit) → hook → PropertyService → Repository → mock data, with filters,
+search and a VERA AI briefing (mock). Tested: frontend 100%, backend 100%.
 
-## Restricciones actuales (por diseño)
+## Current constraints (by design)
 
-Sin base de datos real, sin auth, sin integraciones externas, sin IA real. Todo mock,
-preparado para evolucionar.
+No real database, no auth, no external integrations, no real AI. Everything is mock, ready
+to evolve.

@@ -1,43 +1,43 @@
 # ROADMAP
 
-Estrategia: primero una **fundación sólida**, luego el dominio de negocio sobre esa base,
-fortaleciendo Services más que agregando pantallas.
+Strategy: first a **solid foundation**, then the business domain on top of it — strengthening
+Services rather than adding screens.
 
-## ✅ Sprint 0A — Foundation (v0.1, aprobado)
+## ✅ Sprint 0A — Foundation (v0.1, approved)
 
-Monorepo lógico, TypeScript strict, Design System único, UI Kit base, Repository + Provider
-Pattern, shell (Sidebar/TopBar/routing/responsive) y vertical slice de Propiedades (mock).
+Logical monorepo, TypeScript strict, single Design System, base UI Kit, Repository + Provider
+patterns, shell (Sidebar/TopBar/routing/responsive) and a Properties vertical slice (mock).
 
-## ✅ Sprint 0A.1 — Cleanup (aprobado)
+## ✅ Sprint 0A.1 — Cleanup (approved)
 
-Eliminado boilerplate del template (shadcn, hooks/lib/constants), proyecto 100% TypeScript,
-tokens consolidados (cero colores hardcodeados), backend limpio (`/api/health`).
+Removed template boilerplate (shadcn, hooks/lib/constants), project is now 100% TypeScript,
+tokens consolidated (zero hardcoded colors), backend cleaned (`/api/health`).
 
 ## 🔒 Foundation v0.1
 
-Freeze en GitHub como baseline estable antes del dominio de negocio.
+Frozen on GitHub as the stable baseline before the business domain.
 
-## ▶️ Sprint 0B — Dominio de negocio (próximo)
+## ▶️ Sprint 0B — Business domain (next)
 
-Construir el dominio de VERA sobre la base estable. Candidatos:
+Build VERA's domain on top of the stable base. Candidates:
 
-- **App Hoy** — dashboard AI-first con el resumen del día y accesos rápidos.
-- **Detalle de Propiedad** — ficha completa + galería (extraer `PropertyCard`).
-- **Persistencia real** — `SupabasePropertyRepository` detrás de la interfaz existente.
-- Ampliar UI Kit según necesidad (Modal, Badge, Tabs, Panel, Timeline, FAB).
+- **Today App** — AI-first dashboard with the daily briefing and quick actions.
+- **Property detail** — full record + gallery (extract `PropertyCard`).
+- **Real persistence** — `SupabasePropertyRepository` behind the existing interface.
+- Extend the UI Kit as needed (Modal, Badge, Tabs, Panel, Timeline, FAB).
 
-## Backlog priorizado
+## Prioritized backlog
 
 **P1**
-- Backend real + repositorios Supabase/PostgreSQL (swap detrás de interfaces).
-- App `Operaciones` (pipeline comercial) + `OperationService` + `InsightService`.
+- Real backend + Supabase/PostgreSQL repositories (swap behind interfaces).
+- `Operations` App (sales pipeline) + `OperationService` + `InsightService`.
 
 **P2**
-- App `Studio` (contenido y distribución: Mercado Libre, Meta, Google, WhatsApp).
-- AIProvider real (OpenAI/Anthropic/Gemini) vía Provider Pattern.
-- Auth + RBAC (roles ya modelados en `@vera/types`).
-- Implementación de `EventBus` (contratos ya definidos en `@vera/events`).
+- `Studio` App (content & distribution: Mercado Libre, Meta, Google, WhatsApp).
+- Real AIProvider (OpenAI/Anthropic/Gemini) via the Provider Pattern.
+- Auth + RBAC (roles already modeled in `@vera/types`).
+- `EventBus` implementation (contracts already defined in `@vera/events`).
 
-**Futuro**
-- Portales (Propietario/Comprador/Inversor), automatizaciones, tasaciones, lead scoring,
-  analytics, documentos y firmas digitales — sin reescribir la arquitectura.
+**Future**
+- Portals (Owner/Buyer/Investor), automations, appraisals, lead scoring, analytics, documents
+  and digital signatures — without rewriting the architecture.

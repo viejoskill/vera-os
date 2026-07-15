@@ -1,38 +1,38 @@
 # VISION
 
-## Qué es VERA OS
+## What VERA OS is
 
-Un **Real Estate Operating System**: la capa de software donde una inmobiliaria de
-Latinoamérica administra propiedades, operaciones, marketing e inteligencia — sin sentir
-que usa un CRM. La experiencia debe ser minimalista, rápida y con identidad propia
-(referencias: Apple, Linear, Arc, Notion, Stripe Dashboard).
+A **Real Estate Operating System**: the software layer where a Latin American real estate
+agency manages properties, deals, marketing and intelligence — without feeling like they're
+using a CRM. The experience must be minimal, fast and have its own identity
+(references: Apple, Linear, Arc, Notion, Stripe Dashboard).
 
-## Por qué
+## Why
 
-Las herramientas actuales son tablas infinitas, dashboards saturados y flujos rígidos.
-VERA invierte la ecuación: **menos clics, más contexto, más velocidad**, y una IA que
-piensa por el usuario en lugar de sumarle trabajo.
+Today's tools are endless tables, cluttered dashboards and rigid flows. VERA flips the
+equation: **fewer clicks, more context, more speed**, with an AI that thinks for the user
+instead of adding work.
 
-## Filosofía de producto
+## Product philosophy
 
-Cada pantalla responde: ¿qué necesita hacer el usuario?, ¿qué información va primero?,
-¿qué acción queda más cerca?, ¿qué se puede ocultar?, ¿qué puede automatizar VERA?
+Every screen answers: what does the user need to do? what information comes first? which
+action should be closest? what can be hidden? what can VERA automate?
 
-- **Las Apps muestran. Los Services piensan. VERA coordina.**
-- La inteligencia (AIService) es un ciudadano de primera clase, no un add-on.
-- Todo respira: minimalismo, jerarquía tipográfica clara, grid de 8px.
+- **Apps show. Services think. VERA coordinates.**
+- Intelligence (AIService) is a first-class citizen, not an add-on.
+- Everything breathes: minimalism, clear typographic hierarchy, an 8px grid.
 
-## Hacia dónde va
+## Where it's going
 
-VERA está diseñada para incorporar, sin reescribir la base:
+VERA is designed to incorporate, without rewriting the base:
 
-- Portales del Propietario, Comprador e Inversor.
-- Vera AI conversacional y Agentes IA.
-- Opportunity Engine, Lead Scoring, tasaciones automáticas.
-- Marketing, Analytics, Documentos y firmas digitales.
-- Automatizaciones y flujos comerciales.
+- Owner, Buyer and Investor portals.
+- Conversational Vera AI and AI Agents.
+- Opportunity Engine, Lead Scoring, automated appraisals.
+- Marketing, Analytics, Documents and digital signatures.
+- Automations and commercial workflows.
 
-## Norte
+## North star
 
-Ser **el mejor software inmobiliario de Latinoamérica**: una plataforma con la que un
-equipo comercial trabaja más rápido, con más contexto y menos fricción cada día.
+To be **the best real estate software in Latin America**: a platform that lets a sales team
+work faster, with more context and less friction every day.

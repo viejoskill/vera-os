@@ -1,46 +1,46 @@
 # VERA OS
 
 > **VERA is not a CRM. VERA is a Real Estate Operating System.**
-> Tan simple como Notion, tan rápido como Linear, tan limpio como Arc.
+> As simple as Notion, as fast as Linear, as clean as Arc.
 
-Sistema operativo inmobiliario moderno, modular y **AI-first**. El usuario no siente que
-usa un CRM: siente que opera su inmobiliaria desde un único lugar.
+A modern, modular, **AI-first** operating system for real estate. Users don't feel like
+they're using a CRM — they feel like they're running their agency from a single place.
 
-**Versión actual:** `Foundation v0.1` — Sprint 0A completo y aprobado.
+**Current version:** `Foundation v0.1` — Sprint 0A complete and approved.
 
-## Principios
+## Principles
 
-- **Apps muestran · Services piensan · Repositories aíslan la persistencia · Providers abstraen integraciones · Design Tokens garantizan consistencia.**
-- Las Apps nunca se comunican entre sí: todo pasa por Services.
-- VERA no evoluciona agregando pantallas, sino fortaleciendo sus Services.
+- **Apps show · Services think · Repositories isolate persistence · Providers abstract integrations · Design Tokens guarantee consistency.**
+- Apps never talk to each other: everything goes through Services.
+- VERA evolves by strengthening its Services, not by adding screens.
 
-## Estado
+## Status
 
-- Monorepo **lógico** dentro de `frontend/src` con aliases `@vera/*` (promoción a monorepo
-  físico pnpm/Turbo = movimiento mecánico, sin reescribir lógica).
-- **TypeScript strict**, un único Design System, tooling profesional (ESLint, Prettier, Husky).
-- Una pantalla funcional (`Propiedades`) que valida toda la arquitectura de punta a punta con datos mock.
+- **Logical monorepo** inside `frontend/src` with `@vera/*` aliases (promotion to a physical
+  pnpm/Turbo monorepo is a mechanical move — no logic rewrite).
+- **TypeScript strict**, a single Design System, professional tooling (ESLint, Prettier, Husky).
+- One functional screen (`Properties`) validating the whole architecture end-to-end with mock data.
 
-## Estructura
+## Structure
 
 ```
 frontend/src/
   app/                 apps/vera-os (Shell + routing + screens)
   packages/
-    design-tokens/     única fuente de verdad visual
+    design-tokens/     single source of visual truth
     ui/                VERA UI Kit (Button, Card, Input, Sidebar, TopBar)
     types/ config/ events/ repositories/ services/
-backend/               FastAPI (solo /api/health en esta etapa)
-docs/                  este directorio
+backend/               FastAPI (only /api/health at this stage)
+docs/                  this directory
 ```
 
-## Documentos
+## Documents
 
-- [`VISION.md`](./VISION.md) — qué es VERA y hacia dónde va.
-- [`FOUNDATION.md`](./FOUNDATION.md) — arquitectura y decisiones técnicas de la base.
-- [`ROADMAP.md`](./ROADMAP.md) — sprints y backlog priorizado.
+- [`VISION.md`](./VISION.md) — what VERA is and where it's going.
+- [`FOUNDATION.md`](./FOUNDATION.md) — architecture and technical decisions of the base.
+- [`ROADMAP.md`](./ROADMAP.md) — sprints and prioritized backlog.
 
-## Cómo correr (frontend)
+## Running the frontend
 
 ```bash
 cd frontend
