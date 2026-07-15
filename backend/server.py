@@ -24,8 +24,7 @@ async def health():
     return {
         "status": "ok",
         "service": "vera-os",
-        "db_configured": config.db_configured(),
-        "storage_configured": config.storage_configured(),
+        "supabase_configured": config.supabase_configured(),
     }
 
 

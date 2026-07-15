@@ -11,6 +11,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import config
+from supabase_client import get_supabase
 
 
 class StorageService(ABC):
@@ -38,9 +39,7 @@ class StorageService(ABC):
 
 class SupabaseStorageService(StorageService):
     def __init__(self) -> None:
-        from supabase import create_client
-
-        self.client = create_client(config.SUPABASE_URL, config.SUPABASE_SERVICE_ROLE_KEY)
+        self.client = get_supabase()
 
     async def upload(self, bucket: str, object_path: str, content: bytes, content_type: str) -> None:
         def _do():
@@ -72,7 +71,7 @@ _storage: StorageService | None = None
 def get_storage() -> StorageService:
     global _storage
     if _storage is None:
-        if not config.storage_configured():
+        if not config.supabase_configured():
             raise RuntimeError("Supabase Storage is not configured")
         _storage = SupabaseStorageService()
     return _storage

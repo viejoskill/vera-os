@@ -1,13 +1,12 @@
-"""ORM -> API response mapping. Signed URLs are generated here so the frontend
-receives ready-to-use, time-limited links and never touches Supabase."""
+"""Row (PostgREST dict) -> API response mapping. Signed URLs are generated here so
+the frontend receives ready-to-use, time-limited links and never touches Supabase."""
 import config
-from db_models import Property, PropertyDocument, PropertyImage
 from schemas import DocumentResponse, ImageResponse, PropertyDetailResponse, PropertyResponse
 from storage_service import get_storage
 
 
 async def _sign(bucket: str, object_path: str) -> str:
-    if not config.storage_configured():
+    if not config.supabase_configured():
         return ""
     try:
         return await get_storage().signed_url(bucket, object_path, config.SIGNED_URL_TTL_SECONDS)
@@ -15,58 +14,60 @@ async def _sign(bucket: str, object_path: str) -> str:
         return ""
 
 
-async def image_to_response(image: PropertyImage) -> ImageResponse:
+async def image_to_response(img: dict) -> ImageResponse:
     return ImageResponse(
-        id=image.id,
-        original_name=image.original_name,
-        mime_type=image.mime_type,
-        size_bytes=image.size_bytes,
-        position=image.position,
-        is_cover=image.is_cover,
-        url=await _sign(image.bucket, image.object_path),
+        id=img["id"],
+        original_name=img.get("original_name", ""),
+        mime_type=img.get("mime_type", ""),
+        size_bytes=img.get("size_bytes", 0),
+        position=img.get("position", 0),
+        is_cover=img.get("is_cover", False),
+        url=await _sign(img["bucket"], img["object_path"]),
     )
 
 
-async def document_to_response(doc: PropertyDocument) -> DocumentResponse:
+async def document_to_response(doc: dict) -> DocumentResponse:
     return DocumentResponse(
-        id=doc.id,
-        doc_type=doc.doc_type,
-        original_name=doc.original_name,
-        mime_type=doc.mime_type,
-        size_bytes=doc.size_bytes,
-        url=await _sign(doc.bucket, doc.object_path),
+        id=doc["id"],
+        doc_type=doc.get("doc_type", "plano"),
+        original_name=doc.get("original_name", ""),
+        mime_type=doc.get("mime_type", ""),
+        size_bytes=doc.get("size_bytes", 0),
+        url=await _sign(doc["bucket"], doc["object_path"]),
     )
 
 
-async def property_to_response(prop: Property) -> PropertyResponse:
-    cover = next((i for i in prop.images if i.is_cover), None) or (
-        prop.images[0] if prop.images else None
+async def property_to_response(prop: dict) -> PropertyResponse:
+    images = prop.get("property_images") or []
+    cover = next((i for i in images if i.get("is_cover")), None) or (
+        images[0] if images else None
     )
-    cover_url = await _sign(cover.bucket, cover.object_path) if cover else ""
+    cover_url = await _sign(cover["bucket"], cover["object_path"]) if cover else ""
     return PropertyResponse(
-        id=prop.id,
-        title=prop.title,
-        operation=prop.operation,
-        type=prop.type,
-        price=prop.price,
-        currency=prop.currency,
-        address=prop.address,
-        neighborhood=prop.neighborhood,
-        city=prop.city,
-        bedrooms=prop.bedrooms,
-        bathrooms=prop.bathrooms,
-        area_m2=prop.area_m2,
-        year_built=prop.year_built,
-        video_url=prop.video_url,
-        status=prop.status,
+        id=prop["id"],
+        title=prop.get("title", ""),
+        operation=prop.get("operation", "venta"),
+        type=prop.get("type", "departamento"),
+        price=prop.get("price", 0) or 0,
+        currency=prop.get("currency", "USD"),
+        address=prop.get("address", "") or "",
+        neighborhood=prop.get("neighborhood", "") or "",
+        city=prop.get("city", "") or "",
+        bedrooms=prop.get("bedrooms", 0) or 0,
+        bathrooms=prop.get("bathrooms", 0) or 0,
+        area_m2=prop.get("area_m2", 0) or 0,
+        year_built=prop.get("year_built", "") or "",
+        video_url=prop.get("video_url", "") or "",
+        status=prop.get("status", "active"),
         cover_image=cover_url,
-        description=prop.description,
-        created_at=prop.created_at,
+        description=prop.get("description", "") or "",
+        created_at=prop["created_at"],
     )
 
 
-async def property_to_detail(prop: Property) -> PropertyDetailResponse:
+async def property_to_detail(prop: dict) -> PropertyDetailResponse:
     base = await property_to_response(prop)
-    images = [await image_to_response(i) for i in prop.images]
-    documents = [await document_to_response(d) for d in prop.documents]
+    images_rows = sorted(prop.get("property_images") or [], key=lambda i: i.get("position", 0))
+    images = [await image_to_response(i) for i in images_rows]
+    documents = [await document_to_response(d) for d in (prop.get("property_documents") or [])]
     return PropertyDetailResponse(**base.model_dump(), images=images, documents=documents)

@@ -1,99 +1,164 @@
-"""Persistence for properties (Supabase Postgres via SQLAlchemy).
-Routes/services depend on this class, never on raw SQL. Renaming or migrating the
-underlying database touches only this file + db.py."""
+"""Persistence for properties (Supabase via PostgREST).
+Routes/services depend on this class, never on the Supabase SDK directly.
+Migrating to another store later touches only this file."""
+import asyncio
 from typing import Optional
 
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from supabase_client import get_supabase
 
-from db_models import Property, PropertyDocument, PropertyImage
+TABLE_PROPERTIES = "properties"
+TABLE_IMAGES = "property_images"
+TABLE_DOCUMENTS = "property_documents"
+
+PROPERTY_WITH_IMAGES = "*, property_images(*)"
+PROPERTY_FULL = "*, property_images(*), property_documents(*)"
 
 
 class SupabasePropertyRepository:
+    def _client(self):
+        return get_supabase()
+
     async def list(
-        self, db: AsyncSession, status: Optional[str] = None, query: Optional[str] = None
-    ) -> list[Property]:
-        stmt = (
-            select(Property)
-            .options(selectinload(Property.images))
-            .order_by(Property.created_at.desc())
-        )
-        if status and status != "all":
-            stmt = stmt.where(Property.status == status)
-        result = await db.execute(stmt)
-        items = list(result.scalars().all())
+        self, status: Optional[str] = None, query: Optional[str] = None
+    ) -> list[dict]:
+        def _do():
+            q = (
+                self._client()
+                .table(TABLE_PROPERTIES)
+                .select(PROPERTY_WITH_IMAGES)
+                .order("created_at", desc=True)
+            )
+            if status and status != "all":
+                q = q.eq("status", status)
+            return q.execute()
+
+        res = await asyncio.to_thread(_do)
+        rows = res.data or []
         if query:
             q = query.strip().lower()
-            items = [
-                p
-                for p in items
-                if q in f"{p.title} {p.neighborhood} {p.city} {p.address}".lower()
+            rows = [
+                r
+                for r in rows
+                if q
+                in f"{r.get('title', '')} {r.get('neighborhood', '')} "
+                f"{r.get('city', '')} {r.get('address', '')}".lower()
             ]
-        return items
+        return rows
 
-    async def get(self, db: AsyncSession, property_id: str) -> Optional[Property]:
-        stmt = (
-            select(Property)
-            .options(selectinload(Property.images), selectinload(Property.documents))
-            .where(Property.id == property_id)
-        )
-        result = await db.execute(stmt)
-        return result.scalar_one_or_none()
+    async def get(self, property_id: str) -> Optional[dict]:
+        def _do():
+            return (
+                self._client()
+                .table(TABLE_PROPERTIES)
+                .select(PROPERTY_FULL)
+                .eq("id", property_id)
+                .limit(1)
+                .execute()
+            )
 
-    async def create(self, db: AsyncSession, data: dict, workspace_id: str) -> Property:
-        prop = Property(workspace_id=workspace_id, **data)
-        db.add(prop)
-        await db.commit()
-        return await self.get(db, prop.id)
+        res = await asyncio.to_thread(_do)
+        rows = res.data or []
+        return rows[0] if rows else None
 
-    async def update(self, db: AsyncSession, property_id: str, patch: dict) -> Optional[Property]:
-        prop = await self.get(db, property_id)
-        if prop is None:
+    async def create(self, data: dict, workspace_id: str) -> Optional[dict]:
+        payload = {**data, "workspace_id": workspace_id}
+
+        def _do():
+            return self._client().table(TABLE_PROPERTIES).insert(payload).execute()
+
+        res = await asyncio.to_thread(_do)
+        row = (res.data or [None])[0]
+        return await self.get(row["id"]) if row else None
+
+    async def update(self, property_id: str, patch: dict) -> Optional[dict]:
+        if not patch:
+            return await self.get(property_id)
+
+        def _do():
+            return (
+                self._client()
+                .table(TABLE_PROPERTIES)
+                .update(patch)
+                .eq("id", property_id)
+                .execute()
+            )
+
+        res = await asyncio.to_thread(_do)
+        if not (res.data or []):
             return None
-        for key, value in patch.items():
-            setattr(prop, key, value)
-        await db.commit()
-        return await self.get(db, property_id)
+        return await self.get(property_id)
 
-    async def delete(self, db: AsyncSession, property_id: str) -> bool:
-        prop = await self.get(db, property_id)
-        if prop is None:
-            return False
-        await db.delete(prop)
-        await db.commit()
-        return True
+    async def delete(self, property_id: str) -> bool:
+        def _do():
+            return (
+                self._client()
+                .table(TABLE_PROPERTIES)
+                .delete()
+                .eq("id", property_id)
+                .execute()
+            )
+
+        res = await asyncio.to_thread(_do)
+        return bool(res.data)
 
     # --- files ---------------------------------------------------------------
-    async def add_image(self, db: AsyncSession, image: PropertyImage) -> PropertyImage:
-        db.add(image)
-        await db.commit()
-        await db.refresh(image)
-        return image
+    async def add_image(self, image: dict) -> dict:
+        def _do():
+            return self._client().table(TABLE_IMAGES).insert(image).execute()
 
-    async def add_document(self, db: AsyncSession, doc: PropertyDocument) -> PropertyDocument:
-        db.add(doc)
-        await db.commit()
-        await db.refresh(doc)
-        return doc
+        res = await asyncio.to_thread(_do)
+        return (res.data or [None])[0]
 
-    async def get_image(self, db: AsyncSession, image_id: str) -> Optional[PropertyImage]:
-        result = await db.execute(select(PropertyImage).where(PropertyImage.id == image_id))
-        return result.scalar_one_or_none()
+    async def add_document(self, doc: dict) -> dict:
+        def _do():
+            return self._client().table(TABLE_DOCUMENTS).insert(doc).execute()
 
-    async def get_document(self, db: AsyncSession, doc_id: str) -> Optional[PropertyDocument]:
-        result = await db.execute(
-            select(PropertyDocument).where(PropertyDocument.id == doc_id)
-        )
-        return result.scalar_one_or_none()
+        res = await asyncio.to_thread(_do)
+        return (res.data or [None])[0]
 
-    async def delete_image(self, db: AsyncSession, image: PropertyImage) -> None:
-        await db.delete(image)
-        await db.commit()
+    async def get_image(self, image_id: str) -> Optional[dict]:
+        def _do():
+            return (
+                self._client()
+                .table(TABLE_IMAGES)
+                .select("*")
+                .eq("id", image_id)
+                .limit(1)
+                .execute()
+            )
 
-    async def delete_document(self, db: AsyncSession, doc: PropertyDocument) -> None:
-        await db.delete(doc)
-        await db.commit()
+        res = await asyncio.to_thread(_do)
+        rows = res.data or []
+        return rows[0] if rows else None
+
+    async def get_document(self, doc_id: str) -> Optional[dict]:
+        def _do():
+            return (
+                self._client()
+                .table(TABLE_DOCUMENTS)
+                .select("*")
+                .eq("id", doc_id)
+                .limit(1)
+                .execute()
+            )
+
+        res = await asyncio.to_thread(_do)
+        rows = res.data or []
+        return rows[0] if rows else None
+
+    async def delete_image(self, image_id: str) -> None:
+        def _do():
+            return self._client().table(TABLE_IMAGES).delete().eq("id", image_id).execute()
+
+        await asyncio.to_thread(_do)
+
+    async def delete_document(self, doc_id: str) -> None:
+        def _do():
+            return (
+                self._client().table(TABLE_DOCUMENTS).delete().eq("id", doc_id).execute()
+            )
+
+        await asyncio.to_thread(_do)
 
 
 property_repository = SupabasePropertyRepository()
