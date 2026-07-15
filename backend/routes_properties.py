@@ -7,6 +7,7 @@ import config
 from property_repository import property_repository
 from schemas import PropertyCreate, PropertyDetailResponse, PropertyResponse, PropertyUpdate
 from serializers import property_to_detail, property_to_response
+from storage_service import get_storage
 
 router = APIRouter(prefix="/properties", tags=["properties"])
 
@@ -55,6 +56,13 @@ async def update_property(property_id: str, payload: PropertyUpdate):
 @router.delete("/{property_id}", status_code=204)
 async def delete_property(property_id: str):
     _ensure()
-    ok = await property_repository.delete(property_id)
-    if not ok:
+    prop = await property_repository.get(property_id)
+    if prop is None:
         raise HTTPException(404, "Property not found")
+    # Remove storage objects first so private buckets don't accumulate orphans.
+    for asset in (prop.get("property_images") or []) + (prop.get("property_documents") or []):
+        try:
+            await get_storage().delete(asset["bucket"], asset["object_path"])
+        except Exception:
+            pass
+    await property_repository.delete(property_id)

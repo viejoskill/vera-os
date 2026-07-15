@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bed, Bath, Maximize, MapPin, Sparkles, Search, Plus } from 'lucide-react';
+import { Bed, Bath, Maximize, MapPin, Sparkles, Search, Plus, Building2 } from 'lucide-react';
 import { Card, Input, Button } from '@vera/ui';
 import { appConfig } from '@vera/config';
 import type { Property, PropertyStatus } from '@vera/types';
@@ -33,7 +33,13 @@ const PropertyCard = ({ property }: { property: Property }) => {
   return (
     <Card interactive className="vera-prop" data-testid={`property-card-${property.id}`}>
       <div className="vera-prop__media">
-        <img src={property.coverImage} alt={property.title} loading="lazy" />
+        {property.coverImage ? (
+          <img src={property.coverImage} alt={property.title} loading="lazy" />
+        ) : (
+          <div className="vera-prop__media-empty" data-testid={`property-noimage-${property.id}`}>
+            <Building2 size={28} />
+          </div>
+        )}
         <span className={`vera-badge ${meta.className}`}>{meta.label}</span>
       </div>
       <div className="vera-prop__body">

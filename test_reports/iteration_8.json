@@ -1,0 +1,41 @@
+{
+  "summary": "Sprint 2.5 — Property persistence end-to-end (Frontend → FastAPI → Supabase PostgREST + Storage) FULLY VERIFIED. All 11 acceptance assertions PASS with zero console errors and zero page errors. Property created via Workspace persists in Supabase, card cover image loads from a real Supabase signed URL over https, search filters correctly, and data survives a full page reload (real DB persistence, not in-memory).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "WorkspaceService.save (workspace-service.ts L31-49): clean orchestration — create property → upload photos in order → set cover only if user picked a non-first photo → upload documents. Cover is set explicitly only when coverIndex > 0 which relies on backend auto-covering the first uploaded photo; consistent with observed behavior (2nd photo cover click resulted in cover on 2nd photo after save).",
+    "ApiPropertyRepository/ApiPropertyFilesGateway: correctly use env.backendUrl + /api prefix (Kubernetes ingress requirement). Multipart uploads use FormData without setting Content-Type header (browser sets boundary automatically) — correct.",
+    "PropertiesScreen L37: img `src={property.coverImage}` renders the signed URL directly. Signed URL confirmed live: https://tlptpyhtddwaiwzmzgcg.supabase.co/storage/v1/object/sign/property-images/... Consider adding `onError` fallback to noimage state in case signed URL expires while user is on the page (minor UX suggestion, not blocking).",
+    "PropertyWorkspace handleSave: swallows the error message in the catch block (shows generic toast). For production diagnostics, consider logging the underlying error via console.error to aid future debugging — not blocking for MVP.",
+    "PropertiesScreen 0 m² / empty neighborhood: card gracefully renders when optional fields are empty. Good defensive rendering."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (out of scope)", "frontend": "100% (11/11 acceptance steps pass)"},
+  "test_credentials": "N/A - no auth required",
+  "seed_data_creation": "Created /tmp/vera_test_imgs/photo1.png, photo2.png (1x1 PNGs) and plano.pdf (minimal valid PDF). Test property title 'TEST Depto Palermo 1784158115' persisted to Supabase; NOT cleaned up (no delete UI). Backend may accumulate TEST_ rows over iterations — main agent may want to periodically prune.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Full end-to-end flow verified against REAL Supabase persistence (not mock). Key testids used: new-property-button, input-title, input-price, operation-venta, photo-file-input (hidden, use set_input_files), doc-input-plano (hidden, use set_input_files), photos-grid child divs data-testid='photo-<id>', cover-<id> badge, workspace-save. Photo processing spinner (~4-6s simulated) does NOT block save — waited 6.5s in test to be safe. Redirect to /propiedades happens ~800ms after success toast. Signed URLs are Supabase storage sign endpoints with an expiring token query param; card <img> renders them directly. After reload, the same property is fetched from backend GET /api/properties and cover_image is a freshly-generated signed URL — persistence confirmed.",
+  "detailed_results": {
+    "step1_list_loads_from_backend": "PASS (empty state 'No hay propiedades para este filtro' shown initially)",
+    "step2_workspace_opens_from_new_button": "PASS",
+    "step3_basic_info_filled_title_price_type_operation": "PASS",
+    "step4_two_photos_uploaded_via_photo_file_input": "PASS (2 photo tiles in photos-grid)",
+    "step5_document_plano_uploaded_via_doc_input_plano": "PASS (doc-plano tile visible)",
+    "step6_cover_selection_second_photo": "PASS (cover-<id> badge on 2nd tile before save)",
+    "step7_save_click_redirects_to_propiedades": "PASS (workspace-save → /propiedades within 25s)",
+    "step8_new_card_visible_in_list": "PASS (card with unique title rendered)",
+    "step9_cover_image_signed_url_https": "PASS (src=https://tlptpyhtddwaiwzmzgcg.supabase.co/storage/v1/object/sign/property-images/...)",
+    "step10_search_filter_finds_new_property": "PASS (typing partial title filters correctly)",
+    "step11_persistence_after_full_reload": "PASS (card still listed after page.reload — real Supabase persistence)",
+    "console_errors": "0",
+    "page_errors": "0"
+  },
+  "rca of the issue": "N/A — no issues found. Complete happy-path flow works end-to-end against real Supabase."
+}

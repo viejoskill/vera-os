@@ -87,6 +87,15 @@ async def upload_document(
     return await document_to_response(row)
 
 
+@router.patch("/{property_id}/images/{image_id}/cover", status_code=204)
+async def set_cover(property_id: str, image_id: str):
+    _ensure()
+    image = await property_repository.get_image(image_id)
+    if image is None or image.get("property_id") != property_id:
+        raise HTTPException(404, "Image not found")
+    await property_repository.set_cover(property_id, image_id)
+
+
 @router.delete("/{property_id}/images/{image_id}", status_code=204)
 async def delete_image(property_id: str, image_id: str):
     _ensure()

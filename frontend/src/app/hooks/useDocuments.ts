@@ -21,6 +21,7 @@ export function useDocuments() {
       name: file.name,
       url: URL.createObjectURL(file),
       mimeType: file.type,
+      file,
     };
     // One document per type for now.
     setDocuments((prev) => [...prev.filter((d) => d.type !== type), doc]);

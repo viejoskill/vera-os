@@ -80,6 +80,7 @@ export function useVeraStudio() {
           url: URL.createObjectURL(f),
           status: 'uploading',
           isCover: false,
+          file: f,
         }));
       if (!incoming.length) return;
       setPhotos((prev) => {

@@ -8,6 +8,7 @@ export interface PhotoAsset {
   url: string;
   status: PhotoStatus;
   isCover: boolean;
+  file?: File;
 }
 
 export interface ProcessingStage {

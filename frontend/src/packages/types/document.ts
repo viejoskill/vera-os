@@ -7,6 +7,7 @@ export interface PropertyDocument {
   name: string;
   url: string;
   mimeType: string;
+  file?: File;
 }
 
 export const DOCUMENT_LABELS: Record<DocumentType, string> = {

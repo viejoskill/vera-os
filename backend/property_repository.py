@@ -160,5 +160,27 @@ class SupabasePropertyRepository:
 
         await asyncio.to_thread(_do)
 
+    async def set_cover(self, property_id: str, image_id: str) -> None:
+        def _unset():
+            return (
+                self._client()
+                .table(TABLE_IMAGES)
+                .update({"is_cover": False})
+                .eq("property_id", property_id)
+                .execute()
+            )
+
+        def _set():
+            return (
+                self._client()
+                .table(TABLE_IMAGES)
+                .update({"is_cover": True})
+                .eq("id", image_id)
+                .execute()
+            )
+
+        await asyncio.to_thread(_unset)
+        await asyncio.to_thread(_set)
+
 
 property_repository = SupabasePropertyRepository()

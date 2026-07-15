@@ -187,6 +187,15 @@ p {
 .vera-prop:hover .vera-prop__media img {
   transform: scale(1.04);
 }
+.vera-prop__media-empty {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: var(--vera-color-surface);
+  color: var(--vera-color-border);
+}
+
 .vera-prop__body {
   padding: var(--vera-space-md);
   display: flex;

@@ -2,9 +2,11 @@ import { useMemo, useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { Button, Panel, Progress, Toast } from '@vera/ui';
-import { assistantService } from '@vera/services';
+import { assistantService, workspaceService } from '@vera/services';
+import type { Property } from '@vera/types';
 import { useVeraStudio } from '@app/hooks/useVeraStudio';
 import { useDocuments } from '@app/hooks/useDocuments';
 import { propertyFormSchema, defaultPropertyForm, type PropertyFormValues } from './form-schema';
@@ -25,9 +27,11 @@ interface ToastState {
 
 export const PropertyWorkspace = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const studio = useVeraStudio();
   const documents = useDocuments();
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const form = useForm<PropertyFormValues>({
     resolver: zodResolver(propertyFormSchema),
@@ -55,9 +59,51 @@ export const PropertyWorkspace = () => {
   const handleSaveDraft = () =>
     showToast({ message: 'Guardamos tu borrador. Podés seguir cuando quieras.', tone: 'default' });
 
+  const toNumber = (value: string) => (value?.trim() ? Number(value) : 0);
+
   const handleSave = form.handleSubmit(
-    () => showToast({ message: 'Listo, guardamos la propiedad (simulado).', tone: 'success' }),
-    () => showToast({ message: 'Todavía faltan algunos datos. VERA te muestra cuáles.', tone: 'default' }),
+    async (values) => {
+      setSaving(true);
+      try {
+        const payload = {
+          title: values.title,
+          operation: values.operation,
+          type: values.type as Property['type'],
+          price: toNumber(values.price),
+          currency: values.currency,
+          address: values.address,
+          neighborhood: values.neighborhood,
+          city: values.city,
+          bedrooms: Math.trunc(toNumber(values.bedrooms)),
+          bathrooms: Math.trunc(toNumber(values.bathrooms)),
+          areaM2: toNumber(values.areaM2),
+          yearBuilt: values.yearBuilt,
+          videoUrl: values.videoUrl,
+          status: 'active' as const,
+          description: values.description,
+        };
+        const photos = studio.photos
+          .filter((p) => p.file)
+          .map((p) => ({ file: p.file as File, isCover: p.isCover }));
+        const docs = documents.documents
+          .filter((d) => d.file)
+          .map((d) => ({ file: d.file as File, docType: d.type }));
+
+        await workspaceService.save({ values: payload, photos, documents: docs });
+        await queryClient.invalidateQueries({ queryKey: ['properties'] });
+        showToast({ message: 'Listo, guardamos la propiedad en VERA.', tone: 'success' });
+        window.setTimeout(() => navigate('/propiedades'), 800);
+      } catch {
+        showToast({
+          message: 'No pudimos guardar la propiedad. Reintentá en un momento.',
+          tone: 'default',
+        });
+      } finally {
+        setSaving(false);
+      }
+    },
+    () =>
+      showToast({ message: 'Todavía faltan algunos datos. VERA te muestra cuáles.', tone: 'default' }),
   );
 
   return (
@@ -86,8 +132,8 @@ export const PropertyWorkspace = () => {
             <Button variant="secondary" size="md" data-testid="workspace-save-draft" onClick={handleSaveDraft}>
               Guardar borrador
             </Button>
-            <Button variant="primary" size="md" data-testid="workspace-save" onClick={handleSave}>
-              Guardar
+            <Button variant="primary" size="md" data-testid="workspace-save" disabled={saving} onClick={handleSave}>
+              {saving ? 'Guardando…' : 'Guardar'}
             </Button>
           </div>
         </header>
