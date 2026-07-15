@@ -3,19 +3,18 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { Button, Panel, Toast } from '@vera/ui';
+import { Button, Panel, Progress, Toast } from '@vera/ui';
 import { assistantService } from '@vera/services';
 import { useVeraStudio } from '@app/hooks/useVeraStudio';
-import {
-  propertyFormSchema,
-  defaultPropertyForm,
-  type PropertyFormValues,
-} from './form-schema';
+import { propertyFormSchema, defaultPropertyForm, type PropertyFormValues } from './form-schema';
 import { BasicInfoSection } from './BasicInfoSection';
 import { FeaturesSection } from './FeaturesSection';
 import { DescriptionSection } from './DescriptionSection';
+import { OwnerSection } from './OwnerSection';
 import { PhotosSection } from './PhotosSection';
-import { VeraPanel } from './VeraPanel';
+import { VeraStudioSection } from './VeraStudioSection';
+import { PublicationSection } from './PublicationSection';
+import { HealthScoreSection } from './HealthScoreSection';
 
 interface ToastState {
   message: string;
@@ -35,14 +34,9 @@ export const PropertyWorkspace = () => {
 
   const values = form.watch();
 
-  const insights = useMemo(
-    () =>
-      assistantService.analyze({
-        values,
-        photoCount: studio.photos.length,
-        detectedRooms: studio.detectedRooms,
-      }),
-    [values, studio.photos.length, studio.detectedRooms],
+  const assessment = useMemo(
+    () => assistantService.assess({ values, photoCount: studio.photos.length }),
+    [values, studio.photos.length],
   );
 
   const showToast = (state: ToastState) => {
@@ -50,11 +44,12 @@ export const PropertyWorkspace = () => {
     window.setTimeout(() => setToast(null), 2600);
   };
 
-  const handleSaveDraft = () => showToast({ message: 'Borrador guardado (simulado)', tone: 'default' });
+  const handleSaveDraft = () =>
+    showToast({ message: 'Guardamos tu borrador. Podés seguir cuando quieras.', tone: 'default' });
 
   const handleSave = form.handleSubmit(
-    () => showToast({ message: 'Propiedad guardada (simulado)', tone: 'success' }),
-    () => showToast({ message: 'Revisá los campos obligatorios', tone: 'default' }),
+    () => showToast({ message: 'Listo, guardamos la propiedad (simulado).', tone: 'success' }),
+    () => showToast({ message: 'Todavía faltan algunos datos. VERA te muestra cuáles.', tone: 'default' }),
   );
 
   return (
@@ -73,7 +68,7 @@ export const PropertyWorkspace = () => {
             </button>
             <div>
               <h1 className="vera-workspace__title">Nueva propiedad</h1>
-              <p className="vera-muted">Cargá una propiedad en minutos con la ayuda de VERA.</p>
+              <p className="vera-muted">VERA te acompaña hasta dejarla lista para publicar.</p>
             </div>
           </div>
           <div className="vera-workspace__actions">
@@ -89,13 +84,26 @@ export const PropertyWorkspace = () => {
           </div>
         </header>
 
+        <div className="vera-workspace__progress" data-testid="workspace-progress">
+          <div className="vera-workspace__progress-row">
+            <span>{assessment.completion}% completado</span>
+            <span className="vera-muted">
+              {assessment.status === 'ready' ? 'Lista para publicar' : 'En preparación'}
+            </span>
+          </div>
+          <Progress value={assessment.completion} />
+        </div>
+
         <div className="vera-workspace__grid">
           <div className="vera-workspace__main">
-            <Panel title="Datos básicos" description="Lo esencial para identificar la propiedad.">
+            <Panel title="Información" description="Lo esencial para identificar la propiedad.">
               <BasicInfoSection />
             </Panel>
             <Panel title="Características" description="Ambientes y comodidades.">
               <FeaturesSection />
+            </Panel>
+            <Panel title="Propietario" description="Quién es el dueño de la propiedad.">
+              <OwnerSection />
             </Panel>
             <Panel title="Descripción" description="Contala vos o dejá que VERA la redacte.">
               <DescriptionSection />
@@ -103,18 +111,29 @@ export const PropertyWorkspace = () => {
             <Panel title="Fotografías" description="El corazón de la publicación.">
               <PhotosSection
                 photos={studio.photos}
-                stages={studio.stages}
-                processing={studio.processing}
-                duplicatesRemoved={studio.duplicatesRemoved}
                 onAddFiles={studio.addFiles}
                 onRemove={studio.removePhoto}
                 onSetCover={studio.setCover}
                 onMove={studio.movePhoto}
               />
             </Panel>
+            <Panel title="Vera Studio" description="VERA analiza tus fotos y sugiere mejoras.">
+              <VeraStudioSection
+                photos={studio.photos}
+                stages={studio.stages}
+                processing={studio.processing}
+                detectedRooms={studio.detectedRooms}
+                duplicatesRemoved={studio.duplicatesRemoved}
+              />
+            </Panel>
           </div>
 
-          <VeraPanel insights={insights} />
+          <aside className="vera-workspace__aside">
+            <HealthScoreSection assessment={assessment} />
+            <Panel title="Publicación" description="Qué tan lista está la propiedad.">
+              <PublicationSection assessment={assessment} />
+            </Panel>
+          </aside>
         </div>
 
         {toast && <Toast message={toast.message} tone={toast.tone} />}

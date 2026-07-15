@@ -14,6 +14,8 @@ export const propertyFormSchema = z.object({
   areaM2: z.string(),
   description: z.string(),
   amenities: z.array(z.string()),
+  ownerId: z.string(),
+  ownerObservations: z.string(),
 });
 
 export type PropertyFormValues = z.infer<typeof propertyFormSchema>;
@@ -32,6 +34,8 @@ export const defaultPropertyForm: PropertyFormValues = {
   areaM2: '',
   description: '',
   amenities: [],
+  ownerId: '',
+  ownerObservations: '',
 };
 
 export const PROPERTY_TYPE_OPTIONS = [

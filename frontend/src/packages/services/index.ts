@@ -6,4 +6,5 @@ export * from './studio/studio-provider';
 export * from './studio/mock-studio-provider';
 export * from './studio/studio-service';
 export * from './assistant/assistant-service';
+export * from './owner/owner-service';
 export * from './service-container';

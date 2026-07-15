@@ -8,11 +8,27 @@ import type { StudioProvider } from './studio-provider';
 export class StudioService {
   constructor(private readonly provider: StudioProvider) {}
 
+  readonly recommendedCount = 6;
+  readonly recommendedOrder = [
+    'Frente',
+    'Living',
+    'Cocina',
+    'Dormitorio principal',
+    'Baño',
+    'Patio',
+    'Plano',
+  ];
+
   getStages(): ProcessingStage[] {
     return this.provider.getStages();
   }
 
   analyze(photoCount: number): StudioAnalysis {
     return this.provider.analyze(photoCount);
+  }
+
+  photoQuality(photoCount: number): string {
+    if (photoCount === 0) return 'Sin fotos';
+    return photoCount >= 6 ? 'Óptima' : photoCount >= 3 ? 'Buena' : 'A mejorar';
   }
 }

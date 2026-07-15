@@ -1,14 +1,9 @@
 import { useRef, useState, type DragEvent } from 'react';
-import { UploadCloud, X, Check, Loader2, Sparkles, Star } from 'lucide-react';
-import { Badge } from '@vera/ui';
+import { UploadCloud, X, Loader2, Star } from 'lucide-react';
 import type { PhotoAsset } from '@vera/types';
-import type { StudioStageView } from '@app/hooks/useVeraStudio';
 
 interface PhotosSectionProps {
   photos: PhotoAsset[];
-  stages: StudioStageView[];
-  processing: boolean;
-  duplicatesRemoved: number;
   onAddFiles: (files: File[]) => void;
   onRemove: (id: string) => void;
   onSetCover: (id: string) => void;
@@ -17,9 +12,6 @@ interface PhotosSectionProps {
 
 export const PhotosSection = ({
   photos,
-  stages,
-  processing,
-  duplicatesRemoved,
   onAddFiles,
   onRemove,
   onSetCover,
@@ -71,38 +63,6 @@ export const PhotosSection = ({
 
       {photos.length > 0 && (
         <>
-          <div className="vera-studio">
-            <div className="vera-studio__title">
-              <Sparkles size={15} /> Vera Studio
-              <Badge tone="muted">demo</Badge>
-            </div>
-            <div className="vera-studio-steps">
-              {stages.map((s) => (
-                <div
-                  key={s.id}
-                  className={`vera-studio-step vera-studio-step--${s.state}`}
-                  data-testid={`studio-stage-${s.id}`}
-                >
-                  <span className="vera-studio-step__icon">
-                    {s.state === 'done' ? (
-                      <Check size={14} />
-                    ) : s.state === 'running' ? (
-                      <Loader2 size={14} className="vera-spin" />
-                    ) : (
-                      <span className="vera-dot" />
-                    )}
-                  </span>
-                  {s.label}
-                </div>
-              ))}
-            </div>
-            {!processing && duplicatesRemoved > 0 && (
-              <p className="vera-muted">
-                {duplicatesRemoved} foto duplicada eliminada automáticamente.
-              </p>
-            )}
-          </div>
-
           <p className="vera-muted">
             Arrastrá para reordenar la galería · Clic en una foto para elegir la portada. VERA
             sugiere, vos decidís.
