@@ -1,5 +1,5 @@
 import { useRef, useState, type DragEvent } from 'react';
-import { UploadCloud, X, Check, Loader2, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { UploadCloud, X, Check, Loader2, Sparkles, Star } from 'lucide-react';
 import { Badge } from '@vera/ui';
 import type { PhotoAsset } from '@vera/types';
 import type { StudioStageView } from '@app/hooks/useVeraStudio';
@@ -11,6 +11,8 @@ interface PhotosSectionProps {
   duplicatesRemoved: number;
   onAddFiles: (files: File[]) => void;
   onRemove: (id: string) => void;
+  onSetCover: (id: string) => void;
+  onMove: (from: number, to: number) => void;
 }
 
 export const PhotosSection = ({
@@ -20,9 +22,12 @@ export const PhotosSection = ({
   duplicatesRemoved,
   onAddFiles,
   onRemove,
+  onSetCover,
+  onMove,
 }: PhotosSectionProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
 
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -98,25 +103,58 @@ export const PhotosSection = ({
             )}
           </div>
 
+          <p className="vera-muted">
+            Arrastrá para reordenar la galería · Clic en una foto para elegir la portada. VERA
+            sugiere, vos decidís.
+          </p>
           <div className="vera-photos" data-testid="photos-grid">
-            {photos.map((p) => (
-              <div key={p.id} className="vera-photo" data-testid={`photo-${p.id}`}>
-                <img src={p.url} alt={p.name} className="vera-photo__img" />
+            {photos.map((p, index) => (
+              <div
+                key={p.id}
+                className={`vera-photo ${dragIndex === index ? 'vera-photo--dragging' : ''}`.trim()}
+                data-testid={`photo-${p.id}`}
+                draggable
+                onClick={() => onSetCover(p.id)}
+                onDragStart={(e: DragEvent<HTMLDivElement>) => {
+                  setDragIndex(index);
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragOver={(e: DragEvent<HTMLDivElement>) => e.preventDefault()}
+                onDrop={(e: DragEvent<HTMLDivElement>) => {
+                  e.preventDefault();
+                  if (dragIndex !== null) onMove(dragIndex, index);
+                  setDragIndex(null);
+                }}
+                onDragEnd={() => setDragIndex(null)}
+              >
+                <img
+                  src={p.url}
+                  alt={p.name}
+                  className="vera-photo__img"
+                  draggable={false}
+                />
+                <span className="vera-photo__order">{index + 1}</span>
                 {p.status !== 'ready' && (
                   <div className="vera-photo__overlay">
                     <Loader2 size={18} className="vera-spin" />
                   </div>
                 )}
-                {p.isCover && (
-                  <span className="vera-photo__cover">
-                    <ImageIcon size={12} /> Portada
+                {p.isCover ? (
+                  <span className="vera-photo__cover" data-testid={`cover-${p.id}`}>
+                    <Star size={12} /> Portada
                   </span>
+                ) : (
+                  <span className="vera-photo__hint">Hacer portada</span>
                 )}
                 <button
                   type="button"
                   className="vera-photo__remove"
                   aria-label="Quitar foto"
-                  onClick={() => onRemove(p.id)}
+                  data-testid={`remove-photo-${p.id}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemove(p.id);
+                  }}
                 >
                   <X size={14} />
                 </button>

@@ -108,6 +108,8 @@ export const PropertyWorkspace = () => {
                 duplicatesRemoved={studio.duplicatesRemoved}
                 onAddFiles={studio.addFiles}
                 onRemove={studio.removePhoto}
+                onSetCover={studio.setCover}
+                onMove={studio.movePhoto}
               />
             </Panel>
           </div>

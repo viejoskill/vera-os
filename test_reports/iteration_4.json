@@ -1,0 +1,51 @@
+{
+  "summary": "Sprint 0B Phase 2 (Manual cover + Drag reorder) — 6 of 7 acceptance checks PASS, but the CENTRAL feature FAILS: user's manual cover is overridden by Vera AI's auto-suggestion after re-processing. Root cause identified in useVeraStudio.ts (isCover is wiped at start of runProcessing before the keepUserCover check).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Manual cover persistence over Vera AI re-processing",
+        "issue": "After user clicks a non-first photo to set it as cover (works correctly for exactly-one-cover), uploading one more photo triggers runProcessing which OVERRIDES the user's manual cover with Vera's suggested index 0. Observed: cover went from user-chosen photo #3 back to photo #1 after 7th upload.",
+        "affected_selectors": [".vera-photo__cover", "[data-testid^=cover-]"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/sprint0b_phase2.png",
+    "/app/test_reports/sprint0b_phase2_fail.png"
+  ],
+  "action_items": [
+    "FIX useVeraStudio.ts runProcessing: line 45 currently does `setPhotos((prev) => prev.map((p) => ({ ...p, status: 'processing', isCover: false })));` which wipes isCover before the final `keepUserCover = userChoseCoverRef.current && prev.some((p) => p.isCover)` check runs. Because prev already has isCover=false everywhere, keepUserCover always evaluates false and Vera's suggested index 0 wins. Recommended fix: (a) do not reset isCover in the initial status='processing' pass — only reset status; OR (b) capture the user's cover id at the start of runProcessing (e.g. `const userCoverId = userChoseCoverRef.current ? prev.find(p=>p.isCover)?.id : null`) and reapply it in the final map."
+  ],
+  "critical_code_review_comments": [
+    "useVeraStudio.ts L45: `isCover: false` reset at pipeline start is the direct source of the manual-cover-loss bug — this line invalidates the very locking mechanism userChoseCoverRef was designed to enable.",
+    "useVeraStudio.ts: userChoseCoverRef never resets to false even when the user's covered photo is removed. If the user removes their manually-chosen cover, the ref stays true but no photo has isCover, so keepUserCover=false and Vera reassigns — subtle edge case that could be documented.",
+    "PhotosSection L117: onClick={() => onSetCover(p.id)} fires on the entire tile including the img and the overlay. It intentionally doesn't fire from the remove button (stopPropagation confirmed). Fine, but if you later add other interactive children (e.g. edit label), remember to stopPropagation on them too.",
+    "PhotosSection: onDragStart sets dragIndex via state but the DataTransfer isn't set with a payload — works because the source index is closed over state, but for accessibility/keyboard reorder consider a proper aria-live announcement + keyboard shortcuts (Space to grab, arrows to move)."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A (frontend-only)",
+    "frontend": "86% (6/7 acceptance checks pass; 1 critical business-logic bug)"
+  },
+  "test_credentials": "N/A (no auth)",
+  "seed_data_creation": "6 tiny 1x1 PNG files in /tmp/vera_test_imgs/ (img1..img7.png). Sent via set_input_files to [data-testid=photo-file-input].",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "The pipeline takes ~4.5s (5 stages × 900ms) — wait ≥5.5s after each upload. For DnD, playwright's synthetic DragEvent.dispatchEvent does NOT trigger the React handlers reliably; use `src_locator.drag_to(tgt_locator)` which produces real mouse events and successfully reorders the tiles (verified: img1 moved from index 0 to index 2). All order badges renumber 1..N. Manual cover selection via clicking the tile works and enforces exactly-one-cover. The failing flow is specifically: upload → click non-index-0 photo → upload 1 more → observe cover snaps back to index 0.",
+  "test_results_detail": {
+    "1_upload_6_photos_and_first_gets_auto_cover": "PASS (cover=cover-<id-of-first-uploaded-photo>)",
+    "2_manual_cover_click_changes_cover_and_exactly_one_exists": "PASS (clicked photo #3, badge moved, count remained 1)",
+    "3_manual_cover_persists_over_AI_after_reupload": "FAIL — after uploading a 7th photo, cover reverted from user-chosen photo #3 back to photo #1 (Vera's suggestedCoverIndex=0)",
+    "4_order_index_badges_1_to_N": "PASS ('1','2','3','4','5','6' initially; '1'..'7' after 7th upload; renumbers on remove)",
+    "5_tiles_are_draggable_and_reorder_via_dnd": "PASS (draggable='true' on every tile; real-mouse drag_to reorders: [img1,img2,img3,img4] -> [img2,img3,img1,img4] with badges renumbering)",
+    "6_remove_button_does_not_trigger_cover_selection": "PASS (stopPropagation working — removed a non-cover photo, cover id unchanged; only 1 cover after remove)",
+    "7_no_console_errors_and_design_tokens": "PASS (0 console errors, 0 page errors, body bg rgb(28,28,28)=#1C1C1C, save btn bg rgb(246,230,58)=#F6E63A, font-family 'DM Sans')"
+  },
+  "rca_of_the_issue": "In /app/frontend/src/app/hooks/useVeraStudio.ts, runProcessing() first calls `setPhotos((prev) => prev.map((p) => ({ ...p, status: 'processing', isCover: false })))` (line 45). This resets isCover=false on every photo BEFORE the 5-stage delay. When the final setPhotos runs (line 57–65), it reads `prev` (which now has isCover=false everywhere) and computes `keepUserCover = userChoseCoverRef.current && prev.some((p) => p.isCover)`. The second conjunct is always false because the initial pass wiped isCover. Therefore keepUserCover=false and every photo is remapped to `isCover: i === result.suggestedCoverIndex` (=== 0 for MockStudioProvider), silently overriding the user's manual choice. Reproduction: (1) upload 6 files, wait 6s, (2) click the 3rd photo tile, (3) upload 1 more file, wait 6s, (4) observe .vera-photo__cover is now on the 1st tile again."
+}

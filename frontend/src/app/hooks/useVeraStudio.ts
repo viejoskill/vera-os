@@ -23,6 +23,7 @@ export function useVeraStudio() {
   const [analysis, setAnalysis] = useState<StudioAnalysis | null>(null);
   const runId = useRef(0);
   const countRef = useRef(0);
+  const userChoseCoverRef = useRef(false);
 
   useEffect(() => {
     countRef.current = photos.length;
@@ -53,9 +54,15 @@ export function useVeraStudio() {
     }
 
     const result = studioService.analyze(countRef.current);
-    setPhotos((prev) =>
-      prev.map((p, i) => ({ ...p, status: 'ready', isCover: i === result.suggestedCoverIndex })),
-    );
+    setPhotos((prev) => {
+      // Vera suggests a cover, but the user's manual choice always wins.
+      const keepUserCover = userChoseCoverRef.current && prev.some((p) => p.isCover);
+      return prev.map((p, i) => ({
+        ...p,
+        status: 'ready',
+        isCover: keepUserCover ? p.isCover : i === result.suggestedCoverIndex,
+      }));
+    });
     setAnalysis(result);
     setProcessing(false);
   }, [stageDefs]);
@@ -90,6 +97,25 @@ export function useVeraStudio() {
     });
   }, []);
 
+  /** User picks a cover with one click. Locks it against Vera's auto-suggestion. */
+  const setCover = useCallback((id: string) => {
+    userChoseCoverRef.current = true;
+    setPhotos((prev) => prev.map((p) => ({ ...p, isCover: p.id === id })));
+  }, []);
+
+  /** Reorder the gallery (drag & drop). The order is the user's sales narrative. */
+  const movePhoto = useCallback((from: number, to: number) => {
+    setPhotos((prev) => {
+      if (from === to || from < 0 || to < 0 || from >= prev.length || to >= prev.length) {
+        return prev;
+      }
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+  }, []);
+
   const stages: StudioStageView[] = stageDefs.map((s) => ({
     ...s,
     state: stageStates[s.id] ?? 'pending',
@@ -99,6 +125,8 @@ export function useVeraStudio() {
     photos,
     addFiles,
     removePhoto,
+    setCover,
+    movePhoto,
     stages,
     processing,
     detectedRooms: analysis?.detectedRooms ?? [],

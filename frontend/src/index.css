@@ -578,6 +578,49 @@ p {
 .vera-photo:hover .vera-photo__remove {
   opacity: 1;
 }
+.vera-photo {
+  cursor: grab;
+}
+.vera-photo:active {
+  cursor: grabbing;
+}
+.vera-photo--dragging {
+  opacity: 0.4;
+}
+.vera-photo__order {
+  position: absolute;
+  top: var(--vera-space-xs);
+  left: var(--vera-space-xs);
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  color: var(--vera-color-text);
+  background: var(--vera-color-glass);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-pill);
+}
+.vera-photo__hint {
+  position: absolute;
+  bottom: var(--vera-space-xs);
+  left: var(--vera-space-xs);
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-medium);
+  color: var(--vera-color-text);
+  background: var(--vera-color-glass);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-pill);
+  padding: 2px var(--vera-space-xs);
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+.vera-photo:hover .vera-photo__hint {
+  opacity: 1;
+}
 
 /* ------------------------------ Assistant ------------------------------- */
 .vera-assistant {
