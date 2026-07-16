@@ -101,20 +101,15 @@ export function useWorkspaceGallery(
 
   const movePhoto = useCallback(
     (from: number, to: number) => {
-      let backup: PhotoAsset[] = [];
-      let orderedIds: string[] = [];
-      setPhotos((prev) => {
-        if (from === to || from < 0 || to < 0 || from >= prev.length || to >= prev.length) {
-          return prev;
-        }
-        backup = prev;
-        const next = [...prev];
-        const [moved] = next.splice(from, 1);
-        next.splice(to, 0, moved);
-        orderedIds = next.map((p) => p.id);
-        return next;
-      });
-      if (!orderedIds.length) return;
+      if (from === to || from < 0 || to < 0 || from >= photos.length || to >= photos.length) {
+        return;
+      }
+      const backup = photos;
+      const next = [...photos];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      const orderedIds = next.map((p) => p.id);
+      setPhotos(next);
       notify('saving');
       propertyFilesGateway
         .reorderImages(propertyId, orderedIds)
@@ -124,7 +119,7 @@ export function useWorkspaceGallery(
           notify('error', 'No pudimos reordenar la galería.');
         });
     },
-    [propertyId, notify],
+    [photos, propertyId, notify],
   );
 
   return { photos, addFiles, removePhoto, setCover, movePhoto };
