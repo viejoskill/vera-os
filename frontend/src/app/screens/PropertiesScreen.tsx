@@ -117,27 +117,27 @@ const PropertyCard = ({ property, actions }: { property: Property; actions: Card
         <h3 className="vera-prop__title">{property.title}</h3>
         <div className="vera-prop__location">
           <MapPin size={14} />
-          <span>
-            {property.neighborhood}, {property.city}
-          </span>
+          <span>{[property.neighborhood, property.city].filter(Boolean).join(', ')}</span>
         </div>
-        <div className="vera-prop__specs">
-          {property.bedrooms > 0 && (
-            <span>
-              <Bed size={15} /> {property.bedrooms}
-            </span>
-          )}
-          {property.bathrooms > 0 && (
-            <span>
-              <Bath size={15} /> {property.bathrooms}
-            </span>
-          )}
-          {property.areaM2 > 0 && (
-            <span>
-              <Maximize size={15} /> {property.areaM2} m²
-            </span>
-          )}
-        </div>
+        {(property.bedrooms > 0 || property.bathrooms > 0 || property.areaM2 > 0) && (
+          <div className="vera-prop__specs">
+            {property.bedrooms > 0 && (
+              <span>
+                <Bed size={15} /> {property.bedrooms}
+              </span>
+            )}
+            {property.bathrooms > 0 && (
+              <span>
+                <Bath size={15} /> {property.bathrooms}
+              </span>
+            )}
+            {property.areaM2 > 0 && (
+              <span>
+                <Maximize size={15} /> {property.areaM2} m²
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </Card>
   );
