@@ -1,8 +1,31 @@
 """Row (PostgREST dict) -> API response mapping. Signed URLs are generated here so
 the frontend receives ready-to-use, time-limited links and never touches Supabase."""
 import config
-from schemas import DocumentResponse, ImageResponse, PropertyDetailResponse, PropertyResponse
+from schemas import DocumentResponse, ImageResponse, PropertyDetailResponse, PropertyResponse, VisitResponse
 from storage_service import get_storage
+
+
+def _property_code(pid: str) -> str:
+    """Stable, human-friendly internal code derived from the id (no DB column)."""
+    try:
+        n = int(pid.replace("-", "")[:8], 16) % 1000000
+    except Exception:
+        n = 0
+    return f"VAR-{n:06d}"
+
+
+def visit_to_response(v: dict) -> VisitResponse:
+    return VisitResponse(
+        id=v["id"],
+        property_id=v.get("property_id", ""),
+        date=v.get("date", "") or "",
+        time=v.get("time", "") or "",
+        interested=v.get("interested", "") or "",
+        agent=v.get("agent", "") or "",
+        comment=v.get("comment", "") or "",
+        notify_owner=v.get("notify_owner", False) or False,
+        created_at=v["created_at"],
+    )
 
 
 async def _sign(bucket: str, object_path: str) -> str:
@@ -45,6 +68,7 @@ async def property_to_response(prop: dict) -> PropertyResponse:
     cover_url = await _sign(cover["bucket"], cover["object_path"]) if cover else ""
     return PropertyResponse(
         id=prop["id"],
+        code=_property_code(prop["id"]),
         title=prop.get("title", ""),
         operation=prop.get("operation", "venta"),
         type=prop.get("type", "departamento"),

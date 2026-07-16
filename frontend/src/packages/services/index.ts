@@ -1,4 +1,5 @@
 export * from './property-service';
+export * from './visit/visit-service';
 export * from './studio/studio-provider';
 export * from './studio/mock-studio-provider';
 export * from './studio/studio-service';

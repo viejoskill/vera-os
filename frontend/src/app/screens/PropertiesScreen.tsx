@@ -43,6 +43,12 @@ function formatPrice(property: Property): string {
   return `${symbol} ${amount}${property.operation === 'alquiler' ? ' /mes' : ''}`;
 }
 
+/** Address as the primary identifier. No empty separators; city-only if no address. */
+function locationLine(p: Property): string {
+  if (p.address) return [p.address, p.city, p.neighborhood].filter(Boolean).join(' · ');
+  return p.city || '';
+}
+
 interface CardActions {
   onOpen: (id: string) => void;
   onArchive: (id: string) => void;
@@ -113,12 +119,21 @@ const PropertyCard = ({ property, actions }: { property: Property; actions: Card
         </div>
       </div>
       <div className="vera-prop__body">
-        <span className="vera-prop__price">{formatPrice(property)}</span>
-        <h3 className="vera-prop__title">{property.title}</h3>
-        <div className="vera-prop__location">
-          <MapPin size={14} />
-          <span>{[property.neighborhood, property.city].filter(Boolean).join(', ')}</span>
+        <div className="vera-prop__toprow">
+          <span className="vera-prop__price">{formatPrice(property)}</span>
+          {property.code && (
+            <span className="vera-prop__code" data-testid={`property-code-${property.id}`}>
+              {property.code}
+            </span>
+          )}
         </div>
+        <h3 className="vera-prop__title">{property.title}</h3>
+        {locationLine(property) && (
+          <div className="vera-prop__location">
+            <MapPin size={14} />
+            <span>{locationLine(property)}</span>
+          </div>
+        )}
         {(property.bedrooms > 0 || property.bathrooms > 0 || property.areaM2 > 0) && (
           <div className="vera-prop__specs">
             {property.bedrooms > 0 && (

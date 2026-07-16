@@ -12,6 +12,7 @@ export type PropertyType =
 
 export interface Property {
   id: string;
+  code: string;
   title: string;
   operation: PropertyOperation;
   type: PropertyType;
@@ -57,4 +58,25 @@ export interface PropertyDetail extends Property {
   videoUrl?: string;
   images: PropertyImageAsset[];
   documents: PropertyDocumentAsset[];
+}
+
+export interface PropertyVisit {
+  id: string;
+  propertyId: string;
+  date: string;
+  time: string;
+  interested: string;
+  agent: string;
+  comment: string;
+  notifyOwner: boolean;
+  createdAt: string;
+}
+
+export interface VisitInput {
+  date: string;
+  time: string;
+  interested: string;
+  agent: string;
+  comment: string;
+  notifyOwner: boolean;
 }

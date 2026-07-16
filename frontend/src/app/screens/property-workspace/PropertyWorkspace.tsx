@@ -22,6 +22,7 @@ import { BasicInfoSection } from './BasicInfoSection';
 import { FeaturesSection } from './FeaturesSection';
 import { DescriptionSection } from './DescriptionSection';
 import { OwnerSection } from './OwnerSection';
+import { TrackingSection } from './TrackingSection';
 import { PhotosSection } from './PhotosSection';
 import { DocumentsSection } from './DocumentsSection';
 import { VeraStudioSection } from './VeraStudioSection';
@@ -297,6 +298,13 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
                 <OwnerSection />
               </Panel>
             </div>
+            {!isNew && detail && (
+              <div id="ws-section-tracking">
+                <Panel title="Seguimiento" description="Visitas y contacto con el propietario.">
+                  <TrackingSection propertyId={detail.id} address={detail.address} />
+                </Panel>
+              </div>
+            )}
             <div id="ws-section-description">
               <Panel title="Descripción" description="Contala vos o dejá que VERA la redacte.">
                 <DescriptionSection />

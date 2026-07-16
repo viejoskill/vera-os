@@ -1,80 +1,56 @@
-import { Sparkles, PartyPopper, Check, Circle } from 'lucide-react';
+import { Circle, CheckCircle2 } from 'lucide-react';
 import { Card, Progress } from '@vera/ui';
 import type { WorkspaceAssessment } from '@vera/types';
 
+/** Compact health summary: score + estado + recomendaciones pendientes.
+ *  Deliberately understated so the focus can move to commercial activity once ready. */
 export const HealthScoreSection = ({ assessment }: { assessment: WorkspaceAssessment }) => {
-  const { health, nextStep, checklist } = assessment;
-  const allDone = checklist.every((c) => c.done);
+  const { health, checklist } = assessment;
   const isStart = assessment.completion === 0;
+  const pending = checklist.filter((c) => !c.done);
 
   return (
-    <Card className="vera-health" data-testid="health-score">
-      <span className="vera-health__caption">Health Score</span>
-      {isStart ? (
-        <>
-          <div className="vera-health__start" data-testid="health-score-value">
-            Empecemos
-          </div>
-          <p className="vera-health__message">
-            Cargá los primeros datos y VERA te va guiando paso a paso.
-          </p>
-        </>
-      ) : (
-        <>
-          <div className="vera-health__score" data-testid="health-score-value">
-            {health.score}
-          </div>
+    <Card className="vera-health vera-health--compact" data-testid="health-score">
+      <div className="vera-health__row">
+        <span className="vera-health__caption">Health Score</span>
+        {!isStart && (
           <span className="vera-health__label" data-testid="health-score-label">
             {health.label}
           </span>
-          <Progress value={health.score} />
-          <p className="vera-health__message">{health.message}</p>
-        </>
-      )}
-
-      <div className="vera-health__path">
-        <span className="vera-field__label">
-          {isStart ? 'Con esto queda lista para publicar' : '¿Qué falta para llegar a Excelente?'}
-        </span>
-        <div className="vera-checklist" data-testid="health-checklist">
-          {checklist.map((item) => (
-            <div
-              key={item.id}
-              className={`vera-check ${item.done ? 'vera-check--done' : ''}`.trim()}
-              data-testid={`health-check-${item.id}`}
-            >
-              <span className="vera-check__icon">
-                {item.done ? <Check size={14} /> : <Circle size={14} />}
-              </span>
-              <span className="vera-check__label">{item.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="vera-nextstep" data-testid="health-nextstep">
-        {nextStep && !allDone ? (
-          <>
-            <span className="vera-nextstep__icon">
-              <Sparkles size={15} />
-            </span>
-            <div>
-              <span className="vera-nextstep__title">Siguiente paso recomendado</span>
-              <p className="vera-nextstep__text">{nextStep}</p>
-            </div>
-          </>
-        ) : (
-          <>
-            <span className="vera-nextstep__icon">
-              <PartyPopper size={15} />
-            </span>
-            <div>
-              <span className="vera-nextstep__title">¡Excelente!</span>
-              <p className="vera-nextstep__text">La propiedad alcanzó su mejor versión.</p>
-            </div>
-          </>
         )}
       </div>
+
+      {isStart ? (
+        <p className="vera-health__message" data-testid="health-score-value">
+          Empecemos — cargá los primeros datos y VERA te va guiando.
+        </p>
+      ) : (
+        <>
+          <div className="vera-health__scoreline">
+            <span className="vera-health__score-sm" data-testid="health-score-value">
+              {health.score}
+            </span>
+            <Progress value={health.score} />
+          </div>
+
+          {pending.length > 0 ? (
+            <div className="vera-health__pending" data-testid="health-checklist">
+              <span className="vera-field__label">Recomendaciones pendientes</span>
+              <ul className="vera-health__pending-list">
+                {pending.map((item) => (
+                  <li key={item.id} data-testid={`health-check-${item.id}`}>
+                    <Circle size={13} /> {item.label}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="vera-health__ready" data-testid="health-checklist">
+              <CheckCircle2 size={15} /> Lista para publicar
+            </p>
+          )}
+        </>
+      )}
     </Card>
   );
 };

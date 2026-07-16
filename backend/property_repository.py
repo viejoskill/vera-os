@@ -14,6 +14,7 @@ def _now_iso() -> str:
 TABLE_PROPERTIES = "properties"
 TABLE_IMAGES = "property_images"
 TABLE_DOCUMENTS = "property_documents"
+TABLE_VISITS = "property_visits"
 
 PROPERTY_WITH_IMAGES = "*, property_images(*)"
 PROPERTY_FULL = "*, property_images(*), property_documents(*)"
@@ -234,6 +235,29 @@ class SupabasePropertyRepository:
 
         for position, image_id in enumerate(image_ids):
             await asyncio.to_thread(_do, image_id, position)
+
+    # --- visits (Seguimiento) ------------------------------------------------
+    async def list_visits(self, property_id: str) -> list[dict]:
+        def _do():
+            return (
+                self._client()
+                .table(TABLE_VISITS)
+                .select("*")
+                .eq("property_id", property_id)
+                .order("date", desc=True)
+                .order("created_at", desc=True)
+                .execute()
+            )
+
+        res = await asyncio.to_thread(_do)
+        return res.data or []
+
+    async def add_visit(self, data: dict) -> Optional[dict]:
+        def _do():
+            return self._client().table(TABLE_VISITS).insert(data).execute()
+
+        res = await asyncio.to_thread(_do)
+        return (res.data or [None])[0]
 
 
 property_repository = SupabasePropertyRepository()

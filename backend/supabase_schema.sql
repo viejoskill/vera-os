@@ -62,3 +62,18 @@ create index if not exists idx_properties_status  on public.properties(status);
 create index if not exists idx_properties_created  on public.properties(created_at desc);
 create index if not exists idx_images_property     on public.property_images(property_id);
 create index if not exists idx_documents_property  on public.property_documents(property_id);
+
+-- Seguimiento: visitas registradas por propiedad (sprint "Cerrar App Propiedades")
+create table if not exists public.property_visits (
+  id            uuid primary key default gen_random_uuid(),
+  property_id   uuid not null references public.properties(id) on delete cascade,
+  workspace_id  text not null default 'vera-default',
+  date          text not null default '',
+  time          text not null default '',
+  interested    text not null default '',
+  agent         text not null default '',
+  comment       text not null default '',
+  notify_owner  boolean not null default false,
+  created_at    timestamptz not null default now()
+);
+create index if not exists idx_visits_property on public.property_visits(property_id);

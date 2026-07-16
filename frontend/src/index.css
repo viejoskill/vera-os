@@ -1648,3 +1648,262 @@ p {
   background: var(--vera-color-surface);
 }
 
+
+/* ===================== Card: código + toprow ===================== */
+.vera-prop__toprow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--vera-space-sm);
+}
+.vera-prop__code {
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  letter-spacing: 0.06em;
+  color: var(--vera-color-text-secondary);
+  background: var(--vera-color-surface);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-pill);
+  padding: 2px var(--vera-space-xs);
+  white-space: nowrap;
+}
+
+/* ===================== Health Score — compact ===================== */
+.vera-health--compact {
+  gap: var(--vera-space-sm);
+}
+.vera-health__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.vera-health__scoreline {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+}
+.vera-health__score-sm {
+  font-size: 1.5rem;
+  font-weight: var(--vera-font-weight-bold);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--vera-color-text);
+}
+.vera-health--compact .vera-health__label {
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-text-secondary);
+}
+.vera-health__pending {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-xs);
+}
+.vera-health__pending-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+.vera-health__pending-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text-secondary);
+}
+.vera-health__pending-list svg {
+  color: var(--vera-color-priority-atencion);
+  flex-shrink: 0;
+}
+.vera-health__ready {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-primary);
+}
+
+/* ===================== Seguimiento (Tracking) ===================== */
+.vera-tracking {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-lg);
+}
+.vera-tracking__stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--vera-space-md);
+}
+.vera-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--vera-space-md);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-surface);
+}
+.vera-stat__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-text-secondary);
+}
+.vera-stat__value {
+  font-size: var(--vera-font-size-md);
+  font-weight: var(--vera-font-weight-semibold);
+  color: var(--vera-color-text);
+}
+.vera-stat__value--muted {
+  color: var(--vera-color-text-secondary);
+}
+.vera-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text);
+  cursor: pointer;
+}
+.vera-checkbox input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--vera-color-primary);
+}
+
+/* Owner message (copy to WhatsApp) */
+.vera-owner-msg {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-sm);
+  padding: var(--vera-space-md);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  background: color-mix(in srgb, var(--vera-color-primary) 8%, transparent);
+}
+.vera-owner-msg__text {
+  white-space: pre-line;
+  font-size: var(--vera-font-size-sm);
+  line-height: var(--vera-font-line-height-relaxed, 1.6);
+  color: var(--vera-color-text);
+}
+
+/* Timeline */
+.vera-timeline {
+  display: flex;
+  flex-direction: column;
+}
+.vera-timeline__item {
+  display: flex;
+  gap: var(--vera-space-md);
+  padding-bottom: var(--vera-space-md);
+  position: relative;
+}
+.vera-timeline__item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 14px;
+  bottom: 0;
+  width: 1px;
+  background: var(--vera-color-border);
+}
+.vera-timeline__dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--vera-color-primary);
+  margin-top: 3px;
+  flex-shrink: 0;
+  z-index: 1;
+}
+.vera-timeline__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.vera-timeline__when {
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-text-secondary);
+}
+.vera-timeline__what {
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text);
+}
+
+/* ===================== Modal ===================== */
+.vera-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--vera-space-lg);
+}
+.vera-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+}
+.vera-modal__panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-lg);
+  background: var(--vera-color-card);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  animation: vera-rec-in 0.2s ease both;
+}
+.vera-modal__head,
+.vera-modal__foot {
+  display: flex;
+  align-items: center;
+  padding: var(--vera-space-lg);
+}
+.vera-modal__head {
+  justify-content: space-between;
+  border-bottom: 1px solid var(--vera-color-border);
+}
+.vera-modal__title {
+  font-size: var(--vera-font-size-lg);
+  font-weight: var(--vera-font-weight-semibold);
+}
+.vera-modal__close {
+  border: none;
+  background: transparent;
+  color: var(--vera-color-text-secondary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  border-radius: var(--vera-radius-sm);
+}
+.vera-modal__close:hover {
+  background: var(--vera-color-surface);
+}
+.vera-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-md);
+  padding: var(--vera-space-lg);
+}
+.vera-modal__foot {
+  justify-content: flex-end;
+  gap: var(--vera-space-sm);
+  border-top: 1px solid var(--vera-color-border);
+}
+
+@media (max-width: 640px) {
+  .vera-tracking__stats {
+    grid-template-columns: 1fr;
+  }
+}
+

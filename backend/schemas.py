@@ -74,6 +74,7 @@ class DocumentResponse(CamelModel):
 
 class PropertyResponse(CamelModel):
     id: str
+    code: str = ""
     title: str
     operation: str
     type: str
@@ -99,6 +100,27 @@ class PropertyResponse(CamelModel):
 
 class ReorderRequest(CamelModel):
     image_ids: list[str]
+
+
+class VisitCreate(CamelModel):
+    date: str = ""
+    time: str = ""
+    interested: str = ""
+    agent: str = ""
+    comment: str = ""
+    notify_owner: bool = False
+
+
+class VisitResponse(CamelModel):
+    id: str
+    property_id: str
+    date: str = ""
+    time: str = ""
+    interested: str = ""
+    agent: str = ""
+    comment: str = ""
+    notify_owner: bool = False
+    created_at: datetime
 
 
 class PropertyDetailResponse(PropertyResponse):

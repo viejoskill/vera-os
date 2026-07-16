@@ -5,8 +5,8 @@ from fastapi import APIRouter, HTTPException
 
 import config
 from property_repository import property_repository
-from schemas import PropertyCreate, PropertyDetailResponse, PropertyResponse, PropertyUpdate
-from serializers import property_to_detail, property_to_response
+from schemas import PropertyCreate, PropertyDetailResponse, PropertyResponse, PropertyUpdate, VisitCreate, VisitResponse
+from serializers import property_to_detail, property_to_response, visit_to_response
 from storage_service import get_storage
 
 router = APIRouter(prefix="/properties", tags=["properties"])
@@ -69,6 +69,24 @@ async def restore_property(property_id: str):
     if prop is None:
         raise HTTPException(404, "Property not found")
     return await property_to_detail(prop)
+
+
+@router.get("/{property_id}/visits", response_model=list[VisitResponse])
+async def list_visits(property_id: str):
+    _ensure()
+    rows = await property_repository.list_visits(property_id)
+    return [visit_to_response(r) for r in rows]
+
+
+@router.post("/{property_id}/visits", response_model=VisitResponse, status_code=201)
+async def create_visit(property_id: str, payload: VisitCreate):
+    _ensure()
+    data = {**payload.model_dump(), "property_id": property_id}
+    row = await property_repository.add_visit(data)
+    if row is None:
+        raise HTTPException(500, "Could not register visit")
+    await property_repository.touch(property_id)
+    return visit_to_response(row)
 
 
 @router.delete("/{property_id}", status_code=204)
