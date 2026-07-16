@@ -65,6 +65,7 @@ async def property_to_response(prop: dict) -> PropertyResponse:
         owner_observations=prop.get("owner_observations", "") or "",
         archived=prop.get("archived", False) or False,
         created_at=prop["created_at"],
+        updated_at=prop.get("updated_at") or prop["created_at"],
     )
 
 

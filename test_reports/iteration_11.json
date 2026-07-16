@@ -1,0 +1,43 @@
+{
+  "summary": "Sprint 'Construir para usar' — Catálogo de reglas VIE + touch(updatedAt). Backend: 9/9 pytest cases PASS (test_updated_at_touch.py) — GET /api/properties y GET /api/properties/{id} exponen updatedAt como ISO datetime válida, y las operaciones upload/delete image, set cover, reorder, upload/delete document y archive/restore bumpean updatedAt correctamente. Frontend /hoy: los 3 seeds devuelven las recomendaciones esperadas del catálogo de reglas — 🟡 'Escribí la descripción' en PH Chacarita y Casa Belgrano R (atencion), 🟢 'Sumá un video' en Depto Palermo Soho (lista, verde). Card anatomy verificada (subject, título imperativo, whatHappened, whyItMatters muted, bloque 'VERA recomienda', botón 'Resolver ahora'). Navegación 'Resolver ahora' funciona con deep-link ?section=&focus= y la sección destino recibe la clase vera-section--focus (verificado para features/video y description). Auto-desaparición por estado derivado verificada: al escribir descripción de 190 chars en PH Chacarita y Guardar, al volver a /hoy la card ya NO muestra 'Escribí la descripción' — pasa automáticamente al siguiente rule del catálogo ('Agregá el plano', tier lista) sin ningún botón tipo 'marcar como resuelto'. Palabra 'Error' NO aparece en la UI en ningún flujo. Sin errores en consola.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      { "screen": "/hoy summary", "issues": ["Nit de gramática: cuando attention===1 el resumen dice 'Hay 1 tema que requieren tu atención.' — debería ser 'requiere' (singular). Cambiar la template en TodayScreen.tsx: 'Hay ${n} ${n===1?\"tema\":\"temas\"} que ${n===1?\"requiere\":\"requieren\"} tu atención.'"] }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_updated_at_touch.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "(Nit) Ajustar concordancia singular/plural en el resumen de /hoy ('requiere' vs 'requieren').",
+    "(Nit del reporte previo, aún aplicable) En <p class='vera-rec__reco'> falta un espacio entre 'VERA recomienda' y el texto de la recomendación (textContent produce 'VERA recomiendaAgregá el plano…'). Visualmente ok por ser inline-block, pero afecta la lectura por lectores de pantalla."
+  ],
+  "critical_code_review_comments": [
+    "Positivo: property_repository.touch() está correctamente invocado desde routes_files en TODOS los endpoints de media (upload/delete image, set cover, reorder, upload/delete document) y set_archived actualiza updated_at explícitamente. Verificado a nivel de API con test_updated_at_touch.py.",
+    "Positivo: el catálogo PROPERTY_RULES en property-rules.ts es determinista, ordenado por urgencia y evalúa solo estado real (assessment + photoCount + idleDays). evaluateProperty retorna únicamente la primera regla activa, garantizando 'una acción por propiedad'.",
+    "Positivo: PropertiesProvider deriva idleDays a partir de updatedAt (con fallback a createdAt), habilitando la regla 'sin-actividad' de forma real.",
+    "Positivo: la palabra 'Error' está prohibida y no aparece en la UI en ningún flujo (verificado con búsqueda case-sensitive del body). Los toasts usan 'Guardado', 'Guardando…', 'No pudimos guardar', 'Reintentá'.",
+    "Positivo: no existe ningún botón tipo 'Marcar como resuelto' en la UI — el estado es puramente derivado (verificado escaneando todos los <button> en /hoy).",
+    "Positivo: la card lleva data-testid='recommendation-property-{id}' y el botón data-testid='resolve-now-property-{id}' según spec.",
+    "Positivo: deep-link ?section=&focus= aplica correctamente la clase 'vera-section--focus' al id 'ws-section-{section}' — verificado en runtime en 'features' y 'description'.",
+    "Nit: el helper `daysSince` en properties-provider.ts usa `Date.now()` — solo determinista dentro del ciclo actual; para pruebas de la regla `sin-actividad` conviene inyectar un clock (test seam) más adelante.",
+    "Nit: el listado de propiedades ya ordena por created_at desc en el repo, pero el Inbox debería ordenar por impact/priority también para que dos propiedades con la misma acción muestren un orden estable (hoy hereda el orden de listado). No bloqueante."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_updated_at_touch.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 tests pass)",
+    "frontend": "100% (todas las aceptaciones pasan: updatedAt integration, tiers/reglas correctos, resolve-nav con focus class, auto-desaparición por estado derivado, sin 'Error', sin 'marcar como resuelto')"
+  },
+  "test_credentials": "N/A — no auth",
+  "seed_data_creation": "Como parte de la prueba de estado derivado, se agregó una descripción real a PH Chacarita (id d58b1472-7d68-4ba0-9f9b-614ea8b9b911), 190 caracteres. Efecto colateral persistente en Supabase: PH Chacarita ya no aparece en tier 'atencion' con 'Escribí la descripción'; ahora aparece en tier 'lista' con 'Agregá el plano' (regla siguiente del catálogo). Los tests de backend suben y borran sus propios assets (limpieza automática). No es necesario revertir la descripción, pero está indicado por si el próximo agente necesita reproducir el escenario inicial.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Estado actual del seed en Supabase después de esta iteración: (1) Depto Palermo Soho (372d277b-2533-4ae1-ba0f-18ce7722f0f5): completo pero SIN video → tier lista, 'Sumá un video'. (2) Casa Belgrano R (8a2a294d-8119-4e58-9ca2-4820d9ac2ddb): 5 fotos, SIN descripción → tier atencion, 'Escribí la descripción'. (3) PH Chacarita (d58b1472-7d68-4ba0-9f9b-614ea8b9b911): 5 fotos + descripción de 190 chars (agregada en esta corrida) + sin plano → tier lista, 'Agregá el plano'. Backend pytest suite: /app/backend/tests/test_updated_at_touch.py (9 tests, ~65s). Todas las funcionalidades del sprint están implementadas correctamente; solo quedan 2 nits menores (gramática singular en resumen y espacio faltante en el <p class='vera-rec__reco'>).",
+  "rca of the issue": "N/A — no hay bugs. Todas las aceptaciones del sprint pasan."
+}

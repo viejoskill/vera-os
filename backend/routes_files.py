@@ -20,6 +20,7 @@ def _ensure() -> None:
 async def reorder_images(property_id: str, payload: ReorderRequest):
     _ensure()
     await property_repository.reorder_images(property_id, payload.image_ids)
+    await property_repository.touch(property_id)
 
 
 @router.post("/{property_id}/images", response_model=ImageResponse, status_code=201)
@@ -53,6 +54,7 @@ async def upload_image(property_id: str, file: UploadFile = File(...)):
             "is_cover": len(existing) == 0,
         }
     )
+    await property_repository.touch(property_id)
     return await image_to_response(row)
 
 
@@ -90,6 +92,7 @@ async def upload_document(
             "size_bytes": len(content),
         }
     )
+    await property_repository.touch(property_id)
     return await document_to_response(row)
 
 
@@ -100,6 +103,7 @@ async def set_cover(property_id: str, image_id: str):
     if image is None or image.get("property_id") != property_id:
         raise HTTPException(404, "Image not found")
     await property_repository.set_cover(property_id, image_id)
+    await property_repository.touch(property_id)
 
 
 @router.delete("/{property_id}/images/{image_id}", status_code=204)
@@ -110,6 +114,7 @@ async def delete_image(property_id: str, image_id: str):
         raise HTTPException(404, "Image not found")
     await get_storage().delete(image["bucket"], image["object_path"])
     await property_repository.delete_image(image_id)
+    await property_repository.touch(property_id)
 
 
 @router.delete("/{property_id}/documents/{doc_id}", status_code=204)
@@ -120,3 +125,4 @@ async def delete_document(property_id: str, doc_id: str):
         raise HTTPException(404, "Document not found")
     await get_storage().delete(doc["bucket"], doc["object_path"])
     await property_repository.delete_document(doc_id)
+    await property_repository.touch(property_id)

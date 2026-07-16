@@ -22,6 +22,7 @@ export const seedProperties: Omit<Property, 'archived'>[] = [
     coverImage: IMG('1560448204-e02f11c3d0e2'),
     description: 'Luminoso, orientación norte, a metros de Plaza Cortázar.',
     createdAt: '2026-06-01T12:00:00Z',
+    updatedAt: '2026-06-01T12:00:00Z',
   },
   {
     id: 'prop-002',
@@ -40,6 +41,7 @@ export const seedProperties: Omit<Property, 'archived'>[] = [
     coverImage: IMG('1670589953882-b94c9cb380f5'),
     description: 'Diseño contemporáneo, doble altura, quincho y parrilla.',
     createdAt: '2026-06-02T12:00:00Z',
+    updatedAt: '2026-06-02T12:00:00Z',
   },
   {
     id: 'prop-003',
@@ -58,6 +60,7 @@ export const seedProperties: Omit<Property, 'archived'>[] = [
     coverImage: IMG('1763036731377-bfcb2193d435'),
     description: 'Amenities full, cochera y baulera. Ideal profesional.',
     createdAt: '2026-06-03T12:00:00Z',
+    updatedAt: '2026-06-03T12:00:00Z',
   },
   {
     id: 'prop-004',
@@ -76,6 +79,7 @@ export const seedProperties: Omit<Property, 'archived'>[] = [
     coverImage: IMG('1554995207-c18c203602cb'),
     description: 'Sin expensas, dos plantas, parrilla propia en terraza.',
     createdAt: '2026-06-04T12:00:00Z',
+    updatedAt: '2026-06-04T12:00:00Z',
   },
   {
     id: 'prop-005',
@@ -94,6 +98,7 @@ export const seedProperties: Omit<Property, 'archived'>[] = [
     coverImage: IMG('1758422221774-9e1aefb0904a'),
     description: 'Planta libre, 4 cocheras, edificio con certificación LEED.',
     createdAt: '2026-06-05T12:00:00Z',
+    updatedAt: '2026-06-05T12:00:00Z',
   },
   {
     id: 'prop-006',
@@ -112,6 +117,7 @@ export const seedProperties: Omit<Property, 'archived'>[] = [
     coverImage: IMG('1706855203772-c249b75fe016'),
     description: 'Amarra propia, home theater y suite principal con vestidor.',
     createdAt: '2026-06-06T12:00:00Z',
+    updatedAt: '2026-06-06T12:00:00Z',
   },
 ];
 

@@ -159,12 +159,14 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
             documents: docsPayload,
           });
           await queryClient.invalidateQueries({ queryKey: ['properties'] });
+          await queryClient.invalidateQueries({ queryKey: ['today'] });
           showToast({ message: 'Listo, guardamos la propiedad en VERA.', tone: 'success' });
           window.setTimeout(() => navigate(`/propiedades/${created.id}`), 700);
         } else {
           await propertyService.updateProperty(propertyId, payload);
           await queryClient.invalidateQueries({ queryKey: ['properties'] });
           await queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
+          await queryClient.invalidateQueries({ queryKey: ['today'] });
           showToast({ message: 'Guardamos los cambios.', tone: 'success' });
         }
       } catch (error) {
@@ -182,6 +184,7 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
     try {
       await propertyService.archive(propertyId);
       await queryClient.invalidateQueries({ queryKey: ['properties'] });
+      await queryClient.invalidateQueries({ queryKey: ['today'] });
       showToast({ message: 'Propiedad archivada. Podés restaurarla cuando quieras.', tone: 'success' });
       window.setTimeout(() => navigate('/propiedades'), 700);
     } catch {
@@ -194,6 +197,7 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
       await propertyService.restore(propertyId);
       await queryClient.invalidateQueries({ queryKey: ['properties'] });
       await queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
+      await queryClient.invalidateQueries({ queryKey: ['today'] });
       showToast({ message: 'Propiedad restaurada.', tone: 'success' });
     } catch {
       showToast({ message: 'No pudimos restaurar la propiedad.', tone: 'default' });

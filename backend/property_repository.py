@@ -2,9 +2,14 @@
 Routes/services depend on this class, never on the Supabase SDK directly.
 Migrating to another store later touches only this file."""
 import asyncio
+from datetime import datetime, timezone
 from typing import Optional
 
 from supabase_client import get_supabase
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 TABLE_PROPERTIES = "properties"
 TABLE_IMAGES = "property_images"
@@ -74,9 +79,24 @@ class SupabasePropertyRepository:
         row = (res.data or [None])[0]
         return await self.get(row["id"]) if row else None
 
+    async def touch(self, property_id: str) -> None:
+        """Register activity on a property (updates its last-activity timestamp)."""
+
+        def _do():
+            return (
+                self._client()
+                .table(TABLE_PROPERTIES)
+                .update({"updated_at": _now_iso()})
+                .eq("id", property_id)
+                .execute()
+            )
+
+        await asyncio.to_thread(_do)
+
     async def update(self, property_id: str, patch: dict) -> Optional[dict]:
         if not patch:
             return await self.get(property_id)
+        patch = {**patch, "updated_at": _now_iso()}
 
         def _do():
             return (
@@ -191,7 +211,7 @@ class SupabasePropertyRepository:
             return (
                 self._client()
                 .table(TABLE_PROPERTIES)
-                .update({"archived": archived})
+                .update({"archived": archived, "updated_at": _now_iso()})
                 .eq("id", property_id)
                 .execute()
             )

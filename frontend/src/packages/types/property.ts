@@ -28,6 +28,7 @@ export interface Property {
   description: string;
   archived: boolean;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface PropertyImageAsset {

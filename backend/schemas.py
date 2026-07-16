@@ -94,6 +94,7 @@ class PropertyResponse(CamelModel):
     owner_observations: str = ""
     archived: bool = False
     created_at: datetime
+    updated_at: datetime
 
 
 class ReorderRequest(CamelModel):
