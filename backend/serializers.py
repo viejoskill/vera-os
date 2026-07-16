@@ -61,6 +61,9 @@ async def property_to_response(prop: dict) -> PropertyResponse:
         status=prop.get("status", "active"),
         cover_image=cover_url,
         description=prop.get("description", "") or "",
+        owner_id=prop.get("owner_id", "") or "",
+        owner_observations=prop.get("owner_observations", "") or "",
+        archived=prop.get("archived", False) or False,
         created_at=prop["created_at"],
     )
 

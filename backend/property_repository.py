@@ -18,7 +18,7 @@ class SupabasePropertyRepository:
     def _client(self):
         return get_supabase()
 
-    async def list(
+    async def list_properties(
         self, status: Optional[str] = None, query: Optional[str] = None
     ) -> list[dict]:
         def _do():
@@ -181,6 +181,35 @@ class SupabasePropertyRepository:
 
         await asyncio.to_thread(_unset)
         await asyncio.to_thread(_set)
+
+    async def set_archived(self, property_id: str, archived: bool) -> Optional[dict]:
+        def _do():
+            return (
+                self._client()
+                .table(TABLE_PROPERTIES)
+                .update({"archived": archived})
+                .eq("id", property_id)
+                .execute()
+            )
+
+        res = await asyncio.to_thread(_do)
+        if not (res.data or []):
+            return None
+        return await self.get(property_id)
+
+    async def reorder_images(self, property_id: str, image_ids: list[str]) -> None:
+        def _do(image_id: str, position: int):
+            return (
+                self._client()
+                .table(TABLE_IMAGES)
+                .update({"position": position})
+                .eq("id", image_id)
+                .eq("property_id", property_id)
+                .execute()
+            )
+
+        for position, image_id in enumerate(image_ids):
+            await asyncio.to_thread(_do, image_id, position)
 
 
 property_repository = SupabasePropertyRepository()

@@ -20,6 +20,7 @@ export const VeraOS = () => (
           <Route index element={<Navigate to="/propiedades" replace />} />
           <Route path="propiedades" element={<PropertiesScreen />} />
           <Route path="propiedades/nueva" element={<PropertyWorkspace />} />
+          <Route path="propiedades/:id" element={<PropertyWorkspace />} />
           <Route path="hoy" element={<PlaceholderScreen title="Hoy" />} />
           <Route path="operaciones" element={<PlaceholderScreen title="Operaciones" />} />
           <Route path="studio" element={<PlaceholderScreen title="Studio" />} />

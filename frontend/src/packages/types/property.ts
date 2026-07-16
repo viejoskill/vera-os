@@ -26,5 +26,34 @@ export interface Property {
   status: PropertyStatus;
   coverImage: string;
   description: string;
+  archived: boolean;
   createdAt: string;
+}
+
+export interface PropertyImageAsset {
+  id: string;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  position: number;
+  isCover: boolean;
+  url: string;
+}
+
+export interface PropertyDocumentAsset {
+  id: string;
+  docType: string;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  url: string;
+}
+
+export interface PropertyDetail extends Property {
+  ownerId?: string;
+  ownerObservations?: string;
+  yearBuilt?: string;
+  videoUrl?: string;
+  images: PropertyImageAsset[];
+  documents: PropertyDocumentAsset[];
 }

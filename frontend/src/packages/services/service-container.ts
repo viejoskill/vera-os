@@ -17,7 +17,7 @@ import { WorkspaceService } from './workspace/workspace-service';
 
 // --- Repositories & gateways (persistence lives behind the backend/Supabase) ---
 const propertyRepository = new ApiPropertyRepository();
-const propertyFilesGateway = new ApiPropertyFilesGateway();
+export const propertyFilesGateway = new ApiPropertyFilesGateway();
 
 // --- Providers (integrations) ---
 const aiProvider = new MockAIProvider();

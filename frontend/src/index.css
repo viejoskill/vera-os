@@ -1052,3 +1052,98 @@ p {
 .vera-reco__item--done .vera-reco__icon {
   color: var(--vera-color-primary);
 }
+
+/* ------------------------- Workspace: live status ----------------------- */
+.vera-live-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  padding: 4px 10px;
+  border-radius: var(--vera-radius-pill);
+  border: 1px solid var(--vera-color-border);
+  color: var(--vera-color-text-secondary);
+  align-self: center;
+}
+.vera-live-status--saved {
+  color: var(--vera-color-primary-foreground);
+  background: var(--vera-color-primary);
+  border-color: var(--vera-color-primary);
+}
+.vera-live-status--error {
+  color: #ff6b6b;
+  border-color: #ff6b6b;
+}
+
+/* ----------------------------- Lifecycle -------------------------------- */
+.vera-lifecycle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-md);
+  align-items: flex-start;
+}
+
+/* ---------------------------- Card menu --------------------------------- */
+.vera-prop__menu {
+  position: absolute;
+  top: var(--vera-space-sm);
+  right: var(--vera-space-sm);
+  z-index: 3;
+}
+.vera-prop__menu-btn {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--vera-radius-pill);
+  border: none;
+  color: var(--vera-color-text);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.vera-prop__menu-btn:hover {
+  background: rgba(0, 0, 0, 0.75);
+}
+.vera-menu {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  min-width: 170px;
+  padding: var(--vera-space-xxs);
+  background: var(--vera-color-card);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.vera-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-xs);
+  width: 100%;
+  padding: var(--vera-space-xs) var(--vera-space-sm);
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text);
+  background: transparent;
+  border: none;
+  border-radius: var(--vera-radius-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+.vera-menu__item:hover:not(:disabled) {
+  background: var(--vera-color-surface);
+}
+.vera-menu__item--disabled {
+  color: var(--vera-color-text-secondary);
+  cursor: not-allowed;
+}
+.vera-menu__soon {
+  margin-left: auto;
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-text-secondary);
+}

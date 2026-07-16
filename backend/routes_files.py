@@ -4,7 +4,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 import config
 from property_repository import property_repository
-from schemas import DocumentResponse, ImageResponse
+from schemas import DocumentResponse, ImageResponse, ReorderRequest
 from serializers import document_to_response, image_to_response
 from storage_service import get_storage
 
@@ -14,6 +14,12 @@ router = APIRouter(prefix="/properties", tags=["files"])
 def _ensure() -> None:
     if not config.supabase_configured():
         raise HTTPException(503, "Supabase is not configured.")
+
+
+@router.patch("/{property_id}/images/reorder", status_code=204)
+async def reorder_images(property_id: str, payload: ReorderRequest):
+    _ensure()
+    await property_repository.reorder_images(property_id, payload.image_ids)
 
 
 @router.post("/{property_id}/images", response_model=ImageResponse, status_code=201)

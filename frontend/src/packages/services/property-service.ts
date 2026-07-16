@@ -1,8 +1,8 @@
-import type { Property, PropertyStatus } from '@vera/types';
+import type { Property, PropertyDetail, PropertyStatus } from '@vera/types';
 import type { PropertyRepository } from '@vera/repositories';
 
 export interface PropertyFilters {
-  status?: PropertyStatus | 'all';
+  status?: PropertyStatus | 'all' | 'archived';
   query?: string;
 }
 
@@ -13,26 +13,29 @@ export interface PropertyFilters {
 export class PropertyService {
   constructor(private readonly repository: PropertyRepository) {}
 
-  async getProperties(filters: PropertyFilters = {}): Promise<Property[]> {
-    let items = filters.query
-      ? await this.repository.search(filters.query)
-      : await this.repository.getAll();
-
-    if (filters.status && filters.status !== 'all') {
-      items = items.filter((p) => p.status === filters.status);
-    }
-    return items;
+  getProperties(filters: PropertyFilters = {}): Promise<Property[]> {
+    return this.repository.find({ status: filters.status, query: filters.query });
   }
 
-  getProperty(id: string): Promise<Property | null> {
+  getProperty(id: string): Promise<PropertyDetail | null> {
     return this.repository.getById(id);
   }
 
-  /** Portfolio value of currently active listings (business rule lives in the Service). */
+  updateProperty(id: string, patch: Partial<Property>): Promise<PropertyDetail | null> {
+    return this.repository.update(id, patch) as Promise<PropertyDetail | null>;
+  }
+
+  archive(id: string): Promise<PropertyDetail | null> {
+    return this.repository.archive(id);
+  }
+
+  restore(id: string): Promise<PropertyDetail | null> {
+    return this.repository.restore(id);
+  }
+
+  /** Portfolio value of currently active (non-archived) listings. */
   async getPortfolioValue(): Promise<number> {
-    const items = await this.repository.getAll();
-    return items
-      .filter((p) => p.status === 'active')
-      .reduce((sum, p) => sum + p.price, 0);
+    const items = await this.repository.find({ status: 'active' });
+    return items.reduce((sum, p) => sum + p.price, 0);
   }
 }

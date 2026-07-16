@@ -29,6 +29,8 @@ class PropertyCreate(CamelModel):
     video_url: str = ""
     status: str = "active"
     description: str = ""
+    owner_id: str = ""
+    owner_observations: str = ""
 
 
 class PropertyUpdate(CamelModel):
@@ -47,6 +49,8 @@ class PropertyUpdate(CamelModel):
     video_url: Optional[str] = None
     status: Optional[str] = None
     description: Optional[str] = None
+    owner_id: Optional[str] = None
+    owner_observations: Optional[str] = None
 
 
 class ImageResponse(CamelModel):
@@ -86,7 +90,14 @@ class PropertyResponse(CamelModel):
     status: str
     cover_image: str = ""
     description: str
+    owner_id: str = ""
+    owner_observations: str = ""
+    archived: bool = False
     created_at: datetime
+
+
+class ReorderRequest(CamelModel):
+    image_ids: list[str]
 
 
 class PropertyDetailResponse(PropertyResponse):

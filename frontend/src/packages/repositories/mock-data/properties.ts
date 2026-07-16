@@ -4,7 +4,7 @@ import type { Property } from '@vera/types';
 const IMG = (id: string) =>
   `https://images.unsplash.com/photo-${id}?crop=entropy&cs=srgb&fm=jpg&w=1200&q=80`;
 
-export const mockProperties: Property[] = [
+export const seedProperties: Omit<Property, 'archived'>[] = [
   {
     id: 'prop-001',
     title: 'Departamento 3 ambientes con balcón',
@@ -114,3 +114,8 @@ export const mockProperties: Property[] = [
     createdAt: '2026-06-06T12:00:00Z',
   },
 ];
+
+export const mockProperties: Property[] = seedProperties.map((p) => ({
+  ...p,
+  archived: false,
+}));

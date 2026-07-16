@@ -1,14 +1,22 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { Button, Panel, Progress, Toast } from '@vera/ui';
-import { assistantService, workspaceService } from '@vera/services';
-import type { Property } from '@vera/types';
+import {
+  assistantService,
+  propertyService,
+  studioService,
+  workspaceService,
+} from '@vera/services';
+import type { Property, PropertyDetail } from '@vera/types';
 import { useVeraStudio } from '@app/hooks/useVeraStudio';
 import { useDocuments } from '@app/hooks/useDocuments';
+import { useProperty } from '@app/hooks/useProperty';
+import { useWorkspaceGallery, type LiveStatus } from '@app/hooks/useWorkspaceGallery';
+import { useWorkspaceDocuments } from '@app/hooks/useWorkspaceDocuments';
 import { propertyFormSchema, defaultPropertyForm, type PropertyFormValues } from './form-schema';
 import { BasicInfoSection } from './BasicInfoSection';
 import { FeaturesSection } from './FeaturesSection';
@@ -25,80 +33,143 @@ interface ToastState {
   tone: 'default' | 'success';
 }
 
-export const PropertyWorkspace = () => {
+const str = (v: number | string | undefined) => (v ? String(v) : '');
+
+const toForm = (d: PropertyDetail): PropertyFormValues => ({
+  title: d.title,
+  operation: d.operation,
+  type: d.type,
+  price: str(d.price),
+  currency: d.currency || 'USD',
+  address: d.address,
+  neighborhood: d.neighborhood,
+  city: d.city || 'Buenos Aires',
+  bedrooms: str(d.bedrooms),
+  bathrooms: str(d.bathrooms),
+  areaM2: str(d.areaM2),
+  description: d.description,
+  amenities: [],
+  ownerId: d.ownerId ?? '',
+  ownerObservations: d.ownerObservations ?? '',
+  yearBuilt: d.yearBuilt ?? '',
+  videoUrl: d.videoUrl ?? '',
+});
+
+const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
+  const isNew = !detail;
+  const propertyId = detail?.id ?? '';
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const studio = useVeraStudio();
-  const documents = useDocuments();
   const [toast, setToast] = useState<ToastState | null>(null);
   const [saving, setSaving] = useState(false);
+  const [liveStatus, setLiveStatus] = useState<LiveStatus>('idle');
+
+  const showToast = useCallback((state: ToastState) => {
+    setToast(state);
+    window.setTimeout(() => setToast(null), 2600);
+  }, []);
+
+  const notify = useCallback(
+    (status: LiveStatus, message?: string) => {
+      setLiveStatus(status);
+      if (status === 'error' && message) showToast({ message, tone: 'default' });
+      if (status === 'saved') window.setTimeout(() => setLiveStatus('idle'), 1600);
+    },
+    [showToast],
+  );
 
   const form = useForm<PropertyFormValues>({
     resolver: zodResolver(propertyFormSchema),
-    defaultValues: defaultPropertyForm,
+    defaultValues: detail ? toForm(detail) : defaultPropertyForm,
     mode: 'onChange',
   });
-
   const values = form.watch();
+
+  // New-mode: local staging + simulated Vera Studio. Existing-mode: live persistence.
+  const studio = useVeraStudio();
+  const localDocs = useDocuments();
+  const gallery = useWorkspaceGallery(propertyId, detail?.images ?? [], notify);
+  const liveDocs = useWorkspaceDocuments(propertyId, detail?.documents ?? [], notify);
+
+  const photos = isNew ? studio.photos : gallery.photos;
+  const documents = isNew ? localDocs.documents : liveDocs.documents;
+  const onAddPhotos = isNew ? studio.addFiles : gallery.addFiles;
+  const onRemovePhoto = isNew ? studio.removePhoto : gallery.removePhoto;
+  const onSetCover = isNew ? studio.setCover : gallery.setCover;
+  const onMovePhoto = isNew ? studio.movePhoto : gallery.movePhoto;
+  const onAddDoc = isNew ? localDocs.addDocument : liveDocs.addDocument;
+  const onRemoveDoc = isNew ? localDocs.removeDocument : liveDocs.removeDocument;
 
   const assessment = useMemo(
     () =>
       assistantService.assess({
         values,
-        photoCount: studio.photos.length,
-        documentTypes: documents.documents.map((d) => d.type),
+        photoCount: photos.length,
+        documentTypes: documents.map((d) => d.type),
       }),
-    [values, studio.photos.length, documents.documents],
+    [values, photos.length, documents],
   );
 
-  const showToast = (state: ToastState) => {
-    setToast(state);
-    window.setTimeout(() => setToast(null), 2600);
-  };
+  const stages = isNew
+    ? studio.stages
+    : studioService.getStages().map((s) => ({ ...s, state: 'done' as const }));
+  const analysis = isNew
+    ? { detectedRooms: studio.detectedRooms, duplicatesRemoved: studio.duplicatesRemoved }
+    : photos.length
+      ? studioService.analyze(photos.length)
+      : { detectedRooms: [], duplicatesRemoved: 0 };
+
+  const toNumber = (value: string) => (value?.trim() ? Number(value) : 0);
+
+  const buildPayload = (v: PropertyFormValues): Partial<Property> => ({
+    title: v.title,
+    operation: v.operation,
+    type: v.type as Property['type'],
+    price: toNumber(v.price),
+    currency: v.currency,
+    address: v.address,
+    neighborhood: v.neighborhood,
+    city: v.city,
+    bedrooms: Math.trunc(toNumber(v.bedrooms)),
+    bathrooms: Math.trunc(toNumber(v.bathrooms)),
+    areaM2: toNumber(v.areaM2),
+    status: isNew ? 'active' : (detail!.status as Property['status']),
+    description: v.description,
+    ...({ yearBuilt: v.yearBuilt, videoUrl: v.videoUrl, ownerId: v.ownerId, ownerObservations: v.ownerObservations } as object),
+  });
 
   const handleSaveDraft = () =>
     showToast({ message: 'Guardamos tu borrador. Podés seguir cuando quieras.', tone: 'default' });
 
-  const toNumber = (value: string) => (value?.trim() ? Number(value) : 0);
-
   const handleSave = form.handleSubmit(
-    async (values) => {
+    async (v) => {
       setSaving(true);
       try {
-        const payload = {
-          title: values.title,
-          operation: values.operation,
-          type: values.type as Property['type'],
-          price: toNumber(values.price),
-          currency: values.currency,
-          address: values.address,
-          neighborhood: values.neighborhood,
-          city: values.city,
-          bedrooms: Math.trunc(toNumber(values.bedrooms)),
-          bathrooms: Math.trunc(toNumber(values.bathrooms)),
-          areaM2: toNumber(values.areaM2),
-          yearBuilt: values.yearBuilt,
-          videoUrl: values.videoUrl,
-          status: 'active' as const,
-          description: values.description,
-        };
-        const photos = studio.photos
-          .filter((p) => p.file)
-          .map((p) => ({ file: p.file as File, isCover: p.isCover }));
-        const docs = documents.documents
-          .filter((d) => d.file)
-          .map((d) => ({ file: d.file as File, docType: d.type }));
-
-        await workspaceService.save({ values: payload, photos, documents: docs });
-        await queryClient.invalidateQueries({ queryKey: ['properties'] });
-        showToast({ message: 'Listo, guardamos la propiedad en VERA.', tone: 'success' });
-        window.setTimeout(() => navigate('/propiedades'), 800);
+        const payload = buildPayload(v);
+        if (isNew) {
+          const photosPayload = studio.photos
+            .filter((p) => p.file)
+            .map((p) => ({ file: p.file as File, isCover: p.isCover }));
+          const docsPayload = localDocs.documents
+            .filter((d) => d.file)
+            .map((d) => ({ file: d.file as File, docType: d.type }));
+          const created = await workspaceService.save({
+            values: payload,
+            photos: photosPayload,
+            documents: docsPayload,
+          });
+          await queryClient.invalidateQueries({ queryKey: ['properties'] });
+          showToast({ message: 'Listo, guardamos la propiedad en VERA.', tone: 'success' });
+          window.setTimeout(() => navigate(`/propiedades/${created.id}`), 700);
+        } else {
+          await propertyService.updateProperty(propertyId, payload);
+          await queryClient.invalidateQueries({ queryKey: ['properties'] });
+          await queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
+          showToast({ message: 'Guardamos los cambios.', tone: 'success' });
+        }
       } catch (error) {
-        console.error('VERA save property failed:', error);
-        showToast({
-          message: 'No pudimos guardar la propiedad. Reintentá en un momento.',
-          tone: 'default',
-        });
+        console.error('VERA save failed:', error);
+        showToast({ message: 'No pudimos guardar. Reintentá en un momento.', tone: 'default' });
       } finally {
         setSaving(false);
       }
@@ -106,6 +177,31 @@ export const PropertyWorkspace = () => {
     () =>
       showToast({ message: 'Todavía faltan algunos datos. VERA te muestra cuáles.', tone: 'default' }),
   );
+
+  const handleArchive = async () => {
+    try {
+      await propertyService.archive(propertyId);
+      await queryClient.invalidateQueries({ queryKey: ['properties'] });
+      showToast({ message: 'Propiedad archivada. Podés restaurarla cuando quieras.', tone: 'success' });
+      window.setTimeout(() => navigate('/propiedades'), 700);
+    } catch {
+      showToast({ message: 'No pudimos archivar la propiedad.', tone: 'default' });
+    }
+  };
+
+  const handleRestore = async () => {
+    try {
+      await propertyService.restore(propertyId);
+      await queryClient.invalidateQueries({ queryKey: ['properties'] });
+      await queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
+      showToast({ message: 'Propiedad restaurada.', tone: 'success' });
+    } catch {
+      showToast({ message: 'No pudimos restaurar la propiedad.', tone: 'default' });
+    }
+  };
+
+  const liveLabel =
+    liveStatus === 'saving' ? 'Guardando…' : liveStatus === 'saved' ? 'Guardado' : 'Error al guardar';
 
   return (
     <FormProvider {...form}>
@@ -122,17 +218,30 @@ export const PropertyWorkspace = () => {
               <ArrowLeft size={18} />
             </button>
             <div>
-              <h1 className="vera-workspace__title">Nueva propiedad</h1>
-              <p className="vera-muted">VERA te acompaña hasta dejarla lista para publicar.</p>
+              <h1 className="vera-workspace__title" data-testid="workspace-title">
+                {isNew ? 'Nueva propiedad' : detail!.title || 'Propiedad'}
+              </h1>
+              <p className="vera-muted">
+                {isNew
+                  ? 'VERA te acompaña hasta dejarla lista para publicar.'
+                  : 'Este es el Workspace de la propiedad. Todo vive acá.'}
+              </p>
             </div>
           </div>
           <div className="vera-workspace__actions">
+            {!isNew && liveStatus !== 'idle' && (
+              <span className={`vera-live-status vera-live-status--${liveStatus}`} data-testid="live-status">
+                {liveLabel}
+              </span>
+            )}
             <Button variant="ghost" size="md" data-testid="workspace-cancel-btn" onClick={() => navigate('/propiedades')}>
-              Cancelar
+              Volver
             </Button>
-            <Button variant="secondary" size="md" data-testid="workspace-save-draft" onClick={handleSaveDraft}>
-              Guardar borrador
-            </Button>
+            {isNew && (
+              <Button variant="secondary" size="md" data-testid="workspace-save-draft" onClick={handleSaveDraft}>
+                Guardar borrador
+              </Button>
+            )}
             <Button variant="primary" size="md" data-testid="workspace-save" disabled={saving} onClick={handleSave}>
               {saving ? 'Guardando…' : 'Guardar'}
             </Button>
@@ -165,29 +274,52 @@ export const PropertyWorkspace = () => {
             </Panel>
             <Panel title="Fotografías" description="El corazón de la publicación.">
               <PhotosSection
-                photos={studio.photos}
-                onAddFiles={studio.addFiles}
-                onRemove={studio.removePhoto}
-                onSetCover={studio.setCover}
-                onMove={studio.movePhoto}
+                photos={photos}
+                onAddFiles={onAddPhotos}
+                onRemove={onRemovePhoto}
+                onSetCover={onSetCover}
+                onMove={onMovePhoto}
               />
             </Panel>
             <Panel title="Documentos" description="Sumá el plano y otros documentos (PDF, JPG o PNG).">
-              <DocumentsSection
-                documents={documents.documents}
-                onAdd={documents.addDocument}
-                onRemove={documents.removeDocument}
-              />
+              <DocumentsSection documents={documents} onAdd={onAddDoc} onRemove={onRemoveDoc} />
             </Panel>
             <Panel title="Vera Studio" description="VERA analiza tus fotos y sugiere mejoras.">
               <VeraStudioSection
-                photos={studio.photos}
-                stages={studio.stages}
-                processing={studio.processing}
-                detectedRooms={studio.detectedRooms}
-                duplicatesRemoved={studio.duplicatesRemoved}
+                photos={photos}
+                stages={stages}
+                processing={isNew ? studio.processing : false}
+                detectedRooms={analysis.detectedRooms}
+                duplicatesRemoved={analysis.duplicatesRemoved}
               />
             </Panel>
+            {!isNew && (
+              <Panel title="Ciclo de vida" description="Gestioná el estado de esta propiedad en VERA.">
+                <div className="vera-lifecycle" data-testid="lifecycle-section">
+                  {detail!.archived ? (
+                    <>
+                      <p className="vera-muted">
+                        Esta propiedad está archivada: conserva toda su información y podés
+                        restaurarla cuando quieras.
+                      </p>
+                      <Button variant="primary" size="md" data-testid="restore-property" onClick={handleRestore}>
+                        Restaurar propiedad
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="vera-muted">
+                        Archivar conserva toda la información (fotos, documentos, Health Score) y la
+                        saca de la lista principal. Es reversible.
+                      </p>
+                      <Button variant="secondary" size="md" data-testid="archive-property" onClick={handleArchive}>
+                        Archivar propiedad
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </Panel>
+            )}
           </div>
 
           <aside className="vera-workspace__aside">
@@ -202,4 +334,31 @@ export const PropertyWorkspace = () => {
       </div>
     </FormProvider>
   );
+};
+
+/** Single reusable Workspace: empty when creating, loaded when opening a property. */
+export const PropertyWorkspace = () => {
+  const { id } = useParams();
+  const propertyId = id && id !== 'nueva' ? id : undefined;
+  const query = useProperty(propertyId);
+
+  if (propertyId) {
+    if (query.isLoading) {
+      return (
+        <div className="vera-workspace" data-testid="workspace-loading">
+          <p className="vera-muted">Abriendo la propiedad…</p>
+        </div>
+      );
+    }
+    if (!query.data) {
+      return (
+        <div className="vera-workspace" data-testid="workspace-notfound">
+          <p className="vera-muted">No encontramos esta propiedad.</p>
+        </div>
+      );
+    }
+    return <WorkspaceEditor key={query.data.id} detail={query.data} />;
+  }
+
+  return <WorkspaceEditor key="new" detail={null} />;
 };

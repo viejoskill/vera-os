@@ -1,6 +1,6 @@
-import type { Property } from '@vera/types';
+import type { Property, PropertyDetail } from '@vera/types';
 import { env } from '@vera/config';
-import type { PropertyRepository } from './property-repository';
+import type { PropertyQuery, PropertyRepository } from './property-repository';
 
 /**
  * Talks to the VERA backend (FastAPI) over HTTP. The frontend never knows about
@@ -26,24 +26,32 @@ export class ApiPropertyRepository implements PropertyRepository {
     return this.request<Property[]>('');
   }
 
-  async getById(id: string): Promise<Property | null> {
+  async find(filters: PropertyQuery): Promise<Property[]> {
+    const params = new URLSearchParams();
+    if (filters.status && filters.status !== 'all') params.set('status', filters.status);
+    if (filters.query?.trim()) params.set('query', filters.query.trim());
+    const qs = params.toString();
+    return this.request<Property[]>(qs ? `?${qs}` : '');
+  }
+
+  async getById(id: string): Promise<PropertyDetail | null> {
     try {
-      return await this.request<Property>(`/${id}`);
+      return await this.request<PropertyDetail>(`/${id}`);
     } catch {
       return null;
     }
   }
 
-  async create(entity: Property): Promise<Property> {
-    return this.request<Property>('', {
+  async create(entity: Property): Promise<PropertyDetail> {
+    return this.request<PropertyDetail>('', {
       method: 'POST',
       body: JSON.stringify(entity),
     });
   }
 
-  async update(id: string, patch: Partial<Property>): Promise<Property | null> {
+  async update(id: string, patch: Partial<Property>): Promise<PropertyDetail | null> {
     try {
-      return await this.request<Property>(`/${id}`, {
+      return await this.request<PropertyDetail>(`/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(patch),
       });
@@ -62,7 +70,14 @@ export class ApiPropertyRepository implements PropertyRepository {
   }
 
   async search(query: string): Promise<Property[]> {
-    const q = encodeURIComponent(query.trim());
-    return this.request<Property[]>(`?query=${q}`);
+    return this.find({ query });
+  }
+
+  async archive(id: string): Promise<PropertyDetail | null> {
+    return this.request<PropertyDetail>(`/${id}/archive`, { method: 'PATCH' });
+  }
+
+  async restore(id: string): Promise<PropertyDetail | null> {
+    return this.request<PropertyDetail>(`/${id}/restore`, { method: 'PATCH' });
   }
 }

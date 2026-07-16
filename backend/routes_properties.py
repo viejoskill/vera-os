@@ -20,7 +20,7 @@ def _ensure() -> None:
 @router.get("", response_model=list[PropertyResponse])
 async def list_properties(status: Optional[str] = None, query: Optional[str] = None):
     _ensure()
-    rows = await property_repository.list(status=status, query=query)
+    rows = await property_repository.list_properties(status=status, query=query)
     return [await property_to_response(r) for r in rows]
 
 
@@ -48,6 +48,24 @@ async def get_property(property_id: str):
 async def update_property(property_id: str, payload: PropertyUpdate):
     _ensure()
     prop = await property_repository.update(property_id, payload.model_dump(exclude_none=True))
+    if prop is None:
+        raise HTTPException(404, "Property not found")
+    return await property_to_detail(prop)
+
+
+@router.patch("/{property_id}/archive", response_model=PropertyDetailResponse)
+async def archive_property(property_id: str):
+    _ensure()
+    prop = await property_repository.set_archived(property_id, True)
+    if prop is None:
+        raise HTTPException(404, "Property not found")
+    return await property_to_detail(prop)
+
+
+@router.patch("/{property_id}/restore", response_model=PropertyDetailResponse)
+async def restore_property(property_id: str):
+    _ensure()
+    prop = await property_repository.set_archived(property_id, False)
     if prop is None:
         raise HTTPException(404, "Property not found")
     return await property_to_detail(prop)

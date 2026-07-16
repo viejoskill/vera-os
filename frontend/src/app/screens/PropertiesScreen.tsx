@@ -1,19 +1,36 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bed, Bath, Maximize, MapPin, Sparkles, Search, Plus, Building2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  Bed,
+  Bath,
+  Maximize,
+  MapPin,
+  Sparkles,
+  Search,
+  Plus,
+  Building2,
+  MoreHorizontal,
+  FolderOpen,
+  Copy,
+  Archive,
+  RotateCcw,
+} from 'lucide-react';
 import { Card, Input, Button } from '@vera/ui';
 import { appConfig } from '@vera/config';
+import { propertyService } from '@vera/services';
 import type { Property, PropertyStatus } from '@vera/types';
 import { useProperties } from '@app/hooks/useProperties';
 import { useDailyBriefing } from '@app/hooks/useDailyBriefing';
 
-type StatusFilter = PropertyStatus | 'all';
+type StatusFilter = PropertyStatus | 'all' | 'archived';
 
 const STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
   { id: 'all', label: 'Todas' },
   { id: 'active', label: 'Activas' },
   { id: 'reserved', label: 'Reservadas' },
   { id: 'sold', label: 'Vendidas' },
+  { id: 'archived', label: 'Archivadas' },
 ];
 
 const STATUS_META: Record<PropertyStatus, { label: string; className: string }> = {
@@ -28,26 +45,74 @@ function formatPrice(property: Property): string {
   return `${symbol} ${amount}${property.operation === 'alquiler' ? ' /mes' : ''}`;
 }
 
-const PropertyCard = ({ property }: { property: Property }) => {
+interface CardActions {
+  onOpen: (id: string) => void;
+  onArchive: (id: string) => void;
+  onRestore: (id: string) => void;
+}
+
+const PropertyCard = ({ property, actions }: { property: Property; actions: CardActions }) => {
   const meta = STATUS_META[property.status];
   const [imgFailed, setImgFailed] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const showImage = property.coverImage && !imgFailed;
+
+  const runAction = (fn: () => void) => (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMenuOpen(false);
+    fn();
+  };
+
   return (
-    <Card interactive className="vera-prop" data-testid={`property-card-${property.id}`}>
+    <Card
+      interactive
+      className="vera-prop"
+      data-testid={`property-card-${property.id}`}
+      onClick={() => actions.onOpen(property.id)}
+    >
       <div className="vera-prop__media">
         {showImage ? (
-          <img
-            src={property.coverImage}
-            alt={property.title}
-            loading="lazy"
-            onError={() => setImgFailed(true)}
-          />
+          <img src={property.coverImage} alt={property.title} loading="lazy" onError={() => setImgFailed(true)} />
         ) : (
           <div className="vera-prop__media-empty" data-testid={`property-noimage-${property.id}`}>
             <Building2 size={28} />
           </div>
         )}
         <span className={`vera-badge ${meta.className}`}>{meta.label}</span>
+
+        <div className="vera-prop__menu">
+          <button
+            type="button"
+            className="vera-prop__menu-btn"
+            aria-label="Acciones"
+            data-testid={`card-menu-${property.id}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen((o) => !o);
+            }}
+          >
+            <MoreHorizontal size={16} />
+          </button>
+          {menuOpen && (
+            <div className="vera-menu" data-testid={`card-menu-list-${property.id}`}>
+              <button type="button" className="vera-menu__item" data-testid={`menu-open-${property.id}`} onClick={runAction(() => actions.onOpen(property.id))}>
+                <FolderOpen size={14} /> Abrir
+              </button>
+              <button type="button" className="vera-menu__item vera-menu__item--disabled" data-testid={`menu-duplicate-${property.id}`} disabled title="Próximamente">
+                <Copy size={14} /> Duplicar <span className="vera-menu__soon">Próximamente</span>
+              </button>
+              {property.archived ? (
+                <button type="button" className="vera-menu__item" data-testid={`menu-restore-${property.id}`} onClick={runAction(() => actions.onRestore(property.id))}>
+                  <RotateCcw size={14} /> Restaurar
+                </button>
+              ) : (
+                <button type="button" className="vera-menu__item" data-testid={`menu-archive-${property.id}`} onClick={runAction(() => actions.onArchive(property.id))}>
+                  <Archive size={14} /> Archivar
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
       <div className="vera-prop__body">
         <span className="vera-prop__price">{formatPrice(property)}</span>
@@ -78,11 +143,26 @@ const PropertyCard = ({ property }: { property: Property }) => {
 
 export const PropertiesScreen = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<StatusFilter>('all');
   const [query, setQuery] = useState('');
 
   const briefing = useDailyBriefing();
   const { data: properties, isLoading } = useProperties({ status, query });
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['properties'] });
+
+  const actions: CardActions = {
+    onOpen: (id) => navigate(`/propiedades/${id}`),
+    onArchive: async (id) => {
+      await propertyService.archive(id);
+      invalidate();
+    },
+    onRestore: async (id) => {
+      await propertyService.restore(id);
+      invalidate();
+    },
+  };
 
   return (
     <div className="vera-screen">
@@ -125,11 +205,7 @@ export const PropertiesScreen = () => {
             </Button>
           ))}
         </div>
-        <Button
-          size="md"
-          data-testid="new-property-button"
-          onClick={() => navigate('/propiedades/nueva')}
-        >
+        <Button size="md" data-testid="new-property-button" onClick={() => navigate('/propiedades/nueva')}>
           <Plus size={16} /> Nueva propiedad
         </Button>
       </div>
@@ -139,11 +215,15 @@ export const PropertiesScreen = () => {
       ) : properties && properties.length > 0 ? (
         <div className="vera-properties-grid">
           {properties.map((p) => (
-            <PropertyCard key={p.id} property={p} />
+            <PropertyCard key={p.id} property={p} actions={actions} />
           ))}
         </div>
       ) : (
-        <p className="vera-muted">No hay propiedades para este filtro.</p>
+        <p className="vera-muted" data-testid="properties-empty">
+          {status === 'archived'
+            ? 'No hay propiedades archivadas.'
+            : 'No hay propiedades para este filtro.'}
+        </p>
       )}
     </div>
   );
