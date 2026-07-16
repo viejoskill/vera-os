@@ -144,6 +144,19 @@ Login premium + Supabase Auth. Verificado e2e por el agente (login→Hoy, persis
 - **Carga instantánea sin flash**: arranque optimista (si hay token en storage renderiza la app directo; si no, no muestra spinner). Env vars con referencias estáticas para que CRA las inline correctamente.
 - Pendiente registrado en BACKLOG_USO: endurecer la API del backend con verificación de JWT.
 
+## Implemented (Sprint "Pulido final para el Piloto" — VERA Pilot v0.3 — 2026-06)
+Pulido de calidad percibida (sin features nuevas ni cambios de arquitectura). Verificado 10/10 por testing agent (iteration_13), sin bugs.
+- **Apps "Próximamente"**: Operaciones/Studio deshabilitadas en el menú (badge "Próximamente", sin navegación). Por URL directa → `PlaceholderScreen` cuidada (ícono + "{App} está en camino." + botón "Volver a Inicio").
+- **Idioma 100% español**: se eliminó "Real Estate Operating System" en toda la app. Tagline → "Sistema Operativo Comercial" (TopBar + pie del Login).
+- **"Propiedad no encontrada"** cuidada: mensaje humano + botón "Volver a Propiedades".
+- **Workspace**: se quitó el botón "Volver" superior (queda solo la flecha ← + "Guardar"). Subtítulo sin el término técnico "Workspace" → "Toda la información de la propiedad, en un solo lugar."
+- **Checklist único**: la lista de "qué falta" vive solo en la tarjeta Health Score; "Publicación" quedó como Estado + resumen. Casing unificado ("Lista para publicar").
+- **Limpieza de mocks**: eliminados `useDailyBriefing`, `AIService`/`MockAIProvider` (briefing mock), `InMemoryPropertyRepository` + `mock-data/properties.ts`, flag `veraAi`, y backend `services/studio_service.py` (import roto, sin uso).
+- **Regla de producto documentada**: el usuario nunca ve cómo está construido VERA (Workspace/Provider/Repository/AI Engine son conceptos internos). "Health Score" queda a evaluar más adelante.
+- Docs: `/app/docs/PILOT.md` (objetivo/reglas/inicio del piloto: Julio 2026).
+
+### Estado: LISTO PARA DEPLOY (Pilot). Chequeo de deployment: sin bloqueantes.
+
 ## Backlog (prioritized)
 - **P1**: `Hoy` App (AI-first daily dashboard); Property detail screen; extract PropertyCard.
 
