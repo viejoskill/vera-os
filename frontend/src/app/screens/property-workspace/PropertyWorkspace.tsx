@@ -3,7 +3,7 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Building2 } from 'lucide-react';
 import { Button, Panel, Progress, Toast } from '@vera/ui';
 import {
   assistantService,
@@ -254,7 +254,7 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
               <p className="vera-muted">
                 {isNew
                   ? 'VERA te acompaña hasta dejarla lista para publicar.'
-                  : 'Este es el Workspace de la propiedad. Todo vive acá.'}
+                  : 'Toda la información de la propiedad, en un solo lugar.'}
               </p>
             </div>
           </div>
@@ -264,9 +264,6 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
                 {liveLabel}
               </span>
             )}
-            <Button variant="ghost" size="md" data-testid="workspace-cancel-btn" onClick={() => navigate('/propiedades')}>
-              Volver
-            </Button>
             <Button variant="primary" size="md" data-testid="workspace-save" disabled={saving} onClick={handleSave}>
               {saving ? 'Guardando…' : 'Guardar'}
             </Button>
@@ -380,6 +377,7 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
 /** Single reusable Workspace: empty when creating, loaded when opening a property. */
 export const PropertyWorkspace = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const propertyId = id && id !== 'nueva' ? id : undefined;
   const query = useProperty(propertyId);
 
@@ -393,8 +391,19 @@ export const PropertyWorkspace = () => {
     }
     if (!query.data) {
       return (
-        <div className="vera-workspace" data-testid="workspace-notfound">
-          <p className="vera-muted">No encontramos esta propiedad.</p>
+        <div className="vera-workspace">
+          <div className="vera-empty" data-testid="workspace-notfound">
+            <span className="vera-empty__icon">
+              <Building2 size={26} />
+            </span>
+            <p className="vera-empty__title">Esta propiedad ya no está disponible.</p>
+            <p className="vera-muted">
+              Puede que se haya archivado o eliminado. Volvé a tus propiedades para continuar.
+            </p>
+            <Button size="md" data-testid="notfound-back" onClick={() => navigate('/propiedades')}>
+              <ArrowLeft size={16} /> Volver a Propiedades
+            </Button>
+          </div>
         </div>
       );
     }

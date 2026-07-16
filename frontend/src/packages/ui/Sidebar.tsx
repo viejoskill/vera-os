@@ -70,7 +70,7 @@ export const Sidebar = ({
                 {item.icon}
               </span>
               {item.label}
-              {disabled && <span className="vera-sidebar__soon">Pronto</span>}
+              {disabled && <span className="vera-sidebar__soon">Próximamente</span>}
             </button>
           );
         })}

@@ -8,13 +8,11 @@ export interface FeatureFlags {
   propiedades: boolean;
   operaciones: boolean;
   studio: boolean;
-  veraAi: boolean;
 }
 
 export const featureFlags: FeatureFlags = {
   hoy: true, // "Hoy" — VERA operational Inbox
-  propiedades: true, // Sprint 0A vertical slice
+  propiedades: true,
   operaciones: false,
   studio: false,
-  veraAi: true, // mocked AI briefing
 };

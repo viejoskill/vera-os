@@ -3,7 +3,7 @@
 export const appConfig = {
   name: 'VERA',
   productName: 'VERA OS',
-  tagline: 'Real Estate Operating System',
+  tagline: 'Sistema Operativo Comercial',
   locale: 'es-AR',
   defaultCurrency: 'USD',
 } as const;

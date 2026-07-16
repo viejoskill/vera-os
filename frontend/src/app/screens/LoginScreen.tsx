@@ -101,7 +101,7 @@ export const LoginScreen = () => {
           </Button>
         </form>
 
-        <p className="vera-login__foot">Real Estate Operating System</p>
+        <p className="vera-login__foot">Sistema Operativo Comercial</p>
       </div>
     </div>
   );
