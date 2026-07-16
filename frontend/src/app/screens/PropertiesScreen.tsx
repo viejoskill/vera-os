@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -6,7 +6,6 @@ import {
   Bath,
   Maximize,
   MapPin,
-  Sparkles,
   Search,
   Plus,
   Building2,
@@ -21,7 +20,6 @@ import { appConfig } from '@vera/config';
 import { propertyService } from '@vera/services';
 import type { Property, PropertyStatus } from '@vera/types';
 import { useProperties } from '@app/hooks/useProperties';
-import { useDailyBriefing } from '@app/hooks/useDailyBriefing';
 
 type StatusFilter = PropertyStatus | 'all' | 'archived';
 
@@ -129,12 +127,16 @@ const PropertyCard = ({ property, actions }: { property: Property; actions: Card
               <Bed size={15} /> {property.bedrooms}
             </span>
           )}
-          <span>
-            <Bath size={15} /> {property.bathrooms}
-          </span>
-          <span>
-            <Maximize size={15} /> {property.areaM2} m²
-          </span>
+          {property.bathrooms > 0 && (
+            <span>
+              <Bath size={15} /> {property.bathrooms}
+            </span>
+          )}
+          {property.areaM2 > 0 && (
+            <span>
+              <Maximize size={15} /> {property.areaM2} m²
+            </span>
+          )}
         </div>
       </div>
     </Card>
@@ -147,8 +149,17 @@ export const PropertiesScreen = () => {
   const [status, setStatus] = useState<StatusFilter>('all');
   const [query, setQuery] = useState('');
 
-  const briefing = useDailyBriefing();
-  const { data: properties, isLoading } = useProperties({ status, query });
+  // Fetch once per status (cached); text search filters instantly on the client.
+  const { data: properties, isLoading } = useProperties({ status });
+
+  const q = query.trim().toLowerCase();
+  const visible = useMemo(() => {
+    if (!properties) return [];
+    if (!q) return properties;
+    return properties.filter((p) =>
+      `${p.title} ${p.neighborhood} ${p.city} ${p.address}`.toLowerCase().includes(q),
+    );
+  }, [properties, q]);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['properties'] });
 
@@ -166,21 +177,6 @@ export const PropertiesScreen = () => {
 
   return (
     <div className="vera-screen">
-      <Card className="vera-briefing">
-        <span className="vera-briefing__icon">
-          <Sparkles size={18} />
-        </span>
-        <div className="vera-briefing__content">
-          <div className="vera-briefing__label">
-            VERA AI
-            <span className="vera-briefing__mock">demo</span>
-          </div>
-          <p className="vera-briefing__text">
-            {briefing.isLoading ? 'Generando resumen del día…' : briefing.data}
-          </p>
-        </div>
-      </Card>
-
       <div className="vera-toolbar">
         <div className="vera-toolbar__search">
           <Search size={16} className="vera-toolbar__search-icon" />
@@ -212,18 +208,31 @@ export const PropertiesScreen = () => {
 
       {isLoading ? (
         <p className="vera-muted">Cargando propiedades…</p>
-      ) : properties && properties.length > 0 ? (
+      ) : visible.length > 0 ? (
         <div className="vera-properties-grid">
-          {properties.map((p) => (
+          {visible.map((p) => (
             <PropertyCard key={p.id} property={p} actions={actions} />
           ))}
         </div>
-      ) : (
+      ) : q ? (
         <p className="vera-muted" data-testid="properties-empty">
-          {status === 'archived'
-            ? 'No hay propiedades archivadas.'
-            : 'No hay propiedades para este filtro.'}
+          No encontramos propiedades para “{query}”.
         </p>
+      ) : status === 'archived' ? (
+        <p className="vera-muted" data-testid="properties-empty">
+          No hay propiedades archivadas.
+        </p>
+      ) : (
+        <div className="vera-empty" data-testid="properties-empty">
+          <span className="vera-empty__icon">
+            <Building2 size={26} />
+          </span>
+          <p className="vera-empty__title">Todavía no cargaste ninguna propiedad.</p>
+          <p className="vera-muted">Empecemos por la primera. Es rápido.</p>
+          <Button size="md" data-testid="empty-new-property" onClick={() => navigate('/propiedades/nueva')}>
+            <Plus size={16} /> Cargar mi primera propiedad
+          </Button>
+        </div>
       )}
     </div>
   );

@@ -33,6 +33,9 @@ interface ToastState {
   tone: 'default' | 'success';
 }
 
+// Vera Studio stays hidden until it runs on real intelligence (code kept intact).
+const SHOW_VERA_STUDIO = false;
+
 const str = (v: number | string | undefined) => (v ? String(v) : '');
 
 const toForm = (d: PropertyDetail): PropertyFormValues => ({
@@ -73,9 +76,15 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
     (status: LiveStatus, message?: string) => {
       setLiveStatus(status);
       if (status === 'error' && message) showToast({ message, tone: 'default' });
-      if (status === 'saved') window.setTimeout(() => setLiveStatus('idle'), 1600);
+      if (status === 'saved') {
+        // Reflect live media/data changes in "Hoy" and the list without disturbing
+        // the Workspace's own gallery state (no ['property'] refetch → no jumps).
+        queryClient.invalidateQueries({ queryKey: ['today'] });
+        queryClient.invalidateQueries({ queryKey: ['properties'] });
+        window.setTimeout(() => setLiveStatus('idle'), 1600);
+      }
     },
-    [showToast],
+    [showToast, queryClient],
   );
 
   const form = useForm<PropertyFormValues>({
@@ -138,9 +147,6 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
     ...({ yearBuilt: v.yearBuilt, videoUrl: v.videoUrl, ownerId: v.ownerId, ownerObservations: v.ownerObservations } as object),
   });
 
-  const handleSaveDraft = () =>
-    showToast({ message: 'Guardamos tu borrador. Podés seguir cuando quieras.', tone: 'default' });
-
   const handleSave = form.handleSubmit(
     async (v) => {
       setSaving(true);
@@ -160,14 +166,15 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
           });
           await queryClient.invalidateQueries({ queryKey: ['properties'] });
           await queryClient.invalidateQueries({ queryKey: ['today'] });
-          showToast({ message: 'Listo, guardamos la propiedad en VERA.', tone: 'success' });
-          window.setTimeout(() => navigate(`/propiedades/${created.id}`), 700);
+          // The property's own Workspace opening is the confirmation — no toast.
+          navigate(`/propiedades/${created.id}`);
         } else {
           await propertyService.updateProperty(propertyId, payload);
           await queryClient.invalidateQueries({ queryKey: ['properties'] });
           await queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
           await queryClient.invalidateQueries({ queryKey: ['today'] });
-          showToast({ message: 'Guardamos los cambios.', tone: 'success' });
+          // Quiet, near-invisible confirmation via the live-status pill.
+          notify('saved');
         }
       } catch (error) {
         console.error('VERA save failed:', error);
@@ -260,11 +267,6 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
             <Button variant="ghost" size="md" data-testid="workspace-cancel-btn" onClick={() => navigate('/propiedades')}>
               Volver
             </Button>
-            {isNew && (
-              <Button variant="secondary" size="md" data-testid="workspace-save-draft" onClick={handleSaveDraft}>
-                Guardar borrador
-              </Button>
-            )}
             <Button variant="primary" size="md" data-testid="workspace-save" disabled={saving} onClick={handleSave}>
               {saving ? 'Guardando…' : 'Guardar'}
             </Button>
@@ -319,16 +321,18 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
                 <DocumentsSection documents={documents} onAdd={onAddDoc} onRemove={onRemoveDoc} />
               </Panel>
             </div>
-            <div id="ws-section-studio">
-              <Panel title="Vera Studio" description="VERA analiza tus fotos y sugiere mejoras.">
-                <VeraStudioSection
-                  photos={photos}
-                  stages={stages}
-                  processing={isNew ? studio.processing : false}
-                  detectedRooms={analysis.detectedRooms}
-                  duplicatesRemoved={analysis.duplicatesRemoved}
-                />
-              </Panel>
+            <div id="ws-section-studio" hidden={!SHOW_VERA_STUDIO}>
+              {SHOW_VERA_STUDIO && (
+                <Panel title="Vera Studio" description="VERA analiza tus fotos y sugiere mejoras.">
+                  <VeraStudioSection
+                    photos={photos}
+                    stages={stages}
+                    processing={isNew ? studio.processing : false}
+                    detectedRooms={analysis.detectedRooms}
+                    duplicatesRemoved={analysis.duplicatesRemoved}
+                  />
+                </Panel>
+              )}
             </div>
             {!isNew && (
               <Panel title="Ciclo de vida" description="Gestioná el estado de esta propiedad en VERA.">

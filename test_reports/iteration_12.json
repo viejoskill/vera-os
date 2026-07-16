@@ -1,0 +1,52 @@
+{
+  "summary": "Sprint VALIDACIÓN de la App 'Propiedades' — 11/11 aceptaciones verificadas OK contra el frontend público. Verificado con Playwright: (1) el banner 'VERA AI · demo' fue ELIMINADO (grep de 'VERA AI · demo'/'VERA AI demo' → 0 hits); toolbar (search + filtros + 'Nueva propiedad') y la grilla renderizan las 3 cards del seed. (2) Búsqueda instantánea client-side: al tipear 'Palermo' → 1 card, 'xxxnomatchxxx' → data-testid='properties-empty' con texto 'No encontramos propiedades para “xxxnomatchxxx”.'; al vaciar el input vuelve a las 3. Sin refetch ni parpadeo. (3) Filtros: filter-all=3, filter-active=3, filter-reserved=0, filter-archived=0 (con empty state 'No hay propiedades archivadas.'); combinación active+search 'Chacarita' → 1 card. (4) Cards sin ceros: los tres seeds muestran solo specs > 0 (todos tienen valores válidos; la lógica `> 0` está intacta en PropertiesScreen.tsx). (5) /propiedades/nueva: NO existe data-testid='workspace-save-draft' ni el texto 'Guardar borrador'; NO se renderiza 'Vera Studio'; Health Score muestra 'Empecemos' (no '0'); todos los placeholders empiezan con 'Ej.:' salvo el de Video que es un URL de ejemplo (esperado). (6) Crear propiedad (flujo real): título='TEST_Prop 1784212695', tipo=departamento, precio=150000 → POST a Supabase OK, navegación a /propiedades/{id}, SIN toast 'Guardado' (0 toasts visibles). La propiedad recién creada aparece en la lista (4 cards). (7) Editar propiedad existente: cambio de descripción → botón Guardar → aparece la PÍLDORA sutil data-testid='live-status' con texto 'Guardado' y se desvanece antes de 2.2s. NO aparece toast grande. Persistencia verificada vía GET /api/properties/{id}: description === 'TEST descripción actualizada por E2E test agent — verificación de persistencia.'. (8) Ciclo de vida: archivar desde el menú '…' de la card → la propiedad pasa a 'Archivadas'; restaurar desde el menú → vuelve a 'Todas'. Actualiza la lista correctamente. (9) /hoy sin regresiones: 4 recommendation cards (los 3 seeds + la TEST prop sin fotos), 4 botones 'Resolver ahora', navegación con deep-link ?section=photos verificada; no existe 'Marcar como resuelto' en la UI. (10) La palabra 'Error' (case-sensitive, word-boundary) NO aparece en la UI en ninguno de los flujos probados (properties list, nueva, editar, hoy). Los mensajes usan 'No pudimos guardar', 'Reintentá', 'No encontramos…'. (11) Sin errores en consola durante todo el recorrido. Test data creada durante la prueba fue eliminada al finalizar (DELETE /api/properties/{id} → 204). El estado del seed queda idéntico al inicio.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "PropertyCard (lista) — nit de contenido, no del sprint actual",
+        "issues": [
+          "Cuando una propiedad se crea sin barrio ni ciudad completa, la línea de ubicación puede quedar como ', Buenos Aires' (coma inicial huérfana). Reproducido con la TEST_Prop creada durante testing (address y neighborhood vacíos, city='Buenos Aires'). Sugerencia: renderizar solo las partes no vacías con join(', '). NO es parte de las aceptaciones de esta iteración."
+        ]
+      },
+      {
+        "screen": "PropertyCard (lista) — nit visual",
+        "issues": [
+          "Cuando una card no tiene ningún spec > 0 (todos vacíos, ej.: propiedad recién creada sin baños/dormitorios/m²), el contenedor `.vera-prop__specs` queda vacío pero mantiene su padding, dejando un renglón en blanco visible al final de la card. Sugerencia: renderizar el bloque solo si hay al menos un spec > 0. NO es parte de las aceptaciones de esta iteración."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_12.json"
+  ],
+  "action_items": [
+    "(Opcional, no bloqueante) Ocultar la coma huérfana en la línea de ubicación cuando address/neighborhood están vacíos (`[neighborhood, city].filter(Boolean).join(', ')`).",
+    "(Opcional, no bloqueante) No renderizar el contenedor `.vera-prop__specs` si no hay ningún spec > 0, para evitar un renglón en blanco al pie de la card.",
+    "(Del reporte previo, aún aplicable) En /hoy: 'Hay 1 tema que requieren tu atención' debería usar 'requiere' cuando n===1.",
+    "(Del reporte previo, aún aplicable) En <p class='vera-rec__reco'> falta un espacio entre 'VERA recomienda' y el texto de la recomendación (afecta a lectores de pantalla)."
+  ],
+  "critical_code_review_comments": [
+    "Positivo: PropertiesScreen.tsx implementa la búsqueda client-side con `useMemo` sobre `properties` cacheadas por react-query; el status filter dispara refetch (queryKey ['properties', filters]) pero el texto no. Sin parpadeos ni loading intermedio al tipear — verificado en runtime.",
+    "Positivo: empty state con CTA (`data-testid='empty-new-property'`) y variantes específicas para búsqueda vacía / archivadas / sin datos.",
+    "Positivo: PropertyWorkspace.tsx — bandera `SHOW_VERA_STUDIO = false` deja el código intacto y solo oculta la Panel. `handleSave` distingue create (navigate sin toast) vs update (notify('saved') → píldora); `notify('saved')` invalida ['today'] y ['properties'] sin invalidar ['property',id], evitando el 'jump' de la galería. Confirmado en tiempo real.",
+    "Positivo: HealthScoreSection.tsx expone estado 'Empecemos' cuando `assessment.completion === 0`, evitando un '0' frío. La copy 'Con esto queda lista para publicar' es coherente con el tono.",
+    "Positivo: BasicInfoSection.tsx y FeaturesSection.tsx — todos los placeholders con 'Ej.:' salvo el de Video (URL de ejemplo, esperado).",
+    "Positivo: la palabra 'Error' está prohibida y no aparece en la UI en ningún flujo probado (búsqueda con regex \\bError\\b sobre document.body.innerText en /propiedades, /propiedades/nueva, /propiedades/{id} y /hoy → 0 hits).",
+    "Positivo: DELETE /api/properties/{id} devuelve 204 y limpia inmediatamente la lista — útil para el clean-up de datos de prueba.",
+    "Nit (ya reportado): PropertyCard debería ocultar completamente el contenedor `.vera-prop__specs` cuando no hay ningún spec > 0 (sino queda un renglón en blanco visible)."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A (frontend-only por request)",
+    "frontend": "100% — 11/11 aceptaciones del sprint VALIDACIÓN pasan"
+  },
+  "test_credentials": "N/A — no auth",
+  "seed_data_creation": "Durante el testing se creó una propiedad TEST_Prop 1784212695 (id: b5b1026e-5644-437a-8503-994af3aa6586) con título/tipo/precio y luego se editó su descripción para verificar persistencia. Fue eliminada al final con DELETE /api/properties/b5b1026e-5644-437a-8503-994af3aa6586 (HTTP 204). El estado del seed en Supabase queda idéntico al inicio de la iteración: 3 propiedades (PH Chacarita, Casa Belgrano R, Depto Palermo Soho).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Estado del seed sin cambios respecto de la iteración 11: (1) PH Chacarita d58b1472-7d68-4ba0-9f9b-614ea8b9b911 — 5 fotos, descripción de 190 chars, SIN plano → tier lista, 'Agregá el plano'. (2) Casa Belgrano R 8a2a294d-8119-4e58-9ca2-4820d9ac2ddb — 5 fotos, SIN descripción → tier atencion, 'Escribí la descripción'. (3) Depto Palermo Soho 372d277b-2533-4ae1-ba0f-18ce7722f0f5 — completo pero SIN video → tier lista, 'Sumá un video'. Todos los seeds tienen specs > 0 así que la validación de 'cards sin ceros' no fue posible probar cambiando estado real (solo verificamos la ausencia de zeros en las 3 seeds y confirmamos por código que la lógica `> 0` está intacta). Si el próximo agente necesita reproducir 'cards sin ceros' con una propiedad real de 0 baños/0 m², puede crear una prop de prueba con esos campos vacíos y verificar visualmente. NOTA: al hacer eso se descubre el nit de 'renglón en blanco al pie de la card' documentado en design_issues.",
+  "rca of the issue": "N/A — no hay bugs. Todas las aceptaciones del sprint VALIDACIÓN pasan. Los únicos hallazgos son 2 nits visuales fuera del scope del sprint (coma huérfana en ubicación cuando faltan datos y padding vacío en specs cuando no hay ninguna > 0), ambos documentados en design_issues."
+}

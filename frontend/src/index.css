@@ -545,6 +545,7 @@ p {
   height: 100%;
   object-fit: cover;
   display: block;
+  animation: vera-fade-in 0.4s ease both;
 }
 .vera-photo__overlay {
   position: absolute;
@@ -1300,6 +1301,7 @@ p {
   backdrop-filter: blur(18px);
   overflow: hidden;
   transition: transform 0.2s ease, border-color 0.2s ease;
+  animation: vera-rec-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .vera-rec:hover {
   transform: translateY(-2px);
@@ -1396,4 +1398,60 @@ p {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--vera-color-primary) 55%, transparent); }
   30% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--vera-color-primary) 45%, transparent); }
   100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+
+/* Premium micro-details — subtle, not flashy */
+@keyframes vera-rec-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes vera-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Empty state (first-run, no properties yet) */
+.vera-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--vera-space-sm);
+  text-align: center;
+  padding: var(--vera-space-xl) var(--vera-space-lg);
+  margin-top: var(--vera-space-xl);
+}
+.vera-empty__icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--vera-radius-lg);
+  background: color-mix(in srgb, var(--vera-color-primary) 14%, transparent);
+  color: var(--vera-color-primary);
+  margin-bottom: var(--vera-space-xs);
+}
+.vera-empty__title {
+  font-size: var(--vera-font-size-lg);
+  font-weight: var(--vera-font-weight-semibold);
+  color: var(--vera-color-text);
+}
+.vera-empty .vera-btn,
+.vera-empty button {
+  margin-top: var(--vera-space-md);
+}
+
+/* Health Score — encouraging start state (no cold "0") */
+.vera-health__start {
+  font-size: 1.6rem;
+  font-weight: var(--vera-font-weight-semibold);
+  letter-spacing: -0.01em;
+  color: var(--vera-color-primary);
+  line-height: 1.1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vera-rec { animation: none; }
+  .vera-photo__img { animation: none; }
 }

@@ -15,7 +15,7 @@ export const BasicInfoSection = () => {
     <div className="vera-form">
       <Input
         label="Título de la publicación"
-        placeholder="Ej: Departamento 3 ambientes con balcón"
+        placeholder="Ej.: Departamento 3 ambientes con balcón"
         data-testid="input-title"
         error={errors.title?.message}
         {...register('title')}
@@ -49,7 +49,7 @@ export const BasicInfoSection = () => {
           <Input
             label="Precio"
             inputMode="numeric"
-            placeholder="189000"
+            placeholder="Ej.: 189000"
             data-testid="input-price"
             error={errors.price?.message}
             {...register('price')}
@@ -58,11 +58,11 @@ export const BasicInfoSection = () => {
         </div>
       </div>
 
-      <Input label="Dirección" placeholder="Gorriti 4500" {...register('address')} />
+      <Input label="Dirección" placeholder="Ej.: Gorriti 4500" {...register('address')} />
 
       <div className="vera-form-grid">
-        <Input label="Barrio" placeholder="Palermo Soho" {...register('neighborhood')} />
-        <Input label="Ciudad" placeholder="Buenos Aires" {...register('city')} />
+        <Input label="Barrio" placeholder="Ej.: Palermo Soho" {...register('neighborhood')} />
+        <Input label="Ciudad" placeholder="Ej.: Buenos Aires" {...register('city')} />
       </div>
     </div>
   );

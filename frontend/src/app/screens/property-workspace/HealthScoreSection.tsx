@@ -5,21 +5,37 @@ import type { WorkspaceAssessment } from '@vera/types';
 export const HealthScoreSection = ({ assessment }: { assessment: WorkspaceAssessment }) => {
   const { health, nextStep, checklist } = assessment;
   const allDone = checklist.every((c) => c.done);
+  const isStart = assessment.completion === 0;
 
   return (
     <Card className="vera-health" data-testid="health-score">
       <span className="vera-health__caption">Health Score</span>
-      <div className="vera-health__score" data-testid="health-score-value">
-        {health.score}
-      </div>
-      <span className="vera-health__label" data-testid="health-score-label">
-        {health.label}
-      </span>
-      <Progress value={health.score} />
-      <p className="vera-health__message">{health.message}</p>
+      {isStart ? (
+        <>
+          <div className="vera-health__start" data-testid="health-score-value">
+            Empecemos
+          </div>
+          <p className="vera-health__message">
+            Cargá los primeros datos y VERA te va guiando paso a paso.
+          </p>
+        </>
+      ) : (
+        <>
+          <div className="vera-health__score" data-testid="health-score-value">
+            {health.score}
+          </div>
+          <span className="vera-health__label" data-testid="health-score-label">
+            {health.label}
+          </span>
+          <Progress value={health.score} />
+          <p className="vera-health__message">{health.message}</p>
+        </>
+      )}
 
       <div className="vera-health__path">
-        <span className="vera-field__label">¿Qué falta para llegar a Excelente?</span>
+        <span className="vera-field__label">
+          {isStart ? 'Con esto queda lista para publicar' : '¿Qué falta para llegar a Excelente?'}
+        </span>
         <div className="vera-checklist" data-testid="health-checklist">
           {checklist.map((item) => (
             <div

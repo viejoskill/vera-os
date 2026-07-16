@@ -16,9 +16,9 @@ export const FeaturesSection = () => {
   return (
     <div className="vera-form">
       <div className="vera-form-grid vera-form-grid--3">
-        <Input label="Dormitorios" inputMode="numeric" placeholder="2" {...register('bedrooms')} />
-        <Input label="Baños" inputMode="numeric" placeholder="1" {...register('bathrooms')} />
-        <Input label="Superficie (m²)" inputMode="numeric" placeholder="68" {...register('areaM2')} />
+        <Input label="Dormitorios" inputMode="numeric" placeholder="Ej.: 2" {...register('bedrooms')} />
+        <Input label="Baños" inputMode="numeric" placeholder="Ej.: 1" {...register('bathrooms')} />
+        <Input label="Superficie (m²)" inputMode="numeric" placeholder="Ej.: 68" {...register('areaM2')} />
       </div>
 
       <div className="vera-field">
@@ -47,7 +47,7 @@ export const FeaturesSection = () => {
           <Input
             label="Año de construcción"
             inputMode="numeric"
-            placeholder="2018"
+            placeholder="Ej.: 2018"
             data-testid="input-year"
             {...register('yearBuilt')}
           />
