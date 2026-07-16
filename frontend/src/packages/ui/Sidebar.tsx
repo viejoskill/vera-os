@@ -9,7 +9,7 @@ export interface SidebarItem {
 
 export interface SidebarUser {
   name: string;
-  role: string;
+  role?: string;
 }
 
 export interface SidebarProps {
@@ -82,7 +82,7 @@ export const Sidebar = ({
             <span className="vera-sidebar__avatar">{initials}</span>
             <div>
               <div className="vera-sidebar__user-name">{user.name}</div>
-              <div className="vera-sidebar__user-role">{user.role}</div>
+              {user.role && <div className="vera-sidebar__user-role">{user.role}</div>}
             </div>
           </div>
         </div>

@@ -2,8 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import type { InboxRecommendation, RecommendationPriority, WorkspaceRoute } from '@vera/types';
 import { useToday } from '@app/hooks/useToday';
-
-const USER_NAME = 'Valentina';
+import { useAuthUser } from '@app/auth/useAuthUser';
 
 const TIER_LABEL: Record<RecommendationPriority, string> = {
   alta: 'Alta prioridad',
@@ -55,6 +54,7 @@ const RecommendationCard = ({
 
 export const TodayScreen = () => {
   const navigate = useNavigate();
+  const { greetingName } = useAuthUser();
   const { data, isLoading } = useToday();
 
   const recommendations = data?.recommendations ?? [];
@@ -82,7 +82,7 @@ export const TodayScreen = () => {
       <div className="vera-today__inner">
         <header className="vera-today__header">
           <h1 className="vera-today__greeting">
-            {greeting()}, <span>{USER_NAME}.</span>
+            {greeting()}, <span>{greetingName}.</span>
           </h1>
           <p className="vera-today__summary" data-testid="today-summary">
             {summary}

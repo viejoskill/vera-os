@@ -2,15 +2,14 @@ import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar, TopBar, type SidebarItem } from '@vera/ui';
 import { appConfig } from '@vera/config';
-import { Role, ROLE_LABELS } from '@vera/types';
 import { navRoutes } from '@app/navigation';
 import { UserMenu } from './UserMenu';
-
-const mockUser = { name: 'Valentina Ríos', role: ROLE_LABELS[Role.BROKER] };
+import { useAuthUser } from '@app/auth/useAuthUser';
 
 export const AppLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { displayName } = useAuthUser();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const active = navRoutes.find((r) => location.pathname.startsWith(r.path)) ?? navRoutes[1];
@@ -38,7 +37,7 @@ export const AppLayout = () => {
         items={items}
         activeId={active.id}
         onNavigate={handleNavigate}
-        user={mockUser}
+        user={{ name: displayName }}
         open={mobileOpen}
       />
       <div className="vera-shell__body">
@@ -46,7 +45,7 @@ export const AppLayout = () => {
           title={active.label}
           subtitle={appConfig.tagline}
           onMenuClick={() => setMobileOpen((v) => !v)}
-          actions={<UserMenu name={mockUser.name} role={mockUser.role} />}
+          actions={<UserMenu />}
         />
         <main className="vera-shell__content">
           <Outlet />

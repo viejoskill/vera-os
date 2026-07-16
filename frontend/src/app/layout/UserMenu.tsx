@@ -2,25 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
+import { useAuthUser } from '../auth/useAuthUser';
 
-interface UserMenuProps {
-  name: string;
-  role: string;
-}
-
-/** Avatar + dropdown in the top-right. Holds the sign-out action. */
-export const UserMenu = ({ name, role }: UserMenuProps) => {
+/** Avatar + dropdown in the top-right. Shows the authenticated user's name + email. */
+export const UserMenu = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { displayName, email, initials } = useAuthUser();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
-  const initials = name
-    .split(' ')
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
 
   useEffect(() => {
     if (!open) return;
@@ -48,15 +38,19 @@ export const UserMenu = ({ name, role }: UserMenuProps) => {
         onClick={() => setOpen((o) => !o)}
       >
         <span className="vera-usermenu__avatar">{initials}</span>
-        <span className="vera-usermenu__name">{name}</span>
+        <span className="vera-usermenu__name" data-testid="user-menu-name">
+          {displayName}
+        </span>
         <ChevronDown size={15} className="vera-usermenu__chevron" />
       </button>
 
       {open && (
         <div className="vera-usermenu__pop" role="menu" data-testid="user-menu-pop">
           <div className="vera-usermenu__header">
-            <div className="vera-usermenu__header-name">{name}</div>
-            <div className="vera-usermenu__header-role">{role}</div>
+            <div className="vera-usermenu__header-name">{displayName}</div>
+            <div className="vera-usermenu__header-role" data-testid="user-menu-email">
+              {email}
+            </div>
           </div>
           <button
             type="button"
