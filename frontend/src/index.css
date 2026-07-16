@@ -1455,3 +1455,196 @@ p {
   .vera-rec { animation: none; }
   .vera-photo__img { animation: none; }
 }
+
+/* ============================= Login (Acceso) ============================= */
+.vera-login {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--vera-space-xl);
+  background: var(--vera-color-background);
+  overflow: hidden;
+}
+.vera-login__mood {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.vera-login__glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.5;
+}
+.vera-login__glow--1 {
+  width: 460px;
+  height: 460px;
+  top: -140px;
+  right: -120px;
+  background: color-mix(in srgb, var(--vera-color-primary) 40%, transparent);
+  animation: vera-drift-a 16s ease-in-out infinite;
+}
+.vera-login__glow--2 {
+  width: 380px;
+  height: 380px;
+  bottom: -160px;
+  left: -100px;
+  background: color-mix(in srgb, var(--vera-color-primary) 22%, transparent);
+  animation: vera-drift-b 20s ease-in-out infinite;
+}
+.vera-login__panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  padding: var(--vera-space-xl);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-lg);
+  background: color-mix(in srgb, var(--vera-color-card) 85%, transparent);
+  backdrop-filter: blur(22px);
+  animation: vera-rise 0.6s ease both;
+}
+.vera-login__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  margin-bottom: var(--vera-space-xl);
+}
+.vera-login__brand-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-primary);
+  color: var(--vera-color-primary-foreground);
+  font-weight: var(--vera-font-weight-bold);
+}
+.vera-login__brand-name {
+  font-weight: var(--vera-font-weight-semibold);
+  letter-spacing: 0.02em;
+}
+.vera-login__brand-name span {
+  color: var(--vera-color-primary);
+}
+.vera-login__intro {
+  margin-bottom: var(--vera-space-lg);
+}
+.vera-login__title {
+  font-size: 1.6rem;
+  font-weight: var(--vera-font-weight-semibold);
+  letter-spacing: -0.02em;
+  line-height: var(--vera-font-line-height-tight);
+  color: var(--vera-color-text);
+}
+.vera-login__subtitle {
+  margin-top: var(--vera-space-xs);
+  color: var(--vera-color-text-secondary);
+  font-size: var(--vera-font-size-md);
+}
+.vera-login__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-md);
+}
+.vera-login__submit {
+  width: 100%;
+  justify-content: center;
+  margin-top: var(--vera-space-xs);
+}
+.vera-login__message {
+  color: var(--vera-color-priority-atencion);
+  font-size: var(--vera-font-size-sm);
+}
+.vera-login__foot {
+  margin-top: var(--vera-space-xl);
+  text-align: center;
+  font-size: var(--vera-font-size-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vera-color-text-secondary);
+}
+
+/* ============================= User menu ============================= */
+.vera-usermenu {
+  position: relative;
+}
+.vera-usermenu__trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  padding: var(--vera-space-xxs) var(--vera-space-sm);
+  border: 1px solid transparent;
+  border-radius: var(--vera-radius-pill);
+  background: transparent;
+  color: var(--vera-color-text);
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+.vera-usermenu__trigger:hover {
+  background: var(--vera-color-surface);
+  border-color: var(--vera-color-border);
+}
+.vera-usermenu__avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--vera-color-primary);
+  color: var(--vera-color-primary-foreground);
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-bold);
+}
+.vera-usermenu__name {
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-medium);
+}
+.vera-usermenu__chevron {
+  color: var(--vera-color-text-secondary);
+}
+.vera-usermenu__pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  padding: var(--vera-space-xs);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-card);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  z-index: 40;
+  animation: vera-rec-in 0.16s ease both;
+}
+.vera-usermenu__header {
+  padding: var(--vera-space-sm);
+  border-bottom: 1px solid var(--vera-color-border);
+  margin-bottom: var(--vera-space-xxs);
+}
+.vera-usermenu__header-name {
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-semibold);
+}
+.vera-usermenu__header-role {
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-text-secondary);
+}
+.vera-usermenu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  width: 100%;
+  padding: var(--vera-space-sm);
+  border: none;
+  border-radius: var(--vera-radius-sm);
+  background: transparent;
+  color: var(--vera-color-text);
+  font-size: var(--vera-font-size-sm);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.vera-usermenu__item:hover {
+  background: var(--vera-color-surface);
+}
+

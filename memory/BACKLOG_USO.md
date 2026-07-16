@@ -39,6 +39,12 @@ _Comportamientos incorrectos detectados durante el uso. Registrar cómo reproduc
 
 - _(vacío)_
 
+## Hardening / técnico (pendiente, no urgente)
+- **Proteger la API del backend con JWT de Supabase**: hoy los endpoints `/api/*` están abiertos (usan
+  service_role). Falta verificar el `Authorization: Bearer <token>` del usuario. Es seguridad futura; se
+  decide cuando pasemos de piloto a multiusuario.
+- Recuperar contraseña / invitaciones / roles / multiempresa (todo fuera de alcance del piloto).
+
 ---
 
 ### Registro de decisiones rápidas ya aplicadas (etapa validación)

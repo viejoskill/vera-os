@@ -4,6 +4,7 @@ import { Sidebar, TopBar, type SidebarItem } from '@vera/ui';
 import { appConfig } from '@vera/config';
 import { Role, ROLE_LABELS } from '@vera/types';
 import { navRoutes } from '@app/navigation';
+import { UserMenu } from './UserMenu';
 
 const mockUser = { name: 'Valentina Ríos', role: ROLE_LABELS[Role.BROKER] };
 
@@ -45,6 +46,7 @@ export const AppLayout = () => {
           title={active.label}
           subtitle={appConfig.tagline}
           onMenuClick={() => setMobileOpen((v) => !v)}
+          actions={<UserMenu name={mockUser.name} role={mockUser.role} />}
         />
         <main className="vera-shell__content">
           <Outlet />
