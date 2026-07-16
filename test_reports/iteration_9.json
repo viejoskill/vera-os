@@ -1,0 +1,41 @@
+{
+  "summary": "Sprint 2.6 — Unified 'Property Workspace' E2E frontend testing. 23/24 acceptance checks PASS. ONE CRITICAL BUG FOUND: LIVE REORDER does not persist because the frontend never fires the PATCH /api/properties/{id}/images/reorder request (verified in useWorkspaceGallery.movePhoto — closure vars orderedIds/backup are read before the setState updater callback populates them, and cancel the fetch). Everything else works correctly: create-via-workspace, open existing, live add/remove/cover for photos, live doc upload/remove, edit business data with Save, archive/restore lifecycle from lifecycle-section AND card menu, filters (all/active/reserved/sold/archived), card body-click vs menu behavior, duplicate disabled with 'Próximamente'. No console errors.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "LIVE REORDER (existing property → move-up-{id} / move-down-{id})",
+        "issue": "The PATCH /api/properties/{id}/images/reorder request is NEVER sent to the backend. In-memory UI reorders locally (photos visibly swap) but no network request fires and the change does NOT persist on reload. Verified with curl: backend endpoint accepts {\"imageIds\":[...]} camelCase and returns 204, so the backend is fine. Root cause in useWorkspaceGallery.movePhoto (/app/frontend/src/app/hooks/useWorkspaceGallery.ts L102-128): the closure variables `orderedIds` and `backup` are populated INSIDE `setPhotos((prev) => { ... })`. React 18 batches state updates in event handlers and may not invoke the updater synchronously before the subsequent `if (!orderedIds.length) return;` check runs — so `orderedIds` is still `[]` at that point and the function returns early, skipping the fetch. Fix: compute the reordered list and orderedIds OUTSIDE setPhotos (or take a snapshot in a ref/useRef), then call setPhotos + fetch with the pre-computed value. Same pattern used in setCover works because the fetch does not depend on a value assigned inside the updater. Same latent risk exists in removePhoto — but its rollback uses backup which is only referenced inside the failure catch, so backup being read there is not blocked; the fetch itself uses `id` from params so it works.",
+        "affected_selectors": ["move-up-{photoId}", "move-down-{photoId}"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "FIX useWorkspaceGallery.movePhoto: compute orderedIds/backup BEFORE calling setPhotos (or use a functional approach with useRef) so the PATCH /images/reorder request actually fires. Reproduce: open an existing property with ≥2 photos, click move-up-{id} — no network request goes out. Suggested fix (drop-in): compute `const next = ...; const orderedIds = next.map(p=>p.id); setPhotos(next); reorderImages(propertyId, orderedIds).then(...).catch(()=>setPhotos(prev));`",
+    "Consider also verifying removePhoto/uploadImage do not suffer the same latent closure issue (they don't rely on values assigned inside setPhotos for the fetch payload — but a ref-based pattern would be safer)."
+  ],
+  "critical_code_review_comments": [
+    "BUG (blocking Sprint 2.6 acceptance): useWorkspaceGallery.movePhoto reads `orderedIds` (assigned inside setPhotos updater) synchronously right after `setPhotos(...)`. React 18 does not guarantee the updater runs before the following line in event handlers under automatic batching; empirical evidence confirms `if (!orderedIds.length) return;` short-circuits and no PATCH is ever fired. Move the array construction outside setPhotos.",
+    "Positive: setCover, uploadImage, deleteImage, uploadDocument, deleteDocument, archive, restore, save (create+update), and card actions all work end-to-end with real Supabase persistence. Backend returns proper 204/200 and camelCase serialization is correct.",
+    "Positive: live-status ('Guardando…' / 'Guardado') UX is subtle and non-blocking, matches architecture rule B.",
+    "Positive: Delete is intentionally NOT in the UI; Archive is primary lifecycle action; menu-duplicate is properly disabled with 'Próximamente' text.",
+    "Nit: PropertyWorkspace.handleSave already logs error via console.error (added since last iteration), good. Fine as-is."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A (frontend-only scope; backend already validated via curl)",
+    "frontend": "95.8% (23/24 acceptance checks pass)"
+  },
+  "test_credentials": "N/A - no auth",
+  "seed_data_creation": "Created test property id=b8f87ac8-4de8-42fd-a3ff-6a7a118fe141 titled 'TEST Sprint25 UPDATED 1784162770' with 2 photos + plano.pdf. Left as ACTIVE at end of test (restored after archive tests). No delete UI; main agent can archive or leave. Files used: /tmp/vera_test_imgs/photo1.png, photo2.png, photo3.png, plano.pdf.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "PASSED (23): create-via-workspace with 2 photos + doc + cover-on-2nd; redirect to /propiedades/{id}; open existing with title in workspace-title; live add photo (subtle 'Guardando…'→'Guardado' via data-testid='live-status'); live add persisted after reload; live cover click + persisted; live remove photo persisted; live doc upload persisted; live doc remove persisted; edit title+price via Guardar persisted; lifecycle Archivar redirects to /propiedades + hidden in filter-all + visible in filter-archived; lifecycle Restaurar returns to filter-all/filter-active; card menu opens; menu-duplicate DISABLED with 'Próximamente'; menu shows Archivar for active / Restaurar for archived; menu-archive removes from default; card body click opens Workspace; all filters (filter-all/active/reserved/sold/archived) exist and clickable; workspace back button; no console errors throughout. FAILED (1): live reorder — no PATCH fires (see integration_issues). Verified reorder endpoint works directly with curl: PATCH /api/properties/{id}/images/reorder with {\"imageIds\":[...]} → 204 and positions update. So this is purely a frontend closure/batching bug. Retest after fix using move-up-{id} on an existing property with ≥2 photos, then reload and check order persisted.",
+  "rca of the issue": "Root cause of reorder-not-persisting: In useWorkspaceGallery.movePhoto, the developer assumed that React state updater callbacks run synchronously at the setPhotos() call site. In React 18 with automatic batching, an event-handler-triggered setState may enqueue the updater to run later during the batch commit. The `orderedIds` and `backup` local variables are assigned INSIDE the updater — so at the moment the code executes `if (!orderedIds.length) return; ... reorderImages(propertyId, orderedIds)`, orderedIds is still the initial empty array. The function returns early. The updater eventually runs (photos visibly reorder in-memory) but the fetch is never invoked. Mitigation: pull the reorder logic out of the updater — e.g., compute next/orderedIds first, then pass next directly to setPhotos and call the network with orderedIds captured outside. Reproduction: open /propiedades/{id} with ≥2 photos, watch Network tab, click move-up-{id} or move-down-{id} — no /images/reorder PATCH is sent."
+}

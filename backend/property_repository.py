@@ -28,8 +28,12 @@ class SupabasePropertyRepository:
                 .select(PROPERTY_WITH_IMAGES)
                 .order("created_at", desc=True)
             )
-            if status and status != "all":
-                q = q.eq("status", status)
+            if status == "archived":
+                q = q.eq("archived", True)
+            else:
+                q = q.eq("archived", False)
+                if status and status != "all":
+                    q = q.eq("status", status)
             return q.execute()
 
         res = await asyncio.to_thread(_do)
