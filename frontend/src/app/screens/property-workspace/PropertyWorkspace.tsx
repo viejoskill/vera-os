@@ -1,7 +1,7 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { Button, Panel, Progress, Toast } from '@vera/ui';
@@ -201,7 +201,26 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
   };
 
   const liveLabel =
-    liveStatus === 'saving' ? 'Guardando…' : liveStatus === 'saved' ? 'Guardado' : 'Error al guardar';
+    liveStatus === 'saving' ? 'Guardando…' : liveStatus === 'saved' ? 'Guardado' : 'Reintentá';
+
+  // Deep-link from "Hoy": scroll to and highlight the target section (Regla L).
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const section = searchParams.get('section');
+    if (!section) return;
+    const el = document.getElementById(`ws-section-${section}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      el.classList.add('vera-section--focus');
+      window.setTimeout(() => el.classList.remove('vera-section--focus'), 2200);
+    }
+    if (searchParams.get('focus') === 'price') {
+      window.setTimeout(() => {
+        (document.querySelector('[data-testid="input-price"]') as HTMLElement | null)?.focus();
+      }, 500);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   return (
     <FormProvider {...form}>
@@ -260,39 +279,53 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
 
         <div className="vera-workspace__grid">
           <div className="vera-workspace__main">
-            <Panel title="Información" description="Lo esencial para identificar la propiedad.">
-              <BasicInfoSection />
-            </Panel>
-            <Panel title="Características" description="Ambientes y comodidades.">
-              <FeaturesSection />
-            </Panel>
-            <Panel title="Propietario" description="Quién es el dueño de la propiedad.">
-              <OwnerSection />
-            </Panel>
-            <Panel title="Descripción" description="Contala vos o dejá que VERA la redacte.">
-              <DescriptionSection />
-            </Panel>
-            <Panel title="Fotografías" description="El corazón de la publicación.">
-              <PhotosSection
-                photos={photos}
-                onAddFiles={onAddPhotos}
-                onRemove={onRemovePhoto}
-                onSetCover={onSetCover}
-                onMove={onMovePhoto}
-              />
-            </Panel>
-            <Panel title="Documentos" description="Sumá el plano y otros documentos (PDF, JPG o PNG).">
-              <DocumentsSection documents={documents} onAdd={onAddDoc} onRemove={onRemoveDoc} />
-            </Panel>
-            <Panel title="Vera Studio" description="VERA analiza tus fotos y sugiere mejoras.">
-              <VeraStudioSection
-                photos={photos}
-                stages={stages}
-                processing={isNew ? studio.processing : false}
-                detectedRooms={analysis.detectedRooms}
-                duplicatesRemoved={analysis.duplicatesRemoved}
-              />
-            </Panel>
+            <div id="ws-section-information">
+              <Panel title="Información" description="Lo esencial para identificar la propiedad.">
+                <BasicInfoSection />
+              </Panel>
+            </div>
+            <div id="ws-section-features">
+              <Panel title="Características" description="Ambientes y comodidades.">
+                <FeaturesSection />
+              </Panel>
+            </div>
+            <div id="ws-section-owner">
+              <Panel title="Propietario" description="Quién es el dueño de la propiedad.">
+                <OwnerSection />
+              </Panel>
+            </div>
+            <div id="ws-section-description">
+              <Panel title="Descripción" description="Contala vos o dejá que VERA la redacte.">
+                <DescriptionSection />
+              </Panel>
+            </div>
+            <div id="ws-section-photos">
+              <Panel title="Fotografías" description="El corazón de la publicación.">
+                <PhotosSection
+                  photos={photos}
+                  onAddFiles={onAddPhotos}
+                  onRemove={onRemovePhoto}
+                  onSetCover={onSetCover}
+                  onMove={onMovePhoto}
+                />
+              </Panel>
+            </div>
+            <div id="ws-section-documents">
+              <Panel title="Documentos" description="Sumá el plano y otros documentos (PDF, JPG o PNG).">
+                <DocumentsSection documents={documents} onAdd={onAddDoc} onRemove={onRemoveDoc} />
+              </Panel>
+            </div>
+            <div id="ws-section-studio">
+              <Panel title="Vera Studio" description="VERA analiza tus fotos y sugiere mejoras.">
+                <VeraStudioSection
+                  photos={photos}
+                  stages={stages}
+                  processing={isNew ? studio.processing : false}
+                  detectedRooms={analysis.detectedRooms}
+                  duplicatesRemoved={analysis.duplicatesRemoved}
+                />
+              </Panel>
+            </div>
             {!isNew && (
               <Panel title="Ciclo de vida" description="Gestioná el estado de esta propiedad en VERA.">
                 <div className="vera-lifecycle" data-testid="lifecycle-section">

@@ -12,7 +12,7 @@ export interface FeatureFlags {
 }
 
 export const featureFlags: FeatureFlags = {
-  hoy: false, // arrives in a later sprint
+  hoy: true, // "Hoy" — VERA operational Inbox
   propiedades: true, // Sprint 0A vertical slice
   operaciones: false,
   studio: false,

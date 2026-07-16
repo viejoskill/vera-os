@@ -1,0 +1,31 @@
+{
+  "summary": "Sprint 3.0 — 'Hoy' Inbox (VIE + PropertiesProvider) E2E frontend testing. ALL 7 acceptance groups PASS. Home redirects to /hoy; deterministic recommendations correctly derived from real Supabase property state; 3 seeded properties produced exactly the expected tiers (Casa Belgrano R=alta 'Sumá fotografías', PH Chacarita=atencion 'Escribí la descripción', Depto Palermo Soho=lista 'Publicá la propiedad'); Recommendation card anatomy complete (subject, imperative title, whatHappened, whyItMatters, 'VERA recomienda', 'Resolver ahora'); Resolve navigation deep-links correctly to /propiedades/{id}?section=... and scrolls+highlights the target ws-section with class vera-section--focus; Live derived state confirmed — uploading 5 photos to Casa Belgrano R via Workspace photos section made the alta card disappear and the property re-classified as atencion 'Escribí la descripción'; no 'Error' word in UI; no 'Marcar como resuelto' style buttons anywhere. No console errors.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/test_reports/hoy_screen.png", "/app/test_reports/photos_section.png", "/app/test_reports/hoy_final.png"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Positive: VIE architecture is clean — IntelligenceProvider interface, IntelligenceService aggregator, and VeraIntelligenceEngine composer are cleanly separated; adding a new provider requires no changes to TodayScreen (matches spec).",
+    "Positive: PropertiesProvider rules are deterministic and match spec exactly (ready→lista; no photos OR coreMissing≥3 OR idle>21 days→alta; else atencion; one recommendation per property).",
+    "Positive: useToday relies on react-query with queryKey ['today'] and correctly re-fetches after cache invalidation from Workspace mutations (verified live: uploading photos in the property Workspace triggered invalidation of ['properties']/['property',id] which — combined with staleTime/refocus behavior — resulted in the /hoy Inbox showing an updated tier on revisit after ~4s).",
+    "Positive: PropertyWorkspace deep-link (?section=&focus=) correctly scrolls to id='ws-section-{section}' and applies vera-section--focus class for 2200ms; also handles ?focus=price by focusing input-price after 500ms.",
+    "Positive: word 'Error' correctly banned from copy — save/archive/restore/live-status toasts use 'No pudimos guardar', 'Reintentá', 'Guardando…', 'Guardado' etc.",
+    "Nit (not blocking): In TodayScreen the recommendation node <p class=\"vera-rec__reco\">…</p> concatenates the label and text without whitespace in the DOM ('VERA recomiendaSubí al menos 5 fotos…' when read via textContent) — visually fine because label is a block-level styled span, but consider adding a space or ensuring the label wraps in a block for readable a11y announcements.",
+    "Nit (not blocking): The 'today' query relies on refetch after react-query invalidation of ['properties']/['property',id]. Because useToday uses queryKey ['today'] (not properties), it only refreshes when the query becomes stale (staleTime=60s) or when navigating back. This is by design and works — but explicitly invalidating ['today'] from Workspace mutations would be more predictable. Currently it only worked in the derived-state test because our full navigation reload triggered a refetch (query key not in cache after unmount)."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A (frontend-only scope)",
+    "frontend": "100% (7/7 acceptance groups pass)"
+  },
+  "test_credentials": "N/A - no auth",
+  "seed_data_creation": "Uploaded 5 photos (/tmp/vera_test_imgs/hoy_p1..5.jpg) to property id=8a2a294d-8119-4e58-9ca2-4820d9ac2ddb (Casa Belgrano R) to verify derived-state change. Photos persist LIVE in Supabase. As a side effect, Casa Belgrano R now has photos and is no longer in the alta tier; it currently sits in tier-atencion with title 'Escribí la descripción'. If clean-state is needed for future testing, remove those photos via the Workspace photos section or delete via API.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "PASSED (all): (1) '/' → /hoy redirect with today-screen visible; today-summary shows human-language attention count; greeting 'Buen día/tardes/noches, Valentina.'; (2) VIE tiers derived from real data with the 3 seeded properties — 🔴 tier-alta Casa Belgrano R 'Sumá fotografías' (no photos), 🟡 tier-atencion PH Chacarita 'Escribí la descripción' (no description), 🟢 tier-lista Depto Palermo Soho 'Publicá la propiedad'; (3) Recommendation card anatomy — data-testid='recommendation-property-{id}', subject line, imperative title, whatHappened line, whyItMatters (muted), 'VERA recomienda' block with recommendation, resolve-now-{id} button; (4) Resolve navigation — alta card → /propiedades/{id}?section=photos scrolls to #ws-section-photos with class vera-section--focus applied; atencion → section=description → #ws-section-description; lista → section=information; (5) Live derived state — uploaded 5 photos to Casa Belgrano R, revisited /hoy: the alta section disappeared entirely, Casa Belgrano R now shows in atencion tier with the next best step ('Escribí la descripción'). No 'mark as resolved' UI exists — the state is purely derived; (6) 'Error' word not present in UI copy in normal flows; (7) Empty state has data-testid='today-empty' available (not triggered since data present, as per spec instructions). No console errors, no banned phrases ('Marcar como resuelto', etc.). Test seed side effect: Casa Belgrano R (8a2a294d-8119-4e58-9ca2-4820d9ac2ddb) now has 5 photos.",
+  "rca of the issue": "N/A — no bugs found."
+}

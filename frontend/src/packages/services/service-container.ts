@@ -14,6 +14,9 @@ import { StudioService } from './studio/studio-service';
 import { VeraAssistantService } from './assistant/assistant-service';
 import { OwnerService } from './owner/owner-service';
 import { WorkspaceService } from './workspace/workspace-service';
+import { VeraIntelligenceEngine } from './intelligence/vera-intelligence-engine';
+import { PropertiesProvider } from './intelligence/properties-provider';
+import { IntelligenceService } from './intelligence/intelligence-service';
 
 // --- Repositories & gateways (persistence lives behind the backend/Supabase) ---
 const propertyRepository = new ApiPropertyRepository();
@@ -32,3 +35,10 @@ export const aiService = new AIService(aiProvider);
 export const studioService = new StudioService(studioProvider);
 export const assistantService = new VeraAssistantService();
 export const ownerService = new OwnerService();
+
+// --- VERA Intelligence Engine + Providers (the "Hoy" Inbox) ---
+const veraIntelligenceEngine = new VeraIntelligenceEngine();
+export const intelligenceService = new IntelligenceService(
+  [new PropertiesProvider(propertyService, assistantService)],
+  veraIntelligenceEngine,
+);
