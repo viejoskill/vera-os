@@ -39,7 +39,7 @@ const RecommendationCard = ({
     <p className="vera-rec__line">{rec.whatHappened}</p>
     <p className="vera-rec__line vera-rec__line--muted">{rec.whyItMatters}</p>
     <p className="vera-rec__reco">
-      <span className="vera-rec__reco-label">VERA recomienda</span>
+      <span className="vera-rec__reco-label">VERA recomienda</span>{' '}
       {rec.recommendation}
     </p>
     <button
@@ -64,7 +64,7 @@ export const TodayScreen = () => {
   const summary = isLoading
     ? 'VERA está analizando tu operación…'
     : attention > 0
-      ? `Hay ${attention} ${attention === 1 ? 'tema' : 'temas'} que requieren tu atención.`
+      ? `Hay ${attention} ${attention === 1 ? 'tema' : 'temas'} que ${attention === 1 ? 'requiere' : 'requieren'} tu atención.`
       : 'Todo bajo control. VERA sigue atenta por vos.';
 
   const onResolve = (t: WorkspaceRoute) => navigate(routeToUrl(t));
