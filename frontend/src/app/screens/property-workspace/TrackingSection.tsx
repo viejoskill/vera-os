@@ -22,6 +22,7 @@ function relativeDay(dateStr: string): string {
 interface TimelineEntry {
   key: string;
   date: string;
+  time: string;
   kind: 'visit' | 'whatsapp';
   interested?: string;
 }
@@ -71,10 +72,10 @@ export const TrackingSection = ({ propertyId, address }: { propertyId: string; a
   const timeline = useMemo<TimelineEntry[]>(() => {
     const entries: TimelineEntry[] = [];
     visits.forEach((v: PropertyVisit) => {
-      entries.push({ key: `${v.id}-v`, date: v.date, kind: 'visit', interested: v.interested });
-      if (v.notifyOwner) entries.push({ key: `${v.id}-w`, date: v.date, kind: 'whatsapp' });
+      entries.push({ key: `${v.id}-v`, date: v.date, time: v.time, kind: 'visit', interested: v.interested });
+      if (v.notifyOwner) entries.push({ key: `${v.id}-w`, date: v.date, time: v.time, kind: 'whatsapp' });
     });
-    return entries.sort((a, b) => (a.date < b.date ? 1 : -1));
+    return entries.sort((a, b) => (`${a.date} ${a.time}` < `${b.date} ${b.time}` ? 1 : -1));
   }, [visits]);
 
   const update = (patch: Partial<VisitInput>) => setForm((f) => ({ ...f, ...patch }));

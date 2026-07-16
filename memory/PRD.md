@@ -157,6 +157,17 @@ Pulido de calidad percibida (sin features nuevas ni cambios de arquitectura). Ve
 
 ### Estado: LISTO PARA DEPLOY (Pilot). Chequeo de deployment: sin bloqueantes.
 
+## Implemented (Sprint "Cerrar App Propiedades" — cierre funcional — 2026-06)
+Todo dentro del Workspace (sin apps/módulos/navegación nueva). Verificado 100% por testing agent (iteration_14): backend 7/7 pytest, frontend 9/9. Sin bugs. Datos reales intactos.
+- **Card**: código interno derivado del id (`VAR-XXXXXX`, sin columna en DB) + línea de ubicación con la dirección como identificador principal (`Dirección · Ciudad · Barrio`, sin separadores vacíos; solo ciudad si no hay dirección).
+- **Health Score compacto**: puntaje + estado + recomendaciones pendientes (dejó de ser el bloque protagonista).
+- **Sección "Seguimiento"** (debajo de Propietario, solo en propiedades existentes): stats (última visita, último contacto con propietario, visitas, consultas=placeholder "—").
+- **Registrar visita** (modal: fecha, hora, interesado, agente, comentario interno, checkbox "Avisar al propietario por WhatsApp"). Al guardar: persiste, actualiza stats, genera **mensaje para el propietario** (anonimiza al interesado) con botón **Copiar mensaje** (NO envía WhatsApp automático).
+- **Timeline** limpio (sin tablas): "Hoy · Visita realizada · {interesado}" y "WhatsApp enviado al propietario" cuando corresponde.
+- Backend: nueva tabla Supabase `public.property_visits` (migración en `supabase_schema.sql`, corrida por el usuario), endpoints `GET/POST /api/properties/{id}/visits`.
+
+### Nota deployment: estos cambios están en PREVIEW. Para verlos en producción (real-estate-os-10.emergent.host) hay que REDESPLEGAR. La tabla `property_visits` ya existe en el proyecto Supabase (compartido preview/prod).
+
 ## Backlog (prioritized)
 - **P1**: `Hoy` App (AI-first daily dashboard); Property detail screen; extract PropertyCard.
 
