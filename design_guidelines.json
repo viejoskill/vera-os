@@ -1,0 +1,90 @@
+{
+  "theme": "dark",
+  "colors": {
+    "primary": "#F6E63A",
+    "background": {
+      "base": "#050505",
+      "surface": "#0F0F0F",
+      "surface_elevated": "#1A1A1A",
+      "glass": "rgba(255, 255, 255, 0.02)"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#A1A1AA",
+      "tertiary": "#52525B",
+      "inverse": "#000000"
+    },
+    "priority": {
+      "alta": "#FF453A",
+      "atencion": "#FF9F0A",
+      "lista": "#32D74B"
+    },
+    "borders": {
+      "subtle": "rgba(255, 255, 255, 0.06)",
+      "focus": "#F6E63A"
+    }
+  },
+  "typography": {
+    "font_family": "DM Sans, sans-serif",
+    "hierarchy": {
+      "greeting": "text-3xl font-light tracking-tight text-white",
+      "greeting_highlight": "font-medium",
+      "section_title": "text-xs font-semibold uppercase tracking-widest text-secondary mb-4 flex items-center gap-2",
+      "card_title": "text-lg font-medium tracking-tight text-white",
+      "card_body": "text-sm text-secondary leading-relaxed",
+      "button_text": "text-sm font-medium tracking-wide"
+    }
+  },
+  "layouts": {
+    "grid_system": "8px base spacing scale (Tailwind p-2, p-4, p-6, p-8).",
+    "structure": {
+      "app_shell": "flex h-screen overflow-hidden bg-background-base text-text-primary font-sans",
+      "sidebar": "w-64 flex-shrink-0 border-r border-borders-subtle bg-background-surface flex flex-col justify-between z-20 relative",
+      "main_content": "flex-1 relative overflow-hidden flex flex-col",
+      "inbox_container": "flex-1 overflow-y-auto px-12 pt-24 pb-32 w-full max-w-4xl mx-auto z-10 relative space-y-16"
+    }
+  },
+  "visual_enhancers": {
+    "mood_background": "CSS-only living background. Place a fixed div behind content. Use 2-3 extremely soft radial gradients with massive blurs (blur-[120px] or blur-[160px]) and very low opacity (10-15%). Animate via slow CSS keyframes (15-20s duration) drifting gently to reflect VERA's state. It must be completely serene and NOT compete with information.",
+    "glassmorphism": "For action cards: backdrop-blur-2xl bg-white/[0.02] border border-white/[0.06]. This mimics Apple Vision Pro elegant depth.",
+    "shadows": "Avoid hard drop shadows. Use ambient glows for active/priority elements."
+  },
+  "components": {
+    "Sidebar": "Apps: Hoy (active indicator), Propiedades, Operaciones, Studio. User chip bottom-left (Valentina). No heavy active backgrounds; use a subtle left border (primary color) and white text for active, dim text for inactive.",
+    "Header": "Human greeting ('Buen día, Valentina.') with a language-based summary ('Hay 3 temas que requieren tu atención.'). No KPI blocks.",
+    "RecommendationCard": {
+      "anatomy": [
+        "1. ¿Qué pasó? (Context): Brief status.",
+        "2. ¿Por qué importa? (Impact): The value at stake.",
+        "3. ¿Qué recomienda VERA? (Action): The AI deterministic next step.",
+        "4. [ Resolver ahora ] (Button): The explicit resolution trigger."
+      ],
+      "style": "Glassmorphism surface. Cleanly structured. Add a subtle vertical indicator line on the left mapping to the priority tier color (Red/Yellow/Green). Give breathing room (p-6 or p-8).",
+      "button": "Pill-shaped (rounded-full). For primary actions: bg-text-primary text-text-inverse hover:bg-gray-200. Do not overuse the #F6E63A yellow for every button; reserve yellow for absolute primary system actions to keep it premium."
+    },
+    "EmptyState": "Cared-for empty state: 'Todo al día. No hay acciones prioritarias por ahora.' Centered, serene, deeply muted text to reflect calm."
+  },
+  "motion": {
+    "entrance": "Staggered fade-up (opacity 0 -> 1, translateY 10px -> 0) over 0.6s. Gives the feeling VERA 'was already working' before the user arrived.",
+    "interactions": "Smooth subtle scaling (scale-95) on button press. Explicit targeted transitions (e.g. transition-colors, transition-transform) over 200ms."
+  },
+  "image_urls": {
+    "user_avatar": {
+      "url": "https://images.unsplash.com/photo-1506863530036-1efeddceb993?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2Mzl8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMG9mJTIwd29tYW4lMjBtb2Rlcm4lMjBkYXJrJTIwYmFja2dyb3VuZCUyMHN0dWRpbyUyMGxpZ2h0aW5nfGVufDB8fHx8MTc4NDE2NTQwNHww&ixlib=rb-4.1.0&q=85",
+      "description": "Professional modern woman portrait in dark studio lighting for Valentina's user chip.",
+      "category": "sidebar_user_profile"
+    }
+  },
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "NEVER use Shadcn UI or any external component libraries. Build exclusively with custom React components and Tailwind CSS (VERA UI Kit).",
+    "STRICTLY use .js and .jsx extensions. Do not use TypeScript.",
+    "NO KPIs, NO dashboard widgets, NO charts. 'Hoy' is an operational inbox organized purely by priority actions.",
+    "NEVER use the word 'Error'. Use 'Próximo paso', 'Recomendación', 'Oportunidad', 'Atención', or 'Listo'.",
+    "BANNED: sci-fi tropes (robots, circuits, hexagons, aggressive neon). Design for 'future elegant' (Apple Vision Pro, Linear, Framer).",
+    "BACKGROUND RULES: The background must be CSS-only (no images) and reflect VERA's 'mood' via extremely subtle, slow-moving radial gradients with massive blurs. Never distract from content.",
+    "GLASSMORPHISM: Do NOT use complete transparent backgrounds for surfaces with content underneath. Use backdrop-blur + slight white opacity (bg-white/[0.02]).",
+    "COLORS: Only use the design tokens mapped in Tailwind config. Primary color is #F6E63A. Dark theme is strictly enforced.",
+    "TESTING: Every interactive and key informational element MUST include a `data-testid` attribute (e.g. data-testid=\"resolve-now-button\").",
+    "ANIMATIONS: Do not apply `transition-all`. Specify explicitly (e.g., `transition-colors duration-200`). Ensure a smooth entrance choreography."
+  ]
+}
