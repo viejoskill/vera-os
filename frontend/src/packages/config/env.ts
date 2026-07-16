@@ -5,6 +5,7 @@ export const env = {
   backendUrl: process.env.REACT_APP_BACKEND_URL ?? '',
   supabaseUrl: process.env.REACT_APP_SUPABASE_URL ?? '',
   supabaseAnonKey: process.env.REACT_APP_SUPABASE_ANON_KEY ?? '',
+  googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? '',
   nodeEnv: process.env.NODE_ENV ?? 'development',
   isProduction: process.env.NODE_ENV === 'production',
 } as const;

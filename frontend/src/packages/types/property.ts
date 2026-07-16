@@ -30,6 +30,13 @@ export interface Property {
   archived: boolean;
   createdAt: string;
   updatedAt: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  googlePlaceId?: string;
+  formattedAddress?: string;
+  province?: string;
+  postalCode?: string;
+  country?: string;
 }
 
 export interface PropertyImageAsset {

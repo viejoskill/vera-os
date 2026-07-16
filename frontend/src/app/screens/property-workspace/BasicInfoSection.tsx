@@ -1,6 +1,7 @@
 import { useFormContext } from 'react-hook-form';
 import { Input, Select } from '@vera/ui';
 import { PROPERTY_TYPE_OPTIONS, CURRENCY_OPTIONS, type PropertyFormValues } from './form-schema';
+import { LocationSection } from './LocationSection';
 
 export const BasicInfoSection = () => {
   const {
@@ -58,12 +59,7 @@ export const BasicInfoSection = () => {
         </div>
       </div>
 
-      <Input label="Dirección" placeholder="Ej.: Gorriti 4500" {...register('address')} />
-
-      <div className="vera-form-grid">
-        <Input label="Barrio" placeholder="Ej.: Palermo Soho" {...register('neighborhood')} />
-        <Input label="Ciudad" placeholder="Ej.: Buenos Aires" {...register('city')} />
-      </div>
+      <LocationSection />
     </div>
   );
 };

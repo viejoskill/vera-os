@@ -77,3 +77,13 @@ create table if not exists public.property_visits (
   created_at    timestamptz not null default now()
 );
 create index if not exists idx_visits_property on public.property_visits(property_id);
+
+-- Ubicación inteligente (Google Places): infraestructura geográfica (sprint "Ubicación Inteligente")
+alter table public.properties
+  add column if not exists latitude          double precision,
+  add column if not exists longitude         double precision,
+  add column if not exists google_place_id   text,
+  add column if not exists formatted_address text,
+  add column if not exists province          text,
+  add column if not exists postal_code       text,
+  add column if not exists country           text;

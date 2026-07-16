@@ -31,6 +31,13 @@ class PropertyCreate(CamelModel):
     description: str = ""
     owner_id: str = ""
     owner_observations: str = ""
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    google_place_id: str = ""
+    formatted_address: str = ""
+    province: str = ""
+    postal_code: str = ""
+    country: str = ""
 
 
 class PropertyUpdate(CamelModel):
@@ -51,6 +58,13 @@ class PropertyUpdate(CamelModel):
     description: Optional[str] = None
     owner_id: Optional[str] = None
     owner_observations: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    google_place_id: Optional[str] = None
+    formatted_address: Optional[str] = None
+    province: Optional[str] = None
+    postal_code: Optional[str] = None
+    country: Optional[str] = None
 
 
 class ImageResponse(CamelModel):
@@ -93,6 +107,13 @@ class PropertyResponse(CamelModel):
     description: str
     owner_id: str = ""
     owner_observations: str = ""
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    google_place_id: str = ""
+    formatted_address: str = ""
+    province: str = ""
+    postal_code: str = ""
+    country: str = ""
     archived: bool = False
     created_at: datetime
     updated_at: datetime
