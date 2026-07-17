@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from '@app/layout/AppLayout';
 import { PropertiesScreen } from '@app/screens/PropertiesScreen';
 import { PropertyWorkspace } from '@app/screens/property-workspace';
-import { TodayScreen } from '@app/screens/TodayScreen';
+import { WorkspaceHome } from '@app/workspace/WorkspaceHome';
 import { LoginScreen } from '@app/screens/LoginScreen';
 import { PlaceholderScreen } from '@app/screens/PlaceholderScreen';
 import { AuthProvider } from '@app/auth/AuthProvider';
@@ -25,7 +25,7 @@ export const VeraOS = () => (
           <Route element={<RequireAuth />}>
             <Route element={<AppLayout />}>
               <Route index element={<Navigate to="/hoy" replace />} />
-              <Route path="hoy" element={<TodayScreen />} />
+              <Route path="hoy" element={<WorkspaceHome />} />
               <Route path="propiedades" element={<PropertiesScreen />} />
               <Route path="propiedades/nueva" element={<PropertyWorkspace />} />
               <Route path="propiedades/:id" element={<PropertyWorkspace />} />

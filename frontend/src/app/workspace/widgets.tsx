@@ -44,7 +44,7 @@ export const GreetingWidget = () => {
 
 /* ----------------------------- Prioridades (VIE) ------------------------ */
 const recUrl = (r: InboxRecommendation): string => {
-  const t = r.route;
+  const t = r.target;
   if (!t?.entityId) return '/propiedades';
   const p = new URLSearchParams({ section: t.section });
   if (t.focus) p.set('focus', t.focus);
@@ -54,7 +54,7 @@ const recUrl = (r: InboxRecommendation): string => {
 export const PrioridadesWidget = () => {
   const { data, isLoading } = useToday();
   const navigate = useNavigate();
-  const items = (data ?? []).slice(0, 3);
+  const items = (data?.recommendations ?? []).slice(0, 3);
   if (isLoading) return <p className="vera-muted">VERA está revisando tu día…</p>;
   if (!items.length)
     return <p className="vera-muted" data-testid="widget-body-prioridades">Todo al día. Sin pendientes urgentes ✨</p>;

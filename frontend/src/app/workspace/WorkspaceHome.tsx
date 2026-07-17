@@ -13,13 +13,17 @@ export const WorkspaceHome = () => {
   const [editing, setEditing] = useState(false);
 
   return (
-    <div className="vera-workspace" data-testid="workspace-home">
-      <div className="vera-workspace__ambient" aria-hidden="true" />
+    <div className="vera-home" data-testid="workspace-home">
+      <div className="vera-home__ambient" aria-hidden="true">
+        <span className="vera-home__glow vera-home__glow--1" />
+        <span className="vera-home__glow vera-home__glow--2" />
+        <span className="vera-home__glow vera-home__glow--3" />
+      </div>
 
-      <div className="vera-workspace__head">
+      <div className="vera-home__head">
         <div>
-          <h1 className="vera-workspace__title">Tu espacio de trabajo</h1>
-          <p className="vera-workspace__sub">Todo lo que necesitás para tu día, en un solo lugar.</p>
+          <h1 className="vera-home__title">Tu espacio de trabajo</h1>
+          <p className="vera-home__sub">Todo lo que necesitás para tu día, en un solo lugar.</p>
         </div>
         <button
           type="button"
