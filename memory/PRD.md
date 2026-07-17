@@ -205,6 +205,15 @@ El módulo pasó de "formulario" a **base de conocimiento** de la propiedad (fue
 - Archivos: `FeaturesSection.tsx` (reescrito), `AmenitiesSection.tsx` (nuevo), `amenities-catalog.ts` (nuevo), `form-schema.ts`, `PropertyWorkspace.tsx`, `TitleSuggestions.tsx` (ahora manda labels al LLM).
 - Nit conocido no bloqueante: helper `str()` en toForm convierte 0→'' al recargar (cosmético, placeholder cubre; mismo patrón preexistente).
 
+## Implemented (Sprint "Contenido IA + Filtros" — 2026-06)
+4 features reusando `POST /api/ai/content` con `mode`. Verificado 100% (iteration_18): backend 10/10 pytest, frontend E2E verde, sin regresiones. Regla "VERA propone, el profesional decide" respetada en todas.
+- **Descripción IA** (mode=description): 1 descripción profesional (~600-900 chars) desde características+amenities; "Usar esta descripción" / "Generar otra"; nunca sobrescribe (reemplazó el mock `generateDescription`).
+- **Destacados** (mode=highlights): 4-6 bullets de fortalezas, "Copiar todos" / "Generar otros"; no se persisten (contenido derivado).
+- **Portales** (mode=portal): selector Mercado Libre / Zonaprop → título + descripción adaptados al formato de cada portal (ML sin datos de contacto), con copiar por bloque.
+- **Filtros** en lista de Propiedades (client-side): tipo, operación, precio min/max, dormitorios mín, y amenities multi-select (semántica AND). Botón "Filtros" con contador + "Limpiar filtros".
+- Arquitectura: backend `ai_content_service.generate_content(mode,data)->{suggestions,title,body}`; frontend gateway/servicio ampliados; `ai-context.ts` (buildAiContext, único mapeo form→contexto IA, amenities como labels); hook genérico `useAiContent`. Nuevos: `HighlightsSection`, `PortalsSection`, `PropertyFilters`. Reescrito `DescriptionSection`.
+- Tests: `test_ai_content.py` (10 casos).
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.

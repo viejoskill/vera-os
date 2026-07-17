@@ -19,7 +19,7 @@ export const DescriptionSection = () => {
   const generate = () => run(() => aiContentService.suggestDescription(buildAiContext(watch())));
 
   const apply = () => {
-    if (data) setValue('description', data, { shouldDirty: true, shouldValidate: true });
+    if (data) setValue('description', data.trim(), { shouldDirty: true, shouldValidate: true });
     reset();
   };
 

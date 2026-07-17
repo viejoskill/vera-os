@@ -24,9 +24,11 @@ export const PortalsSection = () => {
   const [portal, setPortal] = useState<PortalId>('mercadolibre');
   const { status, data, run } = useAiContent<PortalResult>();
   const [copied, setCopied] = useState<string | null>(null);
+  const [generatedFor, setGeneratedFor] = useState<PortalId | null>(null);
 
   const generate = (p: PortalId) => {
     setPortal(p);
+    setGeneratedFor(p);
     run(() => aiContentService.adaptForPortal(buildAiContext(watch()), p));
   };
 
@@ -80,6 +82,9 @@ export const PortalsSection = () => {
 
       {status === 'ready' && data && (
         <div className="vera-ai-preview" data-testid="portal-result">
+          <span className="vera-field__label">
+            <Sparkles size={13} /> Texto para {PORTALS.find((p) => p.id === generatedFor)?.label}
+          </span>
           {data.title && (
             <div className="vera-portal-block">
               <div className="vera-portal-block__head">
