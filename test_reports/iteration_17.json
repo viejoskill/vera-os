@@ -1,0 +1,41 @@
+{
+  "summary": "Sprint 'Cerrar módulo Características' — Backend 6/6 pytest OK y Frontend E2E 100% verde. POST/GET/PATCH /api/properties persisten los 12 campos nuevos exactos (rooms, toilettes, semiCoveredAreaM2, lotAreaM2, floors, floorNumber, parkingCovered, parkingUncovered, orientation, condition + amenities[] como claves canónicas). PATCH REEMPLAZA amenities (no merge). Compatibilidad legacy: propiedades creadas sin campos nuevos regresan defaults seguros (0 / '' / [] / floorNumber=null) y aceptan PATCH sin error. UI: FeaturesSection muestra los 14 data-testids esperados; Piso (input-floor-number) se muestra sólo para departamento/oficina/local y desaparece para casa/terreno; hint 'Antigüedad: 8 años' para 2018, 'A estrenar' para 2026, oculto para 'abc'/vacío. AmenitiesSection: 6 categorías presentes, buscador 'gas' deja sólo Gas natural + Gas envasado (2 botones), 'balcon' (sin tilde) matchea Balcón (insensible a acentos), término inexistente muestra amenities-empty, borrar restaura las 6 categorías; toggle actualiza aria-pressed y amenities-count. E2E completo: crear con 15 campos + 4 amenities → Guardar → navega a /propiedades/{uuid} → reload muestra TODO persistido correctamente (incluidos selects Orientación=NE y Estado=Excelente, precio '180.000', 4 amenities activos con count '4 seleccionadas'). Editar (add balcon, remove parrilla, condition→bueno, rooms=4→5) → reload confirma cambios. Sin regresión en precio con miles (1.250.000 / 79.000) ni en panel IA de título (suggest-title visible). Cleanup DELETE 204.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "FeaturesSection en modo edición", "issues": ["MENOR — helper `str = (v) => (v ? String(v) : '')` en PropertyWorkspace.toForm trata 0 como falsy y devuelve '' al recargar. Ejemplo verificado: parkingUncovered guardado como 0 vuelve como campo vacío al reabrir la propiedad (backend persiste 0 correctamente, ya validado por el test pytest). No es regresión de este sprint (mismo patrón aplica a bedrooms/floors/etc.) pero considerar `v === undefined || v === null ? '' : String(v)` para que un 0 explícito se muestre como '0'."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_property_knowledge_base.py",
+    "/app/test_reports/pytest/kb_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Positivo — schemas.py: PropertyCreate/PropertyUpdate/PropertyResponse totalmente alineados; camelCase alias vía CamelModel. Defaults seguros (0 / '' / [] / floorNumber Optional[int]=None) permiten que propiedades viejas sigan sirviéndose sin migración de datos.",
+    "Positivo — serializers.py::property_to_response: mapea explícitamente cada nuevo campo con `.get(k, default) or default` (protege contra NULL en DB) y `amenities=prop.get('amenities') or []`. Round-trip 100% verificado en pytest.",
+    "Positivo — amenities-catalog.ts: fuente ÚNICA de verdad. Claves canónicas kebab-case (persisten en jsonb) separadas de labels (presentación). `amenityLabels(keys)` es el puente correcto para IA/portales — bien pensado para el futuro. 60+ items en 6 categorías, bien clasificados.",
+    "Positivo — AmenitiesSection.tsx: `normalize()` con `.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')` es la forma correcta de hacer búsqueda insensible a acentos. useMemo evita recomputar el filtrado por render. Toggle inmutable (`filter`/`spread`). aria-pressed correcto para accesibilidad y testing.",
+    "Positivo — FeaturesSection.tsx: `ageLabel()` valida rango (1800..CURRENT_YEAR) antes de calcular; devuelve null si el input es inválido — el hint se oculta correctamente sin mostrar valores raros. FLOOR_TYPES en form-schema deja la regla en un único lugar reusable.",
+    "Positivo — PropertyWorkspace.tsx: buildPayload aplica Math.trunc en todos los enteros (evita floats accidentales); `floorNumber` mandado como null cuando el campo está vacío (permite guardar 'sin piso' explícitamente en casa/terreno). amenities se envía tal cual desde el form (lista de claves).",
+    "Positivo — TitleSuggestions.tsx: enviamos `amenityLabels(v.amenities)` al LLM (etiquetas humanas), no las claves — decisión correcta para prompts naturales.",
+    "Nit — PropertyWorkspace.tsx línea 41: `const str = (v: number | string | undefined) => (v ? String(v) : '');` convierte 0 → ''. Verificado en runtime: al reabrir una propiedad con parkingUncovered=0 el campo se ve vacío. Backend está OK (guarda y devuelve 0). Sugerencia: `v === undefined || v === null ? '' : String(v)`. NO es regresión de este sprint (mismo bug aplicaba a bedrooms/bathrooms/etc.). Impacto: cosmético — el placeholder tapa la duda.",
+    "Nit — AmenitiesSection.tsx: el conteo 'X seleccionadas' aparece siempre en singular gramatical ('1 seleccionadas' se vio en la corrida). Considerar concordancia: `${n} seleccionada${n === 1 ? '' : 's'}`.",
+    "Nit — form-schema.ts: los campos numéricos siguen siendo `z.string()`. Es intencional (para no fallar con inputs vacíos), pero se pierde la validación de rango (ej.: rooms negativo, floorNumber > floors). Considerar `.regex(/^\\d*$/)` como mínimo para no dejar pasar 'abc' al backend (aunque hoy `toNumber` lo blanquea a 0)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_property_knowledge_base.py"
+  ],
+  "success_rate": {
+    "backend": "100% — 6/6 pytest passed (create con todos los nuevos campos, GET verifica persistencia, PATCH reemplaza amenities y actualiza condition, PATCH puede limpiar amenities a [], legacy minimal→defaults, PATCH sobre legacy funciona)",
+    "frontend": "100% — Login OK, 14 inputs de Características presentes, Piso condicional por tipo, hint de antigüedad correcto (2018→8 años, 2026→A estrenar), buscador de amenities filtra en tiempo real e insensible a acentos, 6 categorías, toggle + aria-pressed + count OK, E2E create→save→reload persiste 4 amenities y todos los campos objetivos, edición persiste cambios. Sin regresión en precio con miles ni panel IA de título."
+  },
+  "test_credentials": "Usuario Supabase Auth ACTIVO: qa_temp@vera.test / QaPilot!2026xz (ver /app/memory/test_credentials.md). Sin cambios.",
+  "seed_data_creation": "Total temporal creado y ELIMINADO durante los tests: (a) pytest — 2 propiedades TEST_KB_full_property + TEST_KB_legacy_property (cleanup en fixture). (b) UI E2E — propiedad TEST_KB_E2E_persistence id fd2091ac-181a-4ba4-8d44-8552fc8df846 → DELETE 204. Estado final: sin residuos.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Regresión de módulo Características disponible en /app/backend/tests/test_property_knowledge_base.py (6 tests, incluye cleanup de propiedades TEST_*). Para el próximo sprint que consuma amenities (IA description, portales, filtros de búsqueda), reusar amenityLabels(keys) del catálogo — no hardcodear labels. Todos los data-testids del sprint documentados: input-rooms, input-toilettes, input-semicovered, input-lot, input-parking-covered, input-parking-uncovered, input-floors, input-floor-number, select-orientation, select-condition, input-year, age-hint, amenities-search, amenities-count, amenities-empty, amenities-cat-{id}, amenity-{key}. Nit conocido no bloqueante: helper `str` convierte 0→'' en toForm (ver critical_code_review_comments).",
+  "rca of the issue": "N/A — sin defectos funcionales encontrados. Solo se documentaron 3 nits menores (cosméticos / mejora futura) en critical_code_review_comments."
+}
