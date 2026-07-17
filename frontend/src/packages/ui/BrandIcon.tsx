@@ -9,12 +9,18 @@ export interface BrandIconProps {
   fallback: LucideIcon;
   size?: number;
   alt?: string;
+  /**
+   * Tratamiento monocromático: pinta el glifo (silueta) en blanco para que se
+   * lea nítido sobre tema oscuro. Default true (set de íconos mono actual).
+   * Pasar `mono={false}` para logos a todo color en el futuro.
+   */
+  mono?: boolean;
 }
 
 /** BrandIcon — muestra el logo oficial (`/brands/{brand}.png`) si existe;
  * si no, cae automáticamente al ícono vectorial. Cuando se suban los PNG
  * oficiales, el cambio es automático (sin tocar Dock ni pantallas). */
-export const BrandIcon = ({ brand, fallback: Fallback, size = 20, alt = '' }: BrandIconProps) => {
+export const BrandIcon = ({ brand, fallback: Fallback, size = 20, alt = '', mono = true }: BrandIconProps) => {
   const src = brandSrc(brand);
   const [failed, setFailed] = useState(false);
 
@@ -24,7 +30,7 @@ export const BrandIcon = ({ brand, fallback: Fallback, size = 20, alt = '' }: Br
 
   return (
     <img
-      className="vera-brand-icon"
+      className={`vera-brand-icon ${mono ? 'vera-brand-icon--mono' : ''}`.trim()}
       src={src}
       width={size}
       height={size}

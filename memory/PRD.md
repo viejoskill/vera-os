@@ -298,6 +298,13 @@ Infraestructura para consumir logos OFICIALES de integraciones/herramientas sin 
 - **`BrandIcon`** (`packages/ui/BrandIcon.tsx`): muestra el PNG oficial si carga; si no existe (o falla), cae automáticamente al ícono vectorial (`fallback: LucideIcon`) vía `onError`. Cuando se suban los PNG, el cambio es automático sin tocar Dock ni pantallas.
 - **`apps-catalog.ts`**: cada `DockTool` ahora tiene `brand` (gmail/openai/instagram/calendar/drive/whatsapp/spotify). `Dock.tsx` usa `<BrandIcon brand fallback={icon} />` en la barra y el picker.
 
+## Implemented (Logos de marca — assets + tratamiento mono — 2026-06)
+- Se subieron 10 PNG oficiales (siluetas negras sobre transparente) a `/public/brands/` con nombres estandarizados: `calendar, gemini, openai, youtube, meta, spotify, claude, canvas, dropbox, mercadopago`. Pendientes (fallback vectorial): gmail, whatsapp, instagram, drive, tiktok, linkedin, facebook, notion, slack, trello, canva.
+- `BrandRegistry` (`brand-registry.ts`) ampliado con claves: `meta, dropbox, canvas, mercadopago`.
+- **Tratamiento monocromático** en `BrandIcon` (`packages/ui/BrandIcon.tsx`): prop `mono` (default `true`) → clase `.vera-brand-icon--mono { filter: brightness(0) invert(1); }` que pinta la silueta en blanco (nítida sobre tema oscuro). Para logos a color futuros: `mono={false}`.
+- Verificado por screenshot: Dock muestra calendar/openai/spotify en blanco; los faltantes caen a ícono vectorial. tsc limpio.
+- Notas de mapeo: `openai.png` es el hexágono de OpenAI Gym (no la flor clásica); `canvas` (Canvas LMS) ≠ `canva`; `mercadopago` = apretón de manos.
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.

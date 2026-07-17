@@ -10,6 +10,7 @@ export type BrandKey =
   | 'spotify'
   | 'calendar'
   | 'drive'
+  | 'dropbox'
   | 'instagram'
   | 'facebook'
   | 'meta'
@@ -22,7 +23,9 @@ export type BrandKey =
   | 'notion'
   | 'slack'
   | 'trello'
-  | 'canva';
+  | 'canva'
+  | 'canvas'
+  | 'mercadopago';
 
 const BRAND_KEYS: BrandKey[] = [
   'gmail',
@@ -30,6 +33,7 @@ const BRAND_KEYS: BrandKey[] = [
   'spotify',
   'calendar',
   'drive',
+  'dropbox',
   'instagram',
   'facebook',
   'meta',
@@ -43,6 +47,8 @@ const BRAND_KEYS: BrandKey[] = [
   'slack',
   'trello',
   'canva',
+  'canvas',
+  'mercadopago',
 ];
 
 const BASE = `${process.env.PUBLIC_URL ?? ''}/brands`;
