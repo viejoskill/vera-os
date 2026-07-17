@@ -228,6 +228,11 @@ Reorganización UX: el Workspace pasa de "suma de formularios" a **panel de cont
 - Backend: columna `publications` jsonb (migración corrida), `POST /api/properties/{id}/publications/{channel}` (publish/update/unpublish, 422 canal/acción inválidos), clave camelCase `lastSync`. Frontend: `publication-gateway.ts` + `publication-service.ts` + `ChannelsSection.tsx`. Tests: `test_publications.py` (9).
 - Nits no bloqueantes: sin botón "Reintentar" explícito ante error de canal (recuperable con Publicar); descripción sin textarea manual (intencional, vive en Contenido comercial).
 
+## Implemented (Ajustes UX — 2026-06)
+- **Reintentar en canales**: ante estado `error`, el canal muestra un botón "Reintentar" (`retry-{ch.id}`) que re-ejecuta la última acción intentada (publish/update/unpublish). `ChannelsSection.tsx`.
+- **Descripción manual**: en "Contenido comercial" hay un toggle colapsable "Editar descripción a mano" (`toggle-manual-description`) que revela un `<Textarea>` ligado a `description` (`manual-description`) con contador; se guarda con el resto del formulario. Permite ajustar la descripción sin regenerar con IA. `ExpressSection.tsx`.
+- Verificado por tsc + screenshot. Backend sin cambios. Pendiente por decisión del usuario: conexión real de Mercado Libre/Zonaprop (se hará "cuando quede todo diseñado").
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.

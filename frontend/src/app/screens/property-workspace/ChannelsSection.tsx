@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Globe, Loader2 } from 'lucide-react';
+import { Globe, Loader2, RotateCcw } from 'lucide-react';
 import { Button } from '@vera/ui';
 import { publicationService } from '@vera/services';
 import type { PublicationsMap } from '@vera/repositories';
@@ -24,6 +24,7 @@ export const ChannelsSection = ({
 }) => {
   const [pubs, setPubs] = useState<PublicationsMap>(initial);
   const [busy, setBusy] = useState<string | null>(null);
+  const [lastAction, setLastAction] = useState<Record<string, 'publish' | 'update' | 'unpublish'>>({});
 
   if (!propertyId) {
     return (
@@ -35,6 +36,7 @@ export const ChannelsSection = ({
 
   const act = async (channel: string, action: 'publish' | 'update' | 'unpublish') => {
     setBusy(channel);
+    setLastAction((m) => ({ ...m, [channel]: action }));
     setPubs((p) => ({ ...p, [channel]: { status: 'syncing', lastSync: p[channel]?.lastSync ?? null } }));
     try {
       const next = await publicationService.setPublication(propertyId, channel, action);
@@ -53,6 +55,7 @@ export const ChannelsSection = ({
         const meta = STATUS_META[state] ?? STATUS_META.none;
         const isBusy = busy === ch.id;
         const published = state === 'published';
+        const errored = state === 'error';
         return (
           <div key={ch.id} className="vera-channel" data-testid={`channel-${ch.id}`}>
             <div className="vera-channel__id">
@@ -72,7 +75,11 @@ export const ChannelsSection = ({
             {ch.enabled ? (
               <div className="vera-channel__actions">
                 <span className="vera-channel__sync">{published ? relativeTime(pubs[ch.id]?.lastSync) : ''}</span>
-                {published ? (
+                {errored ? (
+                  <Button type="button" variant="secondary" size="sm" disabled={isBusy} data-testid={`retry-${ch.id}`} onClick={() => act(ch.id, lastAction[ch.id] ?? 'publish')}>
+                    <RotateCcw size={14} /> Reintentar
+                  </Button>
+                ) : published ? (
                   <>
                     <Button type="button" variant="ghost" size="sm" disabled={isBusy} data-testid={`update-${ch.id}`} onClick={() => act(ch.id, 'update')}>
                       Actualizar

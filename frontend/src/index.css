@@ -670,6 +670,19 @@ p {
   align-items: center;
   gap: var(--vera-space-md);
 }
+.vera-manual-desc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-sm);
+  padding-top: var(--vera-space-sm);
+  border-top: 1px solid var(--vera-color-border);
+}
+.vera-manual-desc__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-xxs);
+  animation: vera-rec-in 0.2s ease both;
+}
 
 /* ------------------------- Canales de publicación ----------------------- */
 .vera-channels {

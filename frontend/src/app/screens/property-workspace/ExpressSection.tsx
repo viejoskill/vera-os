@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { Rocket, Copy, Check, RefreshCw } from 'lucide-react';
-import { Button } from '@vera/ui';
+import { Rocket, Copy, Check, RefreshCw, Pencil } from 'lucide-react';
+import { Button, Textarea } from '@vera/ui';
 import { aiContentService } from '@vera/services';
 import { useAiContent } from '@app/hooks/useAiContent';
 import { buildAiContext } from './ai-context';
@@ -29,9 +29,11 @@ const composeAll = (r: ExpressResult): string => {
  * VERA propone; el profesional copia y decide. No sobrescribe la propiedad.
  */
 export const ExpressSection = () => {
-  const { watch, setValue } = useFormContext<PropertyFormValues>();
+  const { watch, setValue, register } = useFormContext<PropertyFormValues>();
   const { status, data, run } = useAiContent<ExpressResult>();
   const [copied, setCopied] = useState<string | null>(null);
+  const [showManual, setShowManual] = useState(false);
+  const description = watch('description');
 
   const generate = () => run(() => aiContentService.generateExpress(buildAiContext(watch())));
 
@@ -160,6 +162,29 @@ export const ExpressSection = () => {
           )}
         </div>
       )}
+
+      <div className="vera-manual-desc">
+        <button
+          type="button"
+          className="vera-ai-action"
+          data-testid="toggle-manual-description"
+          onClick={() => setShowManual((s) => !s)}
+        >
+          <Pencil size={13} /> {showManual ? 'Ocultar descripción' : 'Editar descripción a mano'}
+        </button>
+        {showManual && (
+          <div className="vera-manual-desc__body">
+            <Textarea
+              label="Descripción de la propiedad"
+              rows={6}
+              placeholder="Escribí o ajustá la descripción…"
+              data-testid="manual-description"
+              {...register('description')}
+            />
+            <span className="vera-muted">{description.trim().length} caracteres</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
