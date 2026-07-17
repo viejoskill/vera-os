@@ -291,6 +291,13 @@ Toda nueva funcionalidad se clasifica ANTES de desarrollarse, en UNA sola catego
 ## Roadmap (anotado, no implementado)
 - **Workspace Context** (gran salto futuro): el sistema se vuelve CONTEXTUAL — al abrir "Propiedades" el halo, el Spotlight y los widgets priorizan info inmobiliaria; en un Workspace de otra vertical el contexto cambia sin cambiar la identidad visual. Potencial diferencial clave de VERA OS.
 
+## Implemented (Infra de marca — BrandRegistry + BrandIcon — 2026-06)
+Infraestructura para consumir logos OFICIALES de integraciones/herramientas sin romper nada (NO se generaron logos; se esperan los PNG oficiales del usuario). Verificado por screenshot (fallback vectorial OK) + tsc limpio.
+- **Carpeta** `/public/brands/` (con README de convención de nombres). Nombres estandarizados SIN prefijos: `gmail.png`, `calendar.png`, `drive.png`, `gemini.png`, `openai.png`, `claude.png`, `whatsapp.png`, `spotify.png`, `instagram.png`, `facebook.png`, `linkedin.png`, `youtube.png`, `tiktok.png`, `notion.png`, `slack.png`, `trello.png`, `canva.png`.
+- **`BrandRegistry`** (`packages/config/brand-registry.ts`): mapa centralizado `key → /brands/{key}.png` (usa `PUBLIC_URL`). `brandSrc(key)` resuelve la URL. `BrandKey` tipado.
+- **`BrandIcon`** (`packages/ui/BrandIcon.tsx`): muestra el PNG oficial si carga; si no existe (o falla), cae automáticamente al ícono vectorial (`fallback: LucideIcon`) vía `onError`. Cuando se suban los PNG, el cambio es automático sin tocar Dock ni pantallas.
+- **`apps-catalog.ts`**: cada `DockTool` ahora tiene `brand` (gmail/openai/instagram/calendar/drive/whatsapp/spotify). `Dock.tsx` usa `<BrandIcon brand fallback={icon} />` en la barra y el picker.
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.

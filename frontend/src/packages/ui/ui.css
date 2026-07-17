@@ -151,6 +151,10 @@
   gap: var(--vera-space-sm);
   padding: var(--vera-space-xs) var(--vera-space-xs) var(--vera-space-xl);
 }
+.vera-brand-icon {
+  display: block;
+  object-fit: contain;
+}
 .vera-sidebar__brand-logo {
   height: 30px;
   width: auto;

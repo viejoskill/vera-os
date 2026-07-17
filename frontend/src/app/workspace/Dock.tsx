@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, Check } from 'lucide-react';
+import { BrandIcon } from '@vera/ui';
 import { APPS, appById } from './apps-catalog';
 import { useDock } from './useDock';
 
@@ -26,7 +27,7 @@ export const Dock = () => {
               data-testid={`dock-toggle-${a.id}`}
               onClick={() => toggle(a.id)}
             >
-              <a.icon size={16} /> {a.label}
+              <BrandIcon brand={a.brand} fallback={a.icon} size={16} /> {a.label}
               {isPinned(a.id) && <Check size={13} className="vera-dock__check" />}
             </button>
           ))}
@@ -46,7 +47,7 @@ export const Dock = () => {
               title={tool.label}
               onClick={() => open(id)}
             >
-              <tool.icon size={20} />
+              <BrandIcon brand={tool.brand} fallback={tool.icon} size={20} />
               <span className="vera-dock__tip">{tool.label}</span>
             </button>
           );
