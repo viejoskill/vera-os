@@ -219,6 +219,15 @@ Botón de un clic que orquesta los 4 modos: genera **título + descripción + de
 - Backend: `POST /api/ai/express` + `ai_content_service.generate_express(data)` (usa `asyncio.gather`: wave 1 = title/description/highlights en paralelo; wave 2 = ML/ZP portales adaptados desde el título+descripción recién generados). Schema `ExpressResponse` (titles, description, highlights, mercadolibre, zonaprop).
 - Frontend: `ExpressSection.tsx` (nuevo panel "Publicación express" antes de Descripción), gateway `generateExpress`, servicio `generateExpress`. Copiar por bloque + "Copiar todo". VERA propone; no sobrescribe la propiedad.
 
+## Implemented (Sprint "Simplificar Workspace" — 2026-06)
+Reorganización UX: el Workspace pasa de "suma de formularios" a **panel de control comercial**. Verificado 100% (iteration_19): backend 9/9 pytest, frontend E2E verde, tsc limpio.
+- **Renombres**: Información→"Datos de la propiedad" (arranca con Operación), Publicación Express→"Contenido comercial", Seguimiento→"Actividad comercial", Publicar en Portales→"Canales de publicación".
+- **Eliminados**: paneles Descripción, Destacados y "Publicar en portales" (su contenido vive en Contenido comercial) + el "VERA sugiere un título" inline. Archivos borrados: DescriptionSection, HighlightsSection, PortalsSection, TitleSuggestions, useTitleSuggestions.
+- **Contenido comercial (Express)** ahora tiene **"Usar este título"** y **"Usar esta descripción"** (setValue + persist), quedando como único lugar de generación de contenido.
+- **Centro de Publicación (Canales)** — NUEVO tablero de estado por canal: Web Varela + Mercado Libre operativos (Publicar/Actualizar/Despublicar → estados published/none + lastSync); Zonaprop + Argenprop "Próximamente". Escalable (catálogo `channels-catalog.ts`, config `ENABLED_PUBLICATION_CHANNELS`). **Tablero MANUAL** (sin API real de portales aún): VERA registra y muestra; nunca publica sola.
+- Backend: columna `publications` jsonb (migración corrida), `POST /api/properties/{id}/publications/{channel}` (publish/update/unpublish, 422 canal/acción inválidos), clave camelCase `lastSync`. Frontend: `publication-gateway.ts` + `publication-service.ts` + `ChannelsSection.tsx`. Tests: `test_publications.py` (9).
+- Nits no bloqueantes: sin botón "Reintentar" explícito ante error de canal (recuperable con Publicar); descripción sin textarea manual (intencional, vive en Contenido comercial).
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.
