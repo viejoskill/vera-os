@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Sparkles, RefreshCw } from 'lucide-react';
 import { useTitleSuggestions } from '@app/hooks/useTitleSuggestions';
+import { amenityLabels } from './amenities-catalog';
 import type { PropertyFormValues } from './form-schema';
 
 const num = (v: string): number | null => {
@@ -29,10 +30,12 @@ export const TitleSuggestions = () => {
       bathrooms: num(v.bathrooms),
       areaM2: num(v.areaM2),
       yearBuilt: v.yearBuilt,
-      amenities: v.amenities,
-      nearSea: /costa|mar del|pinamar|villa gesell|monte hermoso|las toninas|san bernardo/i.test(
-        `${v.city} ${v.neighborhood}`,
-      ),
+      amenities: amenityLabels(v.amenities),
+      nearSea:
+        v.amenities.includes('cerca-del-mar') ||
+        /costa|mar del|pinamar|villa gesell|monte hermoso|las toninas|san bernardo/i.test(
+          `${v.city} ${v.neighborhood}`,
+        ),
     });
   };
 

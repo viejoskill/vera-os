@@ -87,3 +87,19 @@ alter table public.properties
   add column if not exists province          text,
   add column if not exists postal_code       text,
   add column if not exists country           text;
+
+-- Módulo "Características" — base de conocimiento técnico de la propiedad
+-- (sprint "Cerrar módulo Características"). Amenities como lista plana de claves
+-- canónicas en jsonb; el resto son características objetivas. Idempotente.
+alter table public.properties
+  add column if not exists lot_area_m2          double precision default 0,
+  add column if not exists semi_covered_area_m2 double precision default 0,
+  add column if not exists rooms                integer default 0,
+  add column if not exists toilettes            integer default 0,
+  add column if not exists floors               integer default 0,
+  add column if not exists floor_number         integer,
+  add column if not exists parking_covered      integer default 0,
+  add column if not exists parking_uncovered    integer default 0,
+  add column if not exists orientation          text default '',
+  add column if not exists condition            text default '',
+  add column if not exists amenities            jsonb default '[]'::jsonb;

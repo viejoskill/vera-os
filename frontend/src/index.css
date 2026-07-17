@@ -352,15 +352,27 @@ p {
 .vera-form-grid--3 {
   grid-template-columns: 1fr 1fr 1fr;
 }
+.vera-form-grid--4 {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
 .vera-form-grid--2-1 {
   grid-template-columns: 2fr 1fr;
 }
 @media (max-width: 640px) {
   .vera-form-grid,
   .vera-form-grid--3,
+  .vera-form-grid--4,
   .vera-form-grid--2-1 {
     grid-template-columns: 1fr;
   }
+}
+
+.vera-field__hint {
+  display: block;
+  margin-top: var(--vera-space-xxs);
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-primary);
+  opacity: 0.9;
 }
 
 /* ------------------------------ Segment --------------------------------- */
@@ -427,6 +439,113 @@ p {
   justify-content: space-between;
 }
 
+/* ------------------------------ Amenities ------------------------------- */
+.vera-amenities {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-lg);
+}
+.vera-amenities__search {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-xs);
+  padding: var(--vera-space-sm) var(--vera-space-md);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-surface);
+  color: var(--vera-color-text-secondary);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.vera-amenities__search-input {
+  flex: 1;
+  border: none;
+  background: none;
+  outline: none;
+  color: var(--vera-color-text);
+  font-family: var(--vera-font-family);
+  font-size: var(--vera-font-size-sm);
+}
+.vera-amenities__search-input::placeholder {
+  color: var(--vera-color-text-secondary);
+}
+.vera-amenities__count {
+  flex-shrink: 0;
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-primary);
+}
+.vera-amenities__category {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-sm);
+}
+.vera-amenities__title {
+  margin: 0;
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--vera-color-text-secondary);
+}
+.vera-amenities__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--vera-space-xs);
+}
+@media (max-width: 900px) {
+  .vera-amenities__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .vera-amenities__grid {
+    grid-template-columns: 1fr;
+  }
+}
+.vera-amenity {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-xs);
+  padding: var(--vera-space-sm) var(--vera-space-md);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-surface);
+  color: var(--vera-color-text-secondary);
+  font-family: var(--vera-font-family);
+  font-size: var(--vera-font-size-sm);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    color 0.16s ease,
+    background-color 0.16s ease;
+}
+.vera-amenity:hover {
+  border-color: var(--vera-color-text-secondary);
+}
+.vera-amenity__box {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-sm);
+  color: var(--vera-color-primary-foreground);
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease;
+}
+.vera-amenity--active {
+  color: var(--vera-color-text);
+  border-color: var(--vera-color-primary);
+}
+.vera-amenity--active .vera-amenity__box {
+  background: var(--vera-color-primary);
+  border-color: var(--vera-color-primary);
+}
 /* --------------------- VERA AI title suggestions ------------------------ */
 .vera-title-ai {
   margin-top: var(--vera-space-xs);

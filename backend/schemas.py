@@ -38,6 +38,17 @@ class PropertyCreate(CamelModel):
     province: str = ""
     postal_code: str = ""
     country: str = ""
+    lot_area_m2: float = 0
+    semi_covered_area_m2: float = 0
+    rooms: int = 0
+    toilettes: int = 0
+    floors: int = 0
+    floor_number: Optional[int] = None
+    parking_covered: int = 0
+    parking_uncovered: int = 0
+    orientation: str = ""
+    condition: str = ""
+    amenities: list[str] = []
 
 
 class PropertyUpdate(CamelModel):
@@ -65,6 +76,17 @@ class PropertyUpdate(CamelModel):
     province: Optional[str] = None
     postal_code: Optional[str] = None
     country: Optional[str] = None
+    lot_area_m2: Optional[float] = None
+    semi_covered_area_m2: Optional[float] = None
+    rooms: Optional[int] = None
+    toilettes: Optional[int] = None
+    floors: Optional[int] = None
+    floor_number: Optional[int] = None
+    parking_covered: Optional[int] = None
+    parking_uncovered: Optional[int] = None
+    orientation: Optional[str] = None
+    condition: Optional[str] = None
+    amenities: Optional[list[str]] = None
 
 
 class ImageResponse(CamelModel):
@@ -114,6 +136,17 @@ class PropertyResponse(CamelModel):
     province: str = ""
     postal_code: str = ""
     country: str = ""
+    lot_area_m2: float = 0
+    semi_covered_area_m2: float = 0
+    rooms: int = 0
+    toilettes: int = 0
+    floors: int = 0
+    floor_number: Optional[int] = None
+    parking_covered: int = 0
+    parking_uncovered: int = 0
+    orientation: str = ""
+    condition: str = ""
+    amenities: list[str] = []
     archived: bool = False
     created_at: datetime
     updated_at: datetime

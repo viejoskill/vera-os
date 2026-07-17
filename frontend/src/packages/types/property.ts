@@ -37,6 +37,17 @@ export interface Property {
   province?: string;
   postalCode?: string;
   country?: string;
+  rooms?: number;
+  toilettes?: number;
+  lotAreaM2?: number;
+  semiCoveredAreaM2?: number;
+  floors?: number;
+  floorNumber?: number | null;
+  parkingCovered?: number;
+  parkingUncovered?: number;
+  orientation?: string;
+  condition?: string;
+  amenities?: string[];
 }
 
 export interface PropertyImageAsset {

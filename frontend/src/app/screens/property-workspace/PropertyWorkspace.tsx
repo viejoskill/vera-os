@@ -20,6 +20,7 @@ import { useWorkspaceDocuments } from '@app/hooks/useWorkspaceDocuments';
 import { propertyFormSchema, defaultPropertyForm, type PropertyFormValues } from './form-schema';
 import { BasicInfoSection } from './BasicInfoSection';
 import { FeaturesSection } from './FeaturesSection';
+import { AmenitiesSection } from './AmenitiesSection';
 import { DescriptionSection } from './DescriptionSection';
 import { OwnerSection } from './OwnerSection';
 import { TrackingSection } from './TrackingSection';
@@ -58,8 +59,18 @@ const toForm = (d: PropertyDetail): PropertyFormValues => ({
   bedrooms: str(d.bedrooms),
   bathrooms: str(d.bathrooms),
   areaM2: str(d.areaM2),
+  rooms: str(d.rooms),
+  toilettes: str(d.toilettes),
+  lotAreaM2: str(d.lotAreaM2),
+  semiCoveredAreaM2: str(d.semiCoveredAreaM2),
+  floors: str(d.floors),
+  floorNumber: str(d.floorNumber ?? undefined),
+  parkingCovered: str(d.parkingCovered),
+  parkingUncovered: str(d.parkingUncovered),
+  orientation: d.orientation ?? '',
+  condition: d.condition ?? '',
+  amenities: d.amenities ?? [],
   description: d.description,
-  amenities: [],
   ownerId: d.ownerId ?? '',
   ownerObservations: d.ownerObservations ?? '',
   yearBuilt: d.yearBuilt ?? '',
@@ -164,6 +175,17 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
       videoUrl: v.videoUrl,
       ownerId: v.ownerId,
       ownerObservations: v.ownerObservations,
+      rooms: Math.trunc(toNumber(v.rooms)),
+      toilettes: Math.trunc(toNumber(v.toilettes)),
+      lotAreaM2: toNumber(v.lotAreaM2),
+      semiCoveredAreaM2: toNumber(v.semiCoveredAreaM2),
+      floors: Math.trunc(toNumber(v.floors)),
+      floorNumber: v.floorNumber?.trim() ? Math.trunc(toNumber(v.floorNumber)) : null,
+      parkingCovered: Math.trunc(toNumber(v.parkingCovered)),
+      parkingUncovered: Math.trunc(toNumber(v.parkingUncovered)),
+      orientation: v.orientation,
+      condition: v.condition,
+      amenities: v.amenities,
     } as object),
   });
 
@@ -308,8 +330,13 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
               </Panel>
             </div>
             <div id="ws-section-features">
-              <Panel title="Características" description="Ambientes y comodidades.">
+              <Panel title="Características" description="Datos objetivos de la propiedad.">
                 <FeaturesSection />
+              </Panel>
+            </div>
+            <div id="ws-section-amenities">
+              <Panel title="Amenities" description="Atributos y comodidades. Buscá o marcá lo que corresponda.">
+                <AmenitiesSection />
               </Panel>
             </div>
             <div id="ws-section-owner">

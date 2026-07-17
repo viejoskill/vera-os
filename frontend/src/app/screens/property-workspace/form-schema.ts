@@ -16,14 +16,26 @@ export const propertyFormSchema = z.object({
   longitude: z.number().nullable(),
   googlePlaceId: z.string(),
   formattedAddress: z.string(),
+  // Características objetivas
+  rooms: z.string(),
   bedrooms: z.string(),
   bathrooms: z.string(),
+  toilettes: z.string(),
   areaM2: z.string(),
-  description: z.string(),
+  lotAreaM2: z.string(),
+  semiCoveredAreaM2: z.string(),
+  floors: z.string(),
+  floorNumber: z.string(),
+  parkingCovered: z.string(),
+  parkingUncovered: z.string(),
+  orientation: z.string(),
+  condition: z.string(),
+  yearBuilt: z.string(),
+  // Amenities (atributos) — lista plana de claves canónicas
   amenities: z.array(z.string()),
+  description: z.string(),
   ownerId: z.string(),
   ownerObservations: z.string(),
-  yearBuilt: z.string(),
   videoUrl: z.string(),
 });
 
@@ -45,14 +57,24 @@ export const defaultPropertyForm: PropertyFormValues = {
   longitude: null,
   googlePlaceId: '',
   formattedAddress: '',
+  rooms: '',
   bedrooms: '',
   bathrooms: '',
+  toilettes: '',
   areaM2: '',
-  description: '',
+  lotAreaM2: '',
+  semiCoveredAreaM2: '',
+  floors: '',
+  floorNumber: '',
+  parkingCovered: '',
+  parkingUncovered: '',
+  orientation: '',
+  condition: '',
+  yearBuilt: '',
   amenities: [],
+  description: '',
   ownerId: '',
   ownerObservations: '',
-  yearBuilt: '',
   videoUrl: '',
 };
 
@@ -70,11 +92,26 @@ export const CURRENCY_OPTIONS = [
   { value: 'ARS', label: 'ARS' },
 ];
 
-export const AMENITY_OPTIONS = [
-  'Cochera',
-  'Balcón',
-  'Pileta',
-  'Parrilla',
-  'Amenities',
-  'Seguridad 24h',
+export const CONDITION_OPTIONS = [
+  { value: '', label: 'Sin especificar' },
+  { value: 'a-estrenar', label: 'A estrenar' },
+  { value: 'excelente', label: 'Excelente' },
+  { value: 'muy-bueno', label: 'Muy bueno' },
+  { value: 'bueno', label: 'Bueno' },
+  { value: 'a-reciclar', label: 'A reciclar' },
 ];
+
+export const ORIENTATION_OPTIONS = [
+  { value: '', label: 'Sin especificar' },
+  { value: 'N', label: 'Norte' },
+  { value: 'S', label: 'Sur' },
+  { value: 'E', label: 'Este' },
+  { value: 'O', label: 'Oeste' },
+  { value: 'NE', label: 'Noreste' },
+  { value: 'NO', label: 'Noroeste' },
+  { value: 'SE', label: 'Sudeste' },
+  { value: 'SO', label: 'Sudoeste' },
+];
+
+// Tipos donde "Piso" tiene sentido (nunca para casa/terreno/campo).
+export const FLOOR_TYPES = ['departamento', 'oficina', 'local'];
