@@ -240,6 +240,16 @@ Verificado 100% (iteration_20): backend 12/12 pytest + frontend E2E verde, tsc l
 - **Express UX**: "Usar esta descripción" ahora **abre automáticamente** el textarea manual (`manual-description`) con el texto cargado para retocar antes de guardar.
 - Tests: `test_sprint20.py` (12). Nits menores documentados (clase css compartida en input de link; responsive del editor no verificado) — no bloqueantes.
 
+## Implemented (Sprint "Workspace Personal — Ambient Intelligence UI" — 2026-06)
+La pantalla "Hoy" dejó de ser una lista de recomendaciones (TodayScreen, eliminado) y pasó a ser un **escritorio tipo OS** (WorkspaceHome). Verificado 100% (iteration_21): frontend E2E 11/11, 0 errores de consola, tsc limpio.
+- **Dashboard Engine** (`app/workspace/`): widgets activables/reordenables desde "Personalizar". Registro único `widget-registry.tsx` (id, title, icon, size sm/md/lg, defaultEnabled, demo). Estado (encendidos + orden) persistido por usuario en `localStorage` (`vera:dashboard:{email}`) vía `useDashboard`.
+- **Dock estilo OS** (`Dock.tsx` + `apps-catalog.ts` + `useDock`): apps favoritas fijables (`vera:dock:{email}`). Solo `propiedades` es `ready` (navega); el resto muestra tooltip "Próximamente" y no navega. Default pin: propiedades/operaciones/personas.
+- **Ambient Intelligence UI** (`index.css`): 3 glows radiales sutiles (drift lento, guard `prefers-reduced-motion`), cards glass con hover flotante, entrada escalonada (`animationDelay`). Namespace propio `vera-home*`/`vera-widget*`/`vera-w-*`/`vera-dock*` (renombrado para NO colisionar con `vera-workspace*` del Property Workspace).
+- **Widgets**: `greeting` (reloj/fecha en vivo), `prioridades` (REAL, consume el VERA Intelligence Engine vía `useToday().data.recommendations`), `audio` (REAL — streams de radio Aspen/Rock&Pop, funcional por decisión del usuario). MOCK (badge "Demo", Fase 1): favoritos, agenda, tareas, actividad, clima, noticias, cotizaciones.
+- **Bug corregido**: `PrioridadesWidget` leía `useToday()` como array; ahora usa `data.recommendations` y `r.target` (antes `r.route`).
+- Router: `/hoy` → `WorkspaceHome` (VeraOS.tsx). `TodayScreen.tsx` eliminado.
+- Nits no bloqueantes (documentados en iteration_21): sin feedback visual cuando el stream de audio falla; apps no-ready conservan `route` en el catálogo.
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.

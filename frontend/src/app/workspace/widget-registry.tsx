@@ -43,7 +43,7 @@ export const WIDGETS: WidgetDef[] = [
   { id: 'greeting', title: 'Saludo', icon: Clock, size: 'md', Component: GreetingWidget, defaultEnabled: true },
   { id: 'prioridades', title: 'Prioridades de hoy', icon: ListChecks, size: 'md', Component: PrioridadesWidget, defaultEnabled: true },
   { id: 'audio', title: 'Audio', icon: Radio, size: 'sm', Component: AudioWidget, defaultEnabled: true },
-  { id: 'favoritos', title: 'Favoritos', icon: Star, size: 'sm', Component: FavoritesWidget, defaultEnabled: true },
+  { id: 'favoritos', title: 'Favoritos', icon: Star, size: 'sm', Component: FavoritesWidget, defaultEnabled: true, demo: true },
   { id: 'agenda', title: 'Agenda', icon: CalendarDays, size: 'sm', Component: AgendaWidget, defaultEnabled: true, demo: true },
   { id: 'tareas', title: 'Tareas', icon: CheckSquare, size: 'sm', Component: TasksWidget, defaultEnabled: true, demo: true },
   { id: 'actividad', title: 'Actividad reciente', icon: Activity, size: 'sm', Component: ActivityWidget, defaultEnabled: false, demo: true },
