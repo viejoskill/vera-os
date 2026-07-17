@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar, TopBar, type SidebarItem } from '@vera/ui';
-import { appConfig } from '@vera/config';
+import { appConfig, workspaceConfig } from '@vera/config';
 import { navRoutes } from '@app/navigation';
 import { UserMenu } from './UserMenu';
 import { useAuthUser } from '@app/auth/useAuthUser';
@@ -33,7 +33,9 @@ export const AppLayout = () => {
         <div className="vera-overlay" onClick={() => setMobileOpen(false)} aria-hidden="true" />
       )}
       <Sidebar
-        brandName={appConfig.name}
+        brandName={workspaceConfig.name}
+        logoSrc={workspaceConfig.logo}
+        tagline={workspaceConfig.tagline}
         items={items}
         activeId={active.id}
         onNavigate={handleNavigate}
@@ -41,6 +43,10 @@ export const AppLayout = () => {
         open={mobileOpen}
       />
       <div className="vera-shell__body">
+        {/* Ambient Intelligence — halo global que respira y cambia sutilmente por App */}
+        <div className="vera-shell__ambient" data-app={active.id} aria-hidden="true">
+          <span className="vera-shell__halo" />
+        </div>
         <TopBar
           title={active.label}
           subtitle={appConfig.tagline}

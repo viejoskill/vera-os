@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import logoHorizontal from '../../assets/brand/logo-horizontal.png';
 
 export interface SidebarItem {
   id: string;
@@ -15,6 +14,10 @@ export interface SidebarUser {
 
 export interface SidebarProps {
   brandName: string;
+  /** Logo lockup image (from WorkspaceConfig). */
+  logoSrc: string;
+  /** Descriptor / firma del sistema, bajo el logo (from WorkspaceConfig.tagline). */
+  tagline?: string;
   items: SidebarItem[];
   activeId: string;
   onNavigate: (id: string) => void;
@@ -27,6 +30,8 @@ export interface SidebarProps {
 /** VERA Sidebar — presentational navigation. Routing is the App's concern. */
 export const Sidebar = ({
   brandName,
+  logoSrc,
+  tagline,
   items,
   activeId,
   onNavigate,
@@ -46,7 +51,8 @@ export const Sidebar = ({
   return (
     <aside className={`vera-sidebar ${open ? 'vera-sidebar--open' : ''}`.trim()}>
       <div className="vera-sidebar__brand">
-        <img className="vera-sidebar__brand-logo" src={logoHorizontal} alt={`${brandName} OS`} />
+        <img className="vera-sidebar__brand-logo" src={logoSrc} alt={brandName} />
+        {tagline && <span className="vera-sidebar__brand-tagline">{tagline}</span>}
       </div>
 
       <nav className="vera-sidebar__nav" aria-label="Navegación principal">

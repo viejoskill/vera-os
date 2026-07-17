@@ -56,10 +56,47 @@ p {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  position: relative;
+  isolation: isolate;
+}
+/* Ambient Intelligence — halo global, respira lento y cambia sutil por App */
+.vera-shell__ambient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.vera-shell__halo {
+  position: absolute;
+  width: min(80vw, 960px);
+  height: min(80vw, 960px);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(246, 230, 58, 0.1), transparent 60%);
+  filter: blur(130px);
+  top: -24%;
+  left: 52%;
+  transition: top 1.8s ease, left 1.8s ease, opacity 1.8s ease;
+  animation: vera-halo-breathe 18s ease-in-out infinite;
+}
+.vera-shell__ambient[data-app='hoy'] .vera-shell__halo { top: -22%; left: 54%; }
+.vera-shell__ambient[data-app='vera-bot'] .vera-shell__halo { top: 8%; left: 62%; }
+.vera-shell__ambient[data-app='propiedades'] .vera-shell__halo { top: -12%; left: 22%; }
+.vera-shell__ambient[data-app='personas'] .vera-shell__halo { top: 4%; left: 38%; }
+.vera-shell__ambient[data-app='operaciones'] .vera-shell__halo { top: -16%; left: 70%; }
+.vera-shell__ambient[data-app='studio'] .vera-shell__halo { top: 18%; left: 16%; }
+@keyframes vera-halo-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.75; }
+  50% { transform: scale(1.14); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vera-shell__halo { animation: none; }
 }
 .vera-shell__content {
   flex: 1;
   padding: var(--vera-space-xl);
+  position: relative;
+  z-index: 1;
 }
 .vera-overlay {
   position: fixed;
@@ -2404,7 +2441,7 @@ p {
   padding: var(--vera-space-2xl) 0 var(--vera-space-3xl);
   display: flex;
   flex-direction: column;
-  gap: var(--vera-space-xl);
+  gap: var(--vera-space-2xl);
 }
 
 /* --- Ambient atmosphere (subtle, serene lighting) --- */
@@ -2643,7 +2680,8 @@ p {
 }
 .vera-w-listitem:hover {
   background: var(--vera-color-surface);
-  border-color: var(--vera-color-border);
+  border-color: rgba(246, 230, 58, 0.18);
+  box-shadow: inset 0 0 20px rgba(246, 230, 58, 0.04);
 }
 .vera-w-listitem--static { cursor: default; }
 .vera-w-listitem--static:hover { background: transparent; border-color: transparent; }
@@ -2683,21 +2721,35 @@ p {
   align-items: center;
   gap: var(--vera-space-sm);
 }
-.vera-w-audio__pulse {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--vera-color-border);
+.vera-w-audio__eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  width: 18px;
+  height: 16px;
   flex-shrink: 0;
 }
-.vera-w-audio__pulse.is-on {
-  background: var(--vera-color-primary);
-  box-shadow: 0 0 0 0 rgba(246, 230, 58, 0.5);
-  animation: vera-pulse 1.8s ease-out infinite;
+.vera-w-audio__eq i {
+  flex: 1;
+  height: 30%;
+  background: var(--vera-color-border);
+  border-radius: 1px;
+  transition: background-color 0.3s ease;
 }
-@keyframes vera-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(246, 230, 58, 0.45); }
-  100% { box-shadow: 0 0 0 10px rgba(246, 230, 58, 0); }
+.vera-w-audio__eq.is-on i {
+  background: var(--vera-color-primary);
+  animation: vera-eq 0.9s ease-in-out infinite;
+}
+.vera-w-audio__eq.is-on i:nth-child(1) { animation-delay: 0s; }
+.vera-w-audio__eq.is-on i:nth-child(2) { animation-delay: 0.25s; }
+.vera-w-audio__eq.is-on i:nth-child(3) { animation-delay: 0.1s; }
+.vera-w-audio__eq.is-on i:nth-child(4) { animation-delay: 0.35s; }
+@keyframes vera-eq {
+  0%, 100% { height: 25%; }
+  50% { height: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vera-w-audio__eq.is-on i { animation: none; height: 60%; }
 }
 .vera-w-audio__station {
   font-size: var(--vera-font-size-sm);
@@ -2839,6 +2891,14 @@ p {
   font-size: var(--vera-font-size-sm);
   font-weight: var(--vera-font-weight-semibold);
   color: var(--vera-color-text);
+  transition: color 0.3s ease;
+}
+.vera-w-quotes__value.is-flash {
+  animation: vera-quote-flash 0.7s ease;
+}
+@keyframes vera-quote-flash {
+  0% { color: var(--vera-color-primary); text-shadow: 0 0 12px rgba(246, 230, 58, 0.5); }
+  100% { color: var(--vera-color-text); text-shadow: none; }
 }
 .vera-w-quotes__delta {
   font-size: var(--vera-font-size-xs);
@@ -2870,13 +2930,16 @@ p {
   display: flex;
   align-items: center;
   gap: var(--vera-space-xs);
-  padding: var(--vera-space-xs) var(--vera-space-sm);
-  background: var(--vera-color-glass);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--vera-color-border);
+  padding: var(--vera-space-sm) var(--vera-space-md);
+  background: color-mix(in srgb, var(--vera-color-card) 55%, transparent);
+  backdrop-filter: blur(28px) saturate(1.4);
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--vera-radius-pill);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  box-shadow:
+    0 20px 55px rgba(0, 0, 0, 0.55),
+    0 2px 10px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 .vera-dock__app {
   position: relative;
@@ -3000,7 +3063,8 @@ p {
   box-shadow: 0 0 30px rgba(246, 230, 58, 0.07);
   transform: translateY(-1px);
 }
-.vera-home__spotlight-icon { color: var(--vera-color-primary); flex-shrink: 0; }
+.vera-home__spotlight-icon { color: var(--vera-color-primary); flex-shrink: 0; transition: transform 0.28s ease; }
+.vera-home__spotlight:hover .vera-home__spotlight-icon { transform: scale(1.12); }
 .vera-home__spotlight-text {
   flex: 1;
   font-size: var(--vera-font-size-sm);
@@ -3016,6 +3080,18 @@ p {
   border: 1px solid rgba(246, 230, 58, 0.3);
   border-radius: var(--vera-radius-pill);
   padding: 3px 10px;
+  box-shadow: 0 0 0 rgba(246, 230, 58, 0);
+  animation: vera-badge-glow 3.6s ease-in-out infinite;
+}
+.vera-home__spotlight:hover .vera-home__spotlight-badge {
+  border-color: rgba(246, 230, 58, 0.55);
+}
+@keyframes vera-badge-glow {
+  0%, 100% { box-shadow: 0 0 0 rgba(246, 230, 58, 0); }
+  50% { box-shadow: 0 0 16px rgba(246, 230, 58, 0.18); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vera-home__spotlight-badge { animation: none; }
 }
 
 /* --- Spotlight modal --- */
@@ -3297,6 +3373,7 @@ p {
   background: var(--vera-color-primary);
   color: var(--vera-color-primary-foreground);
   font-weight: var(--vera-font-weight-bold);
+  box-shadow: 0 0 14px 1px rgba(246, 230, 58, 0.45);
 }
 .vera-w-cal__dot {
   position: absolute;

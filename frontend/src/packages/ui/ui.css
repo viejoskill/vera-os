@@ -146,9 +146,10 @@
 }
 .vera-sidebar__brand {
   display: flex;
-  align-items: center;
-  gap: var(--vera-space-xs);
-  padding: 0 var(--vera-space-xs) var(--vera-space-xl);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--vera-space-sm);
+  padding: var(--vera-space-xs) var(--vera-space-xs) var(--vera-space-xl);
 }
 .vera-sidebar__brand-logo {
   height: 30px;
@@ -156,6 +157,14 @@
   max-width: 100%;
   object-fit: contain;
   display: block;
+}
+.vera-sidebar__brand-tagline {
+  font-size: 11px;
+  font-weight: var(--vera-font-weight-medium);
+  letter-spacing: 0.22em;
+  color: var(--vera-color-text-secondary);
+  padding-left: 2px;
+  opacity: 0.85;
 }
 .vera-sidebar__nav {
   display: flex;

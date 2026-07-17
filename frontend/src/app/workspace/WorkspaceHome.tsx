@@ -18,11 +18,6 @@ export const WorkspaceHome = () => {
 
   return (
     <div className="vera-home" data-testid="workspace-home">
-      <div className="vera-home__ambient" aria-hidden="true">
-        <span className="vera-home__glow vera-home__glow--1" />
-        <span className="vera-home__glow vera-home__glow--2" />
-      </div>
-
       {/* Capa de IA reservada — Spotlight */}
       <button
         type="button"

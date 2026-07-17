@@ -116,7 +116,9 @@ export const AudioWidget = () => {
     <div className="vera-w-audio" data-testid="widget-body-audio">
       <audio ref={audioRef} src={station.stream} preload="none" onEnded={() => setPlaying(false)} />
       <div className="vera-w-audio__now">
-        <span className={`vera-w-audio__pulse ${playing ? 'is-on' : ''}`.trim()} />
+        <span className={`vera-w-audio__eq ${playing ? 'is-on' : ''}`.trim()} aria-hidden="true">
+          <i /><i /><i /><i />
+        </span>
         <div>
           <p className="vera-w-audio__station">{station.name}</p>
           <p className="vera-w-audio__label">{playing ? 'En vivo' : 'En pausa'}</p>
@@ -274,21 +276,42 @@ export const NewsWidget = () => (
 
 /* ------------------------------ Cotizaciones ---------------------------- */
 const QUOTES = [
-  { label: 'Dólar Oficial', value: '$ 985', delta: '+0,4%' },
-  { label: 'Dólar Blue', value: '$ 1.180', delta: '-0,8%' },
-  { label: 'Dólar MEP', value: '$ 1.095', delta: '+0,2%' },
+  { label: 'Dólar Oficial', value: 985, delta: '+0,4%' },
+  { label: 'Dólar Blue', value: 1180, delta: '-0,8%' },
+  { label: 'Dólar MEP', value: 1095, delta: '+0,2%' },
 ];
-export const QuotesWidget = () => (
-  <ul className="vera-w-quotes" data-testid="widget-body-cotizaciones">
-    {QUOTES.map((q) => (
-      <li key={q.label}>
-        <span className="vera-w-quotes__label">{q.label}</span>
-        <span className="vera-w-quotes__value">{q.value}</span>
-        <span className={`vera-w-quotes__delta ${q.delta.startsWith('-') ? 'is-down' : 'is-up'}`}>{q.delta}</span>
-      </li>
-    ))}
-  </ul>
-);
+export const QuotesWidget = () => {
+  const [quotes, setQuotes] = useState(QUOTES);
+  const [flash, setFlash] = useState<number | null>(null);
+
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      const i = Math.floor(Math.random() * QUOTES.length);
+      setQuotes((prev) =>
+        prev.map((q, idx) =>
+          idx === i ? { ...q, value: q.value + (Math.random() < 0.5 ? -5 : 5) } : q,
+        ),
+      );
+      setFlash(i);
+      window.setTimeout(() => setFlash(null), 700);
+    }, 4200);
+    return () => window.clearInterval(t);
+  }, []);
+
+  return (
+    <ul className="vera-w-quotes" data-testid="widget-body-cotizaciones">
+      {quotes.map((q, i) => (
+        <li key={q.label}>
+          <span className="vera-w-quotes__label">{q.label}</span>
+          <span className={`vera-w-quotes__value ${flash === i ? 'is-flash' : ''}`.trim()}>
+            $ {q.value.toLocaleString('es-AR')}
+          </span>
+          <span className={`vera-w-quotes__delta ${q.delta.startsWith('-') ? 'is-down' : 'is-up'}`}>{q.delta}</span>
+        </li>
+      ))}
+    </ul>
+  );
+};
 
 /* ------------------------------- Calendario ----------------------------- */
 /** Vista mensual (distinta de Agenda, que es una lista). Mock: marca hoy y
