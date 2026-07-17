@@ -144,15 +144,11 @@
   padding: 0 var(--vera-space-xs) var(--vera-space-xl);
 }
 .vera-sidebar__brand-mark {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: var(--vera-radius-sm);
-  background-color: var(--vera-color-primary);
-  display: grid;
-  place-items: center;
-  color: var(--vera-color-primary-foreground);
-  font-weight: var(--vera-font-weight-bold);
-  font-size: var(--vera-font-size-sm);
+  object-fit: contain;
+  display: block;
 }
 .vera-sidebar__brand-name {
   font-size: var(--vera-font-size-lg);

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { Input, Button } from '@vera/ui';
+import logoHorizontal from '../../assets/brand/logo-horizontal.png';
 import { supabase } from '../auth/supabase-client';
 import { useAuth } from '../auth/AuthProvider';
 
@@ -49,10 +50,7 @@ export const LoginScreen = () => {
 
       <div className="vera-login__panel">
         <div className="vera-login__brand">
-          <span className="vera-login__brand-mark">V</span>
-          <span className="vera-login__brand-name">
-            VERA <span>OS</span>
-          </span>
+          <img className="vera-login__logo" src={logoHorizontal} alt="VERA OS" />
         </div>
 
         <div className="vera-login__intro">

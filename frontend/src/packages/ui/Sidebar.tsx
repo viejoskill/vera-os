@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import brandIcon from '../../assets/brand/app-icon.png';
 
 export interface SidebarItem {
   id: string;
@@ -45,7 +46,7 @@ export const Sidebar = ({
   return (
     <aside className={`vera-sidebar ${open ? 'vera-sidebar--open' : ''}`.trim()}>
       <div className="vera-sidebar__brand">
-        <span className="vera-sidebar__brand-mark">V</span>
+        <img className="vera-sidebar__brand-mark" src={brandIcon} alt="" aria-hidden="true" />
         <span className="vera-sidebar__brand-name">
           {brandName} <span className="vera-sidebar__brand-os">OS</span>
         </span>

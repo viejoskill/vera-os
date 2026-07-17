@@ -1,0 +1,25 @@
+{
+  "short_name": "VERA OS",
+  "name": "VERA OS — Real Estate Intelligence",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "1024x1024"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1C1C1C",
+  "background_color": "#1C1C1C"
+}

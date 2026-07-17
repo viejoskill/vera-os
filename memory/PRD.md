@@ -250,6 +250,13 @@ La pantalla "Hoy" dejó de ser una lista de recomendaciones (TodayScreen, elimin
 - Router: `/hoy` → `WorkspaceHome` (VeraOS.tsx). `TodayScreen.tsx` eliminado.
 - Nits no bloqueantes (documentados en iteration_21): sin feedback visual cuando el stream de audio falla; apps no-ready conservan `route` en el catálogo.
 
+## Implemented (Marca oficial — Logo VERA OS v1.0 — 2026-06)
+Se aplicó el kit de marca definitivo ("Brand Freeze v1.0") provisto por el usuario. Assets en `/app/frontend/src/assets/brand/` (logo-horizontal/vertical, app-icon, favicon) y `/app/frontend/public/` (favicon.png, logo192/512.png, manifest.json).
+- **Login** (`LoginScreen.tsx`): lockup horizontal (`logo-horizontal.png`, símbolo V + "VERA OS") reemplaza el mark de texto.
+- **Sidebar** (`packages/ui/Sidebar.tsx` + `ui.css`): app-icon (tile redondeado con V) como `brand-mark` (img) + wordmark "VERA OS".
+- **Navegador**: favicon.png, apple-touch-icon, `manifest.json` (theme `#1C1C1C`), title "VERA OS — Real Estate Intelligence".
+- Regla de marca (README del kit): NO modificar colores/proporciones/inclinación; símbolo=amarillo `#F6E63A`. Verificado por screenshot (login + sidebar), tsc limpio, sin errores de consola.
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.

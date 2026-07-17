@@ -1971,22 +1971,10 @@ p {
   gap: var(--vera-space-sm);
   margin-bottom: var(--vera-space-xl);
 }
-.vera-login__brand-mark {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: var(--vera-radius-md);
-  background: var(--vera-color-primary);
-  color: var(--vera-color-primary-foreground);
-  font-weight: var(--vera-font-weight-bold);
-}
-.vera-login__brand-name {
-  font-weight: var(--vera-font-weight-semibold);
-  letter-spacing: 0.02em;
-}
-.vera-login__brand-name span {
-  color: var(--vera-color-primary);
+.vera-login__logo {
+  height: 42px;
+  width: auto;
+  display: block;
 }
 .vera-login__intro {
   margin-bottom: var(--vera-space-lg);
