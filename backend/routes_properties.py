@@ -114,11 +114,11 @@ async def set_publication(property_id: str, channel: str, payload: PublicationAc
 
     publications = dict(prop.get("publications") or {})
     if payload.action == "unpublish":
-        publications[channel] = {"status": "none", "last_sync": None}
+        publications[channel] = {"status": "none", "lastSync": None}
     else:  # publish | update
         publications[channel] = {
             "status": "published",
-            "last_sync": datetime.now(timezone.utc).isoformat(),
+            "lastSync": datetime.now(timezone.utc).isoformat(),
         }
 
     updated = await property_repository.update(property_id, {"publications": publications})
