@@ -3,7 +3,7 @@ snake_case in Python. `from_attributes` lets us build straight from ORM objects.
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
 
@@ -218,3 +218,16 @@ class AiContentResponse(CamelModel):
     suggestions: list[str] = []
     title: str = ""
     body: str = ""
+
+
+class PortalText(CamelModel):
+    title: str = ""
+    body: str = ""
+
+
+class ExpressResponse(CamelModel):
+    titles: list[str] = []
+    description: str = ""
+    highlights: list[str] = []
+    mercadolibre: PortalText = Field(default_factory=PortalText)
+    zonaprop: PortalText = Field(default_factory=PortalText)

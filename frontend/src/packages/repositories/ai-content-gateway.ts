@@ -36,12 +36,26 @@ export interface AiContentResult {
   body: string;
 }
 
+export interface PortalText {
+  title: string;
+  body: string;
+}
+
+export interface ExpressResult {
+  titles: string[];
+  description: string;
+  highlights: string[];
+  mercadolibre: PortalText;
+  zonaprop: PortalText;
+}
+
 export interface AiContentGateway {
   generate(
     mode: AiContentMode,
     context: AiPropertyContext,
     portal?: PortalId,
   ): Promise<AiContentResult>;
+  generateExpress(context: AiPropertyContext): Promise<ExpressResult>;
 }
 
 /**
@@ -69,6 +83,26 @@ export class ApiAiContentGateway implements AiContentGateway {
       suggestions: data.suggestions ?? [],
       title: data.title ?? '',
       body: data.body ?? '',
+    };
+  }
+
+  async generateExpress(context: AiPropertyContext): Promise<ExpressResult> {
+    const res = await fetch(`${env.backendUrl}/api/ai/express`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...context }),
+    });
+    if (!res.ok) {
+      throw new Error(`VERA AI express ${res.status}`);
+    }
+    const data = (await res.json()) as Partial<ExpressResult>;
+    const empty = { title: '', body: '' };
+    return {
+      titles: data.titles ?? [],
+      description: data.description ?? '',
+      highlights: data.highlights ?? [],
+      mercadolibre: data.mercadolibre ?? empty,
+      zonaprop: data.zonaprop ?? empty,
     };
   }
 }

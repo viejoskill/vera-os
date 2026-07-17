@@ -2,6 +2,7 @@ import type {
   AiContentGateway,
   AiContentMode,
   AiPropertyContext,
+  ExpressResult,
   PortalId,
 } from '@vera/repositories';
 
@@ -35,5 +36,9 @@ export class AiContentService {
   ): Promise<{ title: string; body: string }> {
     const r = await this.generate('portal', context, portal);
     return { title: r.title, body: r.body };
+  }
+
+  generateExpress(context: AiPropertyContext): Promise<ExpressResult> {
+    return this.gateway.generateExpress(context);
   }
 }

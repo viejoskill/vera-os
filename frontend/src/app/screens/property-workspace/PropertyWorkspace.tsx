@@ -22,6 +22,7 @@ import { BasicInfoSection } from './BasicInfoSection';
 import { FeaturesSection } from './FeaturesSection';
 import { AmenitiesSection } from './AmenitiesSection';
 import { DescriptionSection } from './DescriptionSection';
+import { ExpressSection } from './ExpressSection';
 import { HighlightsSection } from './HighlightsSection';
 import { PortalsSection } from './PortalsSection';
 import { OwnerSection } from './OwnerSection';
@@ -353,6 +354,11 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
                 </Panel>
               </div>
             )}
+            <div id="ws-section-express">
+              <Panel title="Publicación express" description="En un clic: título, descripción, destacados y textos para portales.">
+                <ExpressSection />
+              </Panel>
+            </div>
             <div id="ws-section-description">
               <Panel title="Descripción" description="Contala vos o dejá que VERA la redacte.">
                 <DescriptionSection />

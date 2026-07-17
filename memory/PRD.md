@@ -214,6 +214,11 @@ El módulo pasó de "formulario" a **base de conocimiento** de la propiedad (fue
 - Arquitectura: backend `ai_content_service.generate_content(mode,data)->{suggestions,title,body}`; frontend gateway/servicio ampliados; `ai-context.ts` (buildAiContext, único mapeo form→contexto IA, amenities como labels); hook genérico `useAiContent`. Nuevos: `HighlightsSection`, `PortalsSection`, `PropertyFilters`. Reescrito `DescriptionSection`.
 - Tests: `test_ai_content.py` (10 casos).
 
+## Implemented (Sprint "Publicación express" — 2026-06)
+Botón de un clic que orquesta los 4 modos: genera **título + descripción + destacados + textos de Mercado Libre y Zonaprop** en una sola llamada. Verificado por curl (endpoint) + screenshot E2E sobre propiedad real (todos los bloques con datos reales, sin inventar).
+- Backend: `POST /api/ai/express` + `ai_content_service.generate_express(data)` (usa `asyncio.gather`: wave 1 = title/description/highlights en paralelo; wave 2 = ML/ZP portales adaptados desde el título+descripción recién generados). Schema `ExpressResponse` (titles, description, highlights, mercadolibre, zonaprop).
+- Frontend: `ExpressSection.tsx` (nuevo panel "Publicación express" antes de Descripción), gateway `generateExpress`, servicio `generateExpress`. Copiar por bloque + "Copiar todo". VERA propone; no sobrescribe la propiedad.
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.

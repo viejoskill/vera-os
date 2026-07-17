@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException
 
 import ai_content_service
 import config
-from schemas import AiContentRequest, AiContentResponse
+from schemas import AiContentRequest, AiContentResponse, ExpressResponse, PortalText
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 logger = logging.getLogger("vera")
@@ -36,4 +36,22 @@ async def generate_content(payload: AiContentRequest):
         suggestions=result.get("suggestions", []),
         title=result.get("title", ""),
         body=result.get("body", ""),
+    )
+
+
+@router.post("/express", response_model=ExpressResponse)
+async def express(payload: AiContentRequest):
+    if not config.ai_configured():
+        raise HTTPException(503, "La IA de VERA no está configurada.")
+    try:
+        r = await ai_content_service.generate_express(payload.model_dump(by_alias=True))
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("VERA express generation failed")
+        raise HTTPException(502, "VERA no pudo generar la publicación ahora.") from exc
+    return ExpressResponse(
+        titles=r["titles"],
+        description=r["description"],
+        highlights=r["highlights"],
+        mercadolibre=PortalText(**r["mercadolibre"]),
+        zonaprop=PortalText(**r["zonaprop"]),
     )

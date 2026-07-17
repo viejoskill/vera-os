@@ -10,6 +10,7 @@ The frontend never talks to the LLM — it only knows this backend service.
 Product rule: VERA PROPONE, el profesional decide — this service only returns
 SUGGESTIONS; it never mutates or auto-fills the property.
 """
+import asyncio
 import json
 import logging
 import uuid
@@ -308,3 +309,38 @@ async def generate_content(mode: str, data: dict) -> dict:
 
     logger.info("VERA %s: generated", mode)
     return result
+
+
+async def generate_express(data: dict) -> dict:
+    """One-click publication: title + description + highlights + portal texts (ML/ZP).
+    Portals adapt from VERA's freshly generated title/description (falls back to the
+    property's current ones). Returns a combined structure — still only proposals."""
+    if not config.ai_configured():
+        raise RuntimeError("La IA de VERA no está configurada.")
+
+    title_r, desc_r, hl_r = await asyncio.gather(
+        generate_content("title", data),
+        generate_content("description", data),
+        generate_content("highlights", data),
+    )
+    titles = title_r["suggestions"]
+    description = desc_r["suggestions"][0] if desc_r["suggestions"] else ""
+
+    base = {
+        **data,
+        "title": titles[0] if titles else data.get("title", ""),
+        "description": description or data.get("description", ""),
+    }
+    ml, zp = await asyncio.gather(
+        generate_content("portal", {**base, "portal": "mercadolibre"}),
+        generate_content("portal", {**base, "portal": "zonaprop"}),
+    )
+
+    logger.info("VERA express: generated full publication")
+    return {
+        "titles": titles,
+        "description": description,
+        "highlights": hl_r["suggestions"],
+        "mercadolibre": {"title": ml["title"], "body": ml["body"]},
+        "zonaprop": {"title": zp["title"], "body": zp["body"]},
+    }
