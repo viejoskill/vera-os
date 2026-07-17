@@ -3,7 +3,7 @@ import { useAuthUser } from '@app/auth/useAuthUser';
 import { APPS } from './apps-catalog';
 
 const KEY = (email: string) => `vera:dock:${email || 'anon'}`;
-const DEFAULT = ['propiedades', 'operaciones', 'personas'];
+const DEFAULT = ['gmail', 'ia', 'calendar', 'whatsapp', 'spotify'];
 
 /** Dock personalizable: apps fijadas por el usuario, persistido en localStorage.
  * Pertenece al usuario, no al sistema. */

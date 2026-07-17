@@ -1,24 +1,39 @@
 import { useState } from 'react';
-import { Settings2, ArrowUp, ArrowDown, X, RotateCcw } from 'lucide-react';
-import { WIDGETS, widgetById } from './widget-registry';
+import { SlidersHorizontal, Sparkles, Search } from 'lucide-react';
+import { widgetById } from './widget-registry';
 import { useDashboard } from './useDashboard';
 import { Dock } from './Dock';
+import { SpotlightModal } from './SpotlightModal';
+import { CustomizePanel } from './CustomizePanel';
 
 /**
  * Workspace Personal — la pantalla "Hoy" como escritorio del profesional.
- * Ambient Intelligence UI + Dashboard Engine (widgets activables/reordenables) + Dock.
+ * Ambient Intelligence UI + Dashboard Engine (widgets activables) + Dock personal
+ * + capa de IA reservada (Spotlight). Calma y aire por sobre densidad.
  */
 export const WorkspaceHome = () => {
-  const { layout, isEnabled, toggle, move, reset } = useDashboard();
-  const [editing, setEditing] = useState(false);
+  const { layout, isEnabled, toggle, reset } = useDashboard();
+  const [customizing, setCustomizing] = useState(false);
+  const [spotlight, setSpotlight] = useState(false);
 
   return (
     <div className="vera-home" data-testid="workspace-home">
       <div className="vera-home__ambient" aria-hidden="true">
         <span className="vera-home__glow vera-home__glow--1" />
         <span className="vera-home__glow vera-home__glow--2" />
-        <span className="vera-home__glow vera-home__glow--3" />
       </div>
+
+      {/* Capa de IA reservada — Spotlight */}
+      <button
+        type="button"
+        className="vera-home__spotlight"
+        data-testid="spotlight-trigger"
+        onClick={() => setSpotlight(true)}
+      >
+        <Search size={17} className="vera-home__spotlight-icon" />
+        <span className="vera-home__spotlight-text">¿Qué querés hacer hoy? Preguntale a VERA…</span>
+        <span className="vera-home__spotlight-badge"><Sparkles size={12} /> VERA</span>
+      </button>
 
       <div className="vera-home__head">
         <div>
@@ -27,35 +42,13 @@ export const WorkspaceHome = () => {
         </div>
         <button
           type="button"
-          className={`vera-btn vera-btn--${editing ? 'primary' : 'ghost'} vera-btn--sm`}
+          className="vera-btn vera-btn--secondary vera-btn--sm"
           data-testid="customize-widgets"
-          onClick={() => setEditing((e) => !e)}
+          onClick={() => setCustomizing(true)}
         >
-          <Settings2 size={15} /> {editing ? 'Listo' : 'Personalizar'}
+          <SlidersHorizontal size={15} /> Personalizar escritorio
         </button>
       </div>
-
-      {editing && (
-        <div className="vera-widget-picker" data-testid="widget-picker">
-          <span className="vera-widget-picker__label">Widgets disponibles</span>
-          <div className="vera-widget-picker__chips">
-            {WIDGETS.map((w) => (
-              <button
-                key={w.id}
-                type="button"
-                className={`vera-chip ${isEnabled(w.id) ? 'vera-chip--active' : ''}`.trim()}
-                data-testid={`widget-toggle-${w.id}`}
-                onClick={() => toggle(w.id)}
-              >
-                <w.icon size={13} /> {w.title}
-              </button>
-            ))}
-          </div>
-          <button type="button" className="vera-ai-action" data-testid="reset-widgets" onClick={reset}>
-            <RotateCcw size={13} /> Restablecer
-          </button>
-        </div>
-      )}
 
       <div className="vera-widget-grid" data-testid="widget-grid">
         {layout.map((id, i) => {
@@ -71,16 +64,7 @@ export const WorkspaceHome = () => {
             >
               <header className="vera-widget__head">
                 <span className="vera-widget__title"><w.icon size={15} /> {w.title}</span>
-                <div className="vera-widget__ctl">
-                  {w.demo && <span className="vera-widget__demo">Demo</span>}
-                  {editing && (
-                    <>
-                      <button type="button" className="vera-widget__btn" data-testid={`widget-up-${id}`} onClick={() => move(id, -1)} aria-label="Subir"><ArrowUp size={14} /></button>
-                      <button type="button" className="vera-widget__btn" data-testid={`widget-down-${id}`} onClick={() => move(id, 1)} aria-label="Bajar"><ArrowDown size={14} /></button>
-                      <button type="button" className="vera-widget__btn" data-testid={`widget-remove-${id}`} onClick={() => toggle(id)} aria-label="Quitar"><X size={14} /></button>
-                    </>
-                  )}
-                </div>
+                {w.demo && <span className="vera-widget__demo">Demo</span>}
               </header>
               <div className="vera-widget__body">
                 <Component />
@@ -91,6 +75,15 @@ export const WorkspaceHome = () => {
       </div>
 
       <Dock />
+
+      <CustomizePanel
+        open={customizing}
+        onClose={() => setCustomizing(false)}
+        isEnabled={isEnabled}
+        toggle={toggle}
+        reset={reset}
+      />
+      <SpotlightModal open={spotlight} onClose={() => setSpotlight(false)} />
     </div>
   );
 };

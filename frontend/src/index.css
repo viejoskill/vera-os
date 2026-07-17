@@ -2401,9 +2401,10 @@ p {
   position: relative;
   isolation: isolate;
   min-height: calc(100vh - 120px);
-  padding: var(--vera-space-lg) 0 var(--vera-space-3xl);
+  padding: var(--vera-space-2xl) 0 var(--vera-space-3xl);
   display: flex;
   flex-direction: column;
+  gap: var(--vera-space-xl);
 }
 
 /* --- Ambient atmosphere (subtle, serene lighting) --- */
@@ -2412,8 +2413,8 @@ p {
   inset: -20% -10% 0 -10%;
   z-index: 0;
   pointer-events: none;
-  filter: blur(90px);
-  opacity: 0.3;
+  filter: blur(100px);
+  opacity: 0.22;
 }
 .vera-home__glow {
   position: absolute;
@@ -2421,28 +2422,23 @@ p {
   border-radius: 50%;
 }
 .vera-home__glow--1 {
-  width: 44vw;
-  height: 44vw;
-  top: -8%;
-  left: 2%;
-  background: radial-gradient(circle, rgba(246, 230, 58, 0.16), transparent 62%);
-  animation: vera-drift-a 28s ease-in-out infinite;
+  width: 42vw;
+  height: 42vw;
+  top: -10%;
+  left: 4%;
+  background: radial-gradient(circle, rgba(246, 230, 58, 0.11), transparent 64%);
+  animation: vera-drift-a 30s ease-in-out infinite;
 }
 .vera-home__glow--2 {
-  width: 38vw;
-  height: 38vw;
-  top: 20%;
-  right: 0%;
-  background: radial-gradient(circle, rgba(120, 170, 255, 0.1), transparent 62%);
-  animation: vera-drift-b 34s ease-in-out infinite;
+  width: 34vw;
+  height: 34vw;
+  top: 30%;
+  right: 2%;
+  background: radial-gradient(circle, rgba(246, 230, 58, 0.06), transparent 66%);
+  animation: vera-drift-b 38s ease-in-out infinite;
 }
 .vera-home__glow--3 {
-  width: 30vw;
-  height: 30vw;
-  top: 46%;
-  left: 40%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.05), transparent 60%);
-  animation: vera-drift-a 40s ease-in-out infinite reverse;
+  display: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .vera-home__glow { animation: none; }
@@ -2456,7 +2452,6 @@ p {
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--vera-space-md);
-  margin-bottom: var(--vera-space-lg);
   animation: vera-rise 0.7s ease both;
 }
 .vera-home__title {
@@ -2509,7 +2504,7 @@ p {
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: var(--vera-space-md);
+  gap: var(--vera-space-lg);
   align-items: start;
 }
 .vera-widget--sm { grid-column: span 1; }
@@ -2533,18 +2528,24 @@ p {
 .vera-widget {
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, rgba(46, 46, 46, 0.9), rgba(37, 37, 37, 0.85));
-  border: 1px solid var(--vera-color-border);
+  background: linear-gradient(180deg, rgba(46, 46, 46, 0.55), rgba(37, 37, 37, 0.4));
+  border: 1px solid rgba(58, 58, 58, 0.7);
   border-radius: var(--vera-radius-lg);
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
   animation: vera-rise 0.6s ease both;
-  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.28s ease,
+    box-shadow 0.28s ease;
 }
 .vera-widget:hover {
-  transform: translateY(-2px);
-  border-color: rgba(246, 230, 58, 0.28);
-  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.4);
+  transform: translateY(-3px);
+  border-color: rgba(246, 230, 58, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 10px 30px rgba(0, 0, 0, 0.28),
+    0 0 26px rgba(246, 230, 58, 0.06);
 }
 .vera-widget__head {
   display: flex;
@@ -2969,3 +2970,342 @@ p {
   background: rgba(246, 230, 58, 0.08);
 }
 .vera-dock__check { color: var(--vera-color-primary); }
+/* ============================================================================
+   Workspace Refinement — Spotlight (IA reservada), Personalizar panel, Calendario
+   ============================================================================ */
+
+/* --- Spotlight trigger (barra "Preguntale a VERA") --- */
+.vera-home__spotlight {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  width: 100%;
+  max-width: 720px;
+  padding: var(--vera-space-md) var(--vera-space-lg);
+  border-radius: var(--vera-radius-pill);
+  border: 1px solid rgba(58, 58, 58, 0.8);
+  background: linear-gradient(180deg, rgba(46, 46, 46, 0.5), rgba(37, 37, 37, 0.35));
+  color: var(--vera-color-text-secondary);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 0.28s ease,
+    box-shadow 0.28s ease,
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.vera-home__spotlight:hover {
+  border-color: rgba(246, 230, 58, 0.3);
+  box-shadow: 0 0 30px rgba(246, 230, 58, 0.07);
+  transform: translateY(-1px);
+}
+.vera-home__spotlight-icon { color: var(--vera-color-primary); flex-shrink: 0; }
+.vera-home__spotlight-text {
+  flex: 1;
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text-secondary);
+}
+.vera-home__spotlight-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  color: var(--vera-color-primary);
+  border: 1px solid rgba(246, 230, 58, 0.3);
+  border-radius: var(--vera-radius-pill);
+  padding: 3px 10px;
+}
+
+/* --- Spotlight modal --- */
+.vera-spot {
+  position: fixed;
+  inset: 0;
+  z-index: var(--vera-z-index-modal, 50);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 14vh;
+  background: rgba(12, 12, 12, 0.55);
+  backdrop-filter: blur(6px);
+  animation: vera-spot-fade 0.2s ease both;
+}
+@keyframes vera-spot-fade { from { opacity: 0; } to { opacity: 1; } }
+.vera-spot__panel {
+  width: min(620px, 92vw);
+  background: color-mix(in srgb, var(--vera-color-card) 92%, transparent);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-lg);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(246, 230, 58, 0.05);
+  overflow: hidden;
+  animation: vera-spot-rise 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes vera-spot-rise {
+  from { opacity: 0; transform: translateY(-10px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.vera-spot__field {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  padding: var(--vera-space-md) var(--vera-space-lg);
+  border-bottom: 1px solid var(--vera-color-border);
+}
+.vera-spot__search-icon { color: var(--vera-color-primary); flex-shrink: 0; }
+.vera-spot__input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--vera-color-text);
+  font-family: var(--vera-font-family);
+  font-size: var(--vera-font-size-md);
+}
+.vera-spot__input::placeholder { color: var(--vera-color-text-secondary); }
+.vera-spot__close {
+  display: inline-flex;
+  padding: 6px;
+  border: none;
+  background: transparent;
+  color: var(--vera-color-text-secondary);
+  border-radius: var(--vera-radius-sm);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.vera-spot__close:hover { background: var(--vera-color-surface); color: var(--vera-color-text); }
+.vera-spot__hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--vera-space-sm) var(--vera-space-lg);
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-text-secondary);
+}
+.vera-spot__hint svg { color: var(--vera-color-primary); }
+.vera-spot__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 var(--vera-space-sm) var(--vera-space-md);
+  position: relative;
+}
+.vera-spot__label {
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--vera-color-text-secondary);
+  padding: var(--vera-space-xs) var(--vera-space-sm);
+}
+.vera-spot__action {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  padding: var(--vera-space-sm);
+  border-radius: var(--vera-radius-md);
+  border: none;
+  background: transparent;
+  color: var(--vera-color-text-secondary);
+  font-size: var(--vera-font-size-sm);
+  text-align: left;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.vera-spot__action svg { color: var(--vera-color-primary); }
+.vera-spot__soon {
+  position: absolute;
+  top: var(--vera-space-xs);
+  right: var(--vera-space-md);
+  font-size: 10px;
+  font-weight: var(--vera-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--vera-color-text-secondary);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-pill);
+  padding: 2px 8px;
+}
+
+/* --- Customize panel (right drawer) --- */
+.vera-cust__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--vera-z-index-overlay, 40);
+  background: rgba(12, 12, 12, 0.5);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+.vera-cust__scrim.is-open { opacity: 1; pointer-events: auto; }
+.vera-cust {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: var(--vera-z-index-modal, 50);
+  display: flex;
+  flex-direction: column;
+  width: min(360px, 90vw);
+  height: 100vh;
+  background: var(--vera-color-surface);
+  border-left: 1px solid var(--vera-color-border);
+  box-shadow: -20px 0 50px rgba(0, 0, 0, 0.4);
+  transform: translateX(100%);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.vera-cust.is-open { transform: translateX(0); }
+.vera-cust__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--vera-space-sm);
+  padding: var(--vera-space-lg);
+  border-bottom: 1px solid var(--vera-color-border);
+}
+.vera-cust__title {
+  font-size: var(--vera-font-size-lg);
+  font-weight: var(--vera-font-weight-semibold);
+  color: var(--vera-color-text);
+}
+.vera-cust__sub {
+  margin-top: 2px;
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-text-secondary);
+}
+.vera-cust__close {
+  display: inline-flex;
+  padding: 6px;
+  border: none;
+  background: transparent;
+  color: var(--vera-color-text-secondary);
+  border-radius: var(--vera-radius-sm);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.vera-cust__close:hover { background: var(--vera-color-card); color: var(--vera-color-text); }
+.vera-cust__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--vera-space-md);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.vera-cust__group {
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--vera-color-text-secondary);
+  padding: var(--vera-space-xs) var(--vera-space-sm) var(--vera-space-xxs);
+}
+.vera-cust__item {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  padding: var(--vera-space-sm);
+  border-radius: var(--vera-radius-md);
+  border: none;
+  background: transparent;
+  color: var(--vera-color-text);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.vera-cust__item:hover { background: var(--vera-color-card); }
+.vera-cust__check {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1.5px solid var(--vera-color-border);
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.vera-cust__item.is-on .vera-cust__check {
+  background: var(--vera-color-primary);
+  border-color: var(--vera-color-primary);
+}
+.vera-cust__item.is-on .vera-cust__check::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 5px;
+  height: 10px;
+  border: solid var(--vera-color-primary-foreground);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.vera-cust__item-icon {
+  display: inline-flex;
+  color: var(--vera-color-text-secondary);
+}
+.vera-cust__item.is-on .vera-cust__item-icon { color: var(--vera-color-primary); }
+.vera-cust__item-label {
+  flex: 1;
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-medium);
+}
+.vera-cust__demo {
+  font-size: 10px;
+  font-weight: var(--vera-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--vera-color-text-secondary);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-pill);
+  padding: 2px 8px;
+}
+.vera-cust__foot {
+  padding: var(--vera-space-md) var(--vera-space-lg);
+  border-top: 1px solid var(--vera-color-border);
+}
+
+/* --- Calendar widget --- */
+.vera-w-cal { display: flex; flex-direction: column; gap: var(--vera-space-sm); }
+.vera-w-cal__month {
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-semibold);
+  color: var(--vera-color-text);
+  text-transform: capitalize;
+}
+.vera-w-cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.vera-w-cal__dow {
+  text-align: center;
+  font-size: 10px;
+  font-weight: var(--vera-font-weight-semibold);
+  color: var(--vera-color-text-secondary);
+  padding-bottom: 2px;
+}
+.vera-w-cal__cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-text-secondary);
+  border-radius: var(--vera-radius-sm);
+}
+.vera-w-cal__day { color: var(--vera-color-text); }
+.vera-w-cal__day.is-today {
+  background: var(--vera-color-primary);
+  color: var(--vera-color-primary-foreground);
+  font-weight: var(--vera-font-weight-bold);
+}
+.vera-w-cal__dot {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--vera-color-primary);
+}
+

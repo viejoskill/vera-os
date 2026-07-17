@@ -1,5 +1,5 @@
 import { createElement, type ReactNode } from 'react';
-import { Sun, Building2, GitBranch, Clapperboard } from 'lucide-react';
+import { Sun, Bot, Building2, Users, GitBranch, Clapperboard } from 'lucide-react';
 import { featureFlags } from '@vera/config';
 
 export interface NavRoute {
@@ -10,7 +10,8 @@ export interface NavRoute {
   enabled: boolean;
 }
 
-/** Navigation is derived from feature flags — flipping a flag enables an App. */
+/** Navigation is derived from feature flags — flipping a flag enables an App.
+ * Vera Bot is the system's primary messaging App — same hierarchy as Propiedades. */
 export const navRoutes: NavRoute[] = [
   {
     id: 'hoy',
@@ -20,11 +21,25 @@ export const navRoutes: NavRoute[] = [
     enabled: featureFlags.hoy,
   },
   {
+    id: 'vera-bot',
+    label: 'Vera Bot',
+    path: '/vera-bot',
+    icon: createElement(Bot, { size: 18 }),
+    enabled: featureFlags.veraBot,
+  },
+  {
     id: 'propiedades',
     label: 'Propiedades',
     path: '/propiedades',
     icon: createElement(Building2, { size: 18 }),
     enabled: featureFlags.propiedades,
+  },
+  {
+    id: 'personas',
+    label: 'Personas',
+    path: '/personas',
+    icon: createElement(Users, { size: 18 }),
+    enabled: featureFlags.personas,
   },
   {
     id: 'operaciones',

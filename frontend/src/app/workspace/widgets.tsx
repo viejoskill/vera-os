@@ -290,6 +290,53 @@ export const QuotesWidget = () => (
   </ul>
 );
 
+/* ------------------------------- Calendario ----------------------------- */
+/** Vista mensual (distinta de Agenda, que es una lista). Mock: marca hoy y
+ * algunos días con eventos. No requiere integración real todavía. */
+const EVENT_DAYS = new Set([3, 9, 12, 18, 24, 27]);
+const WEEK_DAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+
+export const CalendarWidget = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const today = now.getDate();
+  const monthLabel = now.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  // JS: 0=Sunday..6=Saturday → shift to Monday-first (0=Mon..6=Sun).
+  const firstDow = (new Date(year, month, 1).getDay() + 6) % 7;
+  const cells: (number | null)[] = [
+    ...Array.from({ length: firstDow }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+
+  return (
+    <div className="vera-w-cal" data-testid="widget-body-calendario">
+      <p className="vera-w-cal__month">{monthLabel}</p>
+      <div className="vera-w-cal__grid">
+        {WEEK_DAYS.map((d, i) => (
+          <span key={`h-${i}`} className="vera-w-cal__dow">{d}</span>
+        ))}
+        {cells.map((d, i) => {
+          if (d === null) return <span key={`e-${i}`} className="vera-w-cal__cell" />;
+          const isToday = d === today;
+          const hasEvent = EVENT_DAYS.has(d);
+          return (
+            <span
+              key={`d-${d}`}
+              className={`vera-w-cal__cell vera-w-cal__day ${isToday ? 'is-today' : ''}`.trim()}
+            >
+              {d}
+              {hasEvent && !isToday && <span className="vera-w-cal__dot" />}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 export const WIDGET_ICONS = {
   Clock, ListChecks, Radio, Star, CalendarDays, CheckSquare, Activity, CloudSun, Newspaper, TrendingUp,
 };

@@ -1,18 +1,17 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Plus, Check } from 'lucide-react';
 import { APPS, appById } from './apps-catalog';
 import { useDock } from './useDock';
 
-/** Dock personalizable estilo OS: apps favoritas del usuario. Fijar/quitar + persistencia. */
+/** Dock personalizable estilo OS: HERRAMIENTAS PERSONALES (Gmail, IA, Drive…).
+ * Cada una abre su web real en una pestaña nueva. Fijar/quitar + persistencia. */
 export const Dock = () => {
-  const navigate = useNavigate();
   const { pinned, isPinned, toggle } = useDock();
   const [editing, setEditing] = useState(false);
 
   const open = (id: string) => {
-    const app = appById(id);
-    if (app?.ready && app.route) navigate(app.route);
+    const tool = appById(id);
+    if (tool?.href) window.open(tool.href, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -36,20 +35,19 @@ export const Dock = () => {
 
       <div className="vera-dock__bar">
         {pinned.map((id) => {
-          const app = appById(id);
-          if (!app) return null;
+          const tool = appById(id);
+          if (!tool) return null;
           return (
             <button
               key={id}
               type="button"
               className="vera-dock__app"
               data-testid={`dock-app-${id}`}
-              title={app.ready ? app.label : `${app.label} · Próximamente`}
+              title={tool.label}
               onClick={() => open(id)}
             >
-              <app.icon size={20} />
-              {!app.ready && <span className="vera-dock__soon" />}
-              <span className="vera-dock__tip">{app.label}{app.ready ? '' : ' · Próximamente'}</span>
+              <tool.icon size={20} />
+              <span className="vera-dock__tip">{tool.label}</span>
             </button>
           );
         })}
