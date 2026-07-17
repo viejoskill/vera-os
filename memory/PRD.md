@@ -233,6 +233,13 @@ Reorganización UX: el Workspace pasa de "suma de formularios" a **panel de cont
 - **Descripción manual**: en "Contenido comercial" hay un toggle colapsable "Editar descripción a mano" (`toggle-manual-description`) que revela un `<Textarea>` ligado a `description` (`manual-description`) con contador; se guarda con el resto del formulario. Permite ajustar la descripción sin regenerar con IA. `ExpressSection.tsx`.
 - Verificado por tsc + screenshot. Backend sin cambios. Pendiente por decisión del usuario: conexión real de Mercado Libre/Zonaprop (se hará "cuando quede todo diseñado").
 
+## Implemented (Sprint "Canales+, Duplicar, Express UX" — 2026-06)
+Verificado 100% (iteration_20): backend 12/12 pytest + frontend E2E verde, tsc limpio, sin residuos.
+- **Link de aviso por canal** (auto-sync fase 1): estado en vivo ⏳ Sincronizando → 🟢/🔴 (ya existía en cada acción) + **link directo al aviso** por canal ("Agregar/Editar link" → "Ver aviso ↗"), persistente. Hoy el asesor pega el link a mano; cuando se conecten las APIs reales de ML/Zonaprop, el mismo campo se completa solo (sin rehacer UI). Backend: `PublicationAction.url` (None=no cambiar / ""=limpiar / valor=setear); "Actualizar" preserva el link, "Guardar" con campo vacío lo limpia.
+- **Duplicar propiedad**: `POST /api/properties/{id}/duplicate` clona la ficha (datos + amenities + características), title "(copia)", status active, code NUEVO, publications {}, **sin fotos/documentos**. Menú "…" → "Duplicar" navega a la copia. `duplicate()` en repo/servicio.
+- **Express UX**: "Usar esta descripción" ahora **abre automáticamente** el textarea manual (`manual-description`) con el texto cargado para retocar antes de guardar.
+- Tests: `test_sprint20.py` (12). Nits menores documentados (clase css compartida en input de link; responsive del editor no verificado) — no bloqueantes.
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.

@@ -15,7 +15,6 @@ export interface PublicationGateway {
     url?: string,
   ): Promise<PublicationsMap>;
 }
-
 /**
  * Talks to the VERA backend publication endpoint. The frontend never knows how the
  * status is stored (Supabase jsonb today). Real portal integrations would live behind
@@ -33,7 +32,7 @@ export class ApiPublicationGateway implements PublicationGateway {
     const res = await fetch(`${this.base}/${propertyId}/publications/${channel}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, url: url ?? '' }),
+      body: JSON.stringify(url === undefined ? { action } : { action, url }),
     });
     if (!res.ok) {
       throw new Error(`VERA publications ${res.status}`);

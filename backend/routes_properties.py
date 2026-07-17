@@ -117,10 +117,11 @@ async def set_publication(property_id: str, channel: str, payload: PublicationAc
     if payload.action == "unpublish":
         publications[channel] = {"status": "none", "lastSync": None, "url": ""}
     else:  # publish | update
+        keep_url = existing.get("url", "")
         publications[channel] = {
             "status": "published",
             "lastSync": datetime.now(timezone.utc).isoformat(),
-            "url": payload.url or existing.get("url", ""),
+            "url": keep_url if payload.url is None else payload.url,
         }
 
     updated = await property_repository.update(property_id, {"publications": publications})
