@@ -2,6 +2,11 @@ import { useFormContext } from 'react-hook-form';
 import { Input, Select } from '@vera/ui';
 import { PROPERTY_TYPE_OPTIONS, CURRENCY_OPTIONS, type PropertyFormValues } from './form-schema';
 import { LocationSection } from './LocationSection';
+import { TitleSuggestions } from './TitleSuggestions';
+
+// Visual-only thousands separator (es-AR uses "."). Internal value stays clean digits.
+const formatThousands = (digits: string): string =>
+  digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
 
 export const BasicInfoSection = () => {
   const {
@@ -11,16 +16,20 @@ export const BasicInfoSection = () => {
     formState: { errors },
   } = useFormContext<PropertyFormValues>();
   const operation = watch('operation');
+  const price = watch('price');
 
   return (
     <div className="vera-form">
-      <Input
-        label="Título de la publicación"
-        placeholder="Ej.: Departamento 3 ambientes con balcón"
-        data-testid="input-title"
-        error={errors.title?.message}
-        {...register('title')}
-      />
+      <div className="vera-field">
+        <Input
+          label="Título de la publicación"
+          placeholder="Ej.: Departamento 3 ambientes con balcón"
+          data-testid="input-title"
+          error={errors.title?.message}
+          {...register('title')}
+        />
+        <TitleSuggestions />
+      </div>
 
       <div className="vera-field">
         <span className="vera-field__label">Operación</span>
@@ -50,10 +59,14 @@ export const BasicInfoSection = () => {
           <Input
             label="Precio"
             inputMode="numeric"
-            placeholder="Ej.: 189000"
+            placeholder="Ej.: 189.000"
             data-testid="input-price"
             error={errors.price?.message}
-            {...register('price')}
+            value={formatThousands(price)}
+            onChange={(e) => {
+              const clean = e.target.value.replace(/\D/g, '');
+              setValue('price', clean, { shouldValidate: true, shouldDirty: true });
+            }}
           />
           <Select label="Moneda" options={CURRENCY_OPTIONS} {...register('currency')} />
         </div>

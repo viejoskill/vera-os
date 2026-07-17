@@ -1,0 +1,38 @@
+{
+  "summary": "Sprint 'Cerrar módulo Información' — Backend 4/4 pytest OK y Frontend E2E 100% verde. AI /api/ai/content responde 200 con 3 títulos únicos en español rioplatense (<=70 chars); mode inválido devuelve 422; con datos mínimos (solo type+operation) sigue devolviendo sugerencias válidas. UI: precio muestra '1.250.000' y '79.000' al tipear 1250000/79000; POST /api/properties envía price=1250000 (int limpio, sin puntos); al abrir la propiedad para editar, el campo vuelve a mostrar '1.250.000' correctamente. Panel de IA de título: click en 'VERA sugiere un título' abre panel con estado 'VERA está pensando 3 opciones…', luego carga title-option-0/1/2 con botones use-title-N; 'Generar otras' regenera (loading → nuevas opciones); 'Usar este título' aplica y cierra el panel; el título nunca se reemplaza automáticamente (verificado: título 'TEST_temp' se mantuvo tras cargar opciones, solo cambió al click explícito). Propiedad temporal creada y eliminada (DELETE 204).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_ai_content.py",
+    "/app/test_reports/pytest/ai_content_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Positivo — ai_content_service.py: la abstracción generate_content(mode, property_data) con SUPPORTED_MODES=('title',) deja bien preparado el futuro (description, highlights, portales). _known_facts() aplica correctamente la regla 'VERA nunca inventa': solo agrega hechos presentes y con valores válidos. _parse_titles() es robusto (maneja fences ```json, arrays sueltos, líneas con bullets, deduplica case-insensitive y trunca a 80 chars).",
+    "Positivo — routes_ai.py: mapea correctamente los códigos HTTP (503 si no configurado, 422 si mode no soportado, 502 si LLM falla). Uso de model_dump(by_alias=True) para respetar camelCase del frontend.",
+    "Positivo — BasicInfoSection.tsx: input-price controlado 100% (value + onChange) que aplica formatThousands solo al display y llama setValue('price', clean) con dígitos crudos. buildPayload usa toNumber(v.price) → llega como número al backend. Verificado en runtime que POST envía price:1250000 (int) NO '1.250.000'.",
+    "Positivo — TitleSuggestions.tsx: 'VERA propone, el profesional decide' bien implementado: apply() es explícito (solo setValue('title', ...) al click). El panel se cierra al aplicar y también reset() limpia el estado del hook. Regenerate reusa run() por lo que dispara loading + 3 nuevas sugerencias. Todos los data-testids requeridos presentes (suggest-title, title-suggestions, title-loading, title-option-N, use-title-N, title-regenerate, title-retry).",
+    "Positivo — useTitleSuggestions.ts: máquina de estados (idle/loading/ready/error) correcta. Si el resultado viene vacío, marca error (no ready con lista vacía). try/catch cubre fallas de red/LLM.",
+    "Nit — schemas.py::AiContentRequest.mode default es 'title'. Si un cliente envía body sin mode explícito, pasa. Está OK para la práctica actual pero considerar exigir mode como required (sin default) para no depender del default cuando en el futuro haya varios modos.",
+    "Nit (fuera de este sprint) — TitleSuggestions.tsx línea 33: la heurística nearSea usa regex sobre `${v.city} ${v.neighborhood}`. Funciona para casos comunes de la costa bonaerense, pero no cubre otras costas argentinas (Chubut/Río Negro) — considerar hacerlo un checkbox explícito en el futuro o ampliar la lista.",
+    "Nit — ai_content_service.py línea 22: MODEL_NAME='gemini-3-flash-preview' está hardcodeado. Considerar moverlo a config.py para poder pivotar sin tocar el service.",
+    "Nit (deuda técnica preexistente, no de este sprint) — backend abierto sin verificación de JWT (ya registrado en iteraciones anteriores). La ruta /api/ai/content queda expuesta y consume LLM key sin auth: recomendación explícita ya que cualquier cliente con la URL puede quemar tokens del Emergent LLM key."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_ai_content.py"
+  ],
+  "success_rate": {
+    "backend": "100% — 4/4 pytest passed (happy path 3 títulos válidos <=70 chars, mode inválido→422, mínimos datos→200, regenerate independiente)",
+    "frontend": "100% — Login OK, precio formatea visualmente y persiste limpio (POST price=1250000 int), edición muestra '1.250.000', panel IA abre/carga 3 opciones/aplica/cierra/regenera, título NO se sobrescribe automáticamente"
+  },
+  "test_credentials": "Usuario Supabase Auth ACTIVO reutilizado del sprint anterior: qa_temp@vera.test / QaPilot!2026xz (email confirmado; ver /app/memory/test_credentials.md). No fue necesario recrear.",
+  "seed_data_creation": "Propiedad temporal creada vía UI (title: 'Departamento en venta en la Ciudad de Buenos Aires', price 1250000, city Buenos Aires; id 37bd290a-5eff-403d-a791-539abf3d326b) y ELIMINADA al finalizar (DELETE 204). Estado final: sin residuos.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Sprint 'Información' cerrado. Regresión backend disponible en /app/backend/tests/ (test_ai_content.py, test_location_roundtrip.py, backend_test.py). Para futuros modos de IA (description, highlights, portales) reusar el patrón de test_ai_content.py: parametrizar mode y validar contract (mode + suggestions[]). Al agregar nuevos data-testids en TitleSuggestions o BasicInfoSection, mantener los existentes intactos (suggest-title, title-suggestions, title-loading, title-option-N, use-title-N, title-regenerate, title-retry, input-price, input-title).",
+  "rca of the issue": "N/A — sin defectos encontrados en este sprint."
+}

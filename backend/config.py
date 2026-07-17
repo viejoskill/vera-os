@@ -17,6 +17,12 @@ DEFAULT_WORKSPACE_ID = os.environ.get("DEFAULT_WORKSPACE_ID", "vera-default")
 
 CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*").split(",")
 
+EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY") or None
+
+
+def ai_configured() -> bool:
+    return bool(EMERGENT_LLM_KEY)
+
 
 def supabase_configured() -> bool:
     return bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)

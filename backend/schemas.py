@@ -147,3 +147,24 @@ class VisitResponse(CamelModel):
 class PropertyDetailResponse(PropertyResponse):
     images: list[ImageResponse] = []
     documents: list[DocumentResponse] = []
+
+
+class AiContentRequest(CamelModel):
+    """Input for VERA content intelligence. `mode` selects the task (today: title).
+    Only known facts are sent; VERA never invents data."""
+    mode: str = "title"
+    type: str = ""
+    operation: str = ""
+    city: str = ""
+    neighborhood: str = ""
+    bedrooms: Optional[float] = None
+    bathrooms: Optional[float] = None
+    area_m2: Optional[float] = None
+    year_built: str = ""
+    amenities: list[str] = []
+    near_sea: bool = False
+
+
+class AiContentResponse(CamelModel):
+    mode: str
+    suggestions: list[str] = []

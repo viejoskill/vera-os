@@ -48,3 +48,17 @@ la decisión explícita del usuario. *VERA sugiere, el usuario decide.*
 
 ## Regla E — Foco
 No se comienza una funcionalidad nueva hasta que la anterior esté realmente terminada.
+
+## Regla F — VERA propone, el profesional decide (IA)
+Toda funcionalidad de IA dentro de VERA **genera sugerencias**; nunca sobrescribe información
+automáticamente. El usuario siempre conserva la decisión final. Ejemplos: "VERA sugiere un
+título" ofrece 3 opciones y el profesional elige cuál usar (o ninguna); las descripciones y
+destacados futuros seguirán el mismo patrón (proponer → el usuario aplica).
+
+Implementación de referencia (título): el frontend nunca conoce el LLM. Flujo
+`TitleSuggestions.tsx` → `useTitleSuggestions` → `AiContentService` → `ApiAiContentGateway`
+→ `POST /api/ai/content` → `ai_content_service.py` (Gemini vía Emergent LLM key). El endpoint
+es **reutilizable** con `mode` (hoy `title`; preparado para `description`, `highlights` y
+variantes por portal como Mercado Libre / Zonaprop) sin rediseñar esta capa. Reglas de
+generación de títulos: 3 opciones distintas, máx. 70 caracteres, sin mayúsculas innecesarias,
+naturales, ciudad cuando aporta, priorizar lo que vende, y **nunca inventar datos**.

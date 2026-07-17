@@ -427,6 +427,104 @@ p {
   justify-content: space-between;
 }
 
+/* --------------------- VERA AI title suggestions ------------------------ */
+.vera-title-ai {
+  margin-top: var(--vera-space-xs);
+}
+
+.vera-ai-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--vera-space-xxs);
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--vera-color-primary);
+  font-family: var(--vera-font-family);
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-medium);
+  opacity: 0.85;
+  transition:
+    opacity 0.16s ease,
+    color 0.16s ease;
+}
+
+.vera-ai-action:hover {
+  opacity: 1;
+}
+
+.vera-title-ai__panel {
+  margin-top: var(--vera-space-sm);
+  padding: var(--vera-space-md);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-surface);
+  animation: vera-rec-in 0.24s ease both;
+}
+
+.vera-title-ai__state {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-xs);
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text-secondary);
+}
+
+.vera-title-ai__list {
+  list-style: none;
+  margin: 0 0 var(--vera-space-sm);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-xs);
+}
+
+.vera-title-ai__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vera-space-sm);
+  padding: var(--vera-space-sm) var(--vera-space-md);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-sm);
+  background: var(--vera-color-card);
+  transition: border-color 0.16s ease;
+}
+
+.vera-title-ai__item:hover {
+  border-color: var(--vera-color-primary);
+}
+
+.vera-title-ai__text {
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text);
+  line-height: var(--vera-font-line-height-normal);
+}
+
+.vera-ai-use {
+  flex-shrink: 0;
+  padding: var(--vera-space-xxs) var(--vera-space-sm);
+  border: 1px solid var(--vera-color-primary);
+  border-radius: var(--vera-radius-pill);
+  background: none;
+  color: var(--vera-color-primary);
+  font-family: var(--vera-font-family);
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-medium);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease;
+}
+
+.vera-ai-use:hover {
+  background: var(--vera-color-primary);
+  color: var(--vera-color-primary-foreground);
+}
+
+
 /* ------------------------------ Dropzone -------------------------------- */
 .vera-dropzone {
   display: flex;

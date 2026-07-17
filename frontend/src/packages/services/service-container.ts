@@ -3,6 +3,7 @@
  * Swap a mock for a real implementation here and the entire app follows, untouched.
  */
 import {
+  ApiAiContentGateway,
   ApiPropertyFilesGateway,
   ApiPropertyRepository,
 } from '@vera/repositories';
@@ -11,6 +12,7 @@ import { MockStudioProvider } from './studio/mock-studio-provider';
 import { StudioService } from './studio/studio-service';
 import { VeraAssistantService } from './assistant/assistant-service';
 import { OwnerService } from './owner/owner-service';
+import { AiContentService } from './ai/ai-content-service';
 import { WorkspaceService } from './workspace/workspace-service';
 import { VeraIntelligenceEngine } from './intelligence/vera-intelligence-engine';
 import { PropertiesProvider } from './intelligence/properties-provider';
@@ -30,6 +32,7 @@ export const workspaceService = new WorkspaceService(propertyRepository, propert
 export const studioService = new StudioService(studioProvider);
 export const assistantService = new VeraAssistantService();
 export const ownerService = new OwnerService();
+export const aiContentService = new AiContentService(new ApiAiContentGateway());
 
 // --- VERA Intelligence Engine + Providers (the "Hoy" Inbox) ---
 const veraIntelligenceEngine = new VeraIntelligenceEngine();
