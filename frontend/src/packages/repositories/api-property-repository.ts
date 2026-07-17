@@ -80,4 +80,8 @@ export class ApiPropertyRepository implements PropertyRepository {
   async restore(id: string): Promise<PropertyDetail | null> {
     return this.request<PropertyDetail>(`/${id}/restore`, { method: 'PATCH' });
   }
+
+  async duplicate(id: string): Promise<PropertyDetail | null> {
+    return this.request<PropertyDetail>(`/${id}/duplicate`, { method: 'POST' });
+  }
 }

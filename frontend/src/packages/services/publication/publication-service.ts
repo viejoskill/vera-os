@@ -16,7 +16,8 @@ export class PublicationService {
     propertyId: string,
     channel: string,
     action: PublicationAction,
+    url?: string,
   ): Promise<PublicationsMap> {
-    return this.gateway.setPublication(propertyId, channel, action);
+    return this.gateway.setPublication(propertyId, channel, action, url);
   }
 }

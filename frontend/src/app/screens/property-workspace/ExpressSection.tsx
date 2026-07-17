@@ -38,8 +38,10 @@ export const ExpressSection = () => {
   const generate = () => run(() => aiContentService.generateExpress(buildAiContext(watch())));
 
   const applyTitle = (t: string) => setValue('title', t, { shouldDirty: true, shouldValidate: true });
-  const applyDescription = (d: string) =>
+  const applyDescription = (d: string) => {
     setValue('description', d.trim(), { shouldDirty: true, shouldValidate: true });
+    setShowManual(true);
+  };
 
   const copy = async (key: string, text: string) => {
     if (!text) return;

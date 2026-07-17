@@ -236,3 +236,4 @@ class ExpressResponse(CamelModel):
 
 class PublicationAction(CamelModel):
     action: str  # publish | update | unpublish
+    url: str = ""

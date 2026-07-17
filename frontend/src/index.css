@@ -694,11 +694,34 @@ p {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: var(--vera-space-md);
   padding: var(--vera-space-md);
   border: 1px solid var(--vera-color-border);
   border-radius: var(--vera-radius-md);
   background: var(--vera-color-surface);
+}
+.vera-channel__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--vera-space-xxs);
+  margin-top: 2px;
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-primary);
+  text-decoration: none;
+}
+.vera-channel__link:hover {
+  text-decoration: underline;
+}
+.vera-channel__linkedit {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  padding: var(--vera-space-sm) var(--vera-space-md);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-background);
 }
 .vera-channel__id {
   display: flex;

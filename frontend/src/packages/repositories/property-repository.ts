@@ -13,4 +13,5 @@ export interface PropertyRepository extends Repository<Property> {
   getById(id: string): Promise<PropertyDetail | null>;
   archive(id: string): Promise<PropertyDetail | null>;
   restore(id: string): Promise<PropertyDetail | null>;
+  duplicate(id: string): Promise<PropertyDetail | null>;
 }

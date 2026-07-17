@@ -33,6 +33,10 @@ export class PropertyService {
     return this.repository.restore(id);
   }
 
+  duplicate(id: string): Promise<PropertyDetail | null> {
+    return this.repository.duplicate(id);
+  }
+
   /** Portfolio value of currently active (non-archived) listings. */
   async getPortfolioValue(): Promise<number> {
     const items = await this.repository.find({ status: 'active' });

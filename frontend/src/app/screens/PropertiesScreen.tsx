@@ -55,6 +55,7 @@ interface CardActions {
   onOpen: (id: string) => void;
   onArchive: (id: string) => void;
   onRestore: (id: string) => void;
+  onDuplicate: (id: string) => void;
 }
 
 const PropertyCard = ({ property, actions }: { property: Property; actions: CardActions }) => {
@@ -104,8 +105,8 @@ const PropertyCard = ({ property, actions }: { property: Property; actions: Card
               <button type="button" className="vera-menu__item" data-testid={`menu-open-${property.id}`} onClick={runAction(() => actions.onOpen(property.id))}>
                 <FolderOpen size={14} /> Abrir
               </button>
-              <button type="button" className="vera-menu__item vera-menu__item--disabled" data-testid={`menu-duplicate-${property.id}`} disabled title="Próximamente">
-                <Copy size={14} /> Duplicar <span className="vera-menu__soon">Próximamente</span>
+              <button type="button" className="vera-menu__item" data-testid={`menu-duplicate-${property.id}`} onClick={runAction(() => actions.onDuplicate(property.id))}>
+                <Copy size={14} /> Duplicar
               </button>
               {property.archived ? (
                 <button type="button" className="vera-menu__item" data-testid={`menu-restore-${property.id}`} onClick={runAction(() => actions.onRestore(property.id))}>
@@ -204,6 +205,11 @@ export const PropertiesScreen = () => {
     onRestore: async (id) => {
       await propertyService.restore(id);
       invalidate();
+    },
+    onDuplicate: async (id) => {
+      const created = await propertyService.duplicate(id);
+      invalidate();
+      if (created) navigate(`/propiedades/${created.id}`);
     },
   };
 

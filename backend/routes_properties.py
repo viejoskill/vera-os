@@ -113,18 +113,47 @@ async def set_publication(property_id: str, channel: str, payload: PublicationAc
         raise HTTPException(404, "Property not found")
 
     publications = dict(prop.get("publications") or {})
+    existing = publications.get(channel) or {}
     if payload.action == "unpublish":
-        publications[channel] = {"status": "none", "lastSync": None}
+        publications[channel] = {"status": "none", "lastSync": None, "url": ""}
     else:  # publish | update
         publications[channel] = {
             "status": "published",
             "lastSync": datetime.now(timezone.utc).isoformat(),
+            "url": payload.url or existing.get("url", ""),
         }
 
     updated = await property_repository.update(property_id, {"publications": publications})
     if updated is None:
         raise HTTPException(500, "Could not update publications")
     return await property_to_detail(updated)
+
+
+@router.post("/{property_id}/duplicate", response_model=PropertyDetailResponse)
+async def duplicate_property(property_id: str):
+    """Clone a full property card to load similar listings fast. Copies all data
+    fields (no photos/documents — those are property-specific), resets status and
+    publications, and marks the title as a copy."""
+    _ensure()
+    prop = await property_repository.get(property_id)
+    if prop is None:
+        raise HTTPException(404, "Property not found")
+
+    exclude = {
+        "id", "created_at", "updated_at", "workspace_id", "code",
+        "property_images", "property_documents",
+    }
+    data = {k: v for k, v in prop.items() if k not in exclude}
+    data["title"] = f"{prop.get('title', 'Propiedad')} (copia)"
+    data["status"] = "active"
+    data["archived"] = False
+    data["publications"] = {}
+
+    workspace_id = prop.get("workspace_id") or config.DEFAULT_WORKSPACE_ID
+    created = await property_repository.create(data, workspace_id)
+    if created is None:
+        raise HTTPException(500, "Could not duplicate property")
+    return await property_to_detail(created)
 
 
 @router.delete("/{property_id}", status_code=204)
