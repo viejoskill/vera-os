@@ -1,11 +1,20 @@
 """Property CRUD endpoints. All persistence goes through SupabasePropertyRepository."""
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 
 import config
 from property_repository import property_repository
-from schemas import PropertyCreate, PropertyDetailResponse, PropertyResponse, PropertyUpdate, VisitCreate, VisitResponse
+from schemas import (
+    PropertyCreate,
+    PropertyDetailResponse,
+    PropertyResponse,
+    PropertyUpdate,
+    PublicationAction,
+    VisitCreate,
+    VisitResponse,
+)
 from serializers import property_to_detail, property_to_response, visit_to_response
 from storage_service import get_storage
 
@@ -87,6 +96,35 @@ async def create_visit(property_id: str, payload: VisitCreate):
         raise HTTPException(500, "Could not register visit")
     await property_repository.touch(property_id)
     return visit_to_response(row)
+
+
+@router.post("/{property_id}/publications/{channel}", response_model=PropertyDetailResponse)
+async def set_publication(property_id: str, channel: str, payload: PublicationAction):
+    """Manual publication status board (no live portal API yet). VERA never publishes
+    automatically — the agent operates the state; VERA only records and shows it."""
+    _ensure()
+    if channel not in config.ENABLED_PUBLICATION_CHANNELS:
+        raise HTTPException(422, f"Canal no disponible: {channel}")
+    if payload.action not in ("publish", "update", "unpublish"):
+        raise HTTPException(422, f"Acción no válida: {payload.action}")
+
+    prop = await property_repository.get(property_id)
+    if prop is None:
+        raise HTTPException(404, "Property not found")
+
+    publications = dict(prop.get("publications") or {})
+    if payload.action == "unpublish":
+        publications[channel] = {"status": "none", "last_sync": None}
+    else:  # publish | update
+        publications[channel] = {
+            "status": "published",
+            "last_sync": datetime.now(timezone.utc).isoformat(),
+        }
+
+    updated = await property_repository.update(property_id, {"publications": publications})
+    if updated is None:
+        raise HTTPException(500, "Could not update publications")
+    return await property_to_detail(updated)
 
 
 @router.delete("/{property_id}", status_code=204)

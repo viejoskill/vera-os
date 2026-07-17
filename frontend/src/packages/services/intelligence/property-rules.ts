@@ -118,9 +118,9 @@ export const PROPERTY_RULES: PropertyRule[] = [
             title: 'Escribí la descripción',
             whatHappened: 'Falta la descripción de la propiedad.',
             whyItMatters: 'Una buena descripción eleva la calidad de la publicación.',
-            recommendation: 'Escribí una descripción atractiva de la propiedad.',
+            recommendation: 'Generá la descripción desde Contenido comercial y usala.',
             impact: 5,
-            section: 'description',
+            section: 'express',
           },
   },
   {

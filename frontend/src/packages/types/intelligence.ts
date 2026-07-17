@@ -7,8 +7,11 @@ export type RecommendationPriority = 'alta' | 'atencion' | 'lista';
 export type WorkspaceSection =
   | 'information'
   | 'features'
+  | 'amenities'
   | 'owner'
-  | 'description'
+  | 'express'
+  | 'channels'
+  | 'tracking'
   | 'photos'
   | 'documents'
   | 'studio';

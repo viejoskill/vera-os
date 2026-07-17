@@ -19,6 +19,10 @@ CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*").split(",")
 
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY") or None
 
+# Publication channels the agent can operate today (status board). Scalable: add
+# more providers here; the UI reads its own catalog. No integration is hardcoded.
+ENABLED_PUBLICATION_CHANNELS = {"web-varela", "mercadolibre"}
+
 
 def ai_configured() -> bool:
     return bool(EMERGENT_LLM_KEY)

@@ -147,6 +147,7 @@ class PropertyResponse(CamelModel):
     orientation: str = ""
     condition: str = ""
     amenities: list[str] = []
+    publications: dict = {}
     archived: bool = False
     created_at: datetime
     updated_at: datetime
@@ -231,3 +232,7 @@ class ExpressResponse(CamelModel):
     highlights: list[str] = []
     mercadolibre: PortalText = Field(default_factory=PortalText)
     zonaprop: PortalText = Field(default_factory=PortalText)
+
+
+class PublicationAction(CamelModel):
+    action: str  # publish | update | unpublish

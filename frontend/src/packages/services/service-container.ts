@@ -6,6 +6,7 @@ import {
   ApiAiContentGateway,
   ApiPropertyFilesGateway,
   ApiPropertyRepository,
+  ApiPublicationGateway,
 } from '@vera/repositories';
 import { PropertyService } from './property-service';
 import { MockStudioProvider } from './studio/mock-studio-provider';
@@ -13,6 +14,7 @@ import { StudioService } from './studio/studio-service';
 import { VeraAssistantService } from './assistant/assistant-service';
 import { OwnerService } from './owner/owner-service';
 import { AiContentService } from './ai/ai-content-service';
+import { PublicationService } from './publication/publication-service';
 import { WorkspaceService } from './workspace/workspace-service';
 import { VeraIntelligenceEngine } from './intelligence/vera-intelligence-engine';
 import { PropertiesProvider } from './intelligence/properties-provider';
@@ -33,6 +35,7 @@ export const studioService = new StudioService(studioProvider);
 export const assistantService = new VeraAssistantService();
 export const ownerService = new OwnerService();
 export const aiContentService = new AiContentService(new ApiAiContentGateway());
+export const publicationService = new PublicationService(new ApiPublicationGateway());
 
 // --- VERA Intelligence Engine + Providers (the "Hoy" Inbox) ---
 const veraIntelligenceEngine = new VeraIntelligenceEngine();

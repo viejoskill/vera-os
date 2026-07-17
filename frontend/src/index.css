@@ -663,6 +663,96 @@ p {
   max-height: 168px;
   overflow-y: auto;
 }
+
+/* ------------------------ Express block actions ------------------------- */
+.vera-express__block-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-md);
+}
+
+/* ------------------------- Canales de publicación ----------------------- */
+.vera-channels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-sm);
+}
+.vera-channel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vera-space-md);
+  padding: var(--vera-space-md);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-surface);
+}
+.vera-channel__id {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+}
+.vera-channel__logo {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-background);
+  color: var(--vera-color-text-secondary);
+}
+.vera-channel__name {
+  margin: 0;
+  font-size: var(--vera-font-size-md);
+  font-weight: var(--vera-font-weight-semibold);
+  color: var(--vera-color-text);
+}
+.vera-channel__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--vera-space-xxs);
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text-secondary);
+}
+.vera-channel__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+}
+.vera-channel__sync {
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-text-secondary);
+}
+.vera-channel__soon {
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text-secondary);
+  opacity: 0.7;
+}
+.vera-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  background: var(--vera-color-text-secondary);
+}
+.vera-dot--none { background: #6b7280; }
+.vera-dot--published { background: #22c55e; }
+.vera-dot--pending { background: #eab308; }
+.vera-dot--error { background: #ef4444; }
+.vera-dot--syncing { background: var(--vera-color-primary); }
+.vera-spin {
+  animation: vera-spin 1s linear infinite;
+}
+@keyframes vera-spin {
+  to { transform: rotate(360deg); }
+}
+@media (max-width: 560px) {
+  .vera-channel {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
 /* --------------------- VERA AI title suggestions ------------------------ */
 .vera-title-ai {
   margin-top: var(--vera-space-xs);

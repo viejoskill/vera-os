@@ -105,6 +105,7 @@ async def property_to_response(prop: dict) -> PropertyResponse:
         orientation=prop.get("orientation", "") or "",
         condition=prop.get("condition", "") or "",
         amenities=prop.get("amenities") or [],
+        publications=prop.get("publications") or {},
         archived=prop.get("archived", False) or False,
         created_at=prop["created_at"],
         updated_at=prop.get("updated_at") or prop["created_at"],

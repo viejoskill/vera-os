@@ -48,6 +48,7 @@ export interface Property {
   orientation?: string;
   condition?: string;
   amenities?: string[];
+  publications?: Record<string, { status: string; lastSync?: string | null }>;
 }
 
 export interface PropertyImageAsset {

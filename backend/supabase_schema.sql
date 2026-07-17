@@ -103,3 +103,9 @@ alter table public.properties
   add column if not exists orientation          text default '',
   add column if not exists condition            text default '',
   add column if not exists amenities            jsonb default '[]'::jsonb;
+
+-- Centro de Publicación / Canales (sprint "Simplificar Workspace").
+-- Estado de publicación por canal, como mapa jsonb: { "<canal>": {"status": "...", "last_sync": "..."} }.
+-- Lista de proveedores escalable (definida en código); estados: none/published/pending/error/syncing.
+alter table public.properties
+  add column if not exists publications jsonb default '{}'::jsonb;

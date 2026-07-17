@@ -29,11 +29,15 @@ const composeAll = (r: ExpressResult): string => {
  * VERA propone; el profesional copia y decide. No sobrescribe la propiedad.
  */
 export const ExpressSection = () => {
-  const { watch } = useFormContext<PropertyFormValues>();
+  const { watch, setValue } = useFormContext<PropertyFormValues>();
   const { status, data, run } = useAiContent<ExpressResult>();
   const [copied, setCopied] = useState<string | null>(null);
 
   const generate = () => run(() => aiContentService.generateExpress(buildAiContext(watch())));
+
+  const applyTitle = (t: string) => setValue('title', t, { shouldDirty: true, shouldValidate: true });
+  const applyDescription = (d: string) =>
+    setValue('description', d.trim(), { shouldDirty: true, shouldValidate: true });
 
   const copy = async (key: string, text: string) => {
     if (!text) return;
@@ -95,7 +99,12 @@ export const ExpressSection = () => {
             <div className="vera-portal-block">
               <div className="vera-portal-block__head">
                 <span className="vera-field__label">Título</span>
-                {label('title', data.titles[0], 'copy-express-title')}
+                <div className="vera-express__block-actions">
+                  <button type="button" className="vera-ai-action" data-testid="use-express-title" onClick={() => applyTitle(data.titles[0])}>
+                    <Check size={13} /> Usar
+                  </button>
+                  {label('title', data.titles[0], 'copy-express-title')}
+                </div>
               </div>
               <p className="vera-portal-block__title" data-testid="express-title">{data.titles[0]}</p>
             </div>
@@ -105,7 +114,12 @@ export const ExpressSection = () => {
             <div className="vera-portal-block">
               <div className="vera-portal-block__head">
                 <span className="vera-field__label">Descripción</span>
-                {label('desc', data.description, 'copy-express-description')}
+                <div className="vera-express__block-actions">
+                  <button type="button" className="vera-ai-action" data-testid="use-express-description" onClick={() => applyDescription(data.description)}>
+                    <Check size={13} /> Usar
+                  </button>
+                  {label('desc', data.description, 'copy-express-description')}
+                </div>
               </div>
               <p className="vera-portal-block__body" data-testid="express-description">{data.description}</p>
             </div>

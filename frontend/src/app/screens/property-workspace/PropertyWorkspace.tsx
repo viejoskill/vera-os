@@ -21,10 +21,8 @@ import { propertyFormSchema, defaultPropertyForm, type PropertyFormValues } from
 import { BasicInfoSection } from './BasicInfoSection';
 import { FeaturesSection } from './FeaturesSection';
 import { AmenitiesSection } from './AmenitiesSection';
-import { DescriptionSection } from './DescriptionSection';
 import { ExpressSection } from './ExpressSection';
-import { HighlightsSection } from './HighlightsSection';
-import { PortalsSection } from './PortalsSection';
+import { ChannelsSection } from './ChannelsSection';
 import { OwnerSection } from './OwnerSection';
 import { TrackingSection } from './TrackingSection';
 import { PhotosSection } from './PhotosSection';
@@ -328,7 +326,7 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
         <div className="vera-workspace__grid">
           <div className="vera-workspace__main">
             <div id="ws-section-information">
-              <Panel title="Información" description="Lo esencial para identificar la propiedad.">
+              <Panel title="Datos de la propiedad" description="Operación, tipo, precio y ubicación.">
                 <BasicInfoSection />
               </Panel>
             </div>
@@ -342,6 +340,16 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
                 <AmenitiesSection />
               </Panel>
             </div>
+            <div id="ws-section-express">
+              <Panel title="Contenido comercial" description="VERA genera título, descripción, destacados y textos para portales.">
+                <ExpressSection />
+              </Panel>
+            </div>
+            <div id="ws-section-channels">
+              <Panel title="Canales de publicación" description="Administrá dónde está publicada la propiedad. VERA nunca publica sola.">
+                <ChannelsSection propertyId={propertyId} initial={detail?.publications ?? {}} />
+              </Panel>
+            </div>
             <div id="ws-section-owner">
               <Panel title="Propietario" description="Quién es el dueño de la propiedad.">
                 <OwnerSection />
@@ -349,31 +357,11 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
             </div>
             {!isNew && detail && (
               <div id="ws-section-tracking">
-                <Panel title="Seguimiento" description="Visitas y contacto con el propietario.">
+                <Panel title="Actividad comercial" description="Visitas y contacto con el propietario.">
                   <TrackingSection propertyId={detail.id} address={detail.address} />
                 </Panel>
               </div>
             )}
-            <div id="ws-section-express">
-              <Panel title="Publicación express" description="En un clic: título, descripción, destacados y textos para portales.">
-                <ExpressSection />
-              </Panel>
-            </div>
-            <div id="ws-section-description">
-              <Panel title="Descripción" description="Contala vos o dejá que VERA la redacte.">
-                <DescriptionSection />
-              </Panel>
-            </div>
-            <div id="ws-section-highlights">
-              <Panel title="Destacados" description="Los puntos fuertes de la propiedad, listos para copiar.">
-                <HighlightsSection />
-              </Panel>
-            </div>
-            <div id="ws-section-portals">
-              <Panel title="Publicar en portales" description="Adaptá el texto a Mercado Libre o Zonaprop.">
-                <PortalsSection />
-              </Panel>
-            </div>
             <div id="ws-section-photos">
               <Panel title="Fotografías" description="El corazón de la publicación.">
                 <PhotosSection

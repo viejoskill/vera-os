@@ -2,7 +2,6 @@ import { useFormContext } from 'react-hook-form';
 import { Input, Select } from '@vera/ui';
 import { PROPERTY_TYPE_OPTIONS, CURRENCY_OPTIONS, type PropertyFormValues } from './form-schema';
 import { LocationSection } from './LocationSection';
-import { TitleSuggestions } from './TitleSuggestions';
 
 // Visual-only thousands separator (es-AR uses "."). Internal value stays clean digits.
 const formatThousands = (digits: string): string =>
@@ -28,7 +27,6 @@ export const BasicInfoSection = () => {
           error={errors.title?.message}
           {...register('title')}
         />
-        <TitleSuggestions />
       </div>
 
       <div className="vera-field">
