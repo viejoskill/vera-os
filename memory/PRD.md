@@ -185,6 +185,17 @@ Foco: convertir VERA en producto usable a diario. La App "Hoy" corre sobre un **
 - **P2**: `Operaciones` (pipeline), `Studio` (content/distribution), Insight Service.
 - **P2**: Real AI provider (OpenAI/Anthropic/Gemini) via `AIProvider`; auth/RBAC; Event Bus impl.
 
+## Implemented (Sprint "Ubicación Inteligente" — 2026-06)
+Autocompletado de direcciones (Google Places) + mapa interactivo (@vis.gl/react-google-maps) reemplazan los campos manuales de ubicación. Campos geo (latitude, longitude, googlePlaceId, formattedAddress, province, postalCode, country) persisten en Supabase. Backend verificado 6/6 pytest (round-trip camelCase↔snake_case, iteration_15). El bloqueo de facturación de Google Cloud fue resuelto por el usuario. Ref: `LocationSection.tsx`, `test_location_roundtrip.py`.
+
+## Implemented (Sprint "Cerrar módulo Información" — 2026-06)
+Cierre del bloque Información para el piloto. Verificado 100% (iteration_16): backend 4/4 pytest, frontend E2E verde. Sin bugs, sin cambios de arquitectura, sin mocks visibles, tsc limpio.
+- **Precio con separador de miles** (visual): input controlado (`formatThousands` regex) muestra `1.250.000` mientras el valor interno queda en dígitos limpios (`1250000`). Persiste como número al backend y se re-formatea al editar. Solo frontend (`BasicInfoSection.tsx`).
+- **IA para el título** (Gemini 3 Flash vía Emergent LLM key): acción discreta "✨ VERA sugiere un título" bajo el campo Título → panel desplegable con 3 títulos SEO distintos (máx. 70 chars, sin inventar datos), cada uno con "Usar este título" + "Generar otras". VERA nunca sobrescribe: aplicar es decisión del usuario.
+- **Endpoint reutilizable** `POST /api/ai/content` con parámetro `mode` (hoy `title`; preparado para `description`, `highlights`, variantes por portal Mercado Libre/Zonaprop). Arquitectura: `TitleSuggestions.tsx` → `useTitleSuggestions` → `AiContentService` → `ApiAiContentGateway` → backend `ai_content_service.py` (el frontend nunca toca el LLM).
+- **Regla F documentada** en `/app/docs/WORKSPACE.md`: "VERA propone, el profesional decide" — toda IA en VERA genera sugerencias, nunca sobrescribe.
+- Backend nuevo: `ai_content_service.py`, `routes_ai.py`, schemas `AiContentRequest/Response`, `config.ai_configured()`, `EMERGENT_LLM_KEY` en `.env`. Tests: `test_ai_content.py`.
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.
