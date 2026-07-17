@@ -257,6 +257,18 @@ Se aplicó el kit de marca definitivo ("Brand Freeze v1.0") provisto por el usua
 - **Navegador**: favicon.png, apple-touch-icon, `manifest.json` (theme `#1C1C1C`), title "VERA OS — Real Estate Intelligence".
 - Regla de marca (README del kit): NO modificar colores/proporciones/inclinación; símbolo=amarillo `#F6E63A`. Verificado por screenshot (login + sidebar), tsc limpio, sin errores de consola.
 
+## Implemented (Sprint "Workspace Experience 01 — Refinement" — 2026-06)
+Refinamiento para que "Hoy" se sienta un Sistema Operativo Comercial (no un CRM). SIN rediseño; tokens de marca congelados. Verificado 100% (iteration_22): frontend E2E, 0 errores de consola, tsc limpio. Disciplina de arquitectura acordada con el usuario: clasificar cada funcionalidad como **App / Widget / Dock / Integración / Capa IA** antes de implementarla.
+- **P1 Sidebar** (App): nav = Hoy, Vera Bot, Propiedades, Personas, Operaciones, Studio (Vera Bot ahora es App principal, misma jerarquía que Propiedades). Vera Bot/Personas/Operaciones/Studio = "Próximamente" (flags `veraBot`/`personas` nuevos en `feature-flags.ts`, rutas placeholder en `VeraOS.tsx`). Logo: `logo-horizontal.png` en el brand (recupera identidad). Item activo con glow amarillo (box-shadow + barra de acento), no solo color.
+- **P2 Dock** (Dock): rediseñado como **herramientas personales** (Gmail, IA, Instagram, Calendar, Drive, WhatsApp, Spotify) — abren su web real en pestaña nueva (`window.open _blank`). Ya no contiene módulos de VERA. `apps-catalog.ts` → `DockTool {id,label,icon,href}`. Default pins: gmail/ia/calendar/whatsapp/spotify.
+- **P3 Calendario** (Widget): nuevo widget de vista mensual (mock), distinto de Agenda (lista). Hoy resaltado + dots de eventos. Registrado en `widget-registry` (size sm, demo, default on).
+- **P4 Ambient Intelligence UI** (capa visual): halos ambientales muy sutiles con el primario (sin imágenes ni gradientes fuertes); hover de widgets con elevación + glow suave (sin sombras pesadas); glow del item activo en sidebar; iluminación sutil en botón primario (hover); respiración lenta del header (`vera-breathe` 11s); cards con menos "caja" (borde/contraste en vez de sombra). Todo con guard `prefers-reduced-motion`, transiciones 200–500ms, easing natural.
+- **P5 Personalización** (UX): los chips se reemplazaron por botón **"Personalizar escritorio"** que abre un **panel lateral** (`CustomizePanel`, portal a body) con checkboxes por widget (solo encender/apagar; reordenar llegará con Drag & Drop). Se removieron los controles de reorden inline de las cards.
+- **P6 Home** más calma/aire (más espaciado y gaps).
+- **P7 Capa IA reservada**: barra estilo Spotlight/Raycast "¿Qué querés hacer hoy? Preguntale a VERA…" → abre `SpotlightModal` (portal, placeholder, sugerencias "Próximamente"). NO ejecuta IA todavía.
+- Nuevos archivos: `SpotlightModal.tsx`, `CustomizePanel.tsx`. Assets: `src/assets/brand/vera-symbol.png`, `logo-horizontal.png`.
+- Nota técnica: modal/panel usan `createPortal(document.body)` para escapar el stacking context de `.vera-home` (isolation) y quedar sobre el TopBar sticky.
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.
