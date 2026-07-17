@@ -6,18 +6,42 @@ export interface AiPropertyContext {
   operation?: string;
   city?: string;
   neighborhood?: string;
+  address?: string;
+  title?: string;
+  description?: string;
+  rooms?: number | null;
   bedrooms?: number | null;
   bathrooms?: number | null;
+  toilettes?: number | null;
   areaM2?: number | null;
+  semiCoveredAreaM2?: number | null;
+  lotAreaM2?: number | null;
+  floors?: number | null;
+  floorNumber?: number | null;
+  parkingCovered?: number | null;
+  parkingUncovered?: number | null;
+  orientation?: string;
+  condition?: string;
   yearBuilt?: string;
   amenities?: string[];
   nearSea?: boolean;
 }
 
-export type AiContentMode = 'title' | 'description' | 'highlights';
+export type AiContentMode = 'title' | 'description' | 'highlights' | 'portal';
+export type PortalId = 'mercadolibre' | 'zonaprop';
+
+export interface AiContentResult {
+  suggestions: string[];
+  title: string;
+  body: string;
+}
 
 export interface AiContentGateway {
-  generate(mode: AiContentMode, context: AiPropertyContext): Promise<string[]>;
+  generate(
+    mode: AiContentMode,
+    context: AiPropertyContext,
+    portal?: PortalId,
+  ): Promise<AiContentResult>;
 }
 
 /**
@@ -27,16 +51,24 @@ export interface AiContentGateway {
 export class ApiAiContentGateway implements AiContentGateway {
   private readonly url = `${env.backendUrl}/api/ai/content`;
 
-  async generate(mode: AiContentMode, context: AiPropertyContext): Promise<string[]> {
+  async generate(
+    mode: AiContentMode,
+    context: AiPropertyContext,
+    portal?: PortalId,
+  ): Promise<AiContentResult> {
     const res = await fetch(this.url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode, ...context }),
+      body: JSON.stringify({ mode, portal: portal ?? '', ...context }),
     });
     if (!res.ok) {
       throw new Error(`VERA AI ${res.status}`);
     }
-    const data = (await res.json()) as { suggestions?: string[] };
-    return data.suggestions ?? [];
+    const data = (await res.json()) as Partial<AiContentResult>;
+    return {
+      suggestions: data.suggestions ?? [],
+      title: data.title ?? '',
+      body: data.body ?? '',
+    };
   }
 }

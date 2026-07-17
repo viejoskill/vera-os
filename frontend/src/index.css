@@ -546,6 +546,123 @@ p {
   background: var(--vera-color-primary);
   border-color: var(--vera-color-primary);
 }
+
+/* --------------------- VERA AI content previews ------------------------- */
+.vera-ai-preview {
+  padding: var(--vera-space-md);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-sm);
+  animation: vera-rec-in 0.24s ease both;
+}
+.vera-ai-preview__text {
+  margin: 0;
+  font-size: var(--vera-font-size-sm);
+  line-height: var(--vera-font-line-height-normal);
+  color: var(--vera-color-text);
+  white-space: pre-line;
+}
+.vera-ai-preview__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-md);
+  flex-wrap: wrap;
+}
+.vera-highlights {
+  margin: 0;
+  padding-left: var(--vera-space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-xs);
+  color: var(--vera-color-text);
+  font-size: var(--vera-font-size-sm);
+}
+.vera-highlights li {
+  line-height: var(--vera-font-line-height-normal);
+}
+.vera-portal-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-xxs);
+  padding: var(--vera-space-sm) 0;
+  border-top: 1px solid var(--vera-color-border);
+}
+.vera-portal-block:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+.vera-portal-block__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.vera-portal-block__title {
+  margin: 0;
+  font-size: var(--vera-font-size-md);
+  font-weight: var(--vera-font-weight-semibold);
+  color: var(--vera-color-text);
+}
+.vera-portal-block__body {
+  margin: 0;
+  font-size: var(--vera-font-size-sm);
+  line-height: var(--vera-font-line-height-normal);
+  color: var(--vera-color-text);
+  white-space: pre-line;
+}
+
+/* --------------------------- Property filters --------------------------- */
+.vera-toolbar__secondary {
+  display: flex;
+  gap: var(--vera-space-xs);
+  margin-top: var(--vera-space-sm);
+}
+.vera-filters {
+  margin-top: var(--vera-space-md);
+  padding: var(--vera-space-lg);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-lg);
+  background: var(--vera-color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-md);
+  animation: vera-rec-in 0.2s ease both;
+}
+.vera-filters__row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--vera-space-md);
+}
+@media (max-width: 1024px) {
+  .vera-filters__row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .vera-filters__row {
+    grid-template-columns: 1fr;
+  }
+}
+.vera-filters__amenity-search {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-xs);
+  padding: var(--vera-space-sm) var(--vera-space-md);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-background);
+  color: var(--vera-color-text-secondary);
+  margin-bottom: var(--vera-space-sm);
+}
+.vera-filters__amenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vera-space-xs);
+  max-height: 168px;
+  overflow-y: auto;
+}
 /* --------------------- VERA AI title suggestions ------------------------ */
 .vera-title-ai {
   margin-top: var(--vera-space-xs);

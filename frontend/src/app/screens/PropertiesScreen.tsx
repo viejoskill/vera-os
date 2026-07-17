@@ -14,12 +14,14 @@ import {
   Copy,
   Archive,
   RotateCcw,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { Card, Input, Button } from '@vera/ui';
 import { appConfig } from '@vera/config';
 import { propertyService } from '@vera/services';
 import type { Property, PropertyStatus } from '@vera/types';
 import { useProperties } from '@app/hooks/useProperties';
+import { PropertyFilters, emptyFilters, countActiveFilters, type AdvFilters } from './PropertyFilters';
 
 type StatusFilter = PropertyStatus | 'all' | 'archived';
 
@@ -163,18 +165,33 @@ export const PropertiesScreen = () => {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<StatusFilter>('all');
   const [query, setQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<AdvFilters>(emptyFilters);
 
   // Fetch once per status (cached); text search filters instantly on the client.
   const { data: properties, isLoading } = useProperties({ status });
 
   const q = query.trim().toLowerCase();
+  const activeFilters = countActiveFilters(filters);
   const visible = useMemo(() => {
     if (!properties) return [];
-    if (!q) return properties;
-    return properties.filter((p) =>
-      `${p.title} ${p.neighborhood} ${p.city} ${p.address}`.toLowerCase().includes(q),
-    );
-  }, [properties, q]);
+    const min = filters.minPrice ? Number(filters.minPrice) : null;
+    const max = filters.maxPrice ? Number(filters.maxPrice) : null;
+    const minBeds = filters.minBedrooms ? Number(filters.minBedrooms) : null;
+    return properties.filter((p) => {
+      if (q && !`${p.title} ${p.neighborhood} ${p.city} ${p.address}`.toLowerCase().includes(q)) return false;
+      if (filters.type && p.type !== filters.type) return false;
+      if (filters.operation && p.operation !== filters.operation) return false;
+      if (min !== null && p.price < min) return false;
+      if (max !== null && p.price > max) return false;
+      if (minBeds !== null && (p.bedrooms ?? 0) < minBeds) return false;
+      if (filters.amenities.length) {
+        const has = p.amenities ?? [];
+        if (!filters.amenities.every((a) => has.includes(a))) return false;
+      }
+      return true;
+    });
+  }, [properties, q, filters]);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['properties'] });
 
@@ -221,6 +238,21 @@ export const PropertiesScreen = () => {
         </Button>
       </div>
 
+      <div className="vera-toolbar__secondary">
+        <Button
+          size="sm"
+          variant={showFilters || activeFilters > 0 ? 'primary' : 'ghost'}
+          data-testid="toggle-filters"
+          onClick={() => setShowFilters((s) => !s)}
+        >
+          <SlidersHorizontal size={15} /> Filtros{activeFilters > 0 ? ` (${activeFilters})` : ''}
+        </Button>
+      </div>
+
+      {showFilters && (
+        <PropertyFilters filters={filters} onChange={setFilters} onClear={() => setFilters(emptyFilters)} />
+      )}
+
       {isLoading ? (
         <p className="vera-muted">Cargando propiedades…</p>
       ) : visible.length > 0 ? (
@@ -232,6 +264,10 @@ export const PropertiesScreen = () => {
       ) : q ? (
         <p className="vera-muted" data-testid="properties-empty">
           No encontramos propiedades para “{query}”.
+        </p>
+      ) : activeFilters > 0 ? (
+        <p className="vera-muted" data-testid="properties-empty">
+          Ninguna propiedad coincide con los filtros aplicados.
         </p>
       ) : status === 'archived' ? (
         <p className="vera-muted" data-testid="properties-empty">

@@ -1,0 +1,37 @@
+{
+  "summary": "Sprint 18 — 4 features de contenido IA (description/highlights/portal ML+ZP) + filtros client-side en /propiedades. Backend 10/10 pytest OK y Frontend E2E completo (Descripción IA, Destacados, Portales ML→ZP, Filtros con AND en amenities) 100% verde. Sin regresiones (precio con miles '180.000', suggest-title presente, 5 amenities persistidas). VERA PROPONE se respeta: el textarea de descripción NO cambia hasta el click explícito en 'Usar esta descripción'.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_ai_content.py",
+    "/app/test_reports/pytest/ai_content_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Positivo — ai_content_service.py: SUPPORTED_MODES + PORTALS como fuente única, prompts separados por modo, _known_facts sólo emite datos presentes (verificado: description de 998 chars sin años inventados cuando el yearBuilt no está). _parse_list dedupe case-insensitive; _parse_portal fallback a extraer {...} incluso si el LLM devuelve texto extra. Sólido.",
+    "Positivo — routes_ai.py: validación previa de mode y portal (422) antes de invocar al LLM; 502 sólo si el LLM falla real. Latencia observada por modo: title/description ~10s, highlights ~7s, portal ~10s — dentro de rangos aceptables para UX con loading state visible.",
+    "Positivo — schemas.py::AiContentRequest: contexto completo (rooms/toilettes/floors/parkingCovered/orientation/condition/amenities[] + title+description para portal) camelCase con alias_generator=to_camel. Los tests envían camelCase (areaM2, nearSea, floorNumber) y Pydantic los mapea correctamente.",
+    "Positivo — DescriptionSection.tsx: `apply()` sólo setValue + reset() cuando el usuario hace click en 'Usar esta descripción'. Antes del click, watch('description') sigue siendo el valor original (verificado en runtime). Cumple 100% la regla 'VERA propone, no sobrescribe'.",
+    "Positivo — HighlightsSection.tsx: no persiste nada (los bullets son sólo copiables) — correcto por diseño. useMemo no necesario porque el status/data están en el hook.",
+    "Positivo — PortalsSection.tsx: al cambiar portal se conserva el resultado previo hasta que se pulse Generar (comportamiento razonable — no confunde al usuario). copiar-title/copiar-body independientes con estado local `copied`.",
+    "Positivo — PropertyFilters.tsx: normalización NFD para búsqueda insensible a acentos, AND semantics en amenities (`.every(a => propAmenities.includes(a))` esperado — verificado: parrilla+piscina+solarium → 0 cards, parrilla alone → 2 cards). countActiveFilters se muestra en botón 'Limpiar filtros (N)'.",
+    "Positivo — PropertiesScreen.tsx: filtros client-side (no re-fetch por cambio de filtro). Empty state con mensaje 'Ninguna propiedad coincide con los filtros aplicados.' — texto claro. Reutiliza data-testid=properties-empty ya usado por otros empty states.",
+    "Nit menor — DescriptionSection.tsx línea 22: el useAiContent hook resetea data al aplicar (reset()) pero no borra el estado 'copied' porque no aplica aquí — OK. Pero el textarea recibe `data` (no `data.trim()`) — si el LLM devuelve leading/trailing whitespace, se guarda tal cual. Sugerencia baja: setValue('description', data.trim(), ...).",
+    "Nit menor — PortalsSection.tsx: si el usuario click en 'portal-zonaprop' sin regenerar, el resultado sigue mostrando la data del portal anterior (mercadolibre) hasta que pulse 'Generar'. No es bug (regla 'VERA propone, no auto-cambia'), pero el label del bloque no indica de qué portal proviene el resultado activo. Considerar mostrar 'Resultado de: Mercado Libre' en el header del portal-result.",
+    "Nit menor — ai_content_service.py::_parse_list: `cleaned[:limit]` no aplica un mínimo — si el LLM devuelve 3 highlights, la UI los pinta igual (no falla porque HighlightsSection sólo mapea data.map). El backend acepta 3-6, pero el prompt pide 4-6. Considerar rechazar/reintentar si len < 4 en highlights. Bajo impacto: en 3 corridas siempre devolvió 4-6.",
+    "Positivo — cleanup: los 3 test properties creados vía API fueron eliminados (204) al terminar. Sin residuos."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_ai_content.py"
+  ],
+  "success_rate": {
+    "backend": "100% — 10/10 pytest passed (title happy path + 422 + min data + regenerate; description happy path + no inventa años; highlights 4-6 bullets; portal ML sin contactos + ZP + 422 portal inválido)",
+    "frontend": "100% — Login OK; workspace de propiedad seed cargó con 5 amenities; Descripción IA: generate → suggestion (998 chars) → textarea NO cambia hasta click en use-description → luego textarea recibe 998 chars; Destacados: generate → 6 bullets con copy-highlights + regenerate visibles; Portales: portal-mercadolibre generó title 58 chars + body 712 chars, switch a portal-zonaprop + generate produjo title 63 chars + body 691 chars; Filtros: property-filters aparece con toggle, type=casa→2, operation=alquiler→1, bedrooms>=3→1, minPrice=100000→1, maxPrice=1000→1, amenity-search 'gas' deja 2 chips exactos (gas-natural + gas-envasado), AND: parrilla→2 cards, parrilla+piscina→1 card, parrilla+piscina+solarium→0 cards + properties-empty visible con texto 'Ninguna propiedad coincide con los filtros aplicados.', clear-filters restaura 4 cards; Regresión: input-price='180.000', suggest-title visible, amenities-count='5 seleccionadas'"
+  },
+  "test_credentials": "qa_temp@vera.test / QaPilot!2026xz (Supabase Auth activo, sin cambios).",
+  "seed_data_creation": "Creadas y ELIMINADAS 3 propiedades TEST_SPRINT18_*: 95a60237… (departamento venta 180.000 con 5 amenities), baf75d89… (casa alquiler 900 con parrilla), e5da594d… (terreno venta 50.000 sin amenities). Los 3 DELETE devolvieron 204. Sin residuos.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Regresión IA de contenido en /app/backend/tests/test_ai_content.py (10 tests, ~33s). Todos los data-testids del sprint documentados: generate-description, description-suggestion, use-description, regenerate-description, description-error, input-description; generate-highlights, highlights-result, highlight-{i} (0..N), copy-highlights, regenerate-highlights, highlights-error; portal-mercadolibre, portal-zonaprop, generate-portal, portal-result, portal-title-text, portal-body-text, copy-portal-title, copy-portal-body, portal-error; toggle-filters, property-filters, filter-type, filter-operation, filter-bedrooms, filter-min-price, filter-max-price, filter-amenity-search, filter-amenity-{key}, clear-filters, properties-empty. La generación IA tarda 7-12s por modo — usar timeouts >= 60s. Backend REACT_APP_BACKEND_URL debe exportarse para pytest (los tests dependen de esa env). Sin regresión conocida en precio con miles ni módulo Características.",
+  "rca of the issue": "N/A — sin defectos funcionales. Sólo 3 nits menores documentados (data.trim(), header con nombre del portal en portal-result, y mínimo 4 en highlights parsing)."
+}

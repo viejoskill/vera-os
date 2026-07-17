@@ -183,16 +183,31 @@ class PropertyDetailResponse(PropertyResponse):
 
 
 class AiContentRequest(CamelModel):
-    """Input for VERA content intelligence. `mode` selects the task (today: title).
-    Only known facts are sent; VERA never invents data."""
+    """Input for VERA content intelligence. `mode` selects the task
+    (title / description / highlights / portal). Only known facts are sent;
+    VERA never invents data."""
     mode: str = "title"
+    portal: str = ""
     type: str = ""
     operation: str = ""
     city: str = ""
     neighborhood: str = ""
+    address: str = ""
+    title: str = ""
+    description: str = ""
+    rooms: Optional[float] = None
     bedrooms: Optional[float] = None
     bathrooms: Optional[float] = None
+    toilettes: Optional[float] = None
     area_m2: Optional[float] = None
+    semi_covered_area_m2: Optional[float] = None
+    lot_area_m2: Optional[float] = None
+    floors: Optional[float] = None
+    floor_number: Optional[float] = None
+    parking_covered: Optional[float] = None
+    parking_uncovered: Optional[float] = None
+    orientation: str = ""
+    condition: str = ""
     year_built: str = ""
     amenities: list[str] = []
     near_sea: bool = False
@@ -201,3 +216,5 @@ class AiContentRequest(CamelModel):
 class AiContentResponse(CamelModel):
     mode: str
     suggestions: list[str] = []
+    title: str = ""
+    body: str = ""

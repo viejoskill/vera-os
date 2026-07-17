@@ -22,11 +22,18 @@ async def generate_content(payload: AiContentRequest):
         raise HTTPException(503, "La IA de VERA no está configurada.")
     if payload.mode not in ai_content_service.SUPPORTED_MODES:
         raise HTTPException(422, f"Modo no soportado: {payload.mode}")
+    if payload.mode == "portal" and payload.portal not in ai_content_service.PORTALS:
+        raise HTTPException(422, f"Portal no soportado: {payload.portal}")
     try:
-        suggestions = await ai_content_service.generate_content(
+        result = await ai_content_service.generate_content(
             payload.mode, payload.model_dump(by_alias=True)
         )
     except Exception as exc:  # noqa: BLE001 — surface a clean error to the UI
         logger.exception("VERA content generation failed")
         raise HTTPException(502, "VERA no pudo generar sugerencias ahora.") from exc
-    return AiContentResponse(mode=payload.mode, suggestions=suggestions)
+    return AiContentResponse(
+        mode=payload.mode,
+        suggestions=result.get("suggestions", []),
+        title=result.get("title", ""),
+        body=result.get("body", ""),
+    )

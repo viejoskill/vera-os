@@ -22,6 +22,8 @@ import { BasicInfoSection } from './BasicInfoSection';
 import { FeaturesSection } from './FeaturesSection';
 import { AmenitiesSection } from './AmenitiesSection';
 import { DescriptionSection } from './DescriptionSection';
+import { HighlightsSection } from './HighlightsSection';
+import { PortalsSection } from './PortalsSection';
 import { OwnerSection } from './OwnerSection';
 import { TrackingSection } from './TrackingSection';
 import { PhotosSection } from './PhotosSection';
@@ -354,6 +356,16 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
             <div id="ws-section-description">
               <Panel title="Descripción" description="Contala vos o dejá que VERA la redacte.">
                 <DescriptionSection />
+              </Panel>
+            </div>
+            <div id="ws-section-highlights">
+              <Panel title="Destacados" description="Los puntos fuertes de la propiedad, listos para copiar.">
+                <HighlightsSection />
+              </Panel>
+            </div>
+            <div id="ws-section-portals">
+              <Panel title="Publicar en portales" description="Adaptá el texto a Mercado Libre o Zonaprop.">
+                <PortalsSection />
               </Panel>
             </div>
             <div id="ws-section-photos">

@@ -97,3 +97,114 @@ class TestAiContentTitle:
         assert r1.status_code == 200 and r2.status_code == 200
         assert len(r1.json()["suggestions"]) == 3
         assert len(r2.json()["suggestions"]) == 3
+
+
+# --- AI content: description mode ---
+class TestAiContentDescription:
+    _payload = {
+        "mode": "description",
+        "type": "departamento",
+        "operation": "venta",
+        "city": "Mar del Plata",
+        "neighborhood": "Playa Grande",
+        "rooms": 3,
+        "bedrooms": 2,
+        "bathrooms": 1,
+        "areaM2": 65,
+        "amenities": ["Balcón", "Cochera cubierta", "Parrilla", "Piscina"],
+        "nearSea": True,
+    }
+
+    def test_description_happy_path(self, api_client):
+        resp = api_client.post(f"{BASE_URL}/api/ai/content", json=self._payload, timeout=60)
+        assert resp.status_code == 200, f"{resp.status_code}: {resp.text}"
+        body = resp.json()
+        assert body.get("mode") == "description"
+        suggestions = body.get("suggestions")
+        assert isinstance(suggestions, list) and len(suggestions) == 1
+        text = suggestions[0]
+        assert isinstance(text, str)
+        # loose range: LLM may deviate slightly. Accept 400..1200 while checking ~600-900 target.
+        assert 400 <= len(text) <= 1200, f"description length off-target: {len(text)} chars"
+
+    def test_description_does_not_invent_data(self, api_client):
+        """When year_built is not provided, VERA must not mention a specific year."""
+        resp = api_client.post(f"{BASE_URL}/api/ai/content", json=self._payload, timeout=60)
+        assert resp.status_code == 200
+        text = resp.json()["suggestions"][0]
+        # No 4-digit year that looks like a construction year should be invented
+        years = re.findall(r"\b(19|20)\d{2}\b", text)
+        assert not years, f"description invented year(s): {years} — text: {text[:200]}"
+
+
+# --- AI content: highlights mode ---
+class TestAiContentHighlights:
+    def test_highlights_happy_path(self, api_client):
+        payload = {
+            "mode": "highlights",
+            "type": "casa",
+            "operation": "venta",
+            "city": "Pinamar",
+            "rooms": 4,
+            "bedrooms": 3,
+            "bathrooms": 2,
+            "areaM2": 140,
+            "lotAreaM2": 400,
+            "amenities": ["Parrilla", "Piscina", "Quincho", "Cochera cubierta"],
+            "nearSea": True,
+        }
+        resp = api_client.post(f"{BASE_URL}/api/ai/content", json=payload, timeout=60)
+        assert resp.status_code == 200, f"{resp.status_code}: {resp.text}"
+        body = resp.json()
+        assert body.get("mode") == "highlights"
+        bullets = body.get("suggestions")
+        assert isinstance(bullets, list), "highlights must be a list"
+        assert 4 <= len(bullets) <= 6, f"expected 4-6 bullets, got {len(bullets)}: {bullets}"
+        for b in bullets:
+            assert isinstance(b, str) and b.strip(), f"empty bullet: {b!r}"
+            # short bullet — allow small overshoot from LLM
+            assert len(b) <= 90, f"bullet too long: {b} ({len(b)} chars)"
+
+
+# --- AI content: portal mode ---
+class TestAiContentPortal:
+    _base = {
+        "mode": "portal",
+        "type": "departamento",
+        "operation": "venta",
+        "city": "Mar del Plata",
+        "neighborhood": "Playa Grande",
+        "rooms": 3,
+        "bedrooms": 2,
+        "bathrooms": 1,
+        "areaM2": 65,
+        "amenities": ["Balcón", "Cochera cubierta"],
+        "nearSea": True,
+        "title": "Departamento 3 amb. Playa Grande a metros del mar",
+        "description": "Excelente departamento con vista al mar. Ideal familia.",
+    }
+
+    def test_portal_mercadolibre(self, api_client):
+        payload = {**self._base, "portal": "mercadolibre"}
+        resp = api_client.post(f"{BASE_URL}/api/ai/content", json=payload, timeout=60)
+        assert resp.status_code == 200, f"{resp.status_code}: {resp.text}"
+        body = resp.json()
+        assert body.get("mode") == "portal"
+        assert isinstance(body.get("title"), str) and body["title"].strip(), "empty ML title"
+        assert isinstance(body.get("body"), str) and body["body"].strip(), "empty ML body"
+        # ML: no contact info allowed
+        low = body["body"].lower()
+        assert "@" not in body["body"], "ML body should not include email"
+        assert not re.search(r"https?://", low), "ML body should not include links"
+
+    def test_portal_zonaprop(self, api_client):
+        payload = {**self._base, "portal": "zonaprop"}
+        resp = api_client.post(f"{BASE_URL}/api/ai/content", json=payload, timeout=60)
+        assert resp.status_code == 200, f"{resp.status_code}: {resp.text}"
+        body = resp.json()
+        assert body["title"].strip() and body["body"].strip()
+
+    def test_portal_invalid_returns_422(self, api_client):
+        payload = {**self._base, "portal": "facebook"}
+        resp = api_client.post(f"{BASE_URL}/api/ai/content", json=payload, timeout=15)
+        assert resp.status_code == 422, f"expected 422, got {resp.status_code}: {resp.text}"

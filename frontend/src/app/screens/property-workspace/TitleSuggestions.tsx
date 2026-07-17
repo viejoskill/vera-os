@@ -2,13 +2,8 @@ import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Sparkles, RefreshCw } from 'lucide-react';
 import { useTitleSuggestions } from '@app/hooks/useTitleSuggestions';
-import { amenityLabels } from './amenities-catalog';
+import { buildAiContext } from './ai-context';
 import type { PropertyFormValues } from './form-schema';
-
-const num = (v: string): number | null => {
-  const n = Number((v || '').trim());
-  return v?.trim() && n > 0 ? n : null;
-};
 
 /**
  * Discrete VERA helper under the title field. VERA PROPONE, el profesional decide:
@@ -19,25 +14,7 @@ export const TitleSuggestions = () => {
   const [open, setOpen] = useState(false);
   const { status, suggestions, generate, reset } = useTitleSuggestions();
 
-  const run = () => {
-    const v = watch();
-    generate({
-      type: v.type,
-      operation: v.operation,
-      city: v.city,
-      neighborhood: v.neighborhood,
-      bedrooms: num(v.bedrooms),
-      bathrooms: num(v.bathrooms),
-      areaM2: num(v.areaM2),
-      yearBuilt: v.yearBuilt,
-      amenities: amenityLabels(v.amenities),
-      nearSea:
-        v.amenities.includes('cerca-del-mar') ||
-        /costa|mar del|pinamar|villa gesell|monte hermoso|las toninas|san bernardo/i.test(
-          `${v.city} ${v.neighborhood}`,
-        ),
-    });
-  };
+  const run = () => generate(buildAiContext(watch()));
 
   const handleToggle = () => {
     if (!open) {
