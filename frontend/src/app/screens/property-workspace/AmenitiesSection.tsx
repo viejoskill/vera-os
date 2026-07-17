@@ -48,7 +48,7 @@ export const AmenitiesSection = () => {
         />
         {selected.length > 0 && (
           <span className="vera-amenities__count" data-testid="amenities-count">
-            {selected.length} seleccionadas
+            {selected.length} seleccionada{selected.length === 1 ? '' : 's'}
           </span>
         )}
       </div>

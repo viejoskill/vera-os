@@ -196,6 +196,15 @@ Cierre del bloque Información para el piloto. Verificado 100% (iteration_16): b
 - **Regla F documentada** en `/app/docs/WORKSPACE.md`: "VERA propone, el profesional decide" — toda IA en VERA genera sugerencias, nunca sobrescribe.
 - Backend nuevo: `ai_content_service.py`, `routes_ai.py`, schemas `AiContentRequest/Response`, `config.ai_configured()`, `EMERGENT_LLM_KEY` en `.env`. Tests: `test_ai_content.py`.
 
+## Implemented (Sprint "Cerrar módulo Características" — 2026-06)
+El módulo pasó de "formulario" a **base de conocimiento** de la propiedad (fuente única de verdad para IA, portales, tasaciones, filtros). Verificado 100% (iteration_17): backend 6/6 pytest, frontend E2E verde, tsc limpio, compatible con propiedades existentes.
+- **Separación conceptual**: "Características" (datos OBJETIVOS: ambientes, dormitorios, baños, toilettes, superficies cubierta/semicubierta/lote, plantas, piso, cocheras cubiertas/descubiertas, orientación, estado de conservación, año) en un panel; "Amenities" (ATRIBUTOS) en panel propio.
+- **Amenities estructurados**: lista plana de **claves canónicas** en columna `amenities` (jsonb). Catálogo único `amenities-catalog.ts` (6 categorías, 60+ items, claves↔labels). `amenityLabels(keys)` es el puente para IA/portales. Buscador en tiempo real (insensible a acentos).
+- **Piso condicional** (solo departamento/oficina/local, `FLOOR_TYPES`). **Antigüedad derivada** del año de construcción (no se duplica el dato). Estado de conservación y orientación como selects.
+- Backend: 12 columnas nuevas (migración idempotente en `supabase_schema.sql`, corrida por el usuario), schemas + serializer con defaults seguros para propiedades legacy. Tests: `test_property_knowledge_base.py`.
+- Archivos: `FeaturesSection.tsx` (reescrito), `AmenitiesSection.tsx` (nuevo), `amenities-catalog.ts` (nuevo), `form-schema.ts`, `PropertyWorkspace.tsx`, `TitleSuggestions.tsx` (ahora manda labels al LLM).
+- Nit conocido no bloqueante: helper `str()` en toForm convierte 0→'' al recargar (cosmético, placeholder cubre; mismo patrón preexistente).
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.
