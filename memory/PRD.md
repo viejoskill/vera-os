@@ -269,6 +269,28 @@ Refinamiento para que "Hoy" se sienta un Sistema Operativo Comercial (no un CRM)
 - Nuevos archivos: `SpotlightModal.tsx`, `CustomizePanel.tsx`. Assets: `src/assets/brand/vera-symbol.png`, `logo-horizontal.png`.
 - Nota técnica: modal/panel usan `createPortal(document.body)` para escapar el stacking context de `.vera-home` (isolation) y quedar sobre el TopBar sticky.
 
+## Implemented (Sprint "Workspace Experience 02 — Identity & Ambient Intelligence" — 2026-06)
+De "software bien diseñado" a "producto con identidad propia". Sin nuevas features ni cambio de identidad visual. Verificado 100% (iteration_23): frontend E2E 10/11 (audio stream limitado por sandbox), 0 errores de consola, tsc limpio.
+- **DECISIÓN DE ARQUITECTURA — `WorkspaceConfig`** (`packages/config/workspace-config.ts`): objeto global `{ name, logo, symbol, tagline, theme, accent }`, fuente ÚNICA de identidad. Toda la UI lo consume; NADA hardcodeado. Cambiar de vertical (Real Estate → Legal/Water/Health) = cambiar solo este objeto, sin tocar la UI. `Sidebar` pasó a presentacional (`logoSrc`/`tagline` por props); `AppLayout` lo alimenta desde `workspaceConfig`.
+- **Sidebar branding**: logo horizontal + descriptor **"REAL ESTATE INTELLIGENCE"** (DM Sans 11px medium, letter-spacing amplio, color secondary, aire) como firma del sistema. El tagline viene de `WorkspaceConfig.tagline`.
+- **Ambient Intelligence (global)**: halo enorme y muy transparente (solo primario) detrás del Workspace (`.vera-shell__ambient` en el shell), respira lento (`vera-halo-breathe` 18s) y **cambia de posición suavemente al cambiar de App** (`data-app` + transición 1.8s). Se removió el halo propio del Home (ahora es global, presente en todas las pantallas).
+- **Spotlight (presencia de IA)**: badge "VERA" con glow sutil + microanimación en hover; sigue abriendo el modal placeholder.
+- **Dock**: más blur/profundidad/separación — sensación de objeto flotante (percepción tipo macOS, sin copiar diseño).
+- **Widgets con personalidad**: Audio con ecualizador animado al reproducir (`.vera-w-audio__eq`); Calendario con día actual iluminado (glow, no solo color); Cotizaciones anima solo el número al cambiar (interval mock ~4s + `is-flash`); Prioridades con leve iluminación al hover.
+- **Workspace** con más aire (gap 2xl).
+- Principio visual permanente documentado: "¿Este efecto ayuda a trabajar mejor o solo decora?" — si solo decora, se elimina.
+
+## Filosofía de producto (clasificación permanente — Sprint 02)
+Toda nueva funcionalidad se clasifica ANTES de desarrollarse, en UNA sola categoría:
+- **Apps**: Workspaces completos (Propiedades, Studio, Vera Bot, Personas, Operaciones).
+- **Widgets**: información / acciones rápidas (Audio, Calendario, Agenda, Noticias, Clima, Cotizaciones, Favoritos, Tareas, Actividad, Prioridades).
+- **Dock**: herramientas personales externas (Gmail, WhatsApp, Drive, Spotify, Instagram, Calendar, IA).
+- **Integraciones**: servicios externos (Google, Meta, Dropbox, Mercado Libre).
+- **IA**: transversal — no pertenece a ninguna categoría; puede aparecer en cualquier parte.
+
+## Roadmap (anotado, no implementado)
+- **Workspace Context** (gran salto futuro): el sistema se vuelve CONTEXTUAL — al abrir "Propiedades" el halo, el Spotlight y los widgets priorizan info inmobiliaria; en un Workspace de otra vertical el contexto cambia sin cambiar la identidad visual. Potencial diferencial clave de VERA OS.
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.
