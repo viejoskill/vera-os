@@ -12,6 +12,7 @@ export type BrandKey =
   | 'drive'
   | 'instagram'
   | 'facebook'
+  | 'meta'
   | 'linkedin'
   | 'youtube'
   | 'tiktok'
@@ -31,6 +32,7 @@ const BRAND_KEYS: BrandKey[] = [
   'drive',
   'instagram',
   'facebook',
+  'meta',
   'linkedin',
   'youtube',
   'tiktok',
