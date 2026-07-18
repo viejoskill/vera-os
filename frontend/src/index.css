@@ -2710,28 +2710,103 @@ p {
 }
 .vera-w-star { color: var(--vera-color-primary) !important; }
 
-/* Prioridades — miniatura de propiedad (thumbnail de foto principal) */
-.vera-w-prio { align-items: center; }
-.vera-w-prio__thumb {
-  flex-shrink: 0;
-  width: 80px;
-  height: 60px;
-  border-radius: var(--vera-radius-md);
-  overflow: hidden;
+/* Prioridades — hero card con foto de propiedad de fondo */
+.vera-w-prio-hero {
   position: relative;
-  border: 1.5px solid var(--vera-color-border);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.32);
-  background: var(--vera-color-surface);
+  margin: calc(-1 * var(--vera-space-md));
+  min-height: 268px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  cursor: pointer;
+  background-color: #1a1a1a;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  transition: filter 0.35s ease;
 }
-.vera-w-prio__thumb img {
+.vera-w-prio-hero:hover { filter: brightness(1.06); }
+.vera-w-prio-hero--noimg {
+  background-image: linear-gradient(135deg, #2b2b2b, #1c1c1c);
+}
+.vera-w-prio-hero__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.88) 0%,
+    rgba(0, 0, 0, 0.5) 38%,
+    rgba(0, 0, 0, 0.08) 68%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+.vera-w-prio-hero__content {
+  position: relative;
+  z-index: 1;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+  padding: var(--vera-space-lg);
 }
-.vera-w-prio__thumb--alta { border-color: var(--vera-color-priority-alta); }
-.vera-w-prio__thumb--atencion { border-color: var(--vera-color-priority-atencion); }
-.vera-w-prio__thumb--lista { border-color: var(--vera-color-priority-lista); }
+.vera-w-prio-hero__title {
+  font-size: 1.5rem;
+  font-weight: var(--vera-font-weight-semibold);
+  letter-spacing: -0.015em;
+  color: #fff;
+  line-height: 1.15;
+}
+.vera-w-prio-hero__sub {
+  margin-top: 4px;
+  font-size: var(--vera-font-size-sm);
+  color: rgba(255, 255, 255, 0.85);
+}
+.vera-w-prio-hero__foot {
+  margin-top: var(--vera-space-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vera-space-sm);
+}
+.vera-w-prio-hero__badge {
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  padding: 5px 12px;
+  border-radius: var(--vera-radius-pill);
+  border: 1px solid transparent;
+}
+.vera-w-prio-hero__badge--alta {
+  color: var(--vera-color-primary);
+  border-color: rgba(246, 230, 58, 0.5);
+  background: rgba(246, 230, 58, 0.1);
+}
+.vera-w-prio-hero__badge--atencion {
+  color: #ffd479;
+  border-color: rgba(255, 159, 10, 0.5);
+  background: rgba(255, 159, 10, 0.1);
+}
+.vera-w-prio-hero__badge--lista {
+  color: #7ee29a;
+  border-color: rgba(50, 215, 75, 0.5);
+  background: rgba(50, 215, 75, 0.1);
+}
+.vera-w-prio-hero__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--vera-radius-pill);
+  background: rgba(20, 20, 20, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-medium);
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.vera-w-prio-hero__cta:hover {
+  background: rgba(45, 45, 45, 0.9);
+  transform: translateX(1px);
+}
 
 /* --- Widget: Audio --- */
 .vera-w-audio {

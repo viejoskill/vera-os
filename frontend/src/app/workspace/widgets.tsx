@@ -14,7 +14,7 @@ import {
   Play,
   Pause,
   Volume2,
-  ArrowUpRight,
+  ArrowRight,
   MapPin,
   Sun,
   Cloud,
@@ -62,18 +62,15 @@ const recUrl = (r: InboxRecommendation): string => {
   return `/propiedades/${t.entityId}?${p.toString()}`;
 };
 
-/** Miniatura de la foto principal de una propiedad; si la imagen falla, cae al
- * punto de prioridad (nunca deja un recuadro vacío). */
-const PrioThumb = ({ src, priority, dotClass }: { src: string; priority: string; dotClass: string }) => {
-  const [failed, setFailed] = useState(false);
-  if (failed) return <span className={`vera-dot vera-dot--${dotClass}`} />;
-  return (
-    <span className={`vera-w-prio__thumb vera-w-prio__thumb--${priority}`}>
-      <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} />
-    </span>
-  );
+const PRIORITY_LABEL: Record<string, string> = {
+  alta: 'Alta prioridad',
+  atencion: 'Requiere atención',
+  lista: 'Al día',
 };
 
+/** Prioridades de hoy — hero card: la foto principal de la propiedad como fondo,
+ * con overlay, título, badge de prioridad y acción "Ver detalles". Muestra la
+ * prioridad más importante del día. */
 export const PrioridadesWidget = () => {
   const { data, isLoading } = useToday();
   const { data: properties } = useProperties();
@@ -87,33 +84,47 @@ export const PrioridadesWidget = () => {
     return m;
   }, [properties]);
 
-  const items = (data?.recommendations ?? []).slice(0, 3);
   if (isLoading) return <p className="vera-muted">VERA está revisando tu día…</p>;
-  if (!items.length)
+
+  const top = (data?.recommendations ?? [])[0];
+  if (!top)
     return <p className="vera-muted" data-testid="widget-body-prioridades">Todo al día. Sin pendientes urgentes ✨</p>;
+
+  const cover = top.target?.entity === 'property' ? coverById.get(top.target.entityId) : undefined;
+  const go = () => navigate(recUrl(top));
+
   return (
-    <ul className="vera-w-list" data-testid="widget-body-prioridades">
-      {items.map((r) => {
-        const dotClass = r.priority === 'alta' ? 'error' : r.priority === 'atencion' ? 'pending' : 'published';
-        const cover = r.target?.entity === 'property' ? coverById.get(r.target.entityId) : undefined;
-        return (
-          <li key={r.id}>
-            <button type="button" className="vera-w-listitem vera-w-prio" onClick={() => navigate(recUrl(r))}>
-              {cover ? (
-                <PrioThumb src={cover} priority={r.priority} dotClass={dotClass} />
-              ) : (
-                <span className={`vera-dot vera-dot--${dotClass}`} />
-              )}
-              <span className="vera-w-listitem__text">
-                <span className="vera-w-listitem__title">{r.title}</span>
-                <span className="vera-w-listitem__sub">{r.subject}</span>
-              </span>
-              <ArrowUpRight size={15} />
-            </button>
-          </li>
-        );
-      })}
-    </ul>
+    <div
+      className={`vera-w-prio-hero ${cover ? '' : 'vera-w-prio-hero--noimg'}`.trim()}
+      data-testid="widget-body-prioridades"
+      style={cover ? { backgroundImage: `url("${cover}")` } : undefined}
+      role="button"
+      tabIndex={0}
+      onClick={go}
+      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && go()}
+    >
+      <div className="vera-w-prio-hero__scrim" aria-hidden="true" />
+      <div className="vera-w-prio-hero__content">
+        <h3 className="vera-w-prio-hero__title">{top.title}</h3>
+        <p className="vera-w-prio-hero__sub">{top.subject}</p>
+        <div className="vera-w-prio-hero__foot">
+          <span className={`vera-w-prio-hero__badge vera-w-prio-hero__badge--${top.priority}`}>
+            {PRIORITY_LABEL[top.priority] ?? 'Prioridad'}
+          </span>
+          <button
+            type="button"
+            className="vera-w-prio-hero__cta"
+            data-testid="prioridad-ver-detalles"
+            onClick={(e) => {
+              e.stopPropagation();
+              go();
+            }}
+          >
+            Ver detalles <ArrowRight size={14} />
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 

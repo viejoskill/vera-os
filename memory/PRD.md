@@ -325,6 +325,9 @@ Tres widgets pasaron de mock a datos reales. Verificado por screenshot + curl (d
 ## Actualización "Prioridades de hoy" (2026-06 · miniatura de propiedad)
 `PrioridadesWidget` (`widgets.tsx`) ahora muestra la foto principal (`property.coverImage`, vía `useProperties`) como miniatura 80×60 (redondeada, anillo por prioridad: `--vera-color-priority-*`) cuando la recomendación es de una propiedad con imagen. Componente `PrioThumb` con fallback automático al punto de prioridad si la imagen falla/no existe. Preparado para futuros tipos (Cliente/Visita/Documento/Seguimiento): miniatura solo si hay imagen asociada. Verificado (foto real carga, naturalWidth 1536).
 
+## Rediseño "Prioridades de hoy" → hero card (2026-06)
+`PrioridadesWidget` pasó de lista a **hero card** (según mockup del usuario): foto principal de la propiedad como fondo full-bleed (`background-image`, con `margin` negativo para cancelar el padding del body), scrim degradado inferior, título grande, subtítulo, badge de prioridad (alta=amarillo / atencion=ámbar / lista=verde) y botón "Ver detalles →". Muestra la prioridad top del día; card clickeable → navega a la propiedad. Fallback `--noimg` (degradado) si no hay foto. Verificado por screenshot.
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.
