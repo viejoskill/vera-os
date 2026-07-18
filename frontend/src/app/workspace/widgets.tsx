@@ -90,6 +90,9 @@ export const PrioridadesWidget = () => {
 const STATIONS = [
   { id: 'aspen', name: 'Aspen 102.3', stream: 'https://playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3' },
   { id: 'rockpop', name: 'Rock & Pop 95.9', stream: 'https://ipanel.instream.audio:7002/stream' },
+  { id: 'la100', name: 'La 100 · 99.9', stream: 'https://playerservices.streamtheworld.com/api/livestream-redirect/FM999_56AAC.aac' },
+  { id: 'metro', name: 'Metro 95.1', stream: 'https://playerservices.streamtheworld.com/api/livestream-redirect/METRO.mp3' },
+  { id: 'vorterix', name: 'Vorterix 92.1', stream: 'https://ice2.edge-apps.net/radio1_high-20057.audio' },
 ];
 
 export const AudioWidget = () => {

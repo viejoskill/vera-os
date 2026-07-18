@@ -22,9 +22,9 @@ const describe = (code: number): string => {
   return 'Tormenta';
 };
 
-const LAT = -34.6037;
-const LON = -58.3816;
-const CITY = 'Buenos Aires';
+const LAT = -36.0281;
+const LON = -56.6811;
+const CITY = 'Costa del Este';
 
 const fetchWeather = async (): Promise<Weather> => {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,weather_code&timezone=America%2FArgentina%2FBuenos_Aires`;

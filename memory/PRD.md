@@ -318,6 +318,10 @@ Tres widgets pasaron de mock a datos reales. Verificado por screenshot + curl (d
 - **Cotizaciones (Dólar hoy)**: `useDolar` (`app/hooks/useDolar.ts`) → DolarApi (`https://dolarapi.com/v1/dolares`, sin key, CORS); muestra Oficial/Blue/MEP (venta), refetch 60s, anima el número al cambiar. Se quitó el `delta` mock.
 - Ambos widgets (clima, cotizaciones) dejaron de ser `demo` en el registry. Fetch directo a APIs públicas (keyless) vía react-query.
 
+## Actualización widgets en vivo (2026-06 · radios + clima Costa del Este)
+- **Audio**: 5 emisoras (URLs HTTPS verificadas 200): Aspen 102.3, Rock & Pop 95.9, La 100 99.9 (`FM999_56AAC` vía StreamTheWorld), Metro 95.1 (`METRO` STW), Vorterix 92.1 (`ice2.edge-apps.net/radio1_high-20057.audio`).
+- **Clima**: `useWeather.ts` ahora apunta a **Costa del Este** (lat -36.0281, lon -56.6811), no Buenos Aires.
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.
