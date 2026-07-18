@@ -3047,16 +3047,21 @@ p {
   width: 44px;
   height: 44px;
   border-radius: var(--vera-radius-md);
-  border: 1px solid transparent;
-  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.07);
   color: var(--vera-color-text-secondary);
   cursor: pointer;
-  transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+  transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 .vera-dock__app:hover {
   transform: translateY(-4px) scale(1.05);
-  background: var(--vera-color-surface);
+  background: rgba(255, 255, 255, 0.14);
   color: var(--vera-color-text);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4);
+}
+.vera-dock__add {
+  background: transparent;
+  border-color: transparent;
 }
 .vera-dock__add.is-on,
 .vera-dock__add:hover {

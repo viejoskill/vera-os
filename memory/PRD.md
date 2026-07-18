@@ -328,6 +328,13 @@ Tres widgets pasaron de mock a datos reales. Verificado por screenshot + curl (d
 ## Rediseño "Prioridades de hoy" → hero card (2026-06)
 `PrioridadesWidget` pasó de lista a **hero card** (según mockup del usuario): foto principal de la propiedad como fondo full-bleed (`background-image`, con `margin` negativo para cancelar el padding del body), scrim degradado inferior, título grande, subtítulo, badge de prioridad (alta=amarillo / atencion=ámbar / lista=verde) y botón "Ver detalles →". Muestra la prioridad top del día; card clickeable → navega a la propiedad. Fallback `--noimg` (degradado) si no hay foto. Verificado por screenshot.
 
+## Dock — catálogo ampliado + colores + visibilidad (2026-06)
+- Colores de marca aplicados a los íconos del Dock vía `BrandColors` + `BrandIcon` (silueta como máscara teñida con el hex oficial). 12 marcas con color; mono blanco si no hay color; fallback lucide si no hay PNG.
+- Catálogo del Dock (`apps-catalog.ts`) ampliado a 13 herramientas: gmail, ia(openai), claude, gemini, instagram, meta, youtube, whatsapp, spotify, drive, dropbox, mercadolibre, canva. Cada una con href real. Se quitó `calendar` (redundante con el widget Calendario).
+- `mercadolibre` (amarillo #FFE600, reusa el PNG del apretón de manos) linkea a mercadolibre.com.ar.
+- Visibilidad: `.vera-dock__app` ahora tiene tile sutil (bg translúcido + borde) estilo macOS para que los íconos oscuros (ej. OpenAI cian) se lean bien.
+- Colores: gmail #EA4335, openai #0081A5, claude #D97757, gemini #8E75B2, instagram #FF0069, meta #0467DF, youtube #FF0000, whatsapp #25D366, spotify #1ED760, drive #4285F4, dropbox #0061FF, mercadolibre #FFE600. (canva sin color → fallback lucide.)
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.
