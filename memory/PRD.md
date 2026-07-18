@@ -308,6 +308,9 @@ Infraestructura para consumir logos OFICIALES de integraciones/herramientas sin 
 ## Actualización logos (2026-06 · lote 3)
 Sumados `gmail.png`, `instagram.png`, `facebook.png` a `/public/brands/` (nombres estándar, claves ya existentes). Total: 13 logos. Del Dock, solo restan `whatsapp.png` y `drive.png` en fallback vectorial. Verificado por screenshot.
 
+## Actualización logos (2026-06 · lote 4 — Dock completo)
+Sumados `whatsapp.png` y `drive.png` (googledrive → drive). Total 15 logos en `/public/brands/`. El Dock quedó 100% con logos oficiales (sin fallback vectorial). Verificado por screenshot.
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.
