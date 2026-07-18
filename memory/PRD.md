@@ -311,6 +311,13 @@ Sumados `gmail.png`, `instagram.png`, `facebook.png` a `/public/brands/` (nombre
 ## Actualización logos (2026-06 · lote 4 — Dock completo)
 Sumados `whatsapp.png` y `drive.png` (googledrive → drive). Total 15 logos en `/public/brands/`. El Dock quedó 100% con logos oficiales (sin fallback vectorial). Verificado por screenshot.
 
+## Implemented (Widgets en vivo — Radio + Clima + Dólar — 2026-06)
+Tres widgets pasaron de mock a datos reales. Verificado por screenshot + curl (datos coinciden), tsc limpio.
+- **Audio (radio)**: arregladas las URLs de streaming (estaban caídas). Aspen 102.3 → redirect oficial StreamTheWorld (`playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3`); Rock & Pop 95.9 → `ipanel.instream.audio:7002/stream`. Se setea `volume` antes de `play()`, y hay estados "Conectando…/En vivo/En pausa/No disponible" con `onError`/`onPlaying`. Confirmado que reproduce ("En vivo" + ecualizador animado).
+- **Clima**: `useWeather` (`app/hooks/useWeather.ts`) → Open-Meteo (sin API key, CORS), Buenos Aires; mapea WMO code → descripción/ícono; refetch 10 min.
+- **Cotizaciones (Dólar hoy)**: `useDolar` (`app/hooks/useDolar.ts`) → DolarApi (`https://dolarapi.com/v1/dolares`, sin key, CORS); muestra Oficial/Blue/MEP (venta), refetch 60s, anima el número al cambiar. Se quitó el `delta` mock.
+- Ambos widgets (clima, cotizaciones) dejaron de ser `demo` en el registry. Fetch directo a APIs públicas (keyless) vía react-query.
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.

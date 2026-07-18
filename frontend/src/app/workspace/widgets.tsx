@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Clock,
@@ -16,9 +16,19 @@ import {
   Volume2,
   ArrowUpRight,
   MapPin,
+  Sun,
+  Cloud,
+  CloudRain,
+  CloudDrizzle,
+  CloudSnow,
+  CloudFog,
+  CloudLightning,
+  type LucideIcon,
 } from 'lucide-react';
 import { useToday } from '@app/hooks/useToday';
 import { useAuthUser } from '@app/auth/useAuthUser';
+import { useWeather } from '@app/hooks/useWeather';
+import { useDolar } from '@app/hooks/useDolar';
 import type { InboxRecommendation } from '@vera/types';
 
 /* --------------------------- Saludo / Fecha / Hora ---------------------- */
@@ -78,8 +88,8 @@ export const PrioridadesWidget = () => {
 
 /* --------------------------------- Audio -------------------------------- */
 const STATIONS = [
-  { id: 'aspen', name: 'Aspen 102.3', stream: 'https://27153.live.streamtheworld.com/ASPEN.mp3' },
-  { id: 'rockpop', name: 'Rock & Pop 95.9', stream: 'https://27343.live.streamtheworld.com/ROCK_POP.mp3' },
+  { id: 'aspen', name: 'Aspen 102.3', stream: 'https://playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3' },
+  { id: 'rockpop', name: 'Rock & Pop 95.9', stream: 'https://ipanel.instream.audio:7002/stream' },
 ];
 
 export const AudioWidget = () => {
@@ -87,6 +97,12 @@ export const AudioWidget = () => {
   const [station, setStation] = useState(STATIONS[0]);
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(0.7);
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = volume;
+  }, [volume, station]);
 
   const toggle = async () => {
     const el = audioRef.current;
@@ -94,34 +110,69 @@ export const AudioWidget = () => {
     if (playing) {
       el.pause();
       setPlaying(false);
-    } else {
-      try {
-        await el.play();
-        setPlaying(true);
-      } catch {
-        setPlaying(false);
-      }
+      return;
+    }
+    setError(false);
+    setLoading(true);
+    el.volume = volume;
+    try {
+      await el.play();
+      setPlaying(true);
+    } catch {
+      setPlaying(false);
+      setError(true);
+    } finally {
+      setLoading(false);
     }
   };
 
   const pick = (s: typeof STATIONS[number]) => {
+    const wasPlaying = playing;
     setStation(s);
     setPlaying(false);
-    window.setTimeout(() => {
-      if (audioRef.current) audioRef.current.load();
+    setError(false);
+    window.setTimeout(async () => {
+      const el = audioRef.current;
+      if (!el) return;
+      el.load();
+      el.volume = volume;
+      if (wasPlaying) {
+        try {
+          await el.play();
+          setPlaying(true);
+        } catch {
+          setError(true);
+        }
+      }
     }, 0);
   };
 
+  const label = error ? 'No disponible' : loading ? 'Conectando…' : playing ? 'En vivo' : 'En pausa';
+
   return (
     <div className="vera-w-audio" data-testid="widget-body-audio">
-      <audio ref={audioRef} src={station.stream} preload="none" onEnded={() => setPlaying(false)} />
+      <audio
+        ref={audioRef}
+        src={station.stream}
+        preload="none"
+        onEnded={() => setPlaying(false)}
+        onError={() => {
+          setPlaying(false);
+          setError(true);
+          setLoading(false);
+        }}
+        onPlaying={() => {
+          setLoading(false);
+          setPlaying(true);
+        }}
+      />
       <div className="vera-w-audio__now">
         <span className={`vera-w-audio__eq ${playing ? 'is-on' : ''}`.trim()} aria-hidden="true">
           <i /><i /><i /><i />
         </span>
         <div>
           <p className="vera-w-audio__station">{station.name}</p>
-          <p className="vera-w-audio__label">{playing ? 'En vivo' : 'En pausa'}</p>
+          <p className="vera-w-audio__label">{label}</p>
         </div>
         <button type="button" className="vera-w-audio__play" data-testid="audio-toggle" onClick={toggle} aria-label={playing ? 'Pausar' : 'Reproducir'}>
           {playing ? <Pause size={18} /> : <Play size={18} />}
@@ -245,15 +296,35 @@ export const ActivityWidget = () => (
 );
 
 /* --------------------------------- Clima -------------------------------- */
-export const WeatherWidget = () => (
-  <div className="vera-w-weather" data-testid="widget-body-clima">
-    <CloudSun size={40} className="vera-w-weather__icon" />
-    <div>
-      <p className="vera-w-weather__temp">23°</p>
-      <p className="vera-w-weather__desc">Parcialmente nublado · Buenos Aires</p>
+const weatherIcon = (code: number): LucideIcon => {
+  if (code === 0) return Sun;
+  if (code <= 2) return CloudSun;
+  if (code === 3) return Cloud;
+  if (code <= 48) return CloudFog;
+  if (code <= 57) return CloudDrizzle;
+  if (code <= 67) return CloudRain;
+  if (code <= 77) return CloudSnow;
+  if (code <= 82) return CloudRain;
+  if (code <= 86) return CloudSnow;
+  return CloudLightning;
+};
+
+export const WeatherWidget = () => {
+  const { data, isLoading, isError } = useWeather();
+  if (isLoading) return <p className="vera-muted" data-testid="widget-body-clima">Cargando clima…</p>;
+  if (isError || !data)
+    return <p className="vera-muted" data-testid="widget-body-clima">Clima no disponible</p>;
+  const Icon = weatherIcon(data.code);
+  return (
+    <div className="vera-w-weather" data-testid="widget-body-clima">
+      <Icon size={40} className="vera-w-weather__icon" />
+      <div>
+        <p className="vera-w-weather__temp">{data.temp}°</p>
+        <p className="vera-w-weather__desc">{data.description} · {data.city}</p>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /* -------------------------------- Noticias ------------------------------ */
 const NEWS = [
@@ -275,38 +346,40 @@ export const NewsWidget = () => (
 );
 
 /* ------------------------------ Cotizaciones ---------------------------- */
-const QUOTES = [
-  { label: 'Dólar Oficial', value: 985, delta: '+0,4%' },
-  { label: 'Dólar Blue', value: 1180, delta: '-0,8%' },
-  { label: 'Dólar MEP', value: 1095, delta: '+0,2%' },
-];
+/** Dólar hoy en vivo (DolarApi). Anima solo el número cuando cambia el valor. */
 export const QuotesWidget = () => {
-  const [quotes, setQuotes] = useState(QUOTES);
-  const [flash, setFlash] = useState<number | null>(null);
+  const { data, isLoading, isError } = useDolar();
+  const [flash, setFlash] = useState<Record<string, boolean>>({});
+  const prev = useRef<Record<string, number>>({});
 
   useEffect(() => {
-    const t = window.setInterval(() => {
-      const i = Math.floor(Math.random() * QUOTES.length);
-      setQuotes((prev) =>
-        prev.map((q, idx) =>
-          idx === i ? { ...q, value: q.value + (Math.random() < 0.5 ? -5 : 5) } : q,
-        ),
-      );
-      setFlash(i);
-      window.setTimeout(() => setFlash(null), 700);
-    }, 4200);
-    return () => window.clearInterval(t);
-  }, []);
+    if (!data) return;
+    const changed: Record<string, boolean> = {};
+    data.forEach((q) => {
+      if (prev.current[q.label] !== undefined && prev.current[q.label] !== q.venta) {
+        changed[q.label] = true;
+      }
+      prev.current[q.label] = q.venta;
+    });
+    if (Object.keys(changed).length) {
+      setFlash(changed);
+      const t = window.setTimeout(() => setFlash({}), 700);
+      return () => window.clearTimeout(t);
+    }
+  }, [data]);
+
+  if (isLoading) return <p className="vera-muted" data-testid="widget-body-cotizaciones">Cargando cotizaciones…</p>;
+  if (isError || !data)
+    return <p className="vera-muted" data-testid="widget-body-cotizaciones">Cotizaciones no disponibles</p>;
 
   return (
     <ul className="vera-w-quotes" data-testid="widget-body-cotizaciones">
-      {quotes.map((q, i) => (
+      {data.map((q) => (
         <li key={q.label}>
           <span className="vera-w-quotes__label">{q.label}</span>
-          <span className={`vera-w-quotes__value ${flash === i ? 'is-flash' : ''}`.trim()}>
-            $ {q.value.toLocaleString('es-AR')}
+          <span className={`vera-w-quotes__value ${flash[q.label] ? 'is-flash' : ''}`.trim()}>
+            $ {q.venta.toLocaleString('es-AR')}
           </span>
-          <span className={`vera-w-quotes__delta ${q.delta.startsWith('-') ? 'is-down' : 'is-up'}`}>{q.delta}</span>
         </li>
       ))}
     </ul>

@@ -50,9 +50,9 @@ export const WIDGETS: WidgetDef[] = [
   { id: 'agenda', title: 'Agenda', icon: CalendarDays, size: 'sm', Component: AgendaWidget, defaultEnabled: true, demo: true },
   { id: 'tareas', title: 'Tareas', icon: CheckSquare, size: 'sm', Component: TasksWidget, defaultEnabled: true, demo: true },
   { id: 'actividad', title: 'Actividad reciente', icon: Activity, size: 'sm', Component: ActivityWidget, defaultEnabled: false, demo: true },
-  { id: 'clima', title: 'Clima', icon: CloudSun, size: 'sm', Component: WeatherWidget, defaultEnabled: false, demo: true },
+  { id: 'clima', title: 'Clima', icon: CloudSun, size: 'sm', Component: WeatherWidget, defaultEnabled: false },
   { id: 'noticias', title: 'Noticias', icon: Newspaper, size: 'sm', Component: NewsWidget, defaultEnabled: false, demo: true },
-  { id: 'cotizaciones', title: 'Cotizaciones', icon: TrendingUp, size: 'sm', Component: QuotesWidget, defaultEnabled: false, demo: true },
+  { id: 'cotizaciones', title: 'Cotizaciones', icon: TrendingUp, size: 'sm', Component: QuotesWidget, defaultEnabled: false },
 ];
 
 export const widgetById = (id: string): WidgetDef | undefined => WIDGETS.find((w) => w.id === id);
