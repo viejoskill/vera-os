@@ -2,10 +2,10 @@ import {
   Mail,
   Sparkles,
   Instagram,
-  Calendar,
   HardDrive,
   MessageCircle,
   Music,
+  Store,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -26,7 +26,7 @@ export const APPS: DockTool[] = [
   { id: 'gmail', label: 'Gmail', icon: Mail, href: 'https://mail.google.com', brand: 'gmail' },
   { id: 'ia', label: 'IA', icon: Sparkles, href: 'https://chatgpt.com', brand: 'openai' },
   { id: 'instagram', label: 'Instagram', icon: Instagram, href: 'https://instagram.com', brand: 'instagram' },
-  { id: 'calendar', label: 'Calendar', icon: Calendar, href: 'https://calendar.google.com', brand: 'calendar' },
+  { id: 'mercadolibre', label: 'Mercado Libre', icon: Store, href: 'https://www.mercadolibre.com.ar', brand: 'mercadolibre' },
   { id: 'drive', label: 'Drive', icon: HardDrive, href: 'https://drive.google.com', brand: 'drive' },
   { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, href: 'https://web.whatsapp.com', brand: 'whatsapp' },
   { id: 'spotify', label: 'Spotify', icon: Music, href: 'https://open.spotify.com', brand: 'spotify' },
