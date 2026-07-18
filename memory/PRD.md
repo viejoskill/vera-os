@@ -322,6 +322,9 @@ Tres widgets pasaron de mock a datos reales. Verificado por screenshot + curl (d
 - **Audio**: 5 emisoras (URLs HTTPS verificadas 200): Aspen 102.3, Rock & Pop 95.9, La 100 99.9 (`FM999_56AAC` vía StreamTheWorld), Metro 95.1 (`METRO` STW), Vorterix 92.1 (`ice2.edge-apps.net/radio1_high-20057.audio`).
 - **Clima**: `useWeather.ts` ahora apunta a **Costa del Este** (lat -36.0281, lon -56.6811), no Buenos Aires.
 
+## Actualización "Prioridades de hoy" (2026-06 · miniatura de propiedad)
+`PrioridadesWidget` (`widgets.tsx`) ahora muestra la foto principal (`property.coverImage`, vía `useProperties`) como miniatura 80×60 (redondeada, anillo por prioridad: `--vera-color-priority-*`) cuando la recomendación es de una propiedad con imagen. Componente `PrioThumb` con fallback automático al punto de prioridad si la imagen falla/no existe. Preparado para futuros tipos (Cliente/Visita/Documento/Seguimiento): miniatura solo si hay imagen asociada. Verificado (foto real carga, naturalWidth 1536).
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.

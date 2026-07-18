@@ -2710,6 +2710,29 @@ p {
 }
 .vera-w-star { color: var(--vera-color-primary) !important; }
 
+/* Prioridades — miniatura de propiedad (thumbnail de foto principal) */
+.vera-w-prio { align-items: center; }
+.vera-w-prio__thumb {
+  flex-shrink: 0;
+  width: 80px;
+  height: 60px;
+  border-radius: var(--vera-radius-md);
+  overflow: hidden;
+  position: relative;
+  border: 1.5px solid var(--vera-color-border);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.32);
+  background: var(--vera-color-surface);
+}
+.vera-w-prio__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.vera-w-prio__thumb--alta { border-color: var(--vera-color-priority-alta); }
+.vera-w-prio__thumb--atencion { border-color: var(--vera-color-priority-atencion); }
+.vera-w-prio__thumb--lista { border-color: var(--vera-color-priority-lista); }
+
 /* --- Widget: Audio --- */
 .vera-w-audio {
   display: flex;

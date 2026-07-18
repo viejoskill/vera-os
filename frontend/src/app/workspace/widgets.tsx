@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Clock,
@@ -26,6 +26,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useToday } from '@app/hooks/useToday';
+import { useProperties } from '@app/hooks/useProperties';
 import { useAuthUser } from '@app/auth/useAuthUser';
 import { useWeather } from '@app/hooks/useWeather';
 import { useDolar } from '@app/hooks/useDolar';
@@ -61,27 +62,57 @@ const recUrl = (r: InboxRecommendation): string => {
   return `/propiedades/${t.entityId}?${p.toString()}`;
 };
 
+/** Miniatura de la foto principal de una propiedad; si la imagen falla, cae al
+ * punto de prioridad (nunca deja un recuadro vacío). */
+const PrioThumb = ({ src, priority, dotClass }: { src: string; priority: string; dotClass: string }) => {
+  const [failed, setFailed] = useState(false);
+  if (failed) return <span className={`vera-dot vera-dot--${dotClass}`} />;
+  return (
+    <span className={`vera-w-prio__thumb vera-w-prio__thumb--${priority}`}>
+      <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} />
+    </span>
+  );
+};
+
 export const PrioridadesWidget = () => {
   const { data, isLoading } = useToday();
+  const { data: properties } = useProperties();
   const navigate = useNavigate();
+
+  const coverById = useMemo(() => {
+    const m = new Map<string, string>();
+    (properties ?? []).forEach((p) => {
+      if (p.coverImage) m.set(p.id, p.coverImage);
+    });
+    return m;
+  }, [properties]);
+
   const items = (data?.recommendations ?? []).slice(0, 3);
   if (isLoading) return <p className="vera-muted">VERA está revisando tu día…</p>;
   if (!items.length)
     return <p className="vera-muted" data-testid="widget-body-prioridades">Todo al día. Sin pendientes urgentes ✨</p>;
   return (
     <ul className="vera-w-list" data-testid="widget-body-prioridades">
-      {items.map((r) => (
-        <li key={r.id}>
-          <button type="button" className="vera-w-listitem" onClick={() => navigate(recUrl(r))}>
-            <span className={`vera-dot vera-dot--${r.priority === 'alta' ? 'error' : r.priority === 'atencion' ? 'pending' : 'published'}`} />
-            <span className="vera-w-listitem__text">
-              <span className="vera-w-listitem__title">{r.title}</span>
-              <span className="vera-w-listitem__sub">{r.subject}</span>
-            </span>
-            <ArrowUpRight size={15} />
-          </button>
-        </li>
-      ))}
+      {items.map((r) => {
+        const dotClass = r.priority === 'alta' ? 'error' : r.priority === 'atencion' ? 'pending' : 'published';
+        const cover = r.target?.entity === 'property' ? coverById.get(r.target.entityId) : undefined;
+        return (
+          <li key={r.id}>
+            <button type="button" className="vera-w-listitem vera-w-prio" onClick={() => navigate(recUrl(r))}>
+              {cover ? (
+                <PrioThumb src={cover} priority={r.priority} dotClass={dotClass} />
+              ) : (
+                <span className={`vera-dot vera-dot--${dotClass}`} />
+              )}
+              <span className="vera-w-listitem__text">
+                <span className="vera-w-listitem__title">{r.title}</span>
+                <span className="vera-w-listitem__sub">{r.subject}</span>
+              </span>
+              <ArrowUpRight size={15} />
+            </button>
+          </li>
+        );
+      })}
     </ul>
   );
 };
