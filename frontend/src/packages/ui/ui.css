@@ -159,6 +159,16 @@
 .vera-brand-icon--mono {
   filter: brightness(0) invert(1);
 }
+/* Tinte de color de marca: la silueta como máscara, pintada con el color oficial */
+.vera-brand-icon--tint {
+  display: inline-block;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
 .vera-sidebar__brand-logo {
   height: 30px;
   width: auto;
