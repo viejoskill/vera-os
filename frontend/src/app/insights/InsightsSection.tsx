@@ -6,7 +6,8 @@ import { InsightCard } from './InsightCard';
  * insight (oportunidades, riesgos, recomendaciones, prioridades…). VERA detecta
  * y propone; el usuario decide. No es un CRM ni automatización invasiva. */
 export const InsightsSection = () => {
-  const { data: insights, isLoading, isError } = useInsights();
+  const { data, isLoading, isError } = useInsights();
+  const insights = data?.insights;
 
   return (
     <section className="vera-ins" data-testid="insights-section">

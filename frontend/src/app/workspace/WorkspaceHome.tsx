@@ -4,6 +4,7 @@ import { widgetById } from './widget-registry';
 import { useDashboard } from './useDashboard';
 import { Dock } from './Dock';
 import { QuickActions } from './QuickActions';
+import { TodayHero } from './TodayHero';
 import { InsightsSection } from '@app/insights';
 import { SpotlightModal } from './SpotlightModal';
 import { CustomizePanel } from './CustomizePanel';
@@ -32,24 +33,23 @@ export const WorkspaceHome = () => {
         <span className="vera-home__spotlight-badge"><Sparkles size={12} /> VERA</span>
       </button>
 
-      <div className="vera-home__head">
-        <div>
-          <h1 className="vera-home__title">Tu espacio de trabajo</h1>
-          <p className="vera-home__sub">Todo lo que necesitás para tu día, en un solo lugar.</p>
-        </div>
+      <TodayHero onAsk={() => setSpotlight(true)} />
+
+      <InsightsSection />
+
+      <QuickActions />
+
+      <div className="vera-home__widgets-head">
+        <span className="vera-home__widgets-title">Tu escritorio</span>
         <button
           type="button"
           className="vera-btn vera-btn--secondary vera-btn--sm"
           data-testid="customize-widgets"
           onClick={() => setCustomizing(true)}
         >
-          <SlidersHorizontal size={15} /> Personalizar escritorio
+          <SlidersHorizontal size={15} /> Personalizar
         </button>
       </div>
-
-      <QuickActions />
-
-      <InsightsSection />
 
       <div className="vera-widget-grid" data-testid="widget-grid">
         {layout.map((id, i) => {

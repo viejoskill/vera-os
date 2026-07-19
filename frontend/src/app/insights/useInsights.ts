@@ -1,16 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { env } from '@vera/config';
-import type { Insight } from './types';
+import type { InsightsResponse } from './types';
 
-/** Consume el Insights Engine (VERA Brain). La App sólo muestra; el motor detecta
- * hechos y propone acciones. Nunca ejecuta ni envía nada. */
+/** Consume el Insights Engine (VERA Brain). Devuelve los insights + un resumen
+ * de "qué encontró VERA" para el encabezado AI-First de Hoy. */
 export const useInsights = () =>
-  useQuery<Insight[]>({
+  useQuery<InsightsResponse>({
     queryKey: ['insights'],
     queryFn: async () => {
       const res = await fetch(`${env.backendUrl}/api/insights`);
       if (!res.ok) throw new Error('insights-failed');
-      return ((await res.json()) as { insights: Insight[] }).insights;
+      return res.json();
     },
     staleTime: 60_000,
     refetchInterval: 300_000,

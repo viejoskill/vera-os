@@ -12,3 +12,14 @@ export interface Insight {
   signals: string[];
   meta: Record<string, unknown>;
 }
+
+export interface InsightsSummary {
+  by_type: Record<string, number>;
+  total: number;
+  active_conversations: number;
+}
+
+export interface InsightsResponse {
+  insights: Insight[];
+  summary: InsightsSummary;
+}
