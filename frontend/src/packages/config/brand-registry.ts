@@ -26,7 +26,8 @@ export type BrandKey =
   | 'canva'
   | 'canvas'
   | 'mercadopago'
-  | 'mercadolibre';
+  | 'mercadolibre'
+  | 'arturito';
 
 const BRAND_KEYS: BrandKey[] = [
   'gmail',

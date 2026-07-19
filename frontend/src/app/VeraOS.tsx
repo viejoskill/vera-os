@@ -4,6 +4,7 @@ import { AppLayout } from '@app/layout/AppLayout';
 import { PropertiesScreen } from '@app/screens/PropertiesScreen';
 import { PropertyWorkspace } from '@app/screens/property-workspace';
 import { WorkspaceHome } from '@app/workspace/WorkspaceHome';
+import { VeraBotWorkspace } from '@app/vera-bot';
 import { LoginScreen } from '@app/screens/LoginScreen';
 import { PlaceholderScreen } from '@app/screens/PlaceholderScreen';
 import { AuthProvider } from '@app/auth/AuthProvider';
@@ -29,7 +30,7 @@ export const VeraOS = () => (
               <Route path="propiedades" element={<PropertiesScreen />} />
               <Route path="propiedades/nueva" element={<PropertyWorkspace />} />
               <Route path="propiedades/:id" element={<PropertyWorkspace />} />
-              <Route path="vera-bot" element={<PlaceholderScreen title="Vera Bot" />} />
+              <Route path="vera-bot" element={<VeraBotWorkspace />} />
               <Route path="personas" element={<PlaceholderScreen title="Personas" />} />
               <Route path="operaciones" element={<PlaceholderScreen title="Operaciones" />} />
               <Route path="studio" element={<PlaceholderScreen title="Studio" />} />

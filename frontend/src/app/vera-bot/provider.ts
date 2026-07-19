@@ -1,9 +1,10 @@
-import type { ConversationProvider } from './types';
-import { mockConversationProvider } from './providers/mock-provider';
+import type { MessagingProvider } from './types';
+import { arturitoProvider } from './providers/arturito-provider';
 
 /**
- * Proveedor ACTIVO de conversaciones. Único punto de acoplamiento: cambiar el
- * motor real (Arturito, WhatsApp Cloud, Kommo, Twilio, Evolution…) es reemplazar
- * esta línea por otra implementación de ConversationProvider. La UI no cambia.
+ * Proveedor ACTIVO de mensajería. Único punto de acoplamiento del sistema:
+ * cambiar de motor (Arturito → WhatsApp Cloud / Kommo / Twilio / Evolution…)
+ * es reemplazar esta línea por otra implementación de MessagingProvider.
+ * La experiencia de Vera Bot y el resto de VERA OS permanecen intactos.
  */
-export const conversationProvider: ConversationProvider = mockConversationProvider;
+export const messagingProvider: MessagingProvider = arturitoProvider;

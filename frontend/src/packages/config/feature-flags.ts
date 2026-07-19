@@ -14,7 +14,7 @@ export interface FeatureFlags {
 
 export const featureFlags: FeatureFlags = {
   hoy: true, // "Hoy" — VERA operational Inbox
-  veraBot: false, // "Vera Bot" — mensajería principal del sistema (próximamente)
+  veraBot: true, // "Vera Bot" — integración de mensajería (motor: Arturito)
   propiedades: true,
   personas: false,
   operaciones: false,

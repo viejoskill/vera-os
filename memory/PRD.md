@@ -335,6 +335,17 @@ Tres widgets pasaron de mock a datos reales. Verificado por screenshot + curl (d
 - Visibilidad: `.vera-dock__app` ahora tiene tile sutil (bg translúcido + borde) estilo macOS para que los íconos oscuros (ej. OpenAI cian) se lean bien.
 - Colores: gmail #EA4335, openai #0081A5, claude #D97757, gemini #8E75B2, instagram #FF0069, meta #0467DF, youtube #FF0000, whatsapp #25D366, spotify #1ED760, drive #4285F4, dropbox #0061FF, mercadolibre #FFE600. (canva sin color → fallback lucide.)
 
+## Sprint 04 — Vera Bot como INTEGRACIÓN (motor: Arturito) (2026-06/07)
+Cambio de alcance definido por el "Product Philosophy v1.0" del usuario: **VERA orquesta, no reconstruye**. Vera Bot deja de ser mensajería propia y pasa a ser una integración desacoplada de Arturito.
+- **Capa `MessagingProvider`** (`app/vera-bot/types.ts`): contrato único (id, name, brand, tagline, description, channels, mode `launch|embed`, url, online). Cambiar de motor = implementar la interfaz + 1 línea en `provider.ts`. El resto de VERA OS no se toca.
+- **Proveedor inicial Arturito** (`app/vera-bot/providers/arturito-provider.ts`): modo `launch`, url `https://app.arturito.ai`, canales whatsapp/instagram/facebook/web. (Arturito no expone API pública de bandeja para terceros → integración por lanzamiento, no embed.)
+- **Punto de acoplamiento** `app/vera-bot/provider.ts` → `messagingProvider = arturitoProvider`. Hook `useMessaging()` (`{ provider, launch }`) es lo único que consume la UI.
+- **UI nativa** `VeraBotWorkspace.tsx`: header + cápsula de estado "VERA ONLINE" (pulso verde), indicadores multicanal, hero del motor (tile de marca vía `BrandIcon` fallback `Bot`, botón "Abrir Arturito" → `window.open` nueva pestaña, nota de sesión segura), y 3 capas futuras "Próximamente" (Vera Expert, Acciones rápidas, Automatizaciones) — arquitectura preparada sin construirlas.
+- Router: `VeraOS.tsx` monta `<VeraBotWorkspace/>` en `/vera-bot`; flag `veraBot: true`. Brand `arturito` agregado a `brand-registry.ts` (sin PNG aún → fallback vectorial `Bot`).
+- Se eliminaron los archivos del enfoque anterior (mock-provider/useConversations/ConversationProvider). CSS en `index.css` bajo `.vera-bot__*`. Verificado por screenshot (login QA → /vera-bot renderiza).
+- **Pendiente futuro**: si Arturito habilita API pública, migrar `mode` a `embed` (bandeja real embebida) sin tocar la UI. Considerar `arturito.png` oficial en `/public/brands/`.
+
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.
