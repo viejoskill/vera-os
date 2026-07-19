@@ -12,6 +12,7 @@ from starlette.middleware.cors import CORSMiddleware
 import config
 import routes_ai
 import routes_files
+import routes_integrations
 import routes_properties
 
 app = FastAPI(title="VERA OS API")
@@ -32,6 +33,7 @@ async def health():
 api_router.include_router(routes_properties.router)
 api_router.include_router(routes_files.router)
 api_router.include_router(routes_ai.router)
+api_router.include_router(routes_integrations.router)
 app.include_router(api_router)
 
 app.add_middleware(

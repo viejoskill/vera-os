@@ -346,6 +346,15 @@ Cambio de alcance definido por el "Product Philosophy v1.0" del usuario: **VERA 
 - **Pendiente futuro**: si Arturito habilita API pública, migrar `mode` a `embed` (bandeja real embebida) sin tocar la UI. Considerar `arturito.png` oficial en `/public/brands/`.
 
 
+## Sprint 05 — Centro de Integraciones (2026-07)
+Nueva App **"Integraciones"** (Sidebar, flag `integraciones: true`, ruta `/integraciones` en `VeraOS.tsx`). Es el hub donde el profesional arma su ecosistema — "VERA orquesta, no reemplaza".
+- **Backend** `routes_integrations.py` → `GET /api/integrations/{provider}/health`: health-check REAL de alcance (httpx GET a `app.arturito.ai`, follow_redirects, timeout 6s). Devuelve `{provider, status: operational|degraded|down, http_status, latency_ms, checked_at}`. Solo `arturito` soportado (HEALTH_TARGETS); el resto → 404. Semántica: "servicio operativo", NO "cuenta conectada". Registrado en `server.py`.
+- **Frontend** `app/integraciones/`: `types.ts`, `catalog.ts` (12 integraciones en 6 categorías: Mensajería, Correo, Almacenamiento, IA, Publicación, Presencia), `useIntegrations.ts` (estado conectar/desconectar SIMULADO, persistido en `localStorage` `vera:integrations:{email}`; Arturito `defaultConnected`), `useIntegrationHealth` (react-query, refetch 60s, solo `healthMode:'real'` && conectado), `IntegrationCard.tsx`, `PreferencesPanel.tsx`, `IntegrationsScreen.tsx` (tabs Integraciones/Preferencias), `index.ts`.
+- **Tarjetas**: logo oficial a color (BrandIcon, Arturito/ML full-color), estado Conectado/No conectado, última sync (relativa), health badge (Operativo·latencia / Inestable / Sin respuesta) solo para Arturito, botones Conectar | Configurar (abre web) | Desconectar. Contador global `X/12 conectadas`.
+- **Preferencias**: identidad (nombre/firma de WorkspaceConfig) + apariencia (tema oscuro activo, swatch de acento) — solo lectura, edición "próximamente".
+- CSS `.vera-int*` / `.vera-int-card*` / `.vera-prefs*` en `index.css`. Verificado E2E: health real (operational, latencia), conectar→2/12, persistencia tras reload, desconectar→1/12.
+- **Pendiente futuro**: OAuth real por integración (Gmail/Drive/Meta) para reemplazar el estado simulado; secciones Cuentas/IA/Automatizaciones/Seguridad; editar identidad/tema desde Preferencias.
+
 ## Sprint 04.1 — Logos oficiales de herramientas integradas (2026-07)
 Dirección confirmada por el usuario: **mantener logos oficiales A COLOR** (no monocromáticos). La consistencia la aporta el sistema de diseño de VERA (contenedores, tamaños, espaciado, animaciones, estados); cada integración conserva su identidad de marca para comunicar que VERA integra (no reemplaza).
 - **Logo oficial de Arturito**: descargado de `arturito.ai/images/icons/arturito-icon.png` (tile navy con glifo "a" en degradado + globo naranja) → `/public/brands/arturito.png` (180×180 RGBA). Clave `arturito` agregada al `BrandRegistry` (tipo + array).

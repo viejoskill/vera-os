@@ -10,6 +10,7 @@ export interface FeatureFlags {
   personas: boolean;
   operaciones: boolean;
   studio: boolean;
+  integraciones: boolean;
 }
 
 export const featureFlags: FeatureFlags = {
@@ -19,4 +20,5 @@ export const featureFlags: FeatureFlags = {
   personas: false,
   operaciones: false,
   studio: false,
+  integraciones: true, // "Integraciones" — Centro de Integraciones (Sprint 05)
 };
