@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { createPortal } from 'react-dom';
-import { Sparkles, X, ArrowUp } from 'lucide-react';
-import { veraBrain } from '@app/brain/brain-gateway';
+import { Sparkles, X, ArrowUp, History, Check } from 'lucide-react';
+import { veraBrain, type MemoryItem } from '@app/brain/brain-gateway';
 import { useAuthUser } from '@app/auth/useAuthUser';
 import { useInsights } from '@app/insights';
 import type { InsightsResponse } from '@app/insights/types';
@@ -13,6 +13,7 @@ interface Msg {
 interface Suggestion {
   label: string;
   question: string;
+  contact?: string;
 }
 
 const TODAY = '__today__';
@@ -24,6 +25,8 @@ const clean = (t: string): string =>
     .replace(/\*\*(.+?)\*\*/g, '$1')
     .replace(/^\s*---\s*$/gm, '')
     .trim();
+
+const firstName = (n: string): string => (n || '').trim().split(/\s+/)[0] || n;
 
 /** VERA abre la conversación de forma proactiva, usando lo que ya encontró hoy. */
 const buildOpening = (name: string, data?: InsightsResponse): string => {
@@ -44,9 +47,7 @@ const buildOpening = (name: string, data?: InsightsResponse): string => {
     return `${hi} Revisé todo por vos y por ahora no hay nada urgente. ¿En qué te doy una mano?`;
   }
   const list =
-    parts.length === 1
-      ? parts[0]
-      : `${parts.slice(0, -1).join(', ')} y ${parts[parts.length - 1]}`;
+    parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')} y ${parts[parts.length - 1]}`;
   return `${hi} Mientras no estabas revisé todo: encontré ${list}. ¿Por dónde querés empezar?`;
 };
 
@@ -58,24 +59,22 @@ const buildSuggestions = (data?: InsightsResponse): Suggestion[] => {
       const who = i.title.trim();
       if (who) {
         out.push({
-          label: `Seguir con ${who.split(/\s+/)[0]}`,
+          label: `Seguir con ${firstName(who)}`,
           question: `¿Cómo sigo con ${who}? Contame qué preguntó, por qué es una oportunidad y sugerime un mensaje.`,
+          contact: who,
         });
         continue;
       }
     }
     const title = i.title.length > 34 ? `${i.title.slice(0, 32)}…` : i.title;
-    out.push({
-      label: title,
-      question: `Contame más sobre "${i.title}" y qué me recomendás hacer.`,
-    });
+    out.push({ label: title, question: `Contame más sobre "${i.title}" y qué me recomendás hacer.` });
   }
   return out.slice(0, 4);
 };
 
 /** VERA Expert — la conversación con VERA. No es un buscador: VERA inicia el diálogo
- * de forma proactiva con lo que ya trabajó y ofrece recomendaciones reales del día.
- * El usuario SIEMPRE habla con VERA; la inteligencia responde por detrás, invisible. */
+ * de forma proactiva, recuerda tus decisiones (a quién ya le escribiste) y ofrece
+ * recomendaciones reales del día. El usuario SIEMPRE habla con VERA. */
 export const SpotlightModal = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
@@ -83,6 +82,8 @@ export const SpotlightModal = ({ open, onClose }: { open: boolean; onClose: () =
   const [value, setValue] = useState('');
   const [messages, setMessages] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(false);
+  const [memoryItems, setMemoryItems] = useState<MemoryItem[]>([]);
+  const [activeContact, setActiveContact] = useState<string | null>(null);
 
   const { greetingName } = useAuthUser();
   const { data } = useInsights();
@@ -95,7 +96,9 @@ export const SpotlightModal = ({ open, onClose }: { open: boolean; onClose: () =
     if (!open) return;
     sessionRef.current = `vera-expert-${Date.now()}`;
     setValue('');
+    setActiveContact(null);
     setMessages([{ role: 'vera', text: buildOpening(greetingName, dataRef.current) }]);
+    veraBrain.memory().then((m) => setMemoryItems(m.filter((x) => x.kind === 'decision').reverse()));
     const t = window.setTimeout(() => inputRef.current?.focus(), 60);
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -145,8 +148,27 @@ export const SpotlightModal = ({ open, onClose }: { open: boolean; onClose: () =
   };
 
   const handleSuggestion = (s: Suggestion) => {
+    setActiveContact(s.contact ?? null);
     if (s.question === TODAY) askToday();
     else send(s.question);
+  };
+
+  const recordDecision = async () => {
+    if (!activeContact) return;
+    const who = activeContact;
+    const note = `Le escribí a ${who} para seguir la conversación.`;
+    const item: MemoryItem = { kind: 'decision', note, at: new Date().toISOString() };
+    setMemoryItems((m) => [item, ...m]);
+    setActiveContact(null);
+    setMessages((m) => [
+      ...m,
+      { role: 'vera', text: `Anotado ✓ Voy a recordar que ya le escribiste a ${firstName(who)}.` },
+    ]);
+    try {
+      await veraBrain.remember(note, 'decision');
+    } catch {
+      /* la memoria optimista ya se mostró; se reintenta en el próximo uso */
+    }
   };
 
   return createPortal(
@@ -172,6 +194,19 @@ export const SpotlightModal = ({ open, onClose }: { open: boolean; onClose: () =
             <X size={16} />
           </button>
         </header>
+
+        {memoryItems.length > 0 && (
+          <div className="vera-spot__memory" data-testid="spotlight-memory">
+            <span className="vera-spot__memory-label">
+              <History size={12} /> VERA recuerda
+            </span>
+            {memoryItems.slice(0, 3).map((m, i) => (
+              <span key={i} className="vera-spot__memory-item" data-testid="spotlight-memory-item">
+                {m.note}
+              </span>
+            ))}
+          </div>
+        )}
 
         <div className="vera-spot__thread" data-testid="spotlight-thread" ref={threadRef}>
           {messages.map((m, i) => (
@@ -201,6 +236,19 @@ export const SpotlightModal = ({ open, onClose }: { open: boolean; onClose: () =
             </div>
           )}
         </div>
+
+        {activeContact && !loading && (
+          <div className="vera-spot__decision" data-testid="spotlight-decision">
+            <button
+              type="button"
+              className="vera-spot__decision-btn"
+              data-testid="spotlight-mark-messaged"
+              onClick={recordDecision}
+            >
+              <Check size={14} /> Ya le escribí a {firstName(activeContact)}
+            </button>
+          </div>
+        )}
 
         {!loading && (
           <div className="vera-spot__suggest" data-testid="spotlight-suggestions">

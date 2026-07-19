@@ -56,6 +56,12 @@ async def sources():
     return {"sources": hub.sources()}
 
 
+@router.get("/memory")
+async def get_memory(limit: int = 20):
+    """Decisiones y notas que VERA recuerda (para que no arranque de cero)."""
+    return {"memory": memory.recall(limit)}
+
+
 @router.post("/remember")
 async def remember(payload: RememberRequest):
     memory.remember(payload.note, payload.kind)
