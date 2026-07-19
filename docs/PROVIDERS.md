@@ -26,7 +26,7 @@ consumen SÓLO el contrato; nunca conocen al driver concreto.
 | `ConversationProvider` | Fuente de conversaciones (contactos, mensajes, historial) | ⏳ Sólo contrato + `MockConversationProvider` (stand-in) | `conversations/provider.py` → `active_conversation_provider` |
 | `MessagingProvider` | Lanzar/embeber la bandeja de mensajería (UI) | ✅ `arturitoProvider` (modo launch) | `app/vera-bot/provider.ts` |
 | `StorageProvider` | Archivos/objetos (imágenes, documentos) | ✅ `SupabaseStorageService` | backend storage service |
-| `PropertyProvider` | Cartera de propiedades (si algún día hay >1 CRM) | 🔭 Futuro (hoy repo Supabase directo) | `property_repository` |
+| `PropertyProvider` | Cartera de propiedades (contrato) | ✅ `SupabasePropertyProvider` | `properties/provider.py` → `active_property_provider` |
 
 ## ConversationProvider (contrato de conversaciones)
 Modelo de dominio canónico (`conversations/types.py`): `Conversation`, `Contact`,
