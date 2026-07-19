@@ -4469,3 +4469,126 @@ p {
   padding-top: var(--vera-space-xs);
 }
 
+/* ------------------------------ VERA Insights --------------------------- */
+.vera-ins {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-sm);
+  animation: vera-rise 0.68s ease both;
+}
+.vera-ins__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vera-space-sm);
+}
+.vera-ins__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--vera-color-text-secondary);
+}
+.vera-ins__title svg { color: var(--vera-color-primary); }
+.vera-ins__note { font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); font-style: italic; }
+.vera-ins__empty {
+  padding: var(--vera-space-lg);
+  border: 1px dashed var(--vera-color-border);
+  border-radius: var(--vera-radius-lg);
+  color: var(--vera-color-text-secondary);
+  font-size: var(--vera-font-size-sm);
+  text-align: center;
+}
+.vera-ins__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--vera-space-md);
+}
+@media (max-width: 1100px) { .vera-ins__grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 720px) { .vera-ins__grid { grid-template-columns: 1fr; } }
+
+.vera-ins-card {
+  --ins-color: #46e08a;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-xs);
+  padding: var(--vera-space-lg);
+  border-radius: var(--vera-radius-lg);
+  border: 1px solid rgba(58, 58, 58, 0.7);
+  background: linear-gradient(180deg, rgba(46, 46, 46, 0.5), rgba(37, 37, 37, 0.36));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+}
+.vera-ins-card.type--opportunity { --ins-color: #46e08a; }
+.vera-ins-card.type--risk { --ins-color: #f0932b; }
+.vera-ins-card.type--recommendation { --ins-color: #4aa3f0; }
+.vera-ins-card.type--priority { --ins-color: #b06bf0; }
+.vera-ins-card.type--reminder { --ins-color: #3fd0c9; }
+.vera-ins-card.type--task { --ins-color: var(--vera-color-text-secondary); }
+.vera-ins-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--ins-color) 40%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 28px rgba(0, 0, 0, 0.26);
+}
+.vera-ins-card__top { display: flex; align-items: flex-start; gap: 10px; }
+.vera-ins-card__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+  background: var(--ins-color);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--ins-color) 55%, transparent);
+}
+.vera-ins-card__id { flex: 1; min-width: 0; }
+.vera-ins-card__title { display: block; font-size: var(--vera-font-size-base, 15px); font-weight: var(--vera-font-weight-semibold); }
+.vera-ins-card__type {
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-medium);
+  color: var(--ins-color);
+}
+.vera-ins-card__prio {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: var(--vera-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--vera-color-text-secondary);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-pill);
+  padding: 3px 9px;
+}
+.vera-ins-card__reason { font-size: var(--vera-font-size-sm); color: var(--vera-color-text); line-height: 1.5; margin-top: 2px; }
+.vera-ins-card__signals { display: flex; flex-wrap: wrap; gap: 6px; }
+.vera-ins-card__signal {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--vera-radius-pill);
+  border: 1px solid var(--vera-color-border);
+  color: var(--vera-color-text-secondary);
+  background: var(--vera-color-glass);
+}
+.vera-ins-card__action {
+  margin-top: 4px;
+  padding: 10px 12px;
+  border-radius: var(--vera-radius-md, 10px);
+  border-left: 2px solid var(--ins-color);
+  background: var(--vera-color-glass);
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text-secondary);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.vera-ins-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vera-space-xs);
+  margin-top: auto;
+  padding-top: var(--vera-space-xs);
+}
+

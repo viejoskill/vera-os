@@ -28,11 +28,11 @@ IDENTITY = (
 )
 
 
-def _system() -> str:
+async def _system() -> str:
     return (
         IDENTITY
         + "\n\n===== KNOWLEDGE HUB (tu conocimiento) =====\n"
-        + hub.knowledge()
+        + await hub.knowledge()
         + "\n\n===== MEMORIA PROPIA DE VERA =====\n"
         + memory.as_context()
     )
@@ -40,21 +40,22 @@ def _system() -> str:
 
 class VeraBrain:
     async def ask(self, question: str, session_id: str | None = None) -> str:
-        return await active_provider.reason(_system(), question, session_id)
+        return await active_provider.reason(await _system(), question, session_id)
 
     async def today_briefing(self, business_context: str = "") -> str:
         now = datetime.now(AR_TZ)
+        system = await _system()
         prompt = (
             f"Son las {now.strftime('%H:%M')} del {now.strftime('%d/%m/%Y')}. "
             "Generá un resumen de '¿Qué pasó hoy?' para el profesional inmobiliario, en "
             "4 a 6 bullets accionables y concretos. Usá SOLO el contexto disponible. "
-            "Las fuentes de comunicación y negocio (Gmail, Meta, Arturito, propiedades) "
-            "todavía no están conectadas con datos reales: NO inventes cifras; en su lugar, "
-            "mencioná brevemente qué te va a permitir cada integración cuando se conecte, y "
-            "cerrá con una sugerencia de en qué enfocarse hoy según la filosofía de VERA.\n\n"
-            "## Contexto de negocio disponible\n" + (business_context or "(Aún sin datos de negocio conectados.)")
+            "Las fuentes de comunicación (Gmail, Meta, Arturito) todavía no están conectadas "
+            "con datos reales: NO inventes cifras; en su lugar, mencioná brevemente qué te va a "
+            "permitir cada integración cuando se conecte, y cerrá con una sugerencia de en qué "
+            "enfocarse hoy según la filosofía de VERA y la cartera real de propiedades.\n\n"
+            "## Contexto de negocio disponible\n" + (business_context or "(Ver Knowledge Hub arriba.)")
         )
-        return await active_provider.reason(_system(), prompt)
+        return await active_provider.reason(system, prompt)
 
 
 brain = VeraBrain()

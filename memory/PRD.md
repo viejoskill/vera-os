@@ -346,6 +346,15 @@ Cambio de alcance definido por el "Product Philosophy v1.0" del usuario: **VERA 
 - **Pendiente futuro**: si Arturito habilita API pública, migrar `mode` a `embed` (bandeja real embebida) sin tocar la UI. Considerar `arturito.png` oficial en `/public/brands/`.
 
 
+## VERA Brain — Fase 2.1: Insights Engine + PropertiesKnowledgeSource (2026-07)
+Generalización pedida por el usuario: **Opportunity Engine → Insights Engine**. Las oportunidades son sólo UN tipo de insight (types: opportunity, risk, recommendation, priority, reminder, task). Sumar capacidad = registrar una regla; el motor no cambia. Filosofía intacta: las REGLAS detectan hechos (sin IA), VERA Brain organiza contexto, Claude aporta criterio; VERA propone · el usuario decide.
+- **Backend** `insights_engine/` (reemplaza `opportunity_engine/`): `types.Insight` (id, type, category, priority, title, reason, suggested_action, action_label, link_route/label, signals, meta). `rules.InsightRule` (ABC async) + `FollowUpRule` (→ opportunity, señales de interés configurables, 48h) + `PropertyHealthRule` (→ recommendation/priority sobre datos REALES: propiedades activas sin fotos / sin publicar). `engine.RuleBasedInsightsEngine` (async, ordena por prioridad+tipo). `routes_insights.py` → `GET /api/insights`.
+- **Knowledge Hub** ahora async y con 2 fuentes: `VeraKnowledgeSource` + **`PropertiesKnowledgeSource`** (cartera real de Supabase). Verificado: VERA Brain conoce la cartera real (1 casa activa, USD 79.000, 2 publicaciones, 8 fotos). `vera_brain/brain.py` `_system()` ahora async.
+- **Frontend** `app/insights/` (reemplaza `app/opportunities/`): `Insight` type, `useInsights`, `InsightCard` (dot y acento por tipo, badge de tipo, prioridad, señales, acción sugerida, botones Ver/Copiar con fallback), `InsightsSection` ("VERA Insights"). Montado en `WorkspaceHome` entre Acciones Rápidas y widgets. CSS `.vera-ins*` con colores por tipo (opportunity verde, risk naranja, recommendation azul, priority violeta, reminder teal).
+- Verificado: `GET /api/insights` → 3 opportunities (Sofía/Juan alta, María media); PropertyHealthRule no dispara con cartera sana (honesto); UI con tablero tipado (screenshot). TS strict OK. **MOCKED**: conversaciones de ejemplo hasta conectar Arturito.
+- **Roadmap Insights** (arquitectura lista): nuevas propiedades compatibles, vendedores sin seguimiento, publicaciones con bajo rendimiento, propietarios esperando tasación, tareas pendientes.
+- **App Personas** (a diseñar): pensar el modelo desde la PERSONA (agrupa conversaciones, propiedades, visitas, tareas, oportunidades, historial, campañas, notas); la conversación es sólo un elemento.
+
 ## VERA Brain — Fase 2: Opportunity Engine (Follow-up inteligente) (2026-07)
 Primer módulo de **inteligencia comercial**. Principio: VERA detecta y SUGIERE; el humano decide y aprueba. **Nunca envía mensajes automáticamente.** No es un CRM ni automatización invasiva.
 

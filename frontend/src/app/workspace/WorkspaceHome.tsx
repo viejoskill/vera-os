@@ -4,7 +4,7 @@ import { widgetById } from './widget-registry';
 import { useDashboard } from './useDashboard';
 import { Dock } from './Dock';
 import { QuickActions } from './QuickActions';
-import { OpportunitiesSection } from '@app/opportunities';
+import { InsightsSection } from '@app/insights';
 import { SpotlightModal } from './SpotlightModal';
 import { CustomizePanel } from './CustomizePanel';
 
@@ -49,7 +49,7 @@ export const WorkspaceHome = () => {
 
       <QuickActions />
 
-      <OpportunitiesSection />
+      <InsightsSection />
 
       <div className="vera-widget-grid" data-testid="widget-grid">
         {layout.map((id, i) => {
