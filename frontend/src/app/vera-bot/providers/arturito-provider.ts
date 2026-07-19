@@ -12,6 +12,7 @@ export const arturitoProvider: MessagingProvider = {
   id: 'arturito',
   name: 'Arturito',
   brand: 'arturito',
+  brandFullColor: true,
   tagline: 'Agente de IA para WhatsApp, Instagram y web',
   description:
     'Responde 24/7, califica leads, muestra propiedades reales y agenda visitas — todo desde tu número de negocio.',

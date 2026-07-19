@@ -19,6 +19,8 @@ export interface MessagingProvider {
   readonly name: string;
   /** Clave de BrandRegistry para el logo (con fallback vectorial). */
   readonly brand: string;
+  /** true = el logo es un ícono a todo color (no se tiñe ni se blanquea). */
+  readonly brandFullColor: boolean;
   /** Descriptor corto del motor. */
   readonly tagline: string;
   /** Descripción de una línea sobre qué hace el motor dentro del flujo comercial. */

@@ -27,7 +27,7 @@ export const Dock = () => {
               data-testid={`dock-toggle-${a.id}`}
               onClick={() => toggle(a.id)}
             >
-              <BrandIcon brand={a.brand} fallback={a.icon} size={16} /> {a.label}
+              <BrandIcon brand={a.brand} fallback={a.icon} size={16} mono={!a.fullColor} /> {a.label}
               {isPinned(a.id) && <Check size={13} className="vera-dock__check" />}
             </button>
           ))}
@@ -47,7 +47,7 @@ export const Dock = () => {
               title={tool.label}
               onClick={() => open(id)}
             >
-              <BrandIcon brand={tool.brand} fallback={tool.icon} size={20} />
+              <BrandIcon brand={tool.brand} fallback={tool.icon} size={20} mono={!tool.fullColor} />
               <span className="vera-dock__tip">{tool.label}</span>
             </button>
           );

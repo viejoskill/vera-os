@@ -52,6 +52,7 @@ const BRAND_KEYS: BrandKey[] = [
   'canvas',
   'mercadopago',
   'mercadolibre',
+  'arturito',
 ];
 
 const BASE = `${process.env.PUBLIC_URL ?? ''}/brands`;

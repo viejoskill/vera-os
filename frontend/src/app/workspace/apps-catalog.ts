@@ -26,9 +26,12 @@ export interface DockTool {
   icon: LucideIcon;
   href: string;
   brand: string;
+  /** true = el PNG es un ícono a todo color (no se tiñe ni se blanquea). */
+  fullColor?: boolean;
 }
 
 export const APPS: DockTool[] = [
+  { id: 'arturito', label: 'Arturito', icon: Bot, href: 'https://app.arturito.ai', brand: 'arturito', fullColor: true },
   { id: 'gmail', label: 'Gmail', icon: Mail, href: 'https://mail.google.com', brand: 'gmail' },
   { id: 'ia', label: 'IA', icon: Sparkles, href: 'https://chatgpt.com', brand: 'openai' },
   { id: 'claude', label: 'Claude', icon: Bot, href: 'https://claude.ai', brand: 'claude' },
@@ -41,7 +44,7 @@ export const APPS: DockTool[] = [
   { id: 'drive', label: 'Drive', icon: HardDrive, href: 'https://drive.google.com', brand: 'drive' },
   { id: 'dropbox', label: 'Dropbox', icon: Cloud, href: 'https://www.dropbox.com', brand: 'dropbox' },
   { id: 'mercadolibre', label: 'Mercado Libre', icon: Store, href: 'https://www.mercadolibre.com.ar', brand: 'mercadolibre' },
-  { id: 'canva', label: 'Canva', icon: Palette, href: 'https://www.canva.com', brand: 'canva' },
+  { id: 'canva', label: 'Canva', icon: Palette, href: 'https://www.canva.com', brand: 'canva', fullColor: true },
 ];
 
 export const appById = (id: string): DockTool | undefined => APPS.find((a) => a.id === id);

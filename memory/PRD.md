@@ -346,6 +346,15 @@ Cambio de alcance definido por el "Product Philosophy v1.0" del usuario: **VERA 
 - **Pendiente futuro**: si Arturito habilita API pública, migrar `mode` a `embed` (bandeja real embebida) sin tocar la UI. Considerar `arturito.png` oficial en `/public/brands/`.
 
 
+## Sprint 04.1 — Logos oficiales de herramientas integradas (2026-07)
+Dirección confirmada por el usuario: **mantener logos oficiales A COLOR** (no monocromáticos). La consistencia la aporta el sistema de diseño de VERA (contenedores, tamaños, espaciado, animaciones, estados); cada integración conserva su identidad de marca para comunicar que VERA integra (no reemplaza).
+- **Logo oficial de Arturito**: descargado de `arturito.ai/images/icons/arturito-icon.png` (tile navy con glifo "a" en degradado + globo naranja) → `/public/brands/arturito.png` (180×180 RGBA). Clave `arturito` agregada al `BrandRegistry` (tipo + array).
+- **Íconos full-color**: `BrandIcon` con `mono={false}` NO tiñe ni blanquea (renderiza el PNG tal cual). Se agregó `fullColor?: boolean` a `DockTool` (apps-catalog) y `brandFullColor: boolean` a `MessagingProvider`; ambos true para Arturito/Canva. El Dock y la tarjeta de Vera Bot pasan `mono={!fullColor}`.
+- **Arturito en el Dock**: agregado a `apps-catalog.ts` (primera posición, href `app.arturito.ai`) y a `DEFAULT` de `useDock.ts` → visible por defecto.
+- **Fix Canva**: `canvas.png` existente era en realidad el logo de *Canvas LMS* (no Canva). Se bajó el ícono oficial de Canva (`static.canva.com` favicon → `/public/brands/canva.png`, círculo degradado teal→violeta con "C"). `canva` marcado `fullColor`.
+- Verificado por screenshots: tarjeta Vera Bot muestra logo Arturito (naturalWidth 180); Dock muestra Arturito primero + resto a color.
+- Pendiente: logos oficiales opcionales para Dropbox ya OK; considerar limpiar `canvas.png` si no se usa Canvas LMS.
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.

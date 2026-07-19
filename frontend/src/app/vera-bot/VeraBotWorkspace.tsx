@@ -102,7 +102,7 @@ export const VeraBotWorkspace = () => {
       <section className="vera-bot__hero" data-testid="vera-bot-launch-card">
         <span className="vera-bot__hero-glow" aria-hidden="true" />
         <div className="vera-bot__hero-tile">
-          <BrandIcon brand={provider.brand} fallback={Bot} size={38} alt={provider.name} />
+          <BrandIcon brand={provider.brand} fallback={Bot} size={44} alt={provider.name} mono={!provider.brandFullColor} />
         </div>
         <div className="vera-bot__hero-body">
           <span className="vera-bot__hero-eyebrow">Motor de mensajería</span>
