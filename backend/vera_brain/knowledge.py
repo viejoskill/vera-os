@@ -79,6 +79,51 @@ class PropertiesKnowledgeSource(KnowledgeSource):
         return "\n".join(lines)
 
 
+class InsightsKnowledgeSource(KnowledgeSource):
+    """Inteligencia del día: conversaciones activas y oportunidades detectadas por el
+    Insights Engine. Permite a VERA saber QUIÉN es cada contacto, QUÉ preguntó y POR
+    QUÉ es una oportunidad — cerrando el círculo AI-First (Hoy ↔ Spotlight)."""
+
+    id = "insights"
+    label = "Inteligencia del día (conversaciones y oportunidades)"
+
+    async def fetch(self) -> str:
+        # Import diferido: evita ciclos y acopla el Hub a la fuente sólo en tiempo de uso.
+        from insights_engine.engine import engine
+        from insights_engine.repository import conversation_repository
+
+        parts: list[str] = []
+
+        convs = [c for c in conversation_repository.list_conversations() if (c.get("status") or "open") == "open"]
+        if convs:
+            parts.append(f"Conversaciones activas: {len(convs)}.")
+            for c in convs:
+                name = c.get("contact_name") or "Contacto sin nombre"
+                prop = c.get("property_label") or "una propiedad"
+                asked = " ".join(m["text"] for m in c.get("messages", []) if m.get("sender") == "client").strip()
+                if len(asked) > 260:
+                    asked = asked[:257] + "…"
+                phone = c.get("phone")
+                phone_txt = f" · tel: {phone}" if phone else ""
+                parts.append(f'- {name} — consulta por {prop}{phone_txt}. Dijo: "{asked}"')
+
+        try:
+            insights = await engine.detect()
+        except Exception:  # noqa: BLE001
+            insights = []
+        if insights:
+            parts.append("")
+            parts.append("Oportunidades e insights detectados hoy (VERA propone, el usuario decide):")
+            for i in insights:
+                who = i.title or i.category
+                sig = f" Señales: {', '.join(i.signals)}." if i.signals else ""
+                parts.append(f"- [{i.type}/{i.priority}] {who}: {i.reason}{sig}")
+
+        if not parts:
+            return "Sin conversaciones activas ni oportunidades detectadas por ahora."
+        return "\n".join(parts)
+
+
 class KnowledgeHub:
     """Repositorio ÚNICO de conocimiento. Las fuentes lo alimentan; VERA Brain lo
     consulta. Desacopla al cerebro de las integraciones concretas."""
@@ -99,7 +144,8 @@ class KnowledgeHub:
         return "\n\n".join(blocks)
 
 
-# Hub del sistema. Orden = permanencia: primero VERA, luego cartera real.
+# Hub del sistema. Orden = permanencia: VERA (identidad) → cartera real → día.
 hub = KnowledgeHub()
 hub.register(VeraKnowledgeSource())
 hub.register(PropertiesKnowledgeSource())
+hub.register(InsightsKnowledgeSource())

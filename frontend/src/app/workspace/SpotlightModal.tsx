@@ -55,11 +55,11 @@ const buildSuggestions = (data?: InsightsResponse): Suggestion[] => {
   const out: Suggestion[] = [{ label: 'Ver el resumen de hoy', question: TODAY }];
   for (const i of (data?.insights ?? []).slice(0, 4)) {
     if (i.type === 'opportunity') {
-      const who = String((i.meta as Record<string, unknown>)?.contact_name ?? '').trim();
+      const who = i.title.trim();
       if (who) {
         out.push({
           label: `Seguir con ${who.split(/\s+/)[0]}`,
-          question: `¿Cómo sigo la conversación con ${who}? Dame contexto y un mensaje sugerido.`,
+          question: `¿Cómo sigo con ${who}? Contame qué preguntó, por qué es una oportunidad y sugerime un mensaje.`,
         });
         continue;
       }
