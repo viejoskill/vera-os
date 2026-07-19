@@ -19,8 +19,9 @@ const TYPE_INFO: Record<string, { color: string; sing: string; plur: string }> =
 };
 const ORDER = ['opportunity', 'priority', 'risk', 'recommendation', 'reminder', 'task'];
 
-/** Encabezado AI-First de Hoy. VERA ya revisó todo y resume lo importante.
- * El usuario siente que hay una inteligencia trabajando por él. */
+/** Encabezado AI-First de Hoy — la VOZ de VERA, no un widget.
+ * El usuario abre VERA y siente que ya estuvo trabajando por él mientras no estaba.
+ * Es el elemento protagonista de la pantalla: aire, jerarquía, Ambient Intelligence. */
 export const TodayHero = ({ onAsk }: { onAsk: () => void }) => {
   const { greetingName } = useAuthUser();
   const { data, isLoading } = useInsights();
@@ -34,27 +35,46 @@ export const TodayHero = ({ onAsk }: { onAsk: () => void }) => {
     return { color: info.color, text: `${n} ${n === 1 ? info.sing : info.plur}` };
   });
   if (active > 0) {
-    lines.push({ color: '#cfcfcf', text: `${active} ${active === 1 ? 'conversación activa' : 'conversaciones activas'}` });
+    lines.push({
+      color: '#cfcfcf',
+      text: `${active} ${active === 1 ? 'conversación activa' : 'conversaciones activas'}`,
+    });
   }
 
   return (
     <section className="vera-hero" data-testid="today-hero">
-      <span className="vera-hero__eyebrow"><Sparkles size={13} /> VERA ya revisó todo por vos</span>
+      <span className="vera-hero__aura" aria-hidden="true" />
+
+      <span className="vera-hero__badge">
+        <span className="vera-hero__orb" aria-hidden="true">
+          <Sparkles size={13} />
+        </span>
+        VERA trabajó mientras no estabas
+      </span>
+
       <h1 className="vera-hero__greeting" data-testid="today-greeting">
         {greeting()}, {greetingName}.
       </h1>
 
       {isLoading ? (
-        <p className="vera-hero__loading">Estoy revisando tu día…</p>
+        <p className="vera-hero__lead vera-hero__lead--muted" data-testid="today-loading">
+          Estoy terminando de revisar tu día…
+        </p>
       ) : lines.length === 0 ? (
-        <p className="vera-hero__intro">Revisé todo y no hay nada urgente ahora. Buen momento para avanzar con lo que quieras.</p>
+        <p className="vera-hero__lead" data-testid="today-summary">
+          Revisé todo por vos y por ahora no hay nada urgente. Buen momento para avanzar con lo que
+          quieras.
+        </p>
       ) : (
         <>
-          <p className="vera-hero__intro">Hoy encontré:</p>
+          <p className="vera-hero__lead">Mientras no estabas revisé todo. Esto es lo que encontré:</p>
           <ul className="vera-hero__list" data-testid="today-summary">
-            {lines.map((l) => (
-              <li key={l.text} className="vera-hero__item">
-                <span className="vera-hero__dot" style={{ background: l.color, boxShadow: `0 0 10px ${l.color}66` }} />
+            {lines.map((l, i) => (
+              <li key={l.text} className="vera-hero__item" style={{ animationDelay: `${0.15 + i * 0.07}s` }}>
+                <span
+                  className="vera-hero__dot"
+                  style={{ background: l.color, boxShadow: `0 0 12px ${l.color}77` }}
+                />
                 {l.text}
               </li>
             ))}
@@ -63,7 +83,7 @@ export const TodayHero = ({ onAsk }: { onAsk: () => void }) => {
       )}
 
       <button type="button" className="vera-hero__cta" data-testid="today-ask" onClick={onAsk}>
-        ¿Qué querés hacer? <ArrowRight size={16} />
+        Ver qué preparé para vos <ArrowRight size={16} />
       </button>
     </section>
   );

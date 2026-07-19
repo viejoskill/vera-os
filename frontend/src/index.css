@@ -3213,6 +3213,9 @@ p {
 @keyframes vera-spot-fade { from { opacity: 0; } to { opacity: 1; } }
 .vera-spot__panel {
   width: min(620px, 92vw);
+  display: flex;
+  flex-direction: column;
+  max-height: 78vh;
   background: color-mix(in srgb, var(--vera-color-card) 92%, transparent);
   border: 1px solid var(--vera-color-border);
   border-radius: var(--vera-radius-lg);
@@ -3229,7 +3232,7 @@ p {
   align-items: center;
   gap: var(--vera-space-sm);
   padding: var(--vera-space-md) var(--vera-space-lg);
-  border-bottom: 1px solid var(--vera-color-border);
+  border-top: 1px solid var(--vera-color-border);
 }
 .vera-spot__search-icon { color: var(--vera-color-primary); flex-shrink: 0; }
 .vera-spot__input {
@@ -4283,10 +4286,10 @@ p {
   display: flex;
   flex-direction: column;
   gap: var(--vera-space-md);
-  margin-top: var(--vera-space-md);
-  max-height: 46vh;
+  flex: 1;
+  min-height: 120px;
   overflow-y: auto;
-  padding-right: 4px;
+  padding: var(--vera-space-lg);
 }
 .vera-spot__msg { max-width: 88%; }
 .vera-spot__msg p {
@@ -4664,5 +4667,400 @@ p {
   justify-content: flex-end;
   gap: var(--vera-space-xs);
   margin-top: var(--vera-space-md);
+}
+
+
+/* ============================================================================
+   Today Hero — la VOZ de VERA (protagonista de Hoy, Ambient Intelligence)
+   ============================================================================ */
+.vera-hero {
+  position: relative;
+  isolation: isolate;
+  z-index: 1;
+  padding: var(--vera-space-lg) 0 var(--vera-space-md);
+  animation: vera-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.vera-hero__aura {
+  position: absolute;
+  z-index: -1;
+  top: -70%;
+  left: -6%;
+  width: 640px;
+  height: 640px;
+  max-width: 92vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(246, 230, 58, 0.1), transparent 60%);
+  filter: blur(72px);
+  pointer-events: none;
+  animation: vera-hero-breathe 15s ease-in-out infinite;
+}
+@keyframes vera-hero-breathe {
+  0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.75; }
+  50% { transform: scale(1.09) translate(2%, 1.5%); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .vera-hero__aura { animation: none; } }
+
+.vera-hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--vera-color-text-secondary);
+}
+.vera-hero__orb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--vera-color-primary-foreground);
+  background: radial-gradient(circle at 34% 30%, #fdf283, var(--vera-color-primary));
+  box-shadow: 0 0 0 0 rgba(246, 230, 58, 0.45);
+  animation: vera-hero-orb 3.4s ease-out infinite;
+}
+@keyframes vera-hero-orb {
+  0% { box-shadow: 0 0 0 0 rgba(246, 230, 58, 0.4); }
+  70% { box-shadow: 0 0 0 13px rgba(246, 230, 58, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(246, 230, 58, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .vera-hero__orb { animation: none; } }
+
+.vera-hero__greeting {
+  margin-top: var(--vera-space-md);
+  font-size: clamp(2.1rem, 4.6vw, 3.2rem);
+  font-weight: var(--vera-font-weight-bold);
+  letter-spacing: -0.03em;
+  line-height: 1.04;
+  color: var(--vera-color-text);
+}
+.vera-hero__lead {
+  margin-top: var(--vera-space-lg);
+  max-width: 42ch;
+  font-size: clamp(1.1rem, 1.7vw, 1.4rem);
+  line-height: 1.5;
+  color: var(--vera-color-text);
+}
+.vera-hero__lead--muted { color: var(--vera-color-text-secondary); }
+
+.vera-hero__list {
+  margin: var(--vera-space-md) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-sm);
+}
+.vera-hero__item {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  font-size: clamp(1.1rem, 1.6vw, 1.35rem);
+  font-weight: var(--vera-font-weight-medium);
+  color: var(--vera-color-text);
+  animation: vera-rise 0.6s ease both;
+}
+.vera-hero__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.vera-hero__cta {
+  margin-top: var(--vera-space-xl);
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 13px 24px;
+  border-radius: var(--vera-radius-pill);
+  border: 1px solid rgba(246, 230, 58, 0.32);
+  background: rgba(246, 230, 58, 0.08);
+  color: var(--vera-color-primary);
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-semibold);
+  cursor: pointer;
+  transition:
+    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.24s ease,
+    background-color 0.24s ease,
+    box-shadow 0.24s ease;
+}
+.vera-hero__cta:hover {
+  transform: translateY(-2px);
+  border-color: rgba(246, 230, 58, 0.58);
+  background: rgba(246, 230, 58, 0.13);
+  box-shadow: 0 10px 34px rgba(246, 230, 58, 0.12);
+}
+.vera-hero__cta svg { transition: transform 0.24s ease; }
+.vera-hero__cta:hover svg { transform: translateX(3px); }
+
+/* ============================================================================
+   Spotlight — VERA inicia la conversación (proactiva, no un buscador)
+   ============================================================================ */
+.vera-spot__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vera-space-sm);
+  padding: var(--vera-space-md) var(--vera-space-lg);
+  border-bottom: 1px solid var(--vera-color-border);
+}
+.vera-spot__identity {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+}
+.vera-spot__orb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: var(--vera-color-primary-foreground);
+  background: radial-gradient(circle at 34% 30%, #fdf283, var(--vera-color-primary));
+  box-shadow: 0 0 0 0 rgba(246, 230, 58, 0.4);
+  animation: vera-hero-orb 3.4s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) { .vera-spot__orb { animation: none; } }
+.vera-spot__identity-text { display: flex; flex-direction: column; line-height: 1.1; }
+.vera-spot__identity-text strong {
+  font-size: var(--vera-font-size-md);
+  font-weight: var(--vera-font-weight-bold);
+  letter-spacing: 0.02em;
+  color: var(--vera-color-text);
+}
+.vera-spot__identity-sub {
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-text-secondary);
+}
+.vera-spot__suggest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vera-space-xs);
+  padding: 0 var(--vera-space-lg) var(--vera-space-md);
+}
+.vera-spot__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: var(--vera-radius-pill);
+  border: 1px solid rgba(246, 230, 58, 0.26);
+  background: rgba(246, 230, 58, 0.06);
+  color: var(--vera-color-text);
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-medium);
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+.vera-spot__chip:hover {
+  transform: translateY(-1px);
+  border-color: rgba(246, 230, 58, 0.5);
+  background: rgba(246, 230, 58, 0.12);
+}
+
+/* ============================================================================
+   Vera Bot — jerarquía: VERA (inteligencia) por encima del motor (Arturito)
+   ============================================================================ */
+.vera-bot__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--vera-color-text-secondary);
+}
+.vera-bot__eyebrow svg { color: var(--vera-color-primary); }
+
+/* Protagonista — la inteligencia (VERA) */
+.vera-bot__vera {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  gap: var(--vera-space-xl);
+  align-items: flex-start;
+  padding: var(--vera-space-2xl);
+  border-radius: var(--vera-radius-lg);
+  border: 1px solid rgba(246, 230, 58, 0.28);
+  background: linear-gradient(150deg, rgba(246, 230, 58, 0.07), rgba(37, 37, 37, 0.4));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 20px 50px rgba(0, 0, 0, 0.3);
+  animation: vera-rise 0.72s ease both;
+}
+.vera-bot__vera-glow {
+  position: absolute;
+  z-index: -1;
+  top: -50%;
+  left: -8%;
+  width: 480px;
+  height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(246, 230, 58, 0.16), transparent 62%);
+  filter: blur(64px);
+  pointer-events: none;
+  animation: vera-hero-breathe 16s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) { .vera-bot__vera-glow { animation: none; } }
+.vera-bot__vera-mark {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--vera-color-primary-foreground);
+  background: radial-gradient(circle at 34% 30%, #fdf283, var(--vera-color-primary));
+  box-shadow: 0 12px 30px rgba(246, 230, 58, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.vera-bot__vera-body { min-width: 0; }
+.vera-bot__vera-eyebrow {
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--vera-color-primary);
+}
+.vera-bot__vera-title {
+  margin-top: 6px;
+  font-size: 1.6rem;
+  font-weight: var(--vera-font-weight-bold);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--vera-color-text);
+}
+.vera-bot__vera-desc {
+  margin-top: var(--vera-space-sm);
+  max-width: 56ch;
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text-secondary);
+  line-height: 1.6;
+}
+.vera-bot__vera-points {
+  margin: var(--vera-space-lg) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-sm);
+}
+.vera-bot__vera-point {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text);
+}
+.vera-bot__vera-point-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  color: var(--vera-color-primary);
+  background: rgba(246, 230, 58, 0.1);
+  border: 1px solid rgba(246, 230, 58, 0.18);
+}
+
+/* Conector jerárquico */
+.vera-bot__wire {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-md);
+  padding: var(--vera-space-xs) var(--vera-space-md);
+}
+.vera-bot__wire-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--vera-color-border), transparent);
+}
+.vera-bot__wire-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-text-secondary);
+  font-style: italic;
+}
+.vera-bot__wire-label svg { color: var(--vera-color-text-secondary); }
+
+/* Subordinado — el motor conectado (Arturito), tratamiento discreto */
+.vera-bot__engine {
+  position: relative;
+  display: flex;
+  gap: var(--vera-space-lg);
+  align-items: flex-start;
+  padding: var(--vera-space-xl);
+  border-radius: var(--vera-radius-lg);
+  border: 1px solid var(--vera-color-border);
+  background: var(--vera-color-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: vera-rise 0.78s ease both;
+}
+.vera-bot__engine-tile {
+  flex-shrink: 0;
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, rgba(58, 58, 58, 0.7), rgba(38, 38, 38, 0.7));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.vera-bot__engine-body { min-width: 0; flex: 1; }
+.vera-bot__engine-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--vera-color-text-secondary);
+}
+.vera-bot__engine-dot {
+  width: 7px;
+  height: 7px;
+  margin-left: 4px;
+  border-radius: 50%;
+  background: #46e08a;
+  box-shadow: 0 0 8px rgba(70, 224, 138, 0.7);
+}
+.vera-bot__engine-name {
+  margin-top: 3px;
+  font-size: 1.2rem;
+  font-weight: var(--vera-font-weight-semibold);
+  letter-spacing: -0.01em;
+  color: var(--vera-color-text);
+}
+.vera-bot__engine-desc {
+  margin-top: var(--vera-space-xs);
+  max-width: 56ch;
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text-secondary);
+  line-height: 1.55;
+}
+.vera-bot__engine .vera-bot__channels { margin-top: var(--vera-space-md); }
+.vera-bot__engine-actions {
+  margin-top: var(--vera-space-lg);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--vera-space-md);
+}
+@media (max-width: 720px) {
+  .vera-bot__vera,
+  .vera-bot__engine { flex-direction: column; }
+  .vera-bot__future-grid { grid-template-columns: 1fr; }
 }
 

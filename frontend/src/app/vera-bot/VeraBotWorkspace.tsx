@@ -10,6 +10,9 @@ import {
   Zap,
   Workflow,
   ShieldCheck,
+  Link2,
+  MessagesSquare,
+  Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { BrandIcon } from '@vera/ui';
@@ -23,6 +26,13 @@ const CHANNELS: Record<MessagingChannel, { label: string; brand?: string; icon: 
   web: { label: 'Chat web', icon: Globe },
   email: { label: 'Email', icon: Mail },
 };
+
+/** Lo que hace VERA (la inteligencia, protagonista). */
+const VERA_POINTS: { icon: LucideIcon; text: string }[] = [
+  { icon: MessagesSquare, text: 'Entiende el contexto de cada conversación' },
+  { icon: Users, text: 'Conecta cada mensaje con tus personas y propiedades' },
+  { icon: Sparkles, text: 'Sugiere respuestas y el próximo paso — vos decidís' },
+];
 
 interface FutureLayer {
   id: string;
@@ -54,9 +64,10 @@ const FUTURE_LAYERS: FutureLayer[] = [
 ];
 
 /**
- * Vera Bot — experiencia de LANZAMIENTO nativa. VERA orquesta el motor de
- * mensajería (Arturito) manteniendo su identidad; no reconstruye la bandeja.
- * Toda la vista consume `useMessaging()`, por lo que cambiar de motor no la toca.
+ * Vera Bot — jerarquía explícita: **VERA orquesta la inteligencia; el motor
+ * (Arturito) sólo ejecuta la mensajería.** VERA es el protagonista; Arturito es
+ * infraestructura conectada. Toda la vista consume `useMessaging()`, por lo que
+ * cambiar de motor no toca la UI ni la jerarquía.
  */
 export const VeraBotWorkspace = () => {
   const { provider, launch } = useMessaging();
@@ -65,11 +76,14 @@ export const VeraBotWorkspace = () => {
     <div className="vera-screen vera-bot" data-testid="vera-bot-workspace">
       <header className="vera-bot__head">
         <div>
+          <span className="vera-bot__eyebrow">
+            <Sparkles size={13} /> Inteligencia de comunicación
+          </span>
           <h1 className="vera-bot__title" data-testid="vera-bot-title">
             Vera Bot
           </h1>
           <p className="vera-muted">
-            Tu mensajería, orquestada desde VERA. Un solo lugar para todos tus canales.
+            VERA orquesta toda tu comunicación. Un solo lugar, guiado por tu inteligencia.
           </p>
         </div>
         <span
@@ -81,38 +95,85 @@ export const VeraBotWorkspace = () => {
         </span>
       </header>
 
-      <div className="vera-bot__channels" data-testid="vera-bot-channels">
-        {provider.channels.map((ch) => {
-          const c = CHANNELS[ch];
-          return (
-            <span key={ch} className="vera-bot__channel" data-testid={`channel-${ch}`}>
-              <span className="vera-bot__channel-icon">
-                {c.brand ? (
-                  <BrandIcon brand={c.brand} fallback={c.icon} size={15} alt={c.label} />
-                ) : (
-                  <c.icon size={15} />
-                )}
-              </span>
-              {c.label}
-            </span>
-          );
-        })}
+      {/* Protagonista — la inteligencia (VERA) */}
+      <section className="vera-bot__vera" data-testid="vera-bot-intelligence">
+        <span className="vera-bot__vera-glow" aria-hidden="true" />
+        <div className="vera-bot__vera-mark" aria-hidden="true">
+          <Sparkles size={30} />
+        </div>
+        <div className="vera-bot__vera-body">
+          <span className="vera-bot__vera-eyebrow">La inteligencia</span>
+          <h2 className="vera-bot__vera-title">VERA orquesta tu comunicación</h2>
+          <p className="vera-bot__vera-desc">
+            VERA lee el contexto de cada conversación, la vincula con tus personas y propiedades, y
+            te prepara el próximo paso. La inteligencia es de VERA; el motor sólo ejecuta.
+          </p>
+          <ul className="vera-bot__vera-points">
+            {VERA_POINTS.map((p) => (
+              <li key={p.text} className="vera-bot__vera-point">
+                <span className="vera-bot__vera-point-icon">
+                  <p.icon size={15} />
+                </span>
+                {p.text}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* Conector jerárquico */}
+      <div className="vera-bot__wire" aria-hidden="true">
+        <span className="vera-bot__wire-line" />
+        <span className="vera-bot__wire-label">
+          <Link2 size={13} /> ejecuta la mensajería a través de
+        </span>
+        <span className="vera-bot__wire-line" />
       </div>
 
-      <section className="vera-bot__hero" data-testid="vera-bot-launch-card">
-        <span className="vera-bot__hero-glow" aria-hidden="true" />
-        <div className="vera-bot__hero-tile">
-          <BrandIcon brand={provider.brand} fallback={Bot} size={44} alt={provider.name} mono={!provider.brandFullColor} />
+      {/* Subordinado — el motor conectado (Arturito) */}
+      <section className="vera-bot__engine" data-testid="vera-bot-launch-card">
+        <div className="vera-bot__engine-tile">
+          <BrandIcon
+            brand={provider.brand}
+            fallback={Bot}
+            size={34}
+            alt={provider.name}
+            mono={!provider.brandFullColor}
+          />
         </div>
-        <div className="vera-bot__hero-body">
-          <span className="vera-bot__hero-eyebrow">Motor de mensajería</span>
-          <h2 className="vera-bot__hero-name">{provider.name}</h2>
-          <p className="vera-bot__hero-tagline">{provider.tagline}</p>
-          <p className="vera-bot__hero-desc">{provider.description}</p>
-          <div className="vera-bot__hero-actions">
+        <div className="vera-bot__engine-body">
+          <span className="vera-bot__engine-eyebrow">
+            Motor conectado
+            <span className="vera-bot__engine-dot" aria-hidden="true" /> conectado
+          </span>
+          <h3 className="vera-bot__engine-name">{provider.name}</h3>
+          <p className="vera-bot__engine-desc">
+            {provider.name} ejecuta el envío y la recepción de mensajes en tus canales. VERA lo
+            orquesta por encima.
+          </p>
+
+          <div className="vera-bot__channels" data-testid="vera-bot-channels">
+            {provider.channels.map((ch) => {
+              const c = CHANNELS[ch];
+              return (
+                <span key={ch} className="vera-bot__channel" data-testid={`channel-${ch}`}>
+                  <span className="vera-bot__channel-icon">
+                    {c.brand ? (
+                      <BrandIcon brand={c.brand} fallback={c.icon} size={15} alt={c.label} />
+                    ) : (
+                      <c.icon size={15} />
+                    )}
+                  </span>
+                  {c.label}
+                </span>
+              );
+            })}
+          </div>
+
+          <div className="vera-bot__engine-actions">
             <button
               type="button"
-              className="vera-btn vera-btn--primary vera-btn--md"
+              className="vera-btn vera-btn--secondary vera-btn--md"
               data-testid="vera-bot-launch"
               onClick={launch}
             >
@@ -129,9 +190,7 @@ export const VeraBotWorkspace = () => {
       <section className="vera-bot__future" data-testid="vera-bot-future">
         <div className="vera-bot__future-head">
           <h3 className="vera-bot__future-title">Lo que VERA sumará por encima</h3>
-          <p className="vera-muted">
-            Capas de contexto e inteligencia sobre el motor, sin reemplazarlo.
-          </p>
+          <p className="vera-muted">Capas de contexto e inteligencia sobre el motor, sin reemplazarlo.</p>
         </div>
         <div className="vera-bot__future-grid">
           {FUTURE_LAYERS.map((l) => (

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { SlidersHorizontal, Sparkles, Search } from 'lucide-react';
+import { SlidersHorizontal, Sparkles } from 'lucide-react';
 import { widgetById } from './widget-registry';
 import { useDashboard } from './useDashboard';
 import { Dock } from './Dock';
@@ -21,19 +21,20 @@ export const WorkspaceHome = () => {
 
   return (
     <div className="vera-home" data-testid="workspace-home">
-      {/* Capa de IA reservada — Spotlight */}
+      {/* Protagonista — la voz de VERA (ya trabajó por vos) */}
+      <TodayHero onAsk={() => setSpotlight(true)} />
+
+      {/* Continuar la conversación con VERA */}
       <button
         type="button"
         className="vera-home__spotlight"
         data-testid="spotlight-trigger"
         onClick={() => setSpotlight(true)}
       >
-        <Search size={17} className="vera-home__spotlight-icon" />
-        <span className="vera-home__spotlight-text">¿Qué querés hacer hoy? Preguntale a VERA…</span>
+        <Sparkles size={17} className="vera-home__spotlight-icon" />
+        <span className="vera-home__spotlight-text">Seguí la conversación con VERA…</span>
         <span className="vera-home__spotlight-badge"><Sparkles size={12} /> VERA</span>
       </button>
-
-      <TodayHero onAsk={() => setSpotlight(true)} />
 
       <InsightsSection />
 
