@@ -22,7 +22,7 @@ class MockConversationRepository(ConversationRepository):
     def list_conversations(self) -> list[dict]:
         return [
             {
-                "id": "conv-juan", "contact_id": "c-juan", "contact_name": "Juan Pérez",
+                "id": "conv-juan", "contact_id": "c-juan", "contact_name": "Juan Pérez", "phone": "5492255401234",
                 "property_label": "el departamento de 3 ambientes en Costa del Este", "status": "open",
                 "messages": [
                     {"sender": "client", "text": "Hola, me interesa. ¿Cuánto sale?", "at": _ago(56)},
@@ -31,7 +31,7 @@ class MockConversationRepository(ConversationRepository):
                 ],
             },
             {
-                "id": "conv-maria", "contact_id": "c-maria", "contact_name": "María González",
+                "id": "conv-maria", "contact_id": "c-maria", "contact_name": "María González", "phone": "5492255405678",
                 "property_label": "la casa con pileta cerca del mar", "status": "open",
                 "messages": [
                     {"sender": "client", "text": "Buenas, ¿en qué zona/barrio está? Soy María", "at": _ago(60)},
@@ -40,7 +40,7 @@ class MockConversationRepository(ConversationRepository):
                 ],
             },
             {
-                "id": "conv-sofia", "contact_id": "c-sofia", "contact_name": "Sofía Ramírez",
+                "id": "conv-sofia", "contact_id": "c-sofia", "contact_name": "Sofía Ramírez", "phone": "5492255409012",
                 "property_label": "el PH a estrenar", "status": "open",
                 "messages": [
                     {"sender": "client", "text": "Hola, me llamo Sofía. Quiero visitar el PH", "at": _ago(80)},

@@ -92,7 +92,7 @@ class FollowUpRule(InsightRule):
                 link_label="Ver conversación",
                 signals=[INTEREST_SIGNALS[s]["label"] for s in signals],
                 meta={"contact_id": conv.get("contact_id", ""), "conversation_id": conv.get("id", ""),
-                      "hours_since_last": hours},
+                      "contact_phone": conv.get("phone", ""), "hours_since_last": hours},
             ))
         return out
 

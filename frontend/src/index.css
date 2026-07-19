@@ -4592,3 +4592,77 @@ p {
   padding-top: var(--vera-space-xs);
 }
 
+/* ------------------------- Revisar mensaje (modal) ----------------------- */
+.vera-review {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(94vw, 520px);
+  z-index: 30;
+  padding: var(--vera-space-lg);
+  border-radius: var(--vera-radius-xl, 18px);
+  border: 1px solid var(--vera-color-border);
+  background: var(--vera-color-cards, #2e2e2e);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  animation: vera-rise 0.3s ease both;
+}
+.vera-review__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--vera-space-sm);
+  margin-bottom: var(--vera-space-md);
+}
+.vera-review__title { display: flex; gap: var(--vera-space-sm); align-items: flex-start; }
+.vera-review__title h3 { font-size: var(--vera-font-size-lg); font-weight: var(--vera-font-weight-semibold); }
+.vera-review__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  color: var(--vera-color-primary);
+  background: rgba(246, 230, 58, 0.08);
+  border: 1px solid rgba(246, 230, 58, 0.16);
+}
+.vera-review__close {
+  border: none;
+  background: transparent;
+  color: var(--vera-color-text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--vera-radius-sm);
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+.vera-review__close:hover { color: var(--vera-color-text); background: var(--vera-color-surface); }
+.vera-review__textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 130px;
+  padding: 12px 14px;
+  border-radius: var(--vera-radius-md, 11px);
+  border: 1px solid var(--vera-color-border);
+  background: var(--vera-color-glass);
+  color: var(--vera-color-text);
+  font-family: inherit;
+  font-size: var(--vera-font-size-sm);
+  line-height: 1.55;
+  transition: border-color 0.2s ease;
+}
+.vera-review__textarea:focus { outline: none; border-color: rgba(246, 230, 58, 0.4); }
+.vera-review__hint {
+  margin-top: var(--vera-space-xs);
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-text-secondary);
+  font-style: italic;
+}
+.vera-review__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--vera-space-xs);
+  margin-top: var(--vera-space-md);
+}
+

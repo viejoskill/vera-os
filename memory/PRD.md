@@ -346,6 +346,13 @@ Cambio de alcance definido por el "Product Philosophy v1.0" del usuario: **VERA 
 - **Pendiente futuro**: si Arturito habilita API pública, migrar `mode` a `embed` (bandeja real embebida) sin tocar la UI. Considerar `arturito.png` oficial en `/public/brands/`.
 
 
+## VERA Brain — Insights: "Revisar mensaje" (WhatsApp) (2026-07)
+Sobre los insights de tipo oportunidad, el botón "Copiar" se reemplazó por **"Revisar mensaje"** → abre un modal con el mensaje generado **editable** (VERA propone; el usuario siempre puede corregir antes de enviar).
+- `app/insights/ReviewMessageModal.tsx`: textarea editable prellenada + **Copiar** + **Abrir en WhatsApp** (`wa.me/{phone}?text=` con el texto EDITADO; sin teléfono → `wa.me/?text=`). Nada se envía automáticamente.
+- `InsightCard`: para `type==='opportunity'` muestra "Ver conversación" + "Revisar mensaje"; el resto mantiene link + copiar.
+- Backend: mock de conversaciones ahora incluye `phone`; `FollowUpRule` lo pasa en `meta.contact_phone`.
+- CSS `.vera-review*`. Verificado E2E: modal abre con mensaje, edición, y WhatsApp con texto editado + teléfono (`api.whatsapp.com/send/?phone=549...&text=...`). TS strict OK.
+
 ## VERA Brain — Fase 2.1: Insights Engine + PropertiesKnowledgeSource (2026-07)
 Generalización pedida por el usuario: **Opportunity Engine → Insights Engine**. Las oportunidades son sólo UN tipo de insight (types: opportunity, risk, recommendation, priority, reminder, task). Sumar capacidad = registrar una regla; el motor no cambia. Filosofía intacta: las REGLAS detectan hechos (sin IA), VERA Brain organiza contexto, Claude aporta criterio; VERA propone · el usuario decide.
 - **Backend** `insights_engine/` (reemplaza `opportunity_engine/`): `types.Insight` (id, type, category, priority, title, reason, suggested_action, action_label, link_route/label, signals, meta). `rules.InsightRule` (ABC async) + `FollowUpRule` (→ opportunity, señales de interés configurables, 48h) + `PropertyHealthRule` (→ recommendation/priority sobre datos REALES: propiedades activas sin fotos / sin publicar). `engine.RuleBasedInsightsEngine` (async, ordena por prioridad+tipo). `routes_insights.py` → `GET /api/insights`.

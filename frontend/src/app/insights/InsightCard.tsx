@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Copy, Check, ArrowUpRight } from 'lucide-react';
+import { Copy, Check, ArrowUpRight, Pencil } from 'lucide-react';
 import type { Insight } from './types';
+import { ReviewMessageModal } from './ReviewMessageModal';
 
 const TYPE_META: Record<string, { label: string; cls: string }> = {
   opportunity: { label: 'Oportunidad', cls: 'type--opportunity' },
@@ -23,7 +24,10 @@ const PRIORITY_LABEL: Record<string, string> = {
 export const InsightCard = ({ insight }: { insight: Insight }) => {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [review, setReview] = useState(false);
   const meta = TYPE_META[insight.type] ?? { label: insight.type, cls: 'type--opportunity' };
+  const isMessage = insight.type === 'opportunity' && Boolean(insight.suggested_action);
+  const phone = typeof insight.meta?.contact_phone === 'string' ? insight.meta.contact_phone : undefined;
 
   const copy = async () => {
     const text = insight.suggested_action;
@@ -87,17 +91,38 @@ export const InsightCard = ({ insight }: { insight: Insight }) => {
             {insight.link_label || 'Abrir'} <ArrowUpRight size={14} />
           </button>
         )}
-        {insight.suggested_action && insight.action_label && (
+        {isMessage ? (
           <button
             type="button"
             className="vera-btn vera-btn--primary vera-btn--sm"
-            data-testid={`insight-copy-${insight.id}`}
-            onClick={copy}
+            data-testid={`insight-review-${insight.id}`}
+            onClick={() => setReview(true)}
           >
-            {copied ? <><Check size={14} /> Copiado</> : <><Copy size={14} /> {insight.action_label}</>}
+            <Pencil size={14} /> Revisar mensaje
           </button>
+        ) : (
+          insight.suggested_action && insight.action_label && (
+            <button
+              type="button"
+              className="vera-btn vera-btn--primary vera-btn--sm"
+              data-testid={`insight-copy-${insight.id}`}
+              onClick={copy}
+            >
+              {copied ? <><Check size={14} /> Copiado</> : <><Copy size={14} /> {insight.action_label}</>}
+            </button>
+          )
         )}
       </div>
+
+      {isMessage && (
+        <ReviewMessageModal
+          open={review}
+          onClose={() => setReview(false)}
+          contactName={insight.title}
+          initialMessage={insight.suggested_action}
+          phone={phone}
+        />
+      )}
     </article>
   );
 };
