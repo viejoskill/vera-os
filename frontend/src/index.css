@@ -4231,3 +4231,107 @@ p {
 }
 .vera-site-domain__del:hover { color: #ef6b6b; background: var(--vera-color-surface); }
 
+/* ------------------------ VERA Expert (Spotlight) ------------------------ */
+.vera-spot__send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--vera-color-primary);
+  color: var(--vera-color-primary-foreground);
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+.vera-spot__send:hover { transform: scale(1.08); filter: brightness(1.05); }
+
+.vera-spot__today {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  width: 100%;
+  margin-top: var(--vera-space-md);
+  padding: var(--vera-space-md);
+  border-radius: var(--vera-radius-lg);
+  border: 1px solid rgba(246, 230, 58, 0.24);
+  background: rgba(246, 230, 58, 0.07);
+  color: var(--vera-color-text);
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.22s ease, border-color 0.22s ease, background-color 0.22s ease;
+}
+.vera-spot__today:hover { transform: translateY(-2px); border-color: rgba(246, 230, 58, 0.4); background: rgba(246, 230, 58, 0.1); }
+.vera-spot__today strong { display: block; font-size: var(--vera-font-size-base, 15px); }
+.vera-spot__today-sub { font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); }
+.vera-spot__today-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: var(--vera-radius-md, 11px);
+  color: var(--vera-color-primary);
+  background: rgba(246, 230, 58, 0.1);
+  border: 1px solid rgba(246, 230, 58, 0.2);
+}
+
+.vera-spot__thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-md);
+  margin-top: var(--vera-space-md);
+  max-height: 46vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.vera-spot__msg { max-width: 88%; }
+.vera-spot__msg p {
+  font-size: var(--vera-font-size-sm);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  padding: 10px 14px;
+  border-radius: 14px;
+}
+.vera-spot__msg--user { align-self: flex-end; }
+.vera-spot__msg--user p {
+  background: var(--vera-color-primary);
+  color: var(--vera-color-primary-foreground);
+  border-bottom-right-radius: 4px;
+  font-weight: var(--vera-font-weight-medium);
+}
+.vera-spot__msg--vera { align-self: flex-start; }
+.vera-spot__msg--vera p {
+  background: var(--vera-color-surface, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--vera-color-border);
+  border-bottom-left-radius: 4px;
+}
+.vera-spot__msg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 5px;
+  font-size: 10px;
+  font-weight: var(--vera-font-weight-bold);
+  letter-spacing: 0.06em;
+  color: var(--vera-color-primary);
+}
+.vera-spot__typing { display: inline-flex !important; gap: 5px; align-items: center; }
+.vera-spot__typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--vera-color-text-secondary);
+  animation: vera-typing 1.2s ease-in-out infinite;
+}
+.vera-spot__typing span:nth-child(2) { animation-delay: 0.15s; }
+.vera-spot__typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes vera-typing {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+@media (prefers-reduced-motion: reduce) { .vera-spot__typing span { animation: none; } }
+

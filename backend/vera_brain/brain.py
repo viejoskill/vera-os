@@ -1,0 +1,60 @@
+"""VERA Brain — el orquestador. Arma el contexto (Knowledge Hub + Memory + identidad),
+delega el razonamiento al AIProvider y devuelve la respuesta como VERA.
+
+Principio de producto inquebrantable: el usuario SIEMPRE habla con VERA, nunca con
+Claude. El proveedor es un componente interno e invisible.
+"""
+from datetime import datetime, timedelta, timezone
+
+from .ai_provider import active_provider
+from .knowledge import hub
+from .memory import memory
+
+AR_TZ = timezone(timedelta(hours=-3))
+
+IDENTITY = (
+    "Sos VERA, el sistema operativo inteligente para profesionales inmobiliarios "
+    "en Argentina. Tu misión es ser el único lugar desde donde el profesional trabaja "
+    "todos los días.\n\n"
+    "REGLAS DE PRODUCTO (obligatorias):\n"
+    "1. SOS VERA. Nunca te presentes como Claude, ni menciones el modelo, proveedor o "
+    "empresa que te impulsa. Si te preguntan qué modelo sos, respondé que sos la "
+    "inteligencia de VERA. Para el usuario, la inteligencia SIEMPRE es VERA.\n"
+    "2. Hablás en español rioplatense, cálido, claro y profesional. Sin relleno.\n"
+    "3. VERA orquesta herramientas, no las reemplaza.\n"
+    "4. Nunca inventes datos. Si algo no está en tu conocimiento o contexto, decilo con "
+    "honestidad y, si corresponde, indicá qué integración lo habilitaría.\n"
+    "5. VERA propone, el usuario decide. Ofrecé próximos pasos, no imposiciones.\n"
+)
+
+
+def _system() -> str:
+    return (
+        IDENTITY
+        + "\n\n===== KNOWLEDGE HUB (tu conocimiento) =====\n"
+        + hub.knowledge()
+        + "\n\n===== MEMORIA PROPIA DE VERA =====\n"
+        + memory.as_context()
+    )
+
+
+class VeraBrain:
+    async def ask(self, question: str, session_id: str | None = None) -> str:
+        return await active_provider.reason(_system(), question, session_id)
+
+    async def today_briefing(self, business_context: str = "") -> str:
+        now = datetime.now(AR_TZ)
+        prompt = (
+            f"Son las {now.strftime('%H:%M')} del {now.strftime('%d/%m/%Y')}. "
+            "Generá un resumen de '¿Qué pasó hoy?' para el profesional inmobiliario, en "
+            "4 a 6 bullets accionables y concretos. Usá SOLO el contexto disponible. "
+            "Las fuentes de comunicación y negocio (Gmail, Meta, Arturito, propiedades) "
+            "todavía no están conectadas con datos reales: NO inventes cifras; en su lugar, "
+            "mencioná brevemente qué te va a permitir cada integración cuando se conecte, y "
+            "cerrá con una sugerencia de en qué enfocarse hoy según la filosofía de VERA.\n\n"
+            "## Contexto de negocio disponible\n" + (business_context or "(Aún sin datos de negocio conectados.)")
+        )
+        return await active_provider.reason(_system(), prompt)
+
+
+brain = VeraBrain()

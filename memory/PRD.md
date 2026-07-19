@@ -346,6 +346,29 @@ Cambio de alcance definido por el "Product Philosophy v1.0" del usuario: **VERA 
 - **Pendiente futuro**: si Arturito habilita API pública, migrar `mode` a `embed` (bandeja real embebida) sin tocar la UI. Considerar `arturito.png` oficial en `/public/brands/`.
 
 
+## VERA Brain — Claude como inteligencia central (Fase 0 + Fase 1) (2026-07)
+Cambio conceptual del usuario: **VERA no construye inteligencia; construye el mejor workspace y delega el razonamiento a Claude.** VERA = Workspace + UX + Apps + Integraciones. Claude = cerebro (INTERNO e invisible). Principio inquebrantable: **el usuario SIEMPRE habla con VERA, nunca con Claude.**
+Regla de producto permanente: antes de cada feature → *¿esta lógica debe vivir en VERA o puede resolverla VERA Brain con el contexto disponible?* Si Claude puede, no se desarrolla lógica específica.
+
+**Backend** (`/app/backend/vera_brain/`):
+- `ai_provider.py` — `AIProvider` (ABC, DETALLE INTERNO) + `ClaudeProvider` (emergentintegrations `LlmChat`, `anthropic`/`claude-sonnet-4-6`, `EMERGENT_LLM_KEY`). `active_provider` = único punto de acoplamiento del proveedor (cambiar modelo = 1 línea).
+- `knowledge.py` — `KnowledgeSource` (ABC) + `VeraKnowledgeSource` (carga `/app/docs/*.md` + `PRD.md`) + **`KnowledgeHub`** (repositorio único; las fuentes lo alimentan, VERA Brain lo consulta, NO las integraciones directamente). MVP: sólo VeraKnowledgeSource registrada.
+- `memory.py` — **capa Memory**: conocimiento propio de VERA en el tiempo (preferencias, decisiones, patrones). Persistencia simple en `vera_memory.json`. `remember/recall/as_context`.
+- `brain.py` — `VeraBrain` orquestador: arma system (IDENTITY blindada + Knowledge Hub + Memory) → delega a `active_provider`. `ask(question, session_id)` y `today_briefing()`.
+- `routes_brain.py` — `POST /api/brain/ask`, `GET /api/brain/today`, `GET /api/brain/sources`, `POST /api/brain/remember`. Registrado en `server.py`.
+
+**Frontend**:
+- `app/brain/brain-gateway.ts` — `veraBrain.ask()/today()` (único contacto del front con la inteligencia; nunca conoce el modelo).
+- `SpotlightModal.tsx` reescrito = **Vera Expert**: chat real "Preguntale a VERA", botón "¿Qué pasó hoy?", sugerencias, burbujas usuario/VERA, indicador de tipeo. CSS `.vera-spot__*` (send, today, thread, msg, typing).
+
+**Verificado**: `/ask` responde con filosofía de VERA; `/today` da resumen honesto (sin inventar cifras, menciona integraciones pendientes); identidad blindada (a "¿sos Claude?" responde "soy la inteligencia de VERA, no soy Claude/GPT/Gemini"); UI del Spotlight con flujo completo (screenshot).
+
+**Pendiente / próximas fases**:
+- Fase 2: migrar `ai_content_service.py` (hoy atado a Gemini) para que consuma `AIProvider`.
+- Fase 3: nuevos Knowledge Sources reales (PropertiesKnowledgeSource, luego Gmail/Meta/Arturito al activar OAuth) — se registran en el Hub sin tocar VERA Brain.
+- Streaming SSE en `/ask` (hoy single-turn no-streaming); historial conversacional persistente; `DESIGN_SYSTEM.md`/`BRAND.md` como fuentes de conocimiento permanente.
+- Evaluar migrar de Emergent Key a cuenta propia de Anthropic (trivial: cambiar provider).
+
 ## Sprint 05.1 — Acciones Rápidas en Hoy + principio de fuente única (2026-07)
 Principio arquitectónico del usuario: **toda integración tiene una ÚNICA fuente de configuración; ninguna App guarda datos de conexión propios.** Las Apps consumen; si falta config, guían a configurarla (nunca la duplican).
 - **Acciones Rápidas** (`app/workspace/QuickActions.tsx`): bloque dedicado en Hoy, debajo del encabezado y arriba de los widgets (centro de operaciones). Botones grandes con ícono/logo oficial. Filosofía "acciones, no accesos".

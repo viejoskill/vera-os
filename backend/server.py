@@ -11,6 +11,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 import config
 import routes_ai
+import routes_brain
 import routes_files
 import routes_integrations
 import routes_properties
@@ -33,6 +34,7 @@ async def health():
 api_router.include_router(routes_properties.router)
 api_router.include_router(routes_files.router)
 api_router.include_router(routes_ai.router)
+api_router.include_router(routes_brain.router)
 api_router.include_router(routes_integrations.router)
 app.include_router(api_router)
 
