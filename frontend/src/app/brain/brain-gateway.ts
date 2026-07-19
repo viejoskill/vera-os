@@ -33,6 +33,9 @@ export interface Goal {
   subject?: string;
   status: string; // active | done | archived
   priority: string; // primary | secondary
+  scope?: string; // global | workspace | entity
+  scope_type?: string;
+  scope_id?: string;
   at: string;
   meta?: Record<string, unknown>;
 }
@@ -42,6 +45,9 @@ export interface GoalInput {
   title: string;
   subject?: string;
   priority?: string;
+  scope?: string; // por defecto 'global'; entity/workspace en el futuro
+  scope_type?: string;
+  scope_id?: string;
 }
 
 export const veraBrain = {

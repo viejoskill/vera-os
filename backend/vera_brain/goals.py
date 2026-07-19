@@ -36,6 +36,13 @@ class Goal(BaseModel):
     subject: str = ""              # opcional: property_id / zona / segmento
     status: str = "active"         # active | done | archived
     priority: str = "primary"      # primary | secondary
+    # Alcance del objetivo (diseñado desde el inicio; hoy se usa 'global'):
+    #   global   → objetivo general del profesional
+    #   workspace→ objetivo de un espacio de trabajo
+    #   entity   → objetivo atado a una entidad (persona, propiedad, oportunidad…)
+    scope: str = "global"          # global | workspace | entity
+    scope_type: str = ""           # persona | propiedad | oportunidad | workspace (si scope=entity/workspace)
+    scope_id: str = ""             # id de la entidad/workspace al que aplica
     at: str = Field(default_factory=_now)
     meta: dict = Field(default_factory=dict)
 

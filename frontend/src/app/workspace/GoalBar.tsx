@@ -39,7 +39,7 @@ export const GoalBar = () => {
     <section className="vera-goal" data-testid="goal-bar">
       <div className="vera-goal__head">
         <span className="vera-goal__label">
-          <Target size={14} /> Tu foco ahora
+          <Target size={14} /> Objetivo activo
         </span>
         <button
           type="button"

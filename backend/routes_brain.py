@@ -25,6 +25,9 @@ class GoalRequest(BaseModel):
     title: str
     subject: str = ""
     priority: str = "primary"
+    scope: str = "global"
+    scope_type: str = ""
+    scope_id: str = ""
     meta: dict = {}
 
 
@@ -113,6 +116,9 @@ async def create_goal(payload: GoalRequest):
             title=payload.title,
             subject=payload.subject,
             priority=payload.priority,
+            scope=payload.scope,
+            scope_type=payload.scope_type,
+            scope_id=payload.scope_id,
             meta=payload.meta,
         )
     )

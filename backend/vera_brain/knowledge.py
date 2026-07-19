@@ -21,28 +21,37 @@ class KnowledgeSource(ABC):
 
 
 class VeraKnowledgeSource(KnowledgeSource):
-    """Conocimiento profundo de VERA: filosofía, visión, arquitectura, roadmap y
-    decisiones de producto. Primera fuente PERMANENTE del sistema."""
+    """Conocimiento PERMANENTE de VERA: identidad, modelo cognitivo, arquitectura,
+    marca/voz, workspace y roadmap. Se alimenta de docs CURADOS (`/app/docs`), no del
+    PRD (que es un changelog interno de implementación, no conocimiento de identidad).
+    Cachea el contenido e invalida por mtime, así refleja ediciones sin reiniciar."""
 
     id = "vera"
-    label = "Conocimiento de VERA (filosofía, arquitectura, roadmap)"
+    label = "Conocimiento de VERA (identidad, modelo cognitivo, arquitectura, marca)"
 
     DOCS = Path("/app/docs")
-    PRD = Path("/app/memory/PRD.md")
-    DOC_ORDER = ["VISION.md", "COGNITION.md", "FOUNDATION.md", "PROVIDERS.md", "WORKSPACE.md", "ROADMAP.md", "PILOT.md"]
+    DOC_ORDER = [
+        "VISION.md", "COGNITION.md", "FOUNDATION.md", "BRAND.md",
+        "PROVIDERS.md", "WORKSPACE.md", "ROADMAP.md", "PILOT.md",
+    ]
+
+    _cache: str | None = None
+    _sig: float = 0.0
 
     async def fetch(self) -> str:
-        parts: list[str] = []
-        for name in self.DOC_ORDER:
-            p = self.DOCS / name
-            if p.exists():
-                parts.append(f"## {name}\n{p.read_text(encoding='utf-8')}")
-        if self.PRD.exists():
-            prd = self.PRD.read_text(encoding="utf-8")
-            parts.append(f"## PRD — identidad y arquitectura\n{prd[:9000]}")
-            if len(prd) > 15000:
-                parts.append(f"## PRD — decisiones y cambios recientes\n{prd[-6000:]}")
-        return "\n\n".join(parts) if parts else "(Sin documentación de VERA disponible.)"
+        files = [self.DOCS / n for n in self.DOC_ORDER]
+        sig = max((f.stat().st_mtime for f in files if f.exists()), default=0.0)
+        if VeraKnowledgeSource._cache is not None and sig == VeraKnowledgeSource._sig:
+            return VeraKnowledgeSource._cache
+        parts = [
+            f"## {f.name.replace('.md', '')}\n{f.read_text(encoding='utf-8').strip()}"
+            for f in files
+            if f.exists()
+        ]
+        result = "\n\n".join(parts) if parts else "(Sin documentación de VERA disponible.)"
+        VeraKnowledgeSource._cache = result
+        VeraKnowledgeSource._sig = sig
+        return result
 
 
 class PropertiesKnowledgeSource(KnowledgeSource):
