@@ -31,7 +31,7 @@ class VeraKnowledgeSource(KnowledgeSource):
     DOCS = Path("/app/docs")
     DOC_ORDER = [
         "VISION.md", "COGNITION.md", "FOUNDATION.md", "BRAND.md",
-        "PROVIDERS.md", "WORKSPACE.md", "ROADMAP.md", "PILOT.md",
+        "PROVIDERS.md", "RELATIONSHIPS.md", "WORKSPACE.md", "ROADMAP.md", "PILOT.md",
     ]
 
     _cache: str | None = None
@@ -151,48 +151,56 @@ class PropertiesKnowledgeSource(KnowledgeSource):
         return "\n".join(out)
 
 
-class ConversationKnowledgeSource(KnowledgeSource):
-    """Conversaciones activas + oportunidades del día. Consume el CONTRATO
-    `ConversationProvider` — nunca a Arturito ni a un proveedor concreto. Cierra el
-    círculo AI-First: VERA sabe QUIÉN es cada contacto, QUÉ preguntó y POR QUÉ es una
-    oportunidad. Al conectar un provider real, esta fuente no cambia."""
+class RelationshipKnowledgeSource(KnowledgeSource):
+    """Relaciones activas con personas — el primer componente de la Relationship
+    Foundation. No almacena conversaciones: ENRIQUECE la relación de cada Persona con el
+    negocio, cruzando qué pidió, qué propiedad real de la cartera le encaja, qué se
+    aprendió (memoria) y qué insight hay. Permite a VERA actuar como ASESOR: responder
+    "¿qué debería hacer con María?" combinando conversación + cartera + memoria + insight
+    + objetivo. Consume RelationshipService (que a su vez usa contratos, nunca Arturito)."""
 
-    id = "conversations"
-    label = "Conversaciones activas y oportunidades (vía ConversationProvider)"
+    id = "relationships"
+    label = "Relaciones con personas (conversación + cartera + memoria + insights)"
+
+    def _price(self, p) -> str:
+        return f"{p.currency} {int(p.price):,}".replace(",", ".") if p.price else "sin precio"
 
     async def fetch(self) -> str:
-        # Import diferido: el Hub no se acopla al proveedor ni al motor en import time.
-        from conversations.provider import active_conversation_provider
-        from insights_engine.engine import engine
+        from relationships.service import relationship_service
 
-        parts: list[str] = []
+        snaps = await relationship_service.all_snapshots()
+        if not snaps:
+            return "Sin relaciones activas por ahora."
 
-        convs = [c for c in await active_conversation_provider.list_conversations() if c.status == "open"]
-        if convs:
-            parts.append(f"Conversaciones activas: {len(convs)}.")
-            for c in convs:
-                name = c.contact.name or "Contacto sin nombre"
-                prop = c.property_label or "una propiedad"
-                asked = c.client_text.strip()
-                if len(asked) > 260:
-                    asked = asked[:257] + "…"
-                phone_txt = f" · tel: {c.contact.phone}" if c.contact.phone else ""
-                parts.append(f'- {name} — consulta por {prop} (canal: {c.channel}){phone_txt}. Dijo: "{asked}"')
+        parts: list[str] = [
+            f"Relaciones activas con personas: {len(snaps)}. "
+            "Usá esto para asesorar (qué debería hacer con cada persona), no sólo informar:"
+        ]
+        for s in snaps:
+            p = s.person
+            head = f"### {p.name or 'Contacto sin nombre'}"
+            meta = " · ".join(x for x in [", ".join(p.channels), f"lead: {p.lead_status}" if p.lead_status else ""] if x)
+            parts.append(f"{head}{f' ({meta})' if meta else ''}")
 
-        try:
-            insights = await engine.detect()
-        except Exception:  # noqa: BLE001
-            insights = []
-        if insights:
-            parts.append("")
-            parts.append("Oportunidades e insights detectados hoy (VERA propone, el usuario decide):")
-            for i in insights:
-                who = i.title or i.category
-                sig = f" Señales: {', '.join(i.signals)}." if i.signals else ""
-                parts.append(f"- [{i.type}/{i.priority}] {who}: {i.reason}{sig}")
+            asked = s.client_text
+            if len(asked) > 220:
+                asked = asked[:217] + "…"
+            parts.append(f'- Qué pidió: "{asked}"')
 
-        if not parts:
-            return "Sin conversaciones activas ni oportunidades detectadas por ahora."
+            if s.interested_properties:
+                props_txt = "; ".join(
+                    f"[{pr.id[:8]}] {pr.title} · {self._price(pr)} · {pr.city}" for pr in s.interested_properties
+                )
+                parts.append(f"- Propiedad(es) de tu cartera que encajan: {props_txt}")
+            else:
+                parts.append("- Propiedad de cartera que encaje claramente: ninguna por ahora (evaluá similares o captar).")
+
+            if s.insights:
+                parts.append("- Estado de la relación: " + "; ".join(i.get("reason", "") for i in s.insights))
+            if s.memory:
+                parts.append("- Ya hiciste: " + "; ".join(m.detail for m in s.memory if m.detail))
+            else:
+                parts.append("- Ya hiciste: sin acciones registradas todavía.")
         return "\n".join(parts)
 
 
@@ -216,8 +224,8 @@ class KnowledgeHub:
         return "\n\n".join(blocks)
 
 
-# Hub del sistema. Orden = permanencia: VERA (identidad) → cartera real → conversaciones.
+# Hub del sistema. Orden = permanencia: VERA (identidad) → cartera real → relaciones.
 hub = KnowledgeHub()
 hub.register(VeraKnowledgeSource())
 hub.register(PropertiesKnowledgeSource())
-hub.register(ConversationKnowledgeSource())
+hub.register(RelationshipKnowledgeSource())
