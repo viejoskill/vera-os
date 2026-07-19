@@ -346,6 +346,22 @@ Cambio de alcance definido por el "Product Philosophy v1.0" del usuario: **VERA 
 - **Pendiente futuro**: si Arturito habilita API pública, migrar `mode` a `embed` (bandeja real embebida) sin tocar la UI. Considerar `arturito.png` oficial en `/public/brands/`.
 
 
+## VERA Brain — Fase 2: Opportunity Engine (Follow-up inteligente) (2026-07)
+Primer módulo de **inteligencia comercial**. Principio: VERA detecta y SUGIERE; el humano decide y aprueba. **Nunca envía mensajes automáticamente.** No es un CRM ni automatización invasiva.
+
+**Backend** (`/app/backend/opportunity_engine/`), desacoplado del proveedor de IA:
+- `types.py` — modelo `Opportunity` {type, priority, reason, suggested_message, contact_id, contact_name, conversation_id, hours_since_last, signals}.
+- `rules.py` — `OpportunityRule` (ABC) + `FollowUpRule`. Clasificación de interés **BASADA EN REGLAS (sin IA)**, transparente y configurable: `INTEREST_SIGNALS` (pidió visita=3, precio=2, financiación=2, documentación=2, ubicación/nombre/teléfono=1), `INTEREST_THRESHOLD=2`, `FOLLOW_UP_HOURS=48`. Si interés ≥ umbral y ≥48h de silencio → FOLLOW_UP_SUGGESTED. Mensaje sugerido por template (nunca se envía).
+- `repository.py` — `ConversationRepository` (ABC) + `MockConversationRepository` (DATOS DE EJEMPLO — Arturito/WhatsApp aún no dan datos reales; se enchufa la fuente real sin tocar el motor). `conversation_repository` = punto de acoplamiento de la fuente.
+- `engine.py` — `OpportunityEngine` (ABC) + `RuleBasedOpportunityEngine` (corre reglas, ordena por prioridad). `engine` activo; sumar capacidades = registrar más reglas.
+- `routes_opportunities.py` — `GET /api/opportunities`. Registrado en `server.py`.
+
+**Frontend** (`app/opportunities/`): `types.ts`, `useOpportunities.ts` (react-query), `OpportunityCard.tsx` (dot por prioridad, "Seguimiento sugerido", inactividad, reason, chips de señales, mensaje sugerido, botones **Ver conversación** → /vera-bot y **Copiar mensaje sugerido** con fallback execCommand), `OpportunitiesSection.tsx` (montada en `WorkspaceHome` entre Acciones Rápidas y widgets), `index.ts`.
+
+**Verificado**: `GET /api/opportunities` → 3 oportunidades (Sofía/Juan high, María medium); Carlos (solo "hola") y Lucía (reciente 3h) correctamente excluidos. UI en Hoy con 3 tarjetas (screenshot). TS strict OK. **MOCKED**: los datos de conversación son de ejemplo hasta conectar Arturito real.
+
+**Roadmap del Opportunity Engine** (arquitectura lista, no implementado): nuevas propiedades compatibles, vendedores sin seguimiento, publicaciones con bajo rendimiento, propietarios esperando tasación, tareas pendientes.
+
 ## VERA Brain — Claude como inteligencia central (Fase 0 + Fase 1) (2026-07)
 Cambio conceptual del usuario: **VERA no construye inteligencia; construye el mejor workspace y delega el razonamiento a Claude.** VERA = Workspace + UX + Apps + Integraciones. Claude = cerebro (INTERNO e invisible). Principio inquebrantable: **el usuario SIEMPRE habla con VERA, nunca con Claude.**
 Regla de producto permanente: antes de cada feature → *¿esta lógica debe vivir en VERA o puede resolverla VERA Brain con el contexto disponible?* Si Claude puede, no se desarrolla lógica específica.

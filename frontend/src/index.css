@@ -4335,3 +4335,137 @@ p {
 }
 @media (prefers-reduced-motion: reduce) { .vera-spot__typing span { animation: none; } }
 
+/* --------------------------- Oportunidades sugeridas --------------------- */
+.vera-opps {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-sm);
+  animation: vera-rise 0.68s ease both;
+}
+.vera-opps__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vera-space-sm);
+}
+.vera-opps__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--vera-color-text-secondary);
+}
+.vera-opps__title svg { color: var(--vera-color-primary); }
+.vera-opps__note {
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-text-secondary);
+  font-style: italic;
+}
+.vera-opps__empty {
+  padding: var(--vera-space-lg);
+  border: 1px dashed var(--vera-color-border);
+  border-radius: var(--vera-radius-lg);
+  color: var(--vera-color-text-secondary);
+  font-size: var(--vera-font-size-sm);
+  text-align: center;
+}
+.vera-opps__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--vera-space-md);
+}
+@media (max-width: 1100px) { .vera-opps__grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 720px) { .vera-opps__grid { grid-template-columns: 1fr; } }
+
+.vera-opp-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-xs);
+  padding: var(--vera-space-lg);
+  border-radius: var(--vera-radius-lg);
+  border: 1px solid rgba(58, 58, 58, 0.7);
+  background: linear-gradient(180deg, rgba(46, 46, 46, 0.5), rgba(37, 37, 37, 0.36));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+}
+.vera-opp-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(246, 230, 58, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 28px rgba(0, 0, 0, 0.26);
+}
+.vera-opp-card__top { display: flex; align-items: flex-start; gap: 10px; }
+.vera-opp-card__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+  background: #46e08a;
+}
+.prio--medium .vera-opp-card__dot { background: #f5c451; }
+.prio--low .vera-opp-card__dot { background: var(--vera-color-text-secondary); }
+.vera-opp-card__id { flex: 1; min-width: 0; }
+.vera-opp-card__name {
+  display: block;
+  font-size: var(--vera-font-size-base, 15px);
+  font-weight: var(--vera-font-weight-semibold);
+}
+.vera-opp-card__tag { font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); }
+.vera-opp-card__prio {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: var(--vera-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--vera-color-text-secondary);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-pill);
+  padding: 3px 9px;
+}
+.prio--high .vera-opp-card__prio { color: #46e08a; border-color: rgba(70, 224, 138, 0.3); }
+.vera-opp-card__inactive {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-text-secondary);
+}
+.vera-opp-card__reason {
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text);
+  line-height: 1.5;
+}
+.vera-opp-card__signals { display: flex; flex-wrap: wrap; gap: 6px; }
+.vera-opp-card__signal {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--vera-radius-pill);
+  border: 1px solid var(--vera-color-border);
+  color: var(--vera-color-text-secondary);
+  background: var(--vera-color-glass);
+}
+.vera-opp-card__message {
+  margin-top: 4px;
+  padding: 10px 12px;
+  border-radius: var(--vera-radius-md, 10px);
+  border-left: 2px solid rgba(246, 230, 58, 0.5);
+  background: var(--vera-color-glass);
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text-secondary);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.vera-opp-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vera-space-xs);
+  margin-top: auto;
+  padding-top: var(--vera-space-xs);
+}
+
