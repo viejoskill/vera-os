@@ -2,7 +2,7 @@
 prioridad. Desacoplado del proveedor de IA y de las fuentes de datos."""
 from abc import ABC, abstractmethod
 
-from .repository import conversation_repository
+from conversations.provider import active_conversation_provider
 from .rules import FollowUpRule, InsightRule, PropertyHealthRule
 from .types import Insight
 
@@ -31,5 +31,5 @@ class RuleBasedInsightsEngine(InsightsEngine):
 # Motor activo. Roadmap = registrar más reglas (nuevas propiedades compatibles,
 # vendedores sin seguimiento, publicaciones con bajo rendimiento, tasaciones, tareas).
 engine: InsightsEngine = RuleBasedInsightsEngine(
-    rules=[FollowUpRule(conversation_repository), PropertyHealthRule()],
+    rules=[FollowUpRule(active_conversation_provider), PropertyHealthRule()],
 )

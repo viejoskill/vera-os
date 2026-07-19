@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 import config
 from property_repository import property_repository
 
-from .repository import ConversationRepository
+from conversations.provider import ConversationProvider
 from .types import Insight
 
 # --- Configuración de INTERÉS (transparente y editable) --------------------- #
@@ -47,22 +47,21 @@ class InsightRule(ABC):
 
 class FollowUpRule(InsightRule):
     """Opportunity · follow-up: interés real + ~48h de silencio → sugerir seguimiento.
-    VERA propone un mensaje; NUNCA lo envía."""
+    VERA propone un mensaje; NUNCA lo envía. Consume el contrato ConversationProvider
+    (nunca un proveedor concreto)."""
 
-    def __init__(self, repository: ConversationRepository):
-        self.repository = repository
+    def __init__(self, provider: ConversationProvider):
+        self.provider = provider
 
     async def detect(self) -> list[Insight]:
         out: list[Insight] = []
-        for conv in self.repository.list_conversations():
-            if (conv.get("status") or "open") != "open":
+        for conv in await self.provider.list_conversations():
+            if conv.status != "open":
                 continue
-            messages = conv.get("messages", [])
-            client_text = " ".join(m["text"] for m in messages if m.get("sender") == "client")
-            signals = _detect_signals(client_text)
+            signals = _detect_signals(conv.client_text)
             if _score(signals) < INTEREST_THRESHOLD:
                 continue
-            last_at = max((m["at"] for m in messages), default=None)
+            last_at = conv.last_at
             if not last_at:
                 continue
             hours = int((datetime.now(timezone.utc) - datetime.fromisoformat(last_at)).total_seconds() // 3600)
@@ -73,15 +72,15 @@ class FollowUpRule(InsightRule):
             days = hours // 24
             when = f"hace {days} días" if days >= 1 else f"hace {hours} horas"
             priority = "high" if ("pidio_visita" in signals or _score(signals) >= 5) else "medium"
-            first = (conv.get("contact_name") or "").split(" ")[0] or "hola"
-            prop = conv.get("property_label") or "la propiedad que estuvimos viendo"
+            first = (conv.contact.name or "").split(" ")[0] or "hola"
+            prop = conv.property_label or "la propiedad que estuvimos viendo"
 
             out.append(Insight(
-                id=f"followup-{conv.get('id')}",
+                id=f"followup-{conv.id}",
                 type="opportunity",
                 category="follow_up",
                 priority=priority,
-                title=conv.get("contact_name", ""),
+                title=conv.contact.name,
                 reason=f"{INTEREST_SIGNALS[top]['label']} {when} y no respondió.",
                 suggested_action=(
                     f"Hola {first} 😊\nQuería saber si seguís interesado/a en {prop}. "
@@ -91,8 +90,8 @@ class FollowUpRule(InsightRule):
                 link_route="/vera-bot",
                 link_label="Ver conversación",
                 signals=[INTEREST_SIGNALS[s]["label"] for s in signals],
-                meta={"contact_id": conv.get("contact_id", ""), "conversation_id": conv.get("id", ""),
-                      "contact_phone": conv.get("phone", ""), "hours_since_last": hours},
+                meta={"contact_id": conv.contact.id, "conversation_id": conv.id,
+                      "contact_phone": conv.contact.phone, "hours_since_last": hours},
             ))
         return out
 

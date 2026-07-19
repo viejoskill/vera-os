@@ -29,7 +29,7 @@ class VeraKnowledgeSource(KnowledgeSource):
 
     DOCS = Path("/app/docs")
     PRD = Path("/app/memory/PRD.md")
-    DOC_ORDER = ["VISION.md", "FOUNDATION.md", "WORKSPACE.md", "ROADMAP.md", "PILOT.md"]
+    DOC_ORDER = ["VISION.md", "FOUNDATION.md", "PROVIDERS.md", "WORKSPACE.md", "ROADMAP.md", "PILOT.md"]
 
     async def fetch(self) -> str:
         parts: list[str] = []
@@ -79,33 +79,33 @@ class PropertiesKnowledgeSource(KnowledgeSource):
         return "\n".join(lines)
 
 
-class InsightsKnowledgeSource(KnowledgeSource):
-    """Inteligencia del día: conversaciones activas y oportunidades detectadas por el
-    Insights Engine. Permite a VERA saber QUIÉN es cada contacto, QUÉ preguntó y POR
-    QUÉ es una oportunidad — cerrando el círculo AI-First (Hoy ↔ Spotlight)."""
+class ConversationKnowledgeSource(KnowledgeSource):
+    """Conversaciones activas + oportunidades del día. Consume el CONTRATO
+    `ConversationProvider` — nunca a Arturito ni a un proveedor concreto. Cierra el
+    círculo AI-First: VERA sabe QUIÉN es cada contacto, QUÉ preguntó y POR QUÉ es una
+    oportunidad. Al conectar un provider real, esta fuente no cambia."""
 
-    id = "insights"
-    label = "Inteligencia del día (conversaciones y oportunidades)"
+    id = "conversations"
+    label = "Conversaciones activas y oportunidades (vía ConversationProvider)"
 
     async def fetch(self) -> str:
-        # Import diferido: evita ciclos y acopla el Hub a la fuente sólo en tiempo de uso.
+        # Import diferido: el Hub no se acopla al proveedor ni al motor en import time.
+        from conversations.provider import active_conversation_provider
         from insights_engine.engine import engine
-        from insights_engine.repository import conversation_repository
 
         parts: list[str] = []
 
-        convs = [c for c in conversation_repository.list_conversations() if (c.get("status") or "open") == "open"]
+        convs = [c for c in await active_conversation_provider.list_conversations() if c.status == "open"]
         if convs:
             parts.append(f"Conversaciones activas: {len(convs)}.")
             for c in convs:
-                name = c.get("contact_name") or "Contacto sin nombre"
-                prop = c.get("property_label") or "una propiedad"
-                asked = " ".join(m["text"] for m in c.get("messages", []) if m.get("sender") == "client").strip()
+                name = c.contact.name or "Contacto sin nombre"
+                prop = c.property_label or "una propiedad"
+                asked = c.client_text.strip()
                 if len(asked) > 260:
                     asked = asked[:257] + "…"
-                phone = c.get("phone")
-                phone_txt = f" · tel: {phone}" if phone else ""
-                parts.append(f'- {name} — consulta por {prop}{phone_txt}. Dijo: "{asked}"')
+                phone_txt = f" · tel: {c.contact.phone}" if c.contact.phone else ""
+                parts.append(f'- {name} — consulta por {prop} (canal: {c.channel}){phone_txt}. Dijo: "{asked}"')
 
         try:
             insights = await engine.detect()
@@ -144,8 +144,8 @@ class KnowledgeHub:
         return "\n\n".join(blocks)
 
 
-# Hub del sistema. Orden = permanencia: VERA (identidad) → cartera real → día.
+# Hub del sistema. Orden = permanencia: VERA (identidad) → cartera real → conversaciones.
 hub = KnowledgeHub()
 hub.register(VeraKnowledgeSource())
 hub.register(PropertiesKnowledgeSource())
-hub.register(InsightsKnowledgeSource())
+hub.register(ConversationKnowledgeSource())
