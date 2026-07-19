@@ -5,6 +5,7 @@ import { useDashboard } from './useDashboard';
 import { Dock } from './Dock';
 import { QuickActions } from './QuickActions';
 import { TodayHero } from './TodayHero';
+import { GoalBar } from './GoalBar';
 import { InsightsSection } from '@app/insights';
 import { SpotlightModal } from './SpotlightModal';
 import { CustomizePanel } from './CustomizePanel';
@@ -23,6 +24,9 @@ export const WorkspaceHome = () => {
     <div className="vera-home" data-testid="workspace-home">
       {/* Protagonista — la voz de VERA (ya trabajó por vos) */}
       <TodayHero onAsk={() => setSpotlight(true)} />
+
+      {/* El objetivo actual — VERA razona en función de esto */}
+      <GoalBar />
 
       {/* Continuar la conversación con VERA */}
       <button

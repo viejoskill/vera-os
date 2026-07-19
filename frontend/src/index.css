@@ -5117,3 +5117,147 @@ p {
   border-color: rgba(70, 224, 138, 0.6);
 }
 
+
+/* ============================================================================
+   GoalBar — el objetivo actual del usuario (VERA razona en función de esto)
+   ============================================================================ */
+.vera-goal {
+  margin-top: var(--vera-space-lg);
+  padding: var(--vera-space-md) var(--vera-space-lg);
+  border-radius: var(--vera-radius-lg);
+  border: 1px solid var(--vera-color-border);
+  background: var(--vera-color-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: vera-rise 0.7s ease both;
+}
+.vera-goal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vera-space-sm);
+}
+.vera-goal__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--vera-color-primary);
+}
+.vera-goal__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--vera-radius-pill);
+  border: 1px solid var(--vera-color-border);
+  background: transparent;
+  color: var(--vera-color-text-secondary);
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+.vera-goal__toggle:hover {
+  color: var(--vera-color-primary);
+  border-color: rgba(246, 230, 58, 0.4);
+  background: rgba(246, 230, 58, 0.06);
+}
+.vera-goal__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vera-space-xs);
+  margin-top: var(--vera-space-sm);
+}
+.vera-goal__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px 7px 14px;
+  border-radius: var(--vera-radius-pill);
+  border: 1px solid rgba(246, 230, 58, 0.32);
+  background: rgba(246, 230, 58, 0.08);
+  color: var(--vera-color-text);
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-medium);
+}
+.vera-goal__chip-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--vera-color-text-secondary);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.vera-goal__chip-x:hover { background: rgba(240, 82, 82, 0.18); color: #f05252; }
+.vera-goal__empty {
+  margin-top: var(--vera-space-sm);
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text-secondary);
+}
+.vera-goal__picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--vera-space-xs);
+  margin-top: var(--vera-space-md);
+  padding-top: var(--vera-space-md);
+  border-top: 1px solid var(--vera-color-border);
+}
+.vera-goal__preset {
+  padding: 8px 14px;
+  border-radius: var(--vera-radius-pill);
+  border: 1px solid var(--vera-color-border);
+  background: var(--vera-color-surface);
+  color: var(--vera-color-text);
+  font-size: var(--vera-font-size-sm);
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+.vera-goal__preset:hover {
+  transform: translateY(-1px);
+  border-color: rgba(246, 230, 58, 0.45);
+  background: rgba(246, 230, 58, 0.08);
+}
+.vera-goal__custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 180px;
+}
+.vera-goal__custom-input {
+  flex: 1;
+  padding: 8px 14px;
+  border-radius: var(--vera-radius-pill);
+  border: 1px solid var(--vera-color-border);
+  background: var(--vera-color-surface);
+  color: var(--vera-color-text);
+  font-size: var(--vera-font-size-sm);
+  outline: none;
+}
+.vera-goal__custom-input:focus { border-color: rgba(246, 230, 58, 0.45); }
+.vera-goal__custom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: none;
+  background: var(--vera-color-primary);
+  color: var(--vera-color-primary-foreground);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.vera-goal__custom-btn:hover { transform: scale(1.08); }
+

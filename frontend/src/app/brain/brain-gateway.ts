@@ -25,6 +25,25 @@ export interface MemoryInput {
   meta?: Record<string, unknown>;
 }
 
+/** Goals: lo que VERA INTENTA LOGRAR. El razonamiento se hace en función de esto. */
+export interface Goal {
+  id: string;
+  type: string; // sell_property | capture_owners | prioritize_rentals | increase_appraisals | custom
+  title: string;
+  subject?: string;
+  status: string; // active | done | archived
+  priority: string; // primary | secondary
+  at: string;
+  meta?: Record<string, unknown>;
+}
+
+export interface GoalInput {
+  type: string;
+  title: string;
+  subject?: string;
+  priority?: string;
+}
+
 export const veraBrain = {
   ask: async (question: string, sessionId?: string): Promise<string> => {
     const res = await fetch(`${base}/ask`, {
@@ -60,6 +79,32 @@ export const veraBrain = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(entry),
+    });
+  },
+  /** Objetivos activos del usuario. */
+  goals: async (): Promise<Goal[]> => {
+    try {
+      const res = await fetch(`${base}/goals`);
+      if (!res.ok) return [];
+      return ((await res.json()) as { goals: Goal[] }).goals ?? [];
+    } catch {
+      return [];
+    }
+  },
+  /** Define un nuevo objetivo. VERA razonará en función de él. */
+  setGoal: async (goal: GoalInput): Promise<void> => {
+    await fetch(`${base}/goals`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(goal),
+    });
+  },
+  /** Cambia el estado de un objetivo (active | done | archived). */
+  updateGoal: async (id: string, status: string): Promise<void> => {
+    await fetch(`${base}/goals/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
     });
   },
 };

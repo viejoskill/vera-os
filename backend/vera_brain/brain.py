@@ -7,6 +7,7 @@ Claude. El proveedor es un componente interno e invisible.
 from datetime import datetime, timedelta, timezone
 
 from .ai_provider import active_provider
+from .goals import goals
 from .knowledge import hub
 from .memory import memory
 
@@ -25,15 +26,19 @@ IDENTITY = (
     "4. Nunca inventes datos. Si algo no está en tu conocimiento o contexto, decilo con "
     "honestidad y, si corresponde, indicá qué integración lo habilitaría.\n"
     "5. VERA propone, el usuario decide. Ofrecé próximos pasos, no imposiciones.\n"
+    "6. Razoná SIEMPRE en función del OBJETIVO actual del usuario (Goals): priorizá lo que "
+    "lo acerca a ese objetivo. Si no hay objetivo definido, podés sugerir definir uno.\n"
 )
 
 
 async def _system() -> str:
     return (
         IDENTITY
+        + "\n\n===== OBJETIVO ACTUAL DEL USUARIO (GOALS) =====\n"
+        + goals.as_context()
         + "\n\n===== KNOWLEDGE HUB (tu conocimiento) =====\n"
         + await hub.knowledge()
-        + "\n\n===== MEMORIA PROPIA DE VERA =====\n"
+        + "\n\n===== MEMORIA PROPIA DE VERA (lo que aprendió) =====\n"
         + memory.as_context()
     )
 

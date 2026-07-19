@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 import config
 from vera_brain.brain import brain
+from vera_brain.goals import Goal, goals
 from vera_brain.knowledge import hub
 from vera_brain.memory import MemoryEntry, memory
 
@@ -17,6 +18,18 @@ logger = logging.getLogger("vera")
 class AskRequest(BaseModel):
     question: str
     session_id: str | None = None
+
+
+class GoalRequest(BaseModel):
+    type: str = "custom"
+    title: str
+    subject: str = ""
+    priority: str = "primary"
+    meta: dict = {}
+
+
+class GoalStatusRequest(BaseModel):
+    status: str  # active | done | archived
 
 
 class RememberRequest(BaseModel):
@@ -83,3 +96,32 @@ async def remember(payload: RememberRequest):
         )
     )
     return {"ok": True, "entry": entry.model_dump()}
+
+
+@router.get("/goals")
+async def get_goals(all: bool = False):
+    """Objetivos del usuario (activos por defecto). VERA razona en función de esto."""
+    items = goals.list() if all else goals.active()
+    return {"goals": [g.model_dump() for g in items]}
+
+
+@router.post("/goals")
+async def create_goal(payload: GoalRequest):
+    g = goals.set_goal(
+        Goal(
+            type=payload.type,
+            title=payload.title,
+            subject=payload.subject,
+            priority=payload.priority,
+            meta=payload.meta,
+        )
+    )
+    return {"ok": True, "goal": g.model_dump()}
+
+
+@router.patch("/goals/{goal_id}")
+async def update_goal(goal_id: str, payload: GoalStatusRequest):
+    g = goals.set_status(goal_id, payload.status)
+    if not g:
+        raise HTTPException(404, "Objetivo no encontrado.")
+    return {"ok": True, "goal": g.model_dump()}

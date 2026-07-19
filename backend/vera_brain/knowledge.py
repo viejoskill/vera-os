@@ -29,7 +29,7 @@ class VeraKnowledgeSource(KnowledgeSource):
 
     DOCS = Path("/app/docs")
     PRD = Path("/app/memory/PRD.md")
-    DOC_ORDER = ["VISION.md", "FOUNDATION.md", "PROVIDERS.md", "WORKSPACE.md", "ROADMAP.md", "PILOT.md"]
+    DOC_ORDER = ["VISION.md", "COGNITION.md", "FOUNDATION.md", "PROVIDERS.md", "WORKSPACE.md", "ROADMAP.md", "PILOT.md"]
 
     async def fetch(self) -> str:
         parts: list[str] = []
