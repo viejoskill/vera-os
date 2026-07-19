@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { createPortal } from 'react-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Sparkles, X, ArrowUp, History, Check } from 'lucide-react';
 import { veraBrain, type MemoryItem } from '@app/brain/brain-gateway';
 import { useAuthUser } from '@app/auth/useAuthUser';
@@ -87,6 +88,7 @@ export const SpotlightModal = ({ open, onClose }: { open: boolean; onClose: () =
 
   const { greetingName } = useAuthUser();
   const { data } = useInsights();
+  const queryClient = useQueryClient();
   const dataRef = useRef(data);
   dataRef.current = data;
 
@@ -98,7 +100,7 @@ export const SpotlightModal = ({ open, onClose }: { open: boolean; onClose: () =
     setValue('');
     setActiveContact(null);
     setMessages([{ role: 'vera', text: buildOpening(greetingName, dataRef.current) }]);
-    veraBrain.memory().then((m) => setMemoryItems(m.filter((x) => x.kind === 'decision').reverse()));
+    veraBrain.memory('decision').then((m) => setMemoryItems([...m].reverse()));
     const t = window.setTimeout(() => inputRef.current?.focus(), 60);
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -156,8 +158,8 @@ export const SpotlightModal = ({ open, onClose }: { open: boolean; onClose: () =
   const recordDecision = async () => {
     if (!activeContact) return;
     const who = activeContact;
-    const note = `Le escribí a ${who} para seguir la conversación.`;
-    const item: MemoryItem = { kind: 'decision', note, at: new Date().toISOString() };
+    const detail = `Le escribí a ${who} para seguir la conversación.`;
+    const item: MemoryItem = { type: 'decision', subject: who, action: 'follow_up_sent', detail, at: new Date().toISOString() };
     setMemoryItems((m) => [item, ...m]);
     setActiveContact(null);
     setMessages((m) => [
@@ -165,7 +167,8 @@ export const SpotlightModal = ({ open, onClose }: { open: boolean; onClose: () =
       { role: 'vera', text: `Anotado ✓ Voy a recordar que ya le escribiste a ${firstName(who)}.` },
     ]);
     try {
-      await veraBrain.remember(note, 'decision');
+      await veraBrain.remember({ type: 'decision', subject: who, action: 'follow_up_sent', detail });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
     } catch {
       /* la memoria optimista ya se mostró; se reintenta en el próximo uso */
     }
@@ -202,7 +205,7 @@ export const SpotlightModal = ({ open, onClose }: { open: boolean; onClose: () =
             </span>
             {memoryItems.slice(0, 3).map((m, i) => (
               <span key={i} className="vera-spot__memory-item" data-testid="spotlight-memory-item">
-                {m.note}
+                {m.detail}
               </span>
             ))}
           </div>

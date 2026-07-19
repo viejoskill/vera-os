@@ -8,7 +8,7 @@ from pydantic import BaseModel
 import config
 from vera_brain.brain import brain
 from vera_brain.knowledge import hub
-from vera_brain.memory import memory
+from vera_brain.memory import MemoryEntry, memory
 
 router = APIRouter(prefix="/brain", tags=["brain"])
 logger = logging.getLogger("vera")
@@ -20,8 +20,13 @@ class AskRequest(BaseModel):
 
 
 class RememberRequest(BaseModel):
-    note: str
-    kind: str = "note"
+    type: str = "context"
+    subject: str = ""
+    action: str = ""
+    detail: str = ""
+    confidence: float = 1.0
+    meta: dict = {}
+    note: str | None = None  # compat: si viene `note` y no `detail`, se usa como detail
 
 
 @router.post("/ask")
@@ -57,12 +62,24 @@ async def sources():
 
 
 @router.get("/memory")
-async def get_memory(limit: int = 20):
-    """Decisiones y notas que VERA recuerda (para que no arranque de cero)."""
-    return {"memory": memory.recall(limit)}
+async def get_memory(type: str | None = None, subject: str | None = None, limit: int = 40):
+    """Lo que VERA aprendió (estructurado). Filtrable por tipo y por sujeto (Personas)."""
+    types = [type] if type else None
+    entries = memory.recall(types=types, subject=subject, limit=limit)
+    return {"memory": [e.model_dump() for e in entries]}
 
 
 @router.post("/remember")
 async def remember(payload: RememberRequest):
-    memory.remember(payload.note, payload.kind)
-    return {"ok": True}
+    detail = payload.detail or (payload.note or "")
+    entry = memory.remember(
+        MemoryEntry(
+            type=payload.type,
+            subject=payload.subject,
+            action=payload.action,
+            detail=detail,
+            confidence=payload.confidence,
+            meta=payload.meta,
+        )
+    )
+    return {"ok": True, "entry": entry.model_dump()}

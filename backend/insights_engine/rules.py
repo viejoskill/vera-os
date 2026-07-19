@@ -54,6 +54,9 @@ class FollowUpRule(InsightRule):
         self.provider = provider
 
     async def detect(self) -> list[Insight]:
+        # Import diferido: la regla consulta Memory sin acoplar paquetes en import time.
+        from vera_brain.memory import memory
+
         out: list[Insight] = []
         for conv in await self.provider.list_conversations():
             if conv.status != "open":
@@ -66,6 +69,12 @@ class FollowUpRule(InsightRule):
                 continue
             hours = int((datetime.now(timezone.utc) - datetime.fromisoformat(last_at)).total_seconds() // 3600)
             if hours < FOLLOW_UP_HOURS:
+                continue
+
+            # Aprendizaje: si VERA ya registró un seguimiento a este contacto DESPUÉS del
+            # último mensaje del cliente, no lo vuelve a sugerir (espera respuesta del lead).
+            prior = memory.recall(types=["decision"], subject=conv.contact.name)
+            if any(d.action == "follow_up_sent" and d.at >= last_at for d in prior):
                 continue
 
             top = max(signals, key=lambda s: INTEREST_SIGNALS[s]["weight"])
