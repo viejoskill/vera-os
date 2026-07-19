@@ -1,23 +1,41 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { env } from '@vera/config';
 import { useAuthUser } from '@app/auth/useAuthUser';
 import { INTEGRATIONS } from './catalog';
-import type { IntegrationHealth, IntegrationState } from './types';
+import type { IntegrationHealth, IntegrationState, SiteConfig } from './types';
 
 const KEY = (email: string) => `vera:integrations:${email || 'anon'}`;
+
+const emptySite = (): SiteConfig => ({ domains: [], primary: null });
 
 const seed = (): Record<string, IntegrationState> =>
   INTEGRATIONS.reduce<Record<string, IntegrationState>>((acc, i) => {
     acc[i.key] = {
       connected: Boolean(i.defaultConnected),
       lastSyncAt: i.defaultConnected ? new Date().toISOString() : null,
+      ...(i.configurable ? { config: emptySite() } : {}),
     };
     return acc;
   }, {});
 
-/** Estado (simulado, persistido) de conexión de las integraciones. Pertenece al
- * usuario. Arturito viene conectado por defecto; su SALUD es real (backend). */
+export const normalizeUrl = (raw: string): string => {
+  const t = raw.trim();
+  if (!t) return '';
+  return /^https?:\/\//i.test(t) ? t : `https://${t}`;
+};
+
+export const hostOf = (url: string): string => {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url.replace(/^https?:\/\//i, '');
+  }
+};
+
+/** Estado (simulado, persistido) de las integraciones — FUENTE ÚNICA de la
+ * configuración de conexión. Ninguna App guarda datos propios: todas consumen
+ * de acá. Arturito viene conectado; su SALUD es real (backend). */
 export const useIntegrations = () => {
   const { email } = useAuthUser();
   const [state, setState] = useState<Record<string, IntegrationState>>(seed);
@@ -48,18 +66,72 @@ export const useIntegrations = () => {
     [email],
   );
 
-  const connect = (key: string) =>
-    persist({ ...state, [key]: { connected: true, lastSyncAt: new Date().toISOString() } });
-
-  const disconnect = (key: string) =>
-    persist({ ...state, [key]: { connected: false, lastSyncAt: null } });
-
   const stateOf = (key: string): IntegrationState =>
     state[key] ?? { connected: false, lastSyncAt: null };
 
-  const connectedCount = Object.values(state).filter((s) => s.connected).length;
+  const connect = (key: string) =>
+    persist({
+      ...state,
+      [key]: { ...stateOf(key), connected: true, lastSyncAt: new Date().toISOString() },
+    });
 
-  return { stateOf, connect, disconnect, connectedCount, total: INTEGRATIONS.length };
+  const disconnect = (key: string) =>
+    persist({ ...state, [key]: { ...stateOf(key), connected: false, lastSyncAt: null } });
+
+  // --- Sitio Web: gestión de dominios (fuente única) ---
+  const siteConfig = (): SiteConfig => stateOf('web').config ?? emptySite();
+
+  const writeSite = (config: SiteConfig) =>
+    persist({
+      ...state,
+      web: {
+        connected: config.domains.length > 0,
+        lastSyncAt: config.domains.length > 0 ? new Date().toISOString() : null,
+        config,
+      },
+    });
+
+  const addDomain = (raw: string) => {
+    const url = normalizeUrl(raw);
+    if (!url) return;
+    const cfg = siteConfig();
+    if (cfg.domains.includes(url)) return;
+    const domains = [...cfg.domains, url];
+    writeSite({ domains, primary: cfg.primary ?? url });
+  };
+
+  const removeDomain = (url: string) => {
+    const cfg = siteConfig();
+    const domains = cfg.domains.filter((d) => d !== url);
+    const primary = cfg.primary === url ? domains[0] ?? null : cfg.primary;
+    writeSite({ domains, primary });
+  };
+
+  const setPrimaryDomain = (url: string) => {
+    const cfg = siteConfig();
+    if (!cfg.domains.includes(url)) return;
+    writeSite({ ...cfg, primary: url });
+  };
+
+  const primarySiteUrl = (): string | null => siteConfig().primary;
+
+  const connectedCount = useMemo(
+    () => Object.values(state).filter((s) => s.connected).length,
+    [state],
+  );
+
+  return {
+    stateOf,
+    connect,
+    disconnect,
+    siteConfig,
+    addDomain,
+    removeDomain,
+    setPrimaryDomain,
+    primarySiteUrl,
+    connectedCount,
+    total: INTEGRATIONS.length,
+  };
 };
 
 /** Health-check REAL de alcance (solo integraciones `healthMode: 'real'`). */

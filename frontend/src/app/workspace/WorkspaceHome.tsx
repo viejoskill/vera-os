@@ -3,6 +3,7 @@ import { SlidersHorizontal, Sparkles, Search } from 'lucide-react';
 import { widgetById } from './widget-registry';
 import { useDashboard } from './useDashboard';
 import { Dock } from './Dock';
+import { QuickActions } from './QuickActions';
 import { SpotlightModal } from './SpotlightModal';
 import { CustomizePanel } from './CustomizePanel';
 
@@ -44,6 +45,8 @@ export const WorkspaceHome = () => {
           <SlidersHorizontal size={15} /> Personalizar escritorio
         </button>
       </div>
+
+      <QuickActions />
 
       <div className="vera-widget-grid" data-testid="widget-grid">
         {layout.map((id, i) => {

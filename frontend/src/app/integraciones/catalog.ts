@@ -131,8 +131,9 @@ export const INTEGRATIONS: Integration[] = [
     name: 'Sitio Web',
     icon: LayoutTemplate,
     category: 'presencia',
-    description: 'Tu sitio inmobiliario publicado.',
+    description: 'Tu sitio inmobiliario publicado. Configurá tus dominios y elegí el principal.',
     healthMode: 'none',
+    configurable: true,
   },
 ];
 

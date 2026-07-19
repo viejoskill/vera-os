@@ -1,13 +1,14 @@
-import { ArrowUpRight, Plug, Check, RefreshCw } from 'lucide-react';
+import { ArrowUpRight, Plug, Check, RefreshCw, Globe } from 'lucide-react';
 import { BrandIcon } from '@vera/ui';
 import type { Integration, IntegrationState } from './types';
-import { useIntegrationHealth } from './useIntegrations';
+import { useIntegrationHealth, hostOf } from './useIntegrations';
 
 interface Props {
   integration: Integration;
   state: IntegrationState;
   onConnect: (key: string) => void;
   onDisconnect: (key: string) => void;
+  onConfigure?: (key: string) => void;
 }
 
 const relativeTime = (iso: string | null): string => {
@@ -29,12 +30,16 @@ const HEALTH_LABEL: Record<string, string> = {
 };
 
 /** Tarjeta de una integración: logo, estado, salud, sync y acciones. */
-export const IntegrationCard = ({ integration, state, onConnect, onDisconnect }: Props) => {
+export const IntegrationCard = ({ integration, state, onConnect, onDisconnect, onConfigure }: Props) => {
   const isReal = integration.healthMode === 'real';
+  const isConfigurable = Boolean(integration.configurable);
   const { data: health, isLoading: healthLoading } = useIntegrationHealth(
     integration.key,
     isReal && state.connected,
   );
+
+  const domains = state.config?.domains ?? [];
+  const primary = state.config?.primary ?? null;
 
   const open = () => {
     if (integration.url) window.open(integration.url, '_blank', 'noopener,noreferrer');
@@ -65,7 +70,13 @@ export const IntegrationCard = ({ integration, state, onConnect, onDisconnect }:
       <p className="vera-int-card__desc">{integration.description}</p>
 
       <div className="vera-int-card__meta">
-        {state.connected && (
+        {isConfigurable && primary && (
+          <span className="vera-int-card__sync" data-testid={`integration-primary-${integration.key}`}>
+            <Globe size={12} /> {hostOf(primary)}
+            {domains.length > 1 && <> · +{domains.length - 1}</>}
+          </span>
+        )}
+        {!isConfigurable && state.connected && (
           <span className="vera-int-card__sync">
             <RefreshCw size={12} /> Sync {relativeTime(state.lastSyncAt)}
           </span>
@@ -86,7 +97,16 @@ export const IntegrationCard = ({ integration, state, onConnect, onDisconnect }:
       </div>
 
       <div className="vera-int-card__actions">
-        {state.connected ? (
+        {isConfigurable ? (
+          <button
+            type="button"
+            className="vera-btn vera-btn--primary vera-btn--sm"
+            data-testid={`integration-configure-domains-${integration.key}`}
+            onClick={() => onConfigure?.(integration.key)}
+          >
+            <Globe size={14} /> {domains.length ? 'Gestionar dominios' : 'Configurar dominios'}
+          </button>
+        ) : state.connected ? (
           <>
             <button
               type="button"

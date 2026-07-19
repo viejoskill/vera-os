@@ -346,6 +346,16 @@ Cambio de alcance definido por el "Product Philosophy v1.0" del usuario: **VERA 
 - **Pendiente futuro**: si Arturito habilita API pública, migrar `mode` a `embed` (bandeja real embebida) sin tocar la UI. Considerar `arturito.png` oficial en `/public/brands/`.
 
 
+## Sprint 05.1 — Acciones Rápidas en Hoy + principio de fuente única (2026-07)
+Principio arquitectónico del usuario: **toda integración tiene una ÚNICA fuente de configuración; ninguna App guarda datos de conexión propios.** Las Apps consumen; si falta config, guían a configurarla (nunca la duplican).
+- **Acciones Rápidas** (`app/workspace/QuickActions.tsx`): bloque dedicado en Hoy, debajo del encabezado y arriba de los widgets (centro de operaciones). Botones grandes con ícono/logo oficial. Filosofía "acciones, no accesos".
+- **Catálogo** `quick-actions-catalog.ts`: `kind: 'site' | 'integration' | 'route'`. Default fijadas (6): Abrir Sitio Web, Arturito, Gmail, Dropbox, Nueva Propiedad (→/propiedades/nueva), Studio (→/studio). Extra disponibles: Responder WhatsApp (integration), Generar publicación (→/studio).
+- **Personalización** `useQuickActions.ts`: fijar/quitar + restablecer, persistido `vera:quickactions:{email}`. Reorden por drag = futuro.
+- **Fuente única**: la config de dominios del Sitio Web vive SOLO en Integraciones. `useIntegrations` ahora gestiona `SiteConfig {domains, primary}` (helpers `addDomain/removeDomain/setPrimaryDomain/primarySiteUrl`), persistido en `vera:integrations:{email}` bajo la clave `web`. Modal `SiteDomainsModal.tsx` (agregar/quitar/elegir principal), abierto desde la tarjeta "Sitio Web" (`configurable`). `IntegrationCard` muestra dominio principal + conteo.
+- **Hoy consume, no duplica**: "Abrir Sitio Web" lee `primarySiteUrl()` de Integraciones (mismo localStorage) → abre el principal; si no hay ninguno, navega a `/integraciones` para configurarlo. Acciones de integración (Gmail/Dropbox/Arturito/WhatsApp) toman su URL del catálogo de Integraciones (fuente única de la URL del servicio).
+- CSS `.vera-qa*` y `.vera-site-modal*`/`.vera-site-domain*`. Verificado E2E: render, guía-a-config sin dominio, alta de 2 dominios + principal (persistido), consumo desde Hoy sin duplicar, personalizar (pin WhatsApp).
+- **Pendiente futuro**: aplicar el mismo principio de fuente única a URLs del Dock (`apps-catalog.ts` aún define sus hrefs); reorden por drag; OAuth real.
+
 ## Sprint 05 — Centro de Integraciones (2026-07)
 Nueva App **"Integraciones"** (Sidebar, flag `integraciones: true`, ruta `/integraciones` en `VeraOS.tsx`). Es el hub donde el profesional arma su ecosistema — "VERA orquesta, no reemplaza".
 - **Backend** `routes_integrations.py` → `GET /api/integrations/{provider}/health`: health-check REAL de alcance (httpx GET a `app.arturito.ai`, follow_redirects, timeout 6s). Devuelve `{provider, status: operational|degraded|down, http_status, latency_ms, checked_at}`. Solo `arturito` soportado (HEALTH_TARGETS); el resto → 404. Semántica: "servicio operativo", NO "cuenta conectada". Registrado en `server.py`.

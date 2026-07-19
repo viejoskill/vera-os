@@ -4,6 +4,7 @@ import { INTEGRATIONS, CATEGORY_LABELS, CATEGORY_ORDER } from './catalog';
 import { useIntegrations } from './useIntegrations';
 import { IntegrationCard } from './IntegrationCard';
 import { PreferencesPanel } from './PreferencesPanel';
+import { SiteDomainsModal } from './SiteDomainsModal';
 import type { IntegrationCategory } from './types';
 
 type Tab = 'integraciones' | 'preferencias';
@@ -13,7 +14,18 @@ type Tab = 'integraciones' | 'preferencias';
  * consistencia la aporta el sistema de diseño. Arturito trae salud real. */
 export const IntegrationsScreen = () => {
   const [tab, setTab] = useState<Tab>('integraciones');
-  const { stateOf, connect, disconnect, connectedCount, total } = useIntegrations();
+  const [siteModal, setSiteModal] = useState(false);
+  const {
+    stateOf,
+    connect,
+    disconnect,
+    connectedCount,
+    total,
+    siteConfig,
+    addDomain,
+    removeDomain,
+    setPrimaryDomain,
+  } = useIntegrations();
 
   const byCategory = (cat: IntegrationCategory) =>
     INTEGRATIONS.filter((i) => i.category === cat);
@@ -71,6 +83,7 @@ export const IntegrationsScreen = () => {
                       state={stateOf(integration.key)}
                       onConnect={connect}
                       onDisconnect={disconnect}
+                      onConfigure={() => setSiteModal(true)}
                     />
                   ))}
                 </div>
@@ -81,6 +94,15 @@ export const IntegrationsScreen = () => {
       ) : (
         <PreferencesPanel />
       )}
+
+      <SiteDomainsModal
+        open={siteModal}
+        onClose={() => setSiteModal(false)}
+        config={siteConfig()}
+        onAdd={addDomain}
+        onRemove={removeDomain}
+        onSetPrimary={setPrimaryDomain}
+      />
     </div>
   );
 };

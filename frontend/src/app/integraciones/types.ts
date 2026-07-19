@@ -30,6 +30,8 @@ export interface Integration {
   healthMode: HealthMode;
   /** Estado inicial de conexión (Arturito viene conectado por defecto). */
   defaultConnected?: boolean;
+  /** true = la integración se configura con dominios (Sitio Web). */
+  configurable?: boolean;
 }
 
 /** Respuesta del backend `/api/integrations/{key}/health`. */
@@ -41,8 +43,16 @@ export interface IntegrationHealth {
   checked_at: string;
 }
 
+/** Configuración de dominios del Sitio Web — FUENTE ÚNICA (vive en Integraciones). */
+export interface SiteConfig {
+  domains: string[];
+  primary: string | null;
+}
+
 /** Estado local (simulado, persistido) de una integración. */
 export interface IntegrationState {
   connected: boolean;
   lastSyncAt: string | null;
+  /** Configuración específica (hoy: dominios del Sitio Web). */
+  config?: SiteConfig;
 }
