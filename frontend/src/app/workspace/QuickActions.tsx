@@ -9,6 +9,13 @@ import { useQuickActions } from './useQuickActions';
 
 const integrationOf = (key?: string) => INTEGRATIONS.find((i) => i.key === key);
 
+/** Abre una URL externa en pestaña nueva de forma robusta (evita que el string
+ * de features dispare el bloqueador de pop-ups en algunos navegadores). */
+const openExternal = (url: string) => {
+  const win = window.open(url, '_blank');
+  if (win) win.opener = null;
+};
+
 /** Acciones Rápidas — el centro de operaciones de "Hoy". Acciones (no accesos):
  * navegar, abrir una integración (URL desde Integraciones) o el Sitio Web
  * principal. La configuración vive SOLO en Integraciones; acá se consume. */
@@ -25,12 +32,12 @@ export const QuickActions = () => {
     }
     if (a.kind === 'integration') {
       const url = integrationOf(a.integrationKey)?.url;
-      if (url) window.open(url, '_blank', 'noopener,noreferrer');
+      if (url) openExternal(url);
       return;
     }
     // 'site' — consume el dominio principal de Integraciones; si no hay, guía.
     const site = primarySiteUrl();
-    if (site) window.open(site, '_blank', 'noopener,noreferrer');
+    if (site) openExternal(site);
     else navigate('/integraciones');
   };
 
