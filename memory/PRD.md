@@ -616,6 +616,13 @@ Decisión del usuario (revisada): NO reemplazar la web actual todavía. La web `
 - **Verificado (curl + UI)**: publicar nueva, cambiar precio+estado con auto-resync, re-publicar sobre existente, despublicar/ocultar; UI muestra "Publicada" (verde) + "Ver en la web" + Actualizar/Despublicar. Todas las pruebas limpiadas de la base.
 - **PENDIENTE DE DEPLOY**: todo esto está en PREVIEW. Requiere REDEPLOY a producción; el env `CRM_SUPABASE_WRITE_KEY` debe viajar en el deploy. Recordar también el redirect de ML en prod.
 
+## Fix ML publish: superficies con value_struct (item.attributes.omitted) — 2026-07-20
+Error real capturado en `properties.publications['mercadolibre'].error` (prop 9c1d4217): `item.attributes.omitted` sobre `TOTAL_AREA` ("Attribute TOTAL_AREA with value 550 m² was omitted"). Causa raíz: `mercadolibre/service.py::_payload` enviaba superficies como texto libre `value_name: "550 m²"`. La API actual de ML exige **value_struct** `{number, unit:"m2"}` (ASCII "m2", NO el símbolo "m²") y prohíbe mezclar con `value_name`; al quedar mal formado ML omite el atributo requerido → 400.
+- **Fix**: refactor de atributos en `_payload` con helpers `_area_attr` (value_struct m2, se omite si 0), `_num_attr` (BEDROOMS/FULL_BATHROOMS numéricos, se omiten si 0) y `_attributes()`. OPERATION queda como value_name (funcionaba en las 25 publicaciones OK previas). Verificado estructuralmente con los datos de la prop que falló (payload correcto).
+- **routes_ml.py**: el error guardado/propagado se amplió de 300→800 chars + `logger.error` con detalle completo, para depurar si ML devuelve otra causa.
+- **PENDIENTE**: verificación end-to-end del POST real a ML. En PREVIEW ML figura desconectado (tokens NO se comparten con producción). Requiere que el usuario conecte ML en Preview para testear, o REDEPLOY y probar en producción. tsc/backend OK.
+
+
 
 
 

@@ -142,9 +142,43 @@ def _description_with_disclaimer(prop: dict) -> str:
     return f"{base}\n\n{_AI_IMAGE_DISCLAIMER}" if base else _AI_IMAGE_DISCLAIMER
 
 
+def _int(value) -> int:
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _area_attr(attr_id: str, m2: int) -> dict | None:
+    """ML exige value_struct (number + unit 'm2' en ASCII) para superficies.
+    Nunca mezclar con value_name. Si es 0, se omite (evita 'attribute omitted')."""
+    if m2 <= 0:
+        return None
+    return {"id": attr_id, "value_struct": {"number": m2, "unit": "m2"}}
+
+
+def _num_attr(attr_id: str, value: int) -> dict | None:
+    if value <= 0:
+        return None
+    return {"id": attr_id, "value_name": str(value)}
+
+
+def _attributes(prop: dict) -> list[dict]:
+    total = _int(prop.get("lot_area_m2")) or _int(prop.get("area_m2"))
+    covered = _int(prop.get("area_m2"))
+    op = _OPERATION.get(prop.get("operation"), "Venta")
+    attrs: list[dict | None] = [
+        {"id": "OPERATION", "value_name": op},
+        _area_attr("TOTAL_AREA", total),
+        _area_attr("COVERED_AREA", covered),
+        _num_attr("BEDROOMS", _int(prop.get("bedrooms"))),
+        _num_attr("FULL_BATHROOMS", _int(prop.get("bathrooms"))),
+    ]
+    return [a for a in attrs if a]
+
+
 def _payload(prop: dict, images: list[dict]) -> dict:
     pics = [{"source": i["url"]} for i in images if i.get("url")][:12]
-    op = _OPERATION.get(prop.get("operation"), "Venta")
     return {
         "title": (prop.get("title") or "Propiedad")[:60],
         "category_id": _CATEGORY.get(prop.get("type"), "MLA1466"),
@@ -162,13 +196,7 @@ def _payload(prop: dict, images: list[dict]) -> dict:
             "state": {"name": prop.get("province") or "Buenos Aires"},
             "neighborhood": {"name": prop.get("neighborhood") or ""},
         },
-        "attributes": [
-            {"id": "OPERATION", "value_name": op},
-            {"id": "TOTAL_AREA", "value_name": f"{int(prop.get('lot_area_m2') or prop.get('area_m2') or 0)} m²"},
-            {"id": "COVERED_AREA", "value_name": f"{int(prop.get('area_m2') or 0)} m²"},
-            {"id": "BEDROOMS", "value_name": str(int(prop.get("bedrooms") or 0))},
-            {"id": "FULL_BATHROOMS", "value_name": str(int(prop.get("bathrooms") or 0))},
-        ],
+        "attributes": _attributes(prop),
     }
 
 

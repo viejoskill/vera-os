@@ -84,8 +84,9 @@ async def publish_listing(property_id: str):
     try:
         res = await ml.publish(prop, await _images(prop), existing)
     except ml.MeliError as e:
-        await _set_channel(prop, {"status": "error", "lastSync": _now(), "error": e.detail[:300]})
-        raise HTTPException(400, f"Mercado Libre rechazó la publicación: {e.detail[:300]}")
+        logger.error("ML publish rechazado (%s): %s", property_id, e.detail)
+        await _set_channel(prop, {"status": "error", "lastSync": _now(), "error": e.detail[:800]})
+        raise HTTPException(400, f"Mercado Libre rechazó la publicación: {e.detail[:800]}")
     except Exception as e:  # noqa: BLE001
         raise HTTPException(400, str(e))
     await _set_channel(prop, {
