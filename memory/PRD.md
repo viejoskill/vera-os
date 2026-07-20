@@ -509,6 +509,13 @@ Dirección confirmada por el usuario: **mantener logos oficiales A COLOR** (no m
 - Verificado por screenshots: tarjeta Vera Bot muestra logo Arturito (naturalWidth 180); Dock muestra Arturito primero + resto a color.
 - Pendiente: logos oficiales opcionales para Dropbox ya OK; considerar limpiar `canvas.png` si no se usa Canvas LMS.
 
+## QA Migración CRM Legacy — VERIFICADO E2E (2026-07)
+Corrida real del flujo completo end-to-end (exportar → importar → mapear → imágenes → cartera lista) + QA. Verificado por curl (corrida 5ª) + screenshot (login QA → /propiedades, 24 tarjetas con imágenes).
+- **Flujo completo OK**: `GET /api/export/properties` (23) → `POST /api/migration/import-legacy` (job) → mapeo explícito LegacyProperty→Property → descarga/re-subida de imágenes a Storage propio.
+- **Idempotencia confirmada**: reimportar dio **23 actualizadas, 0 creadas, 0 duplicados, 0 errores**; media SALTADA (ya existía, no re-duplica).
+- **Estado de la cartera**: 24 propiedades totales (1 original + 23 legacy), sin duplicados por título; 76 imágenes + 5 documentos en Supabase Storage; portadas cargan (Signed URL HTTP 200); precio/moneda/ubicación/specs mapeados bien.
+- **Observaciones esperadas (no bugs)**: (1) fotos aleatorias de picsum porque el exportador Legacy es SIMULADO (con CRM real llegarían fotos reales; el flujo de descarga/re-subida ya está probado). (2) `legacy_column: False` — la columna `legacy_id` no existe en la tabla Supabase; idempotencia 100% en Mongo (23 mapeos + 5 logs). Opcional: `ALTER TABLE properties ADD COLUMN IF NOT EXISTS legacy_id text;` (el importador ya lo detecta y persiste solo).
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.
