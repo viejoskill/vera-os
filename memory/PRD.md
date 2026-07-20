@@ -552,6 +552,10 @@ El "Sitio Web" pasa a ser una **vista pública de VERA que lee EN VIVO** la cart
 - **Panel de Publicaciones** (`ChannelsSection`): Web Varela + Mercado Libre operativos con Estado/última sync/URL/Publicar/Actualizar/Despublicar; Zonaprop/Argenprop/Instagram/Facebook "Próximamente". El canal Web muestra link automático **"Ver en la web"** → `/web/{id}` (no requiere pegar URL).
 - **Mercado Libre**: queda como **panel controlado** (operado manualmente: publicar/actualizar/despublicar + ML link/estado). La API real de ML (OAuth publish automático, ML ID, detección de errores) queda PENDIENTE de credenciales del usuario (app de developers.mercadolibre.com Client ID/Secret + cuenta vendedor) → usar integration_expert cuando las provea.
 
+## Ajuste web pública: filtros + mostrar Vendidas/Reservadas con sello (2026-07-20)
+- **Cambio de criterio**: la web ya NO oculta Vendidas/Reservadas. Muestra TODAS las publicadas en web (active+reserved+sold, no archivadas) con **sello** VENDIDA (amarillo) / RESERVADA (rojo) para transmitir "Varela vende" y atraer leads de propietarios vendedores. Backend `routes_public.py`: `_PUBLIC_STATUSES={active,reserved,sold}`, lista con `list_properties(status="all")` filtrando por `_web_published`; summary incluye `status`. Detalle también accesible para reserved/sold.
+- **Filtros públicos** en `/web` (`PublicListing.tsx`): Tipo, Zona (neighborhood/city dedupe), Precio máximo (steps), Ambientes (min) + Limpiar; contador "N propiedades encontradas" (filtrado client-side, 28 items). Sellos en tarjeta y en ficha (`vera-pub-stamp*`). Verificado por screenshot (28 tarjetas, 5 sellos, filtro tipo=terreno→9).
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.

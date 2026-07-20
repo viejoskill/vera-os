@@ -13,7 +13,7 @@ router = APIRouter(prefix="/public", tags=["public"])
 
 _SUMMARY_KEYS = {
     "id", "code", "title", "type", "operation", "price", "currency", "city",
-    "neighborhood", "coverImage", "bedrooms", "bathrooms", "areaM2", "lotAreaM2", "rooms",
+    "neighborhood", "coverImage", "bedrooms", "bathrooms", "areaM2", "lotAreaM2", "rooms", "status",
 }
 # Nunca exponer datos internos/privados al público.
 _DETAIL_DROP = {
@@ -21,9 +21,13 @@ _DETAIL_DROP = {
     "googlePlaceId", "formattedAddress",
 }
 
+# Estados visibles en la web pública. Mantenemos Reservada/Vendida (con sello) para
+# mostrar que Varela vende y atraer leads de propietarios vendedores.
+_PUBLIC_STATUSES = {"active", "reserved", "sold"}
+
 
 def _web_published(row: dict) -> bool:
-    if row.get("archived") or row.get("status") != "active":
+    if row.get("archived") or row.get("status") not in _PUBLIC_STATUSES:
         return False
     web = (row.get("publications") or {}).get("web-varela") or {}
     return web.get("status") == "published"
@@ -33,7 +37,7 @@ def _web_published(row: dict) -> bool:
 async def public_listings():
     if not config.supabase_configured():
         return []
-    rows = await property_repository.list_properties(status="active")
+    rows = await property_repository.list_properties(status="all")
     out = []
     for r in rows:
         if not _web_published(r):

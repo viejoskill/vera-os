@@ -65,6 +65,8 @@ export const PublicPropertyDetail = () => {
       <div className="vera-pub-detail">
         <div className="vera-pub-detail__gallery">
           {main ? <img className="vera-pub-detail__main" src={main} alt={data.title} data-testid="public-detail-main-image" /> : <div className="vera-pub-card__noimg" />}
+          {data.status === 'sold' && <span className="vera-pub-stamp vera-pub-stamp--sold vera-pub-stamp--lg">VENDIDA</span>}
+          {data.status === 'reserved' && <span className="vera-pub-stamp vera-pub-stamp--reserved vera-pub-stamp--lg">RESERVADA</span>}
           {gallery.length > 1 && (
             <div className="vera-pub-detail__thumbs">
               {gallery.slice(0, 8).map((g, i) => (

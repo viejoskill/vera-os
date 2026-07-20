@@ -5823,3 +5823,102 @@ p {
     grid-template-columns: 1fr;
   }
 }
+
+/* Filtros públicos + sellos de estado */
+.vera-pub__filters {
+  max-width: 1200px;
+  margin: 8px auto 0;
+  padding: 0 32px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  background: rgba(23, 24, 29, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 18px 24px;
+}
+.vera-pub__filter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 150px;
+}
+.vera-pub__filter > span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #a1a1aa;
+}
+.vera-pub__filter select {
+  background: #0e0f13;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f4f4f5;
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 14px;
+  font-family: var(--vera-font-family);
+  cursor: pointer;
+  appearance: none;
+}
+.vera-pub__filter select:focus {
+  outline: none;
+  border-color: #fbe000;
+}
+.vera-pub__clear {
+  background: transparent;
+  border: 1px solid #fbe000;
+  color: #fbe000;
+  border-radius: 10px;
+  padding: 11px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--vera-font-family);
+  height: 44px;
+}
+.vera-pub__clear:hover {
+  background: rgba(251, 224, 0, 0.12);
+}
+.vera-pub__found {
+  max-width: 1200px;
+  margin: 18px auto 0;
+  padding: 0 32px;
+  color: #a1a1aa;
+  font-size: 14px;
+}
+
+.vera-pub-stamp {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-11deg);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  font-size: 30px;
+  text-transform: uppercase;
+  padding: 8px 22px;
+  border: 4px solid;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+  white-space: nowrap;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+.vera-pub-stamp--sold {
+  color: #fbe000;
+  border-color: #fbe000;
+}
+.vera-pub-stamp--reserved {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+.vera-pub-stamp--lg {
+  font-size: 48px;
+  padding: 12px 34px;
+  border-width: 6px;
+}
+.vera-pub-detail__gallery {
+  position: relative;
+}
