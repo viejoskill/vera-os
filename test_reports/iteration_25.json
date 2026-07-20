@@ -1,0 +1,26 @@
+{
+  "summary": "E2E frontend verification of the 4 flows del sprint (Comercialización inline, Guardar borrador, Aviso de cambios sin guardar, Personas multi-rol). Login OK con qa_temp@vera.test. Los 4 flujos pasaron sin issues. Comercialización ahora es inline (ExpressSection) con manual-title, generate-express, toggle-manual-description y manual-description; la IA (Emergent LLM) respondió en ~25s con título, descripción, destacados y textos ML/Zonaprop, y 'Usar' copia el título de IA al campo manual. Guardar borrador crea la propiedad con status draft y navega a /propiedades/{id}; en la lista el filtro 'Borradores' la muestra con badge 'Borrador'. El aviso de cambios sin guardar: SIN cambios el back navega directo (no modal); CON cambios abre el modal con las 3 opciones (leave-save-draft, leave-discard, leave-keep) y 'Seguir editando' cierra el modal preservando el título tipeado. Personas multi-rol: los 5 chips de rol (propietario, vendedor, comprador, inquilino, contacto) están presentes, 'propietario' viene preseleccionado (aria-pressed=true), toggle on/off funciona, y al guardar con roles [propietario, comprador] la persona queda asociada y owner-details muestra los tags 'Propietario' + 'Comprador' en owner-roles.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PropertyWorkspace.tsx: handleSaveDraft/handleBack/confirmLeave modal — flujos OK. Nota menor: el guard sólo aplica cuando canDraft (isNew || draft); esto es correcto para el sprint pero significa que en una propiedad publicada (status active/reserved/sold) el aviso de cambios sin guardar no aparece. Si el objetivo era también proteger cambios en fichas publicadas, considerar extenderlo, aunque hoy en día en propiedades ya guardadas existe autosave-like via 'Guardar' explícito y no hay riesgo mayor.",
+    "ExpressSection.tsx: aiContentService.generateExpress usa Emergent LLM y tarda ~15-25s en primer plano. La UX está bien resuelta (botón cambia a 'VERA está armando la publicación…' y disabled). Considerar mostrar un skeleton/loader más notorio o feedback intermedio si la latencia sube, pero funcional.",
+    "NewPersonModal.tsx: buen manejo del selector de roles (chips con aria-pressed), reset al abrir, validación de al menos un rol. OK.",
+    "OwnerSection.tsx: owner-roles se pinta condicional a owner.roles?.length>0, con mapeo PERSON_ROLE_LABELS. OK; verifica que useOwners refresca cache tras create (así se ve inmediatamente el nuevo owner y sus roles sin recargar).",
+    "PropertiesScreen.tsx: filter-draft + STATUS_META['draft']={label:'Borrador', className:'vera-badge--draft'}. Filtra correctamente por status='draft'. OK."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped por request)", "frontend": "100% (4/4 flujos aceptación del sprint)"},
+  "test_credentials": "qa_temp@vera.test / QaPilot!2026xz (según /app/memory/test_credentials.md)",
+  "seed_data_creation": "Creada 1 persona multirol vía modal ('TEST_QA Multirol <ts>' con roles propietario+comprador, teléfono +54 11 5555-9999, email multirol_<ts>@test.com). Se creó una propiedad borrador de prueba (id 4dcfbec5-5e3e-44bd-a25d-59f558978957) y se archivó al finalizar (lista Borradores queda limpia, verificado en screenshot).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Sprint 'Comercialización inline + Guardar borrador + Leave modal + Personas multi-rol' validado end-to-end en preview. La IA de comercialización funciona pero tarda ~15-30s por generación (Emergent LLM); si hace falta re-test, dejar timeout >= 45s en waits. La persona de prueba 'TEST_QA Multirol …' quedó en la DB (no se limpió, según indicación del sprint). El borrador de prueba fue archivado. Todos los data-testid que pide el sprint están presentes: manual-title, generate-express, toggle-manual-description, manual-description, use-express-title, workspace-save-draft, filter-draft, leave-confirm, leave-save-draft, leave-discard, leave-keep, new-owner-trigger, new-person-modal, role-{propietario|vendedor|comprador|inquilino|contacto}, new-person-save, owner-details, owner-roles.",
+  "rca of the issue": "N/A — no bugs found in the 4 tested flows."
+}

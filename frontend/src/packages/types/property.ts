@@ -1,6 +1,6 @@
 /** Shared domain types for the property portfolio. */
 
-export type PropertyStatus = 'active' | 'reserved' | 'sold';
+export type PropertyStatus = 'active' | 'reserved' | 'sold' | 'draft';
 export type PropertyOperation = 'venta' | 'alquiler';
 export type PropertyType =
   | 'departamento'

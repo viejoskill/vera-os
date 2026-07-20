@@ -29,6 +29,7 @@ type StatusFilter = PropertyStatus | 'all' | 'archived';
 
 const STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
   { id: 'all', label: 'Todas' },
+  { id: 'draft', label: 'Borradores' },
   { id: 'active', label: 'Activas' },
   { id: 'reserved', label: 'Reservadas' },
   { id: 'sold', label: 'Vendidas' },
@@ -39,6 +40,7 @@ const STATUS_META: Record<PropertyStatus, { label: string; className: string }> 
   active: { label: 'Activa', className: 'vera-badge--active' },
   reserved: { label: 'Reservada', className: 'vera-badge--reserved' },
   sold: { label: 'Vendida', className: 'vera-badge--sold' },
+  draft: { label: 'Borrador', className: 'vera-badge--draft' },
 };
 
 function formatPrice(property: Property): string {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Mail, Phone, UserPlus, Plus } from 'lucide-react';
 import { Select, Textarea } from '@vera/ui';
-import type { Person } from '@vera/types';
+import { PERSON_ROLE_LABELS, type Person } from '@vera/types';
 import { useOwners } from '@app/hooks/usePeople';
 import { NewPersonModal } from './NewPersonModal';
 import type { PropertyFormValues } from './form-schema';
@@ -57,6 +57,13 @@ export const OwnerSection = () => {
           {owner.email && (
             <span className="vera-owner__row"><Mail size={14} /> {owner.email}</span>
           )}
+          {owner.roles?.length > 0 && (
+            <div className="vera-role-tags" data-testid="owner-roles">
+              {owner.roles.map((r) => (
+                <span key={r} className="vera-role-tag">{PERSON_ROLE_LABELS[r] ?? r}</span>
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         <div className="vera-nextstep vera-nextstep--soft" data-testid="owner-nextstep">
@@ -73,7 +80,13 @@ export const OwnerSection = () => {
         {...register('ownerObservations')}
       />
 
-      <NewPersonModal open={modalOpen} onClose={() => setModalOpen(false)} onCreated={onCreated} />
+      <NewPersonModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onCreated={onCreated}
+        title="Nuevo propietario"
+        defaultRoles={['propietario']}
+      />
     </div>
   );
 };

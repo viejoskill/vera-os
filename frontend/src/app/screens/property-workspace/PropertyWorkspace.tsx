@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { createPortal } from 'react-dom';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Building2 } from 'lucide-react';
+import { ArrowLeft, Building2, AlertTriangle, Save } from 'lucide-react';
 import { Button, Panel, Progress, Toast } from '@vera/ui';
 import {
   assistantService,
@@ -144,7 +145,7 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
 
   const toNumber = (value: string) => (value?.trim() ? Number(value) : 0);
 
-  const buildPayload = (v: PropertyFormValues): Partial<Property> => ({
+  const buildPayload = (v: PropertyFormValues, status: Property['status']): Partial<Property> => ({
     title: v.title,
     operation: v.operation,
     type: v.type as Property['type'],
@@ -156,7 +157,7 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
     bedrooms: Math.trunc(toNumber(v.bedrooms)),
     bathrooms: Math.trunc(toNumber(v.bathrooms)),
     areaM2: toNumber(v.areaM2),
-    status: isNew ? 'active' : (detail!.status as Property['status']),
+    status,
     description: v.description,
     latitude: v.latitude,
     longitude: v.longitude,
@@ -188,7 +189,12 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
     async (v) => {
       setSaving(true);
       try {
-        const payload = buildPayload(v);
+        const nextStatus: Property['status'] = isNew
+          ? 'active'
+          : detail!.status === 'draft'
+            ? 'active'
+            : (detail!.status as Property['status']);
+        const payload = buildPayload(v, nextStatus);
         if (isNew) {
           const photosPayload = studio.photos
             .filter((p) => p.file)
@@ -209,6 +215,7 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
           await queryClient.invalidateQueries({ queryKey: ['properties'] });
           await queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
           await queryClient.invalidateQueries({ queryKey: ['today'] });
+          form.reset(v);
           notify('saved');
         }
       } catch (error) {
@@ -221,6 +228,64 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
     () =>
       showToast({ message: 'Todavía faltan algunos datos. VERA te muestra cuáles.', tone: 'default' }),
   );
+
+  // Guardar borrador: persiste lo cargado SIN validar (para retomarlo después).
+  const isDraft = !isNew && detail!.status === 'draft';
+  const canDraft = isNew || isDraft;
+
+  const handleSaveDraft = async () => {
+    setSaving(true);
+    try {
+      const v = form.getValues();
+      const payload = buildPayload(v, 'draft');
+      if (isNew) {
+        const photosPayload = studio.photos
+          .filter((p) => p.file)
+          .map((p) => ({ file: p.file as File, isCover: p.isCover }));
+        const docsPayload = localDocs.documents
+          .filter((d) => d.file)
+          .map((d) => ({ file: d.file as File, docType: d.type }));
+        const created = await workspaceService.save({
+          values: payload,
+          photos: photosPayload,
+          documents: docsPayload,
+        });
+        await queryClient.invalidateQueries({ queryKey: ['properties'] });
+        navigate(`/propiedades/${created.id}`);
+      } else {
+        await propertyService.updateProperty(propertyId, payload);
+        await queryClient.invalidateQueries({ queryKey: ['properties'] });
+        await queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
+        form.reset(v);
+        showToast({ message: 'Borrador guardado.', tone: 'success' });
+      }
+    } catch (error) {
+      console.error('VERA draft save failed:', error);
+      showToast({ message: 'No pudimos guardar el borrador. Reintentá.', tone: 'default' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Aviso de cambios sin guardar (propiedad nueva o borrador).
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const isDirty = form.formState.isDirty;
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (canDraft && isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [canDraft, isDirty]);
+
+  const handleBack = () => {
+    if (canDraft && isDirty) setConfirmLeave(true);
+    else navigate('/propiedades');
+  };
 
   // Estado de la propiedad — acción rápida de un clic desde el encabezado.
   const currentStatus: LifecycleStatus = detail
@@ -284,7 +349,7 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
               className="vera-workspace__back"
               aria-label="Volver"
               data-testid="workspace-cancel"
-              onClick={() => navigate('/propiedades')}
+              onClick={handleBack}
             >
               <ArrowLeft size={18} />
             </button>
@@ -309,6 +374,17 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
               <span className={`vera-live-status vera-live-status--${liveStatus}`} data-testid="live-status">
                 {liveLabel}
               </span>
+            )}
+            {canDraft && (
+              <Button
+                variant="secondary"
+                size="md"
+                data-testid="workspace-save-draft"
+                disabled={saving}
+                onClick={handleSaveDraft}
+              >
+                <Save size={15} /> Guardar borrador
+              </Button>
             )}
             <Button variant="primary" size="md" data-testid="workspace-save" disabled={saving} onClick={handleSave}>
               {saving ? 'Guardando…' : 'Guardar'}
@@ -423,6 +499,59 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
 
         {toast && <Toast message={toast.message} tone={toast.tone} />}
       </div>
+
+      {confirmLeave &&
+        (createPortal(
+          <div className="vera-modal" role="dialog" aria-modal="true" data-testid="leave-confirm">
+            <div className="vera-modal__backdrop" onClick={() => setConfirmLeave(false)} />
+            <div className="vera-modal__panel">
+              <header className="vera-modal__head">
+                <span className="vera-modal__title">
+                  <AlertTriangle size={18} /> Tenés cambios sin guardar
+                </span>
+              </header>
+              <div className="vera-modal__body">
+                <p className="vera-muted">
+                  Si salís ahora vas a perder lo que cargaste. Podés guardarlo como borrador y retomarlo cuando quieras.
+                </p>
+              </div>
+              <footer className="vera-modal__foot vera-modal__foot--stack">
+                <Button
+                  variant="primary"
+                  size="md"
+                  data-testid="leave-save-draft"
+                  disabled={saving}
+                  onClick={async () => {
+                    setConfirmLeave(false);
+                    await handleSaveDraft();
+                  }}
+                >
+                  <Save size={15} /> Guardar borrador y salir
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="md"
+                  data-testid="leave-discard"
+                  onClick={() => {
+                    setConfirmLeave(false);
+                    navigate('/propiedades');
+                  }}
+                >
+                  Salir sin guardar
+                </Button>
+                <button
+                  type="button"
+                  className="vera-ai-action"
+                  data-testid="leave-keep"
+                  onClick={() => setConfirmLeave(false)}
+                >
+                  Seguir editando
+                </button>
+              </footer>
+            </div>
+          </div>,
+          document.body,
+        ) as unknown as ReactElement)}
     </FormProvider>
   );
 };

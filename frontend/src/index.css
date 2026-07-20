@@ -304,6 +304,53 @@ p {
 .vera-badge--sold {
   color: var(--vera-color-text-secondary);
 }
+.vera-badge--draft {
+  color: #d8a24a;
+}
+
+/* Roles de Persona (chips) */
+.vera-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vera-space-xs);
+}
+.vera-role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--vera-radius-pill);
+  border: 1px solid var(--vera-color-border);
+  background: transparent;
+  color: var(--vera-color-text-secondary);
+  font-size: var(--vera-font-size-sm);
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+.vera-role-chip:hover {
+  color: var(--vera-color-text);
+  border-color: var(--vera-color-text-secondary);
+}
+.vera-role-chip--active {
+  color: #1c1c1c;
+  background: var(--vera-color-primary);
+  border-color: var(--vera-color-primary);
+  font-weight: var(--vera-font-weight-semibold);
+}
+.vera-role-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.vera-role-tag {
+  font-size: var(--vera-font-size-xs);
+  padding: 3px 8px;
+  border-radius: var(--vera-radius-pill);
+  background: var(--vera-color-glass);
+  border: 1px solid var(--vera-color-border);
+  color: var(--vera-color-text-secondary);
+}
 
 /* ------------------------------ Workspace ------------------------------- */
 .vera-workspace {
@@ -2388,6 +2435,15 @@ p {
   justify-content: flex-end;
   gap: var(--vera-space-sm);
   border-top: 1px solid var(--vera-color-border);
+}
+.vera-modal__foot--stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--vera-space-sm);
+}
+.vera-modal__foot--stack .vera-ai-action {
+  align-self: center;
+  margin-top: var(--vera-space-xxs);
 }
 
 @media (max-width: 640px) {
