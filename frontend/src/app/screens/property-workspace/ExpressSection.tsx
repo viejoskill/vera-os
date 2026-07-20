@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Rocket, Copy, Check, RefreshCw, Pencil } from 'lucide-react';
-import { Button, Textarea } from '@vera/ui';
+import { Button, Textarea, Input } from '@vera/ui';
 import { aiContentService } from '@vera/services';
 import { useAiContent } from '@app/hooks/useAiContent';
 import { buildAiContext } from './ai-context';
@@ -62,6 +62,13 @@ export const ExpressSection = () => {
 
   return (
     <div className="vera-form">
+      <Input
+        label="Título de la propiedad"
+        placeholder="Escribí el título o generalo con VERA…"
+        data-testid="manual-title"
+        {...register('title')}
+      />
+
       {status === 'idle' && (
         <p className="vera-muted">
           En un clic, VERA arma toda la publicación: título, descripción, destacados y los textos

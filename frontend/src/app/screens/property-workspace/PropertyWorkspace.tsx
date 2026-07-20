@@ -26,7 +26,7 @@ import { OwnerSection } from './OwnerSection';
 import { TrackingSection } from './TrackingSection';
 import { PhotosSection } from './PhotosSection';
 import { DocumentsSection } from './DocumentsSection';
-import { CommercializationSection } from './CommercializationSection';
+import { ExpressSection } from './ExpressSection';
 import { StatsSection } from './StatsSection';
 import { HealthScoreSection } from './HealthScoreSection';
 
@@ -391,16 +391,10 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
               </Panel>
             </div>
 
-            {/* 5 — Comercialización (solo estado + Abrir en Studio) */}
+            {/* 5 — Comercialización (título, descripción y textos para portales) */}
             <div id="ws-section-commercialization">
-              <Panel title="Comercialización" description="Estado del contenido comercial. El contenido se crea en Studio.">
-                <CommercializationSection
-                  hasTitle={Boolean((detail?.title ?? '').trim())}
-                  hasDescription={Boolean((values.description ?? '').trim())}
-                  onOpenStudio={() =>
-                    navigate(propertyId ? `/studio?property=${propertyId}` : '/studio')
-                  }
-                />
+              <Panel title="Comercialización" description="Título, descripción y textos para portales. VERA propone; vos decidís.">
+                <ExpressSection />
               </Panel>
             </div>
 
