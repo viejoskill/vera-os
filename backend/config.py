@@ -19,7 +19,14 @@ CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*").split(",")
 
 MONGO_URL = os.environ.get("MONGO_URL") or None
 DB_NAME = os.environ.get("DB_NAME", "vera")
-LEGACY_EXPORT_URL = os.environ.get("LEGACY_EXPORT_URL", "http://localhost:8001/api/export/properties")
+# CRM Varela (fuente real). App client-side → su URL + key anon son públicas (en el HTML).
+# El importador LEE de acá (PostgREST) y mapea a VERA. Solo lectura.
+CRM_SUPABASE_URL = os.environ.get("CRM_SUPABASE_URL") or None
+CRM_SUPABASE_KEY = os.environ.get("CRM_SUPABASE_KEY") or None
+
+
+def crm_configured() -> bool:
+    return bool(CRM_SUPABASE_URL and CRM_SUPABASE_KEY)
 
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY") or None
 

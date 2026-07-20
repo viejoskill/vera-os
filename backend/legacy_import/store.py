@@ -38,3 +38,9 @@ async def set_map(legacy_id: str, property_id: str, workspace_id: str) -> None:
 
 async def save_log(doc: dict) -> None:
     await _db()["legacy_migration_log"].insert_one({**doc, "_id": doc.get("job_id")})
+
+
+async def clear_maps() -> int:
+    """Borra el mapa de idempotencia (para un reset completo del workspace)."""
+    res = await _db()["legacy_property_map"].delete_many({})
+    return res.deleted_count

@@ -1,9 +1,10 @@
-"""VERA importa desde el CRM Legacy — migración ÚNICA e IDEMPOTENTE.
+"""VERA importa desde el CRM Varela (fuente real) — migración IDEMPOTENTE.
 
-Consume el exportador (`GET /api/export/properties`), mapea explícitamente
-LegacyProperty → Property, persiste vía PropertyRepository, descarga imágenes/documentos
-(por URL) y los re-sube al Storage propio de VERA. Idempotente por `legacy_id`: si ya
-existe, ACTUALIZA en lugar de duplicar. No borra información existente. Log de auditoría.
+Lee `propiedades` del CRM (driver `crm_source`), mapea EXPLÍCITAMENTE el esquema del
+CRM → Property (VERA), persiste vía PropertyRepository, descarga las fotos (URLs
+externas) y las re-sube al Storage propio de VERA. Idempotente por `legacy_id` (el `id`
+del CRM): si ya existe, ACTUALIZA en lugar de duplicar. Conserva el `codigo` comercial
+(VAR-xxxxx) como campo visible independiente del id interno. Log de auditoría en Mongo.
 """
 from __future__ import annotations
 
@@ -18,63 +19,107 @@ import config
 from property_repository import property_repository
 from storage_service import get_storage
 
-from . import store
+from . import crm_source, store
 
 logger = logging.getLogger("vera")
 
-# Registro de jobs en memoria (progreso consultable por polling).
 JOBS: dict[str, dict] = {}
 
-_legacy_col: bool | None = None
+_col_support: dict[str, bool] = {}
+
+# --- Normalización de vocabulario CRM → VERA ------------------------------- #
+_TYPE_MAP = {
+    "casa": "casa", "ph": "ph", "departamento": "departamento", "depto": "departamento",
+    "terreno / lote": "terreno", "terreno": "terreno", "lote": "terreno",
+    "local comercial": "local", "local": "local", "oficina": "oficina", "cochera": "cochera",
+}
+_OPERATION_MAP = {"venta": "venta", "alquiler": "alquiler", "alquiler temporario": "alquiler_temporario"}
+_STATUS_MAP = {"disponible": "active", "reservada": "reserved", "vendida": "sold", "alquilada": "sold"}
 
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _to_int(v) -> int:
+    try:
+        return int(float(str(v).strip()))
+    except (ValueError, TypeError):
+        return 0
+
+
+def _norm(mapping: dict, value, default: str) -> str:
+    return mapping.get((str(value or "").strip().lower()), default)
+
+
 def _map_property(lg: dict) -> dict:
-    """Mapeo EXPLÍCITO LegacyProperty (campos en español del CRM) → Property (VERA)."""
+    """Mapeo EXPLÍCITO propiedades (CRM Varela) → Property (VERA)."""
+    nombre = (lg.get("propietario_nombre") or "").strip()
+    tel = (lg.get("propietario_tel") or "").strip()
+    owner_obs_parts = []
+    if nombre:
+        owner_obs_parts.append(f"Propietario: {nombre}")
+    if tel:
+        owner_obs_parts.append(f"Tel: {tel}")
+    antiguedad = (lg.get("antiguedad") or "").strip()
+    condition = "" if antiguedad in ("", "-- Seleccionar --") else antiguedad
+
     return {
-        "title": lg.get("titulo", ""),
-        "type": lg.get("tipo", ""),
-        "operation": lg.get("operacion", ""),
-        "price": lg.get("precio"),
-        "currency": lg.get("moneda", "USD"),
-        "address": lg.get("direccion", ""),
-        "neighborhood": lg.get("barrio", ""),
-        "city": lg.get("ciudad", ""),
-        "province": lg.get("provincia", ""),
-        "bedrooms": lg.get("dormitorios") or 0,
-        "bathrooms": lg.get("banos") or 0,
-        "rooms": lg.get("ambientes") or 0,
-        "area_m2": lg.get("superficie_cubierta") or 0,
-        "lot_area_m2": lg.get("superficie_terreno") or 0,
-        "parking_covered": lg.get("cocheras") or 0,
-        "amenities": lg.get("comodidades") or [],
-        "condition": lg.get("estado_propiedad", ""),
-        "year_built": str(lg.get("anio") or ""),
-        "description": lg.get("descripcion", ""),
-        "status": "active",
+        "title": lg.get("titulo", "") or "",
+        "type": _norm(_TYPE_MAP, lg.get("tipo"), "casa"),
+        "operation": _norm(_OPERATION_MAP, lg.get("operacion"), "venta"),
+        "price": lg.get("precio") or 0,
+        "currency": "USD",
+        "address": lg.get("direccion", "") or "",
+        "neighborhood": lg.get("zona", "") or "",
+        "city": lg.get("ciudad", "") or "",
+        "province": lg.get("provincia", "") or "",
+        "postal_code": lg.get("codigo_postal", "") or "",
+        "bedrooms": _to_int(lg.get("dormitorios")),
+        "bathrooms": _to_int(lg.get("banios")),
+        "rooms": _to_int(lg.get("ambientes")),
+        "area_m2": _to_int(lg.get("mts_cubiertos")),
+        "lot_area_m2": _to_int(lg.get("mts")),
+        "semi_covered_area_m2": _to_int(lg.get("mts_semicubiertos")),
+        "floors": _to_int(lg.get("plantas")),
+        "amenities": lg.get("amenities") or [],
+        "condition": condition,
+        "description": lg.get("descripcion", "") or "",
+        "owner_observations": " · ".join(owner_obs_parts),
+        "status": _norm(_STATUS_MAP, lg.get("estado"), "active"),
+        "publications": _map_publications(lg),
     }
 
 
-async def _supports_legacy_col() -> bool:
-    """Detecta si la tabla `properties` ya tiene la columna legacy_id (requiere SQL)."""
-    global _legacy_col
-    if _legacy_col is None:
+def _map_publications(lg: dict) -> dict:
+    """Estado de publicación por canal, desde los flags del CRM."""
+    pubs: dict = {}
+    now = _now()
+    if lg.get("publicado_web"):
+        pubs["web-varela"] = {"status": "published", "lastSync": now, "url": ""}
+    if lg.get("publicado_ml"):
+        pubs["mercadolibre"] = {"status": "published", "lastSync": now, "url": lg.get("ml_link") or ""}
+    if lg.get("publicado_zp"):
+        pubs["zonaprop"] = {"status": "published", "lastSync": now, "url": ""}
+    return pubs
+
+
+async def _supports_column(col: str) -> bool:
+    """Detecta si `properties` tiene la columna `col` (requiere DDL del usuario)."""
+    if col not in _col_support:
         try:
             def _probe():
                 from supabase_client import get_supabase
-                return get_supabase().table("properties").select("legacy_id").limit(1).execute()
+                return get_supabase().table("properties").select(col).limit(1).execute()
             await asyncio.to_thread(_probe)
-            _legacy_col = True
+            _col_support[col] = True
         except Exception:  # noqa: BLE001
-            _legacy_col = False
-    return _legacy_col
+            _col_support[col] = False
+    return _col_support[col]
 
 
 async def _download(url: str) -> tuple[bytes, str]:
-    async with httpx.AsyncClient(timeout=40, follow_redirects=True) as c:
+    async with httpx.AsyncClient(timeout=60, follow_redirects=True) as c:
         r = await c.get(url)
         r.raise_for_status()
         return r.content, r.headers.get("content-type", "application/octet-stream")
@@ -95,59 +140,42 @@ def _ext(ct: str, fallback: str) -> str:
 
 async def _import_images(pid: str, wid: str, urls: list[str], job: dict) -> None:
     for idx, url in enumerate(urls):
-        try:
-            content, ct = await _download(url)
-            object_path, stored = get_storage().build_object_path(wid, pid, "images", f"legacy{_ext(ct, '.jpg')}")
-            await get_storage().upload(config.BUCKET_IMAGES, object_path, content, ct)
-            await property_repository.add_image({
-                "property_id": pid, "workspace_id": wid, "bucket": config.BUCKET_IMAGES,
-                "object_path": object_path, "original_name": f"legacy-{idx + 1}", "stored_name": stored,
-                "mime_type": ct, "size_bytes": len(content), "position": idx, "is_cover": idx == 0,
-            })
-            job["images_done"] += 1
-        except Exception as e:  # noqa: BLE001
-            job["errors"].append(f"Imagen ({url.split('/')[-1]}): {e}")
-
-
-async def _import_documents(pid: str, wid: str, docs: list[dict], job: dict) -> None:
-    for d in docs:
-        url = d.get("url")
         if not url:
             continue
         try:
             content, ct = await _download(url)
-            object_path, stored = get_storage().build_object_path(wid, pid, "documents", d.get("nombre") or f"doc{_ext(ct, '.pdf')}")
-            await get_storage().upload(config.BUCKET_DOCUMENTS, object_path, content, ct)
-            await property_repository.add_document({
-                "property_id": pid, "workspace_id": wid, "doc_type": d.get("tipo", "otro"),
-                "bucket": config.BUCKET_DOCUMENTS, "object_path": object_path,
-                "original_name": d.get("nombre") or stored, "stored_name": stored,
-                "mime_type": ct, "size_bytes": len(content),
+            object_path, stored = get_storage().build_object_path(wid, pid, "images", f"crm{_ext(ct, '.jpg')}")
+            await get_storage().upload(config.BUCKET_IMAGES, object_path, content, ct)
+            await property_repository.add_image({
+                "property_id": pid, "workspace_id": wid, "bucket": config.BUCKET_IMAGES,
+                "object_path": object_path, "original_name": f"foto-{idx + 1}", "stored_name": stored,
+                "mime_type": ct, "size_bytes": len(content), "position": idx, "is_cover": idx == 0,
             })
-            job["docs_done"] += 1
+            job["images_done"] += 1
         except Exception as e:  # noqa: BLE001
-            job["errors"].append(f"Documento ({d.get('nombre')}): {e}")
+            job["errors"].append(f"Imagen ({url.split('/')[-1][:40]}): {e}")
 
 
 async def run_import(job_id: str) -> None:
     job = JOBS[job_id]
     wid = config.DEFAULT_WORKSPACE_ID
     try:
-        async with httpx.AsyncClient(timeout=40) as c:
-            r = await c.get(config.LEGACY_EXPORT_URL)
-            r.raise_for_status()
-            legacy = r.json().get("properties", [])
+        legacy = await crm_source.fetch_properties()
         job["total"] = len(legacy)
-        supports = await _supports_legacy_col()
-        job["legacy_column"] = supports
+        has_legacy = await _supports_column("legacy_id")
+        has_codigo = await _supports_column("codigo")
+        job["legacy_column"] = has_legacy
+        job["codigo_column"] = has_codigo
 
         for lg in legacy:
-            lid = lg.get("legacy_id", "")
+            lid = str(lg.get("id", "") or "")
             job["current"] = lg.get("titulo", lid)
             try:
                 payload = _map_property(lg)
-                if supports:
+                if has_legacy:
                     payload["legacy_id"] = lid
+                if has_codigo:
+                    payload["codigo"] = lg.get("codigo", "") or ""
 
                 mapped = await store.get_map(lid)
                 existing = await property_repository.get(mapped["property_id"]) if mapped else None
@@ -157,7 +185,7 @@ async def run_import(job_id: str) -> None:
                     await property_repository.update(pid, payload)
                     action = "actualizada"
                     job["updated"] += 1
-                    do_media = len(existing.get("property_images") or []) == 0  # no duplicar imágenes
+                    do_media = len(existing.get("property_images") or []) == 0
                 else:
                     created = await property_repository.create(payload, wid)
                     pid = created["id"]
@@ -167,15 +195,16 @@ async def run_import(job_id: str) -> None:
 
                 await store.set_map(lid, pid, wid)
                 if do_media:
-                    await _import_images(pid, wid, lg.get("imagenes") or [], job)
-                    await _import_documents(pid, wid, lg.get("documentos") or [], job)
+                    await _import_images(pid, wid, lg.get("fotos") or [], job)
                 else:
                     job["items_media_skipped"] += 1
 
-                job["items"].append({"legacy_id": lid, "title": payload["title"], "property_id": pid, "action": action})
+                job["items"].append({"legacy_id": lid, "codigo": lg.get("codigo", ""),
+                                     "title": payload["title"], "property_id": pid, "action": action})
             except Exception as e:  # noqa: BLE001
                 job["errors"].append(f"Propiedad {lid} ({lg.get('titulo', '')}): {e}")
-                job["items"].append({"legacy_id": lid, "title": lg.get("titulo", ""), "property_id": None, "action": "error"})
+                job["items"].append({"legacy_id": lid, "title": lg.get("titulo", ""),
+                                     "property_id": None, "action": "error"})
             finally:
                 job["processed"] += 1
 
@@ -185,7 +214,7 @@ async def run_import(job_id: str) -> None:
     except Exception as e:  # noqa: BLE001
         job["status"] = "error"
         job["error"] = str(e)
-        logger.exception("Legacy import failed")
+        logger.exception("CRM import failed")
     finally:
         try:
             await store.save_log({**job, "job_id": job_id})
@@ -198,7 +227,7 @@ def start_job() -> str:
     JOBS[job_id] = {
         "status": "running", "total": 0, "processed": 0, "created": 0, "updated": 0,
         "images_done": 0, "docs_done": 0, "items_media_skipped": 0, "current": "",
-        "errors": [], "items": [], "legacy_column": None, "started_at": _now(),
+        "errors": [], "items": [], "legacy_column": None, "codigo_column": None, "started_at": _now(),
     }
     asyncio.create_task(run_import(job_id))
     return job_id

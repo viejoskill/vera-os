@@ -109,3 +109,11 @@ alter table public.properties
 -- Lista de proveedores escalable (definida en código); estados: none/published/pending/error/syncing.
 alter table public.properties
   add column if not exists publications jsonb default '{}'::jsonb;
+
+-- Migración cartera real (CRM Varela). Idempotencia global + código comercial.
+-- `legacy_id`: id del CRM (reimportar actualiza en vez de duplicar, aunque se dispare
+--   desde otro entorno). `codigo`: código comercial visible (VAR-xxxxx), independiente del id interno.
+alter table public.properties
+  add column if not exists legacy_id text,
+  add column if not exists codigo text;
+create index if not exists idx_properties_legacy_id on public.properties(legacy_id);

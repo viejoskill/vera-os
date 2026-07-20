@@ -243,7 +243,7 @@ export const PropertiesScreen = () => {
           ))}
         </div>
         <Button size="md" variant="ghost" data-testid="import-legacy-button" onClick={() => setShowImport(true)}>
-          <DownloadCloud size={16} /> Importar desde CRM Legacy
+          <DownloadCloud size={16} /> Importar desde CRM Varela
         </Button>
         <Button size="md" data-testid="new-property-button" onClick={() => navigate('/propiedades/nueva')}>
           <Plus size={16} /> Nueva propiedad

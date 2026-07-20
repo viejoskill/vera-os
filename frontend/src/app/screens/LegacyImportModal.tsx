@@ -78,7 +78,7 @@ export const LegacyImportModal = ({
       <div className="vera-import__panel" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         <header className="vera-import__head">
           <span className="vera-import__title">
-            <DownloadCloud size={18} /> Importar desde CRM Legacy
+            <DownloadCloud size={18} /> Importar desde CRM Varela
           </span>
           <button type="button" className="vera-import__close" data-testid="legacy-import-close" onClick={onClose} aria-label="Cerrar">
             <X size={16} />
@@ -87,7 +87,7 @@ export const LegacyImportModal = ({
 
         {!job && !starting && (
           <div className="vera-import__intro">
-            <p>Vamos a traer las propiedades del CRM Legacy a tu cartera. Es una migración única y podés repetirla sin duplicar.</p>
+            <p>Vamos a traer las propiedades del CRM Varela a tu cartera. Es una migración única y podés repetirla sin duplicar.</p>
             <button type="button" className="vera-import__cta" data-testid="legacy-import-start" onClick={start}>
               <DownloadCloud size={16} /> Iniciar migración
             </button>
@@ -103,7 +103,7 @@ export const LegacyImportModal = ({
               {running ? (
                 <span className="vera-import__running">
                   <Loader2 size={14} className="vera-import__spin" />
-                  {job ? `Procesando ${job.processed}/${job.total} — ${job.current || '...'}` : 'Conectando con el CRM Legacy…'}
+                  {job ? `Procesando ${job.processed}/${job.total} — ${job.current || '...'}` : 'Conectando con el CRM Varela…'}
                 </span>
               ) : job?.status === 'done' ? (
                 <span className="vera-import__ok" data-testid="legacy-import-done">

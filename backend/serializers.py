@@ -68,7 +68,7 @@ async def property_to_response(prop: dict) -> PropertyResponse:
     cover_url = await _sign(cover["bucket"], cover["object_path"]) if cover else ""
     return PropertyResponse(
         id=prop["id"],
-        code=_property_code(prop["id"]),
+        code=(prop.get("codigo") or "").strip() or _property_code(prop["id"]),
         title=prop.get("title", ""),
         operation=prop.get("operation", "venta"),
         type=prop.get("type", "departamento"),
