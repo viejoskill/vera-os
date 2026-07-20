@@ -5261,3 +5261,125 @@ p {
 }
 .vera-goal__custom-btn:hover { transform: scale(1.08); }
 
+
+/* ============================================================================
+   Legacy CRM Import modal
+   ============================================================================ */
+.vera-import {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--vera-space-lg);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: vera-fade 0.2s ease both;
+}
+@keyframes vera-fade { from { opacity: 0; } to { opacity: 1; } }
+.vera-import__panel {
+  width: min(560px, 94vw);
+  background: var(--vera-color-card);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-lg);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  animation: vera-spot-rise 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.vera-import__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--vera-space-md) var(--vera-space-lg);
+  border-bottom: 1px solid var(--vera-color-border);
+}
+.vera-import__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: var(--vera-font-weight-bold);
+  color: var(--vera-color-text);
+}
+.vera-import__title svg { color: var(--vera-color-primary); }
+.vera-import__close {
+  display: inline-flex;
+  border: none;
+  background: transparent;
+  color: var(--vera-color-text-secondary);
+  cursor: pointer;
+}
+.vera-import__intro,
+.vera-import__body { padding: var(--vera-space-lg); }
+.vera-import__intro p { color: var(--vera-color-text-secondary); margin-bottom: var(--vera-space-lg); }
+.vera-import__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border-radius: var(--vera-radius-pill);
+  border: none;
+  background: var(--vera-color-primary);
+  color: var(--vera-color-primary-foreground);
+  font-weight: var(--vera-font-weight-semibold);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.vera-import__cta:hover { transform: translateY(-1px); }
+.vera-import__bar {
+  height: 8px;
+  border-radius: var(--vera-radius-pill);
+  background: var(--vera-color-surface);
+  overflow: hidden;
+}
+.vera-import__bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--vera-color-primary), #fdf283);
+  transition: width 0.4s ease;
+}
+.vera-import__status { margin-top: var(--vera-space-md); font-size: var(--vera-font-size-sm); }
+.vera-import__running { display: inline-flex; align-items: center; gap: 8px; color: var(--vera-color-text-secondary); }
+.vera-import__ok { display: inline-flex; align-items: center; gap: 8px; color: #32d74b; font-weight: var(--vera-font-weight-semibold); }
+.vera-import__err { display: inline-flex; align-items: center; gap: 8px; color: #ff9f0a; font-weight: var(--vera-font-weight-semibold); }
+.vera-import__spin { animation: vera-rot 0.9s linear infinite; }
+@keyframes vera-rot { to { transform: rotate(360deg); } }
+.vera-import__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vera-space-sm);
+  margin-top: var(--vera-space-md);
+}
+.vera-import__stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: var(--vera-radius-pill);
+  border: 1px solid var(--vera-color-border);
+  background: var(--vera-color-surface);
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text-secondary);
+}
+.vera-import__stat b { color: var(--vera-color-text); }
+.vera-import__stat--err { border-color: rgba(255, 159, 10, 0.4); color: #ff9f0a; }
+.vera-import__hint { margin-top: var(--vera-space-md); font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); }
+.vera-import__hint code { background: var(--vera-color-surface); padding: 1px 5px; border-radius: 4px; }
+.vera-import__errors {
+  margin-top: var(--vera-space-sm);
+  max-height: 120px;
+  overflow-y: auto;
+  padding-left: var(--vera-space-lg);
+  font-size: var(--vera-font-size-xs);
+  color: #ff9f0a;
+}
+.vera-import__actions { display: flex; gap: var(--vera-space-sm); margin-top: var(--vera-space-lg); }
+.vera-import__secondary {
+  padding: 10px 18px;
+  border-radius: var(--vera-radius-pill);
+  border: 1px solid var(--vera-color-border);
+  background: transparent;
+  color: var(--vera-color-text);
+  cursor: pointer;
+}
+

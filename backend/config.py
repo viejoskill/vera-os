@@ -17,6 +17,10 @@ DEFAULT_WORKSPACE_ID = os.environ.get("DEFAULT_WORKSPACE_ID", "vera-default")
 
 CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*").split(",")
 
+MONGO_URL = os.environ.get("MONGO_URL") or None
+DB_NAME = os.environ.get("DB_NAME", "vera")
+LEGACY_EXPORT_URL = os.environ.get("LEGACY_EXPORT_URL", "http://localhost:8001/api/export/properties")
+
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY") or None
 
 # Publication channels the agent can operate today (status board). Scalable: add

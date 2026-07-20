@@ -15,6 +15,7 @@ import {
   Archive,
   RotateCcw,
   SlidersHorizontal,
+  DownloadCloud,
 } from 'lucide-react';
 import { Card, Input, Button } from '@vera/ui';
 import { appConfig } from '@vera/config';
@@ -22,6 +23,7 @@ import { propertyService } from '@vera/services';
 import type { Property, PropertyStatus } from '@vera/types';
 import { useProperties } from '@app/hooks/useProperties';
 import { PropertyFilters, emptyFilters, countActiveFilters, type AdvFilters } from './PropertyFilters';
+import { LegacyImportModal } from './LegacyImportModal';
 
 type StatusFilter = PropertyStatus | 'all' | 'archived';
 
@@ -167,6 +169,7 @@ export const PropertiesScreen = () => {
   const [status, setStatus] = useState<StatusFilter>('all');
   const [query, setQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [filters, setFilters] = useState<AdvFilters>(emptyFilters);
 
   // Fetch once per status (cached); text search filters instantly on the client.
@@ -239,6 +242,9 @@ export const PropertiesScreen = () => {
             </Button>
           ))}
         </div>
+        <Button size="md" variant="ghost" data-testid="import-legacy-button" onClick={() => setShowImport(true)}>
+          <DownloadCloud size={16} /> Importar desde CRM Legacy
+        </Button>
         <Button size="md" data-testid="new-property-button" onClick={() => navigate('/propiedades/nueva')}>
           <Plus size={16} /> Nueva propiedad
         </Button>
@@ -291,6 +297,8 @@ export const PropertiesScreen = () => {
           </Button>
         </div>
       )}
+
+      <LegacyImportModal open={showImport} onClose={() => setShowImport(false)} onDone={() => invalidate()} />
     </div>
   );
 };
