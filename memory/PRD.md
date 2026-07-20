@@ -580,6 +580,14 @@ El usuario necesitaba editar el título y la descripción generados por la IA ah
 - `ExpressSection.tsx`: el bloque Título pasó a `<input className="vera-express__edit-title">` y Descripción a `<textarea className="vera-express__edit-desc" rows=12>`, con estado local `editTitle`/`editDesc` que se inicializa del resultado IA vía `useEffect([data])`. "Usar" aplica el texto EDITADO (`applyTitle(editTitle)` / `applyDescription(editDesc)`), "Copiar" copia el editado, y "Copiar todo" arma el bloque con los valores editados. Hint "VERA propone; vos decidís".
 - CSS nuevo: `.vera-express__edit-title/-desc` (dark, focus amarillo), `.vera-express__hint`. Verificado por screenshot (input+textarea editables, edición tomada) + tsc limpio.
 
+## Contenido comercial: portales editables + regen por bloque + Usar y guardar — 2026-07-20
+Tres mejoras sobre `ExpressSection.tsx` (opciones 1/3/4 elegidas por el usuario):
+- **Portales editables (op.1)**: Mercado Libre y Zonaprop ahora son título (`<input>`) + cuerpo (`<textarea rows=8>`) editables (estado `editMl`/`editZp` init desde `data` en `useEffect`). "Copiar" y "Copiar todo" usan los valores editados. testids: `express-ml-title/-body`, `express-zp-title/-body`.
+- **Regenerar por bloque (op.4)**: botón "Generar otro" en Título/Descripción/ML/Zonaprop (`regen-title/-description/-ml/-zp`) que llama `aiContentService.suggestTitles` / `suggestDescription` / `adaptForPortal(portal)` (endpoint `/api/ai/content` mode=title|description|portal). Estado `blockBusy` deshabilita mientras corre. Los portales se regeneran usando el título+descripción editados como contexto. "Generar todo otra vez" (`regenerate-express`) sigue rehaciendo todo.
+- **Usar y guardar (op.3)**: prop `persist?(patch)` que baja desde `PropertyWorkspace` (`persistField`, solo en propiedad EXISTENTE → `propertyService.updateProperty` + invalida caches + pill "Guardado"). En existente el botón dice **"Usar y guardar"** y aplica+persiste en un paso; en propiedad nueva (sin id) dice "Usar" y solo aplica al form (se guarda con "Guardar"/"Guardar borrador"). Feedback `savedKey` → "Guardado" transitorio.
+- Verificado: screenshot en propiedad existente (ML/ZP editables + "Generar otro" + "Usar y guardar"), curl de los 3 modes de `/api/ai/content`, tsc limpio.
+
+
 
 
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
