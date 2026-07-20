@@ -575,6 +575,12 @@ Opción A (solo en publicaciones, sin tocar la descripción editable): se agrega
 - **Mercado Libre** (`mercadolibre/service.py`): `_description_with_disclaimer(prop)` agrega el disclaimer como párrafo al final del `plain_text` (ML no admite formato/tamaño). Aplica tanto en publicar (POST) como en actualizar (PUT description). Constante `_AI_IMAGE_DISCLAIMER`.
 - No se guarda en el campo Descripción editable (no ensucia ni duplica al regenerar). Verificado por screenshot (Web, cursiva/menor) + prueba backend.
 
+## Contenido comercial editable inline (corregir IA) — 2026-07-20
+El usuario necesitaba editar el título y la descripción generados por la IA ahí mismo (ej. corregir "cerca del mar" cuando no aplica, o sumar detalles) antes de usarlos. Antes eran `<p>` de solo lectura.
+- `ExpressSection.tsx`: el bloque Título pasó a `<input className="vera-express__edit-title">` y Descripción a `<textarea className="vera-express__edit-desc" rows=12>`, con estado local `editTitle`/`editDesc` que se inicializa del resultado IA vía `useEffect([data])`. "Usar" aplica el texto EDITADO (`applyTitle(editTitle)` / `applyDescription(editDesc)`), "Copiar" copia el editado, y "Copiar todo" arma el bloque con los valores editados. Hint "VERA propone; vos decidís".
+- CSS nuevo: `.vera-express__edit-title/-desc` (dark, focus amarillo), `.vera-express__hint`. Verificado por screenshot (input+textarea editables, edición tomada) + tsc limpio.
+
+
 
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Rocket, Copy, Check, RefreshCw, Pencil } from 'lucide-react';
 import { Button, Textarea, Input } from '@vera/ui';
@@ -33,7 +33,17 @@ export const ExpressSection = () => {
   const { status, data, run } = useAiContent<ExpressResult>();
   const [copied, setCopied] = useState<string | null>(null);
   const [showManual, setShowManual] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDesc, setEditDesc] = useState('');
   const description = watch('description');
+
+  // Cargar el resultado de la IA en campos editables (el usuario corrige antes de usar).
+  useEffect(() => {
+    if (data) {
+      setEditTitle(data.titles[0] ?? '');
+      setEditDesc(data.description ?? '');
+    }
+  }, [data]);
 
   const generate = () => run(() => aiContentService.generateExpress(buildAiContext(watch())));
 
@@ -98,7 +108,7 @@ export const ExpressSection = () => {
       {status === 'ready' && data && (
         <div className="vera-ai-preview" data-testid="express-result">
           <div className="vera-ai-preview__actions">
-            <Button type="button" variant="primary" size="sm" data-testid="copy-express-all" onClick={() => copy('all', composeAll(data))}>
+            <Button type="button" variant="primary" size="sm" data-testid="copy-express-all" onClick={() => copy('all', composeAll({ ...data, titles: [editTitle, ...data.titles.slice(1)], description: editDesc }))}>
               {copied === 'all' ? <><Check size={14} /> Copiado todo</> : <><Copy size={14} /> Copiar todo</>}
             </Button>
             <button type="button" className="vera-ai-action" data-testid="regenerate-express" onClick={generate}>
@@ -106,35 +116,47 @@ export const ExpressSection = () => {
             </button>
           </div>
 
-          {data.titles[0] && (
-            <div className="vera-portal-block">
-              <div className="vera-portal-block__head">
-                <span className="vera-field__label">Título</span>
-                <div className="vera-express__block-actions">
-                  <button type="button" className="vera-ai-action" data-testid="use-express-title" onClick={() => applyTitle(data.titles[0])}>
-                    <Check size={13} /> Usar
-                  </button>
-                  {label('title', data.titles[0], 'copy-express-title')}
-                </div>
+          <div className="vera-portal-block">
+            <div className="vera-portal-block__head">
+              <span className="vera-field__label">Título</span>
+              <div className="vera-express__block-actions">
+                <button type="button" className="vera-ai-action" data-testid="use-express-title" onClick={() => applyTitle(editTitle)}>
+                  <Check size={13} /> Usar
+                </button>
+                {label('title', editTitle, 'copy-express-title')}
               </div>
-              <p className="vera-portal-block__title" data-testid="express-title">{data.titles[0]}</p>
             </div>
-          )}
+            <input
+              className="vera-express__edit-title"
+              data-testid="express-title"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder="Título de la publicación…"
+            />
+          </div>
 
-          {data.description && (
-            <div className="vera-portal-block">
-              <div className="vera-portal-block__head">
-                <span className="vera-field__label">Descripción</span>
-                <div className="vera-express__block-actions">
-                  <button type="button" className="vera-ai-action" data-testid="use-express-description" onClick={() => applyDescription(data.description)}>
-                    <Check size={13} /> Usar
-                  </button>
-                  {label('desc', data.description, 'copy-express-description')}
-                </div>
+          <div className="vera-portal-block">
+            <div className="vera-portal-block__head">
+              <span className="vera-field__label">Descripción</span>
+              <div className="vera-express__block-actions">
+                <button type="button" className="vera-ai-action" data-testid="use-express-description" onClick={() => applyDescription(editDesc)}>
+                  <Check size={13} /> Usar
+                </button>
+                {label('desc', editDesc, 'copy-express-description')}
               </div>
-              <p className="vera-portal-block__body" data-testid="express-description">{data.description}</p>
             </div>
-          )}
+            <textarea
+              className="vera-express__edit-desc"
+              data-testid="express-description"
+              value={editDesc}
+              rows={12}
+              onChange={(e) => setEditDesc(e.target.value)}
+              placeholder="Descripción de la publicación…"
+            />
+            <span className="vera-muted vera-express__hint">
+              Corregí lo que la IA no sepa (ubicación, detalles) y después tocá “Usar”. VERA propone; vos decidís.
+            </span>
+          </div>
 
           {data.highlights.length > 0 && (
             <div className="vera-portal-block">
