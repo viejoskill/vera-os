@@ -21,14 +21,13 @@ import { propertyFormSchema, defaultPropertyForm, type PropertyFormValues } from
 import { BasicInfoSection } from './BasicInfoSection';
 import { FeaturesSection } from './FeaturesSection';
 import { AmenitiesSection } from './AmenitiesSection';
-import { ExpressSection } from './ExpressSection';
 import { ChannelsSection } from './ChannelsSection';
 import { OwnerSection } from './OwnerSection';
 import { TrackingSection } from './TrackingSection';
 import { PhotosSection } from './PhotosSection';
 import { DocumentsSection } from './DocumentsSection';
-import { VeraStudioSection } from './VeraStudioSection';
-import { PublicationSection } from './PublicationSection';
+import { CommercializationSection } from './CommercializationSection';
+import { StatsSection } from './StatsSection';
 import { HealthScoreSection } from './HealthScoreSection';
 
 interface ToastState {
@@ -36,8 +35,14 @@ interface ToastState {
   tone: 'default' | 'success';
 }
 
-// Vera Studio stays hidden until it runs on real intelligence (code kept intact).
-const SHOW_VERA_STUDIO = false;
+type LifecycleStatus = 'active' | 'reserved' | 'sold' | 'archived';
+
+const STATUS_STEPS: { id: LifecycleStatus; label: string }[] = [
+  { id: 'active', label: 'Disponible' },
+  { id: 'reserved', label: 'Reservada' },
+  { id: 'sold', label: 'Vendida' },
+  { id: 'archived', label: 'Archivada' },
+];
 
 const str = (v: number | string | undefined) => (v ? String(v) : '');
 
@@ -85,6 +90,7 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
   const queryClient = useQueryClient();
   const [toast, setToast] = useState<ToastState | null>(null);
   const [saving, setSaving] = useState(false);
+  const [statusBusy, setStatusBusy] = useState(false);
   const [liveStatus, setLiveStatus] = useState<LiveStatus>('idle');
 
   const showToast = useCallback((state: ToastState) => {
@@ -97,8 +103,6 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
       setLiveStatus(status);
       if (status === 'error' && message) showToast({ message, tone: 'default' });
       if (status === 'saved') {
-        // Reflect live media/data changes in "Hoy" and the list without disturbing
-        // the Workspace's own gallery state (no ['property'] refetch → no jumps).
         queryClient.invalidateQueries({ queryKey: ['today'] });
         queryClient.invalidateQueries({ queryKey: ['properties'] });
         window.setTimeout(() => setLiveStatus('idle'), 1600);
@@ -114,7 +118,6 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
   });
   const values = form.watch();
 
-  // New-mode: local staging + simulated Vera Studio. Existing-mode: live persistence.
   const studio = useVeraStudio();
   const localDocs = useDocuments();
   const gallery = useWorkspaceGallery(propertyId, detail?.images ?? [], notify);
@@ -138,15 +141,6 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
       }),
     [values, photos.length, documents],
   );
-
-  const stages = isNew
-    ? studio.stages
-    : studioService.getStages().map((s) => ({ ...s, state: 'done' as const }));
-  const analysis = isNew
-    ? { detectedRooms: studio.detectedRooms, duplicatesRemoved: studio.duplicatesRemoved }
-    : photos.length
-      ? studioService.analyze(photos.length)
-      : { detectedRooms: [], duplicatesRemoved: 0 };
 
   const toNumber = (value: string) => (value?.trim() ? Number(value) : 0);
 
@@ -209,14 +203,12 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
           });
           await queryClient.invalidateQueries({ queryKey: ['properties'] });
           await queryClient.invalidateQueries({ queryKey: ['today'] });
-          // The property's own Workspace opening is the confirmation — no toast.
           navigate(`/propiedades/${created.id}`);
         } else {
           await propertyService.updateProperty(propertyId, payload);
           await queryClient.invalidateQueries({ queryKey: ['properties'] });
           await queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
           await queryClient.invalidateQueries({ queryKey: ['today'] });
-          // Quiet, near-invisible confirmation via the live-status pill.
           notify('saved');
         }
       } catch (error) {
@@ -230,34 +222,36 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
       showToast({ message: 'Todavía faltan algunos datos. VERA te muestra cuáles.', tone: 'default' }),
   );
 
-  const handleArchive = async () => {
-    try {
-      await propertyService.archive(propertyId);
-      await queryClient.invalidateQueries({ queryKey: ['properties'] });
-      await queryClient.invalidateQueries({ queryKey: ['today'] });
-      showToast({ message: 'Propiedad archivada. Podés restaurarla cuando quieras.', tone: 'success' });
-      window.setTimeout(() => navigate('/propiedades'), 700);
-    } catch {
-      showToast({ message: 'No pudimos archivar la propiedad.', tone: 'default' });
-    }
-  };
+  // Estado de la propiedad — acción rápida de un clic desde el encabezado.
+  const currentStatus: LifecycleStatus = detail
+    ? detail.archived
+      ? 'archived'
+      : (detail.status as LifecycleStatus)
+    : 'active';
 
-  const handleRestore = async () => {
+  const changeStatus = async (target: LifecycleStatus) => {
+    if (isNew || !detail || statusBusy || target === currentStatus) return;
+    setStatusBusy(true);
     try {
-      await propertyService.restore(propertyId);
-      await queryClient.invalidateQueries({ queryKey: ['properties'] });
+      if (target === 'archived') {
+        await propertyService.archive(propertyId);
+      } else {
+        if (detail.archived) await propertyService.restore(propertyId);
+        await propertyService.updateProperty(propertyId, { status: target });
+      }
       await queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
+      await queryClient.invalidateQueries({ queryKey: ['properties'] });
       await queryClient.invalidateQueries({ queryKey: ['today'] });
-      showToast({ message: 'Propiedad restaurada.', tone: 'success' });
     } catch {
-      showToast({ message: 'No pudimos restaurar la propiedad.', tone: 'default' });
+      showToast({ message: 'No pudimos cambiar el estado.', tone: 'default' });
+    } finally {
+      setStatusBusy(false);
     }
   };
 
   const liveLabel =
     liveStatus === 'saving' ? 'Guardando…' : liveStatus === 'saved' ? 'Guardado' : 'Reintentá';
 
-  // Deep-link from "Hoy": scroll to and highlight the target section (Regla L).
   const [searchParams] = useSearchParams();
   useEffect(() => {
     const section = searchParams.get('section');
@@ -291,13 +285,18 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
               <ArrowLeft size={18} />
             </button>
             <div>
+              {!isNew && detail!.code && (
+                <span className="vera-workspace__code" data-testid="workspace-code">
+                  {detail!.code}
+                </span>
+              )}
               <h1 className="vera-workspace__title" data-testid="workspace-title">
                 {isNew ? 'Nueva propiedad' : detail!.title || 'Propiedad'}
               </h1>
               <p className="vera-muted">
                 {isNew
                   ? 'VERA te acompaña hasta dejarla lista para publicar.'
-                  : 'Toda la información de la propiedad, en un solo lugar.'}
+                  : 'El activo inmobiliario, en un solo lugar.'}
               </p>
             </div>
           </div>
@@ -313,6 +312,25 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
           </div>
         </header>
 
+        {!isNew && (
+          <div className="vera-status-bar" role="group" aria-label="Estado de la propiedad" data-testid="status-bar">
+            {STATUS_STEPS.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                disabled={statusBusy}
+                data-testid={`status-${s.id}`}
+                className={`vera-status-bar__btn vera-status-bar__btn--st-${s.id} ${
+                  currentStatus === s.id ? 'vera-status-bar__btn--active' : ''
+                }`.trim()}
+                onClick={() => changeStatus(s.id)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="vera-workspace__progress" data-testid="workspace-progress">
           <div className="vera-workspace__progress-row">
             <span>{assessment.completion}% completado</span>
@@ -325,13 +343,14 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
 
         <div className="vera-workspace__grid">
           <div className="vera-workspace__main">
+            {/* 1 — Datos de la propiedad */}
             <div id="ws-section-information">
               <Panel title="Datos de la propiedad" description="Operación, tipo, precio y ubicación.">
                 <BasicInfoSection />
               </Panel>
             </div>
             <div id="ws-section-features">
-              <Panel title="Características" description="Datos objetivos de la propiedad.">
+              <Panel title="Características" description="Superficies, ambientes y estado físico.">
                 <FeaturesSection />
               </Panel>
             </div>
@@ -340,30 +359,10 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
                 <AmenitiesSection />
               </Panel>
             </div>
-            <div id="ws-section-express">
-              <Panel title="Contenido comercial" description="VERA genera título, descripción, destacados y textos para portales.">
-                <ExpressSection />
-              </Panel>
-            </div>
-            <div id="ws-section-channels">
-              <Panel title="Canales de publicación" description="Administrá dónde está publicada la propiedad. VERA nunca publica sola.">
-                <ChannelsSection propertyId={propertyId} initial={detail?.publications ?? {}} />
-              </Panel>
-            </div>
-            <div id="ws-section-owner">
-              <Panel title="Propietario" description="Quién es el dueño de la propiedad.">
-                <OwnerSection />
-              </Panel>
-            </div>
-            {!isNew && detail && (
-              <div id="ws-section-tracking">
-                <Panel title="Actividad comercial" description="Visitas y contacto con el propietario.">
-                  <TrackingSection propertyId={detail.id} address={detail.address} />
-                </Panel>
-              </div>
-            )}
+
+            {/* 2 — Fotos (el activo principal) */}
             <div id="ws-section-photos">
-              <Panel title="Fotografías" description="El corazón de la publicación.">
+              <Panel title="Fotos" description="El activo principal de la propiedad.">
                 <PhotosSection
                   photos={photos}
                   onAddFiles={onAddPhotos}
@@ -373,58 +372,54 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
                 />
               </Panel>
             </div>
+
+            {/* 3 — Propietario */}
+            <div id="ws-section-owner">
+              <Panel title="Propietario" description="Quién es el dueño de la propiedad.">
+                <OwnerSection />
+              </Panel>
+            </div>
+
+            {/* 4 — Documentos */}
             <div id="ws-section-documents">
-              <Panel title="Documentos" description="Sumá el plano y otros documentos (PDF, JPG o PNG).">
+              <Panel title="Documentos" description="Escritura, plano, autorización, video y otros archivos.">
                 <DocumentsSection documents={documents} onAdd={onAddDoc} onRemove={onRemoveDoc} />
               </Panel>
             </div>
-            <div id="ws-section-studio" hidden={!SHOW_VERA_STUDIO}>
-              {SHOW_VERA_STUDIO && (
-                <Panel title="Vera Studio" description="VERA analiza tus fotos y sugiere mejoras.">
-                  <VeraStudioSection
-                    photos={photos}
-                    stages={stages}
-                    processing={isNew ? studio.processing : false}
-                    detectedRooms={analysis.detectedRooms}
-                    duplicatesRemoved={analysis.duplicatesRemoved}
-                  />
-                </Panel>
-              )}
-            </div>
-            {!isNew && (
-              <Panel title="Ciclo de vida" description="Gestioná el estado de esta propiedad en VERA.">
-                <div className="vera-lifecycle" data-testid="lifecycle-section">
-                  {detail!.archived ? (
-                    <>
-                      <p className="vera-muted">
-                        Esta propiedad está archivada: conserva toda su información y podés
-                        restaurarla cuando quieras.
-                      </p>
-                      <Button variant="primary" size="md" data-testid="restore-property" onClick={handleRestore}>
-                        Restaurar propiedad
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <p className="vera-muted">
-                        Archivar conserva toda la información (fotos, documentos, Health Score) y la
-                        saca de la lista principal. Es reversible.
-                      </p>
-                      <Button variant="secondary" size="md" data-testid="archive-property" onClick={handleArchive}>
-                        Archivar propiedad
-                      </Button>
-                    </>
-                  )}
-                </div>
+
+            {/* 5 — Comercialización (solo estado + Abrir en Studio) */}
+            <div id="ws-section-commercialization">
+              <Panel title="Comercialización" description="Estado del contenido comercial. El contenido se crea en Studio.">
+                <CommercializationSection
+                  hasTitle={Boolean((detail?.title ?? '').trim())}
+                  hasDescription={Boolean((values.description ?? '').trim())}
+                  onOpenStudio={() =>
+                    navigate(propertyId ? `/studio?property=${propertyId}` : '/studio')
+                  }
+                />
               </Panel>
+            </div>
+
+            {/* 6 — Publicaciones */}
+            <div id="ws-section-channels">
+              <Panel title="Publicaciones" description="Dónde está publicada la propiedad. VERA nunca publica sola.">
+                <ChannelsSection propertyId={propertyId} initial={detail?.publications ?? {}} />
+              </Panel>
+            </div>
+
+            {/* 7 — Estadísticas */}
+            {!isNew && detail && (
+              <div id="ws-section-stats">
+                <Panel title="Estadísticas" description="Métricas del activo. Solo lectura.">
+                  <StatsSection propertyId={detail.id} />
+                  <TrackingSection propertyId={detail.id} address={detail.address} />
+                </Panel>
+              </div>
             )}
           </div>
 
           <aside className="vera-workspace__aside">
             <HealthScoreSection assessment={assessment} />
-            <Panel title="Publicación" description="Qué tan lista está la propiedad.">
-              <PublicationSection assessment={assessment} />
-            </Panel>
           </aside>
         </div>
 

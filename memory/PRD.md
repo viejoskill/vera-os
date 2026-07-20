@@ -532,6 +532,17 @@ Se reemplazó la migración simulada por la **importación de la cartera REAL** 
 - **Limpieza**: eliminado el exportador simulado `legacy_crm/` (y su montaje en `server.py`) + `LEGACY_EXPORT_URL`. Botón/Modal renombrados "Importar desde **CRM Varela**".
 - **PENDIENTE (DDL del usuario)**: RESUELTO 2026-07-20 — el usuario corrió el `ALTER TABLE`. Se re-importó (0 creadas, 28 actualizadas, sin re-bajar fotos): las 28 quedaron con `legacy_id` (id del CRM) y `codigo` real (VAR-432272, VAR-208954…) poblados. Idempotencia global activa. Las tarjetas muestran el código comercial real. Estado final: **workspace = solo cartera real (28), 0 fake, 0 duplicados; "Hoy" sin ruido de propiedades**.
 
+## Sprint "Property Workspace v1.0" (2026-07-20)
+Reestructuración de la ficha al flujo natural inmobiliario + base de la App Personas (tabla `people`).
+- **Nuevo orden**: Datos → Fotos → Propietario → Documentos → Comercialización → Publicaciones → Estadísticas (`PropertyWorkspace.tsx` reescrito).
+- **Título eliminado** del form de Datos (es contenido de Studio; sigue existiendo como dato mostrado). `form-schema` title sin validación; `BasicInfoSection` sin input de título.
+- **Barra de estado** en el encabezado (Disponible/Reservada/Vendida/Archivada, 1 clic) + **código comercial VAR-xxxxx** visible. Clases `--st-*` para color (evita colisión con `--active`).
+- **Propietario = App Personas (backend real)**: tabla `people` (id, workspace_id, full_name, phone, email, notes, roles jsonb, created_at); `owner_id` de properties → people.id. Backend: `people/repository.py`, `routes_people.py` (GET list?role=, POST, GET/{id}, PATCH), schemas Person*. Frontend: `Person` type, `ApiPeopleGateway`, `PeopleService` (wired en service-container), `usePeople` (useOwners/useCreatePerson), `NewPersonModal` (crea Persona real sin salir de la ficha → auto-asocia → selector se refresca solo vía react-query).
+- **Comercialización** (`CommercializationSection`): solo muestra estado del contenido (Nunca generado/Generado/Desactualizado) + botón "Abrir en Studio" (`/studio?property=`). NO genera publicaciones (eso es Studio). Se quitó `ExpressSection` del workspace.
+- **Publicaciones** (`ChannelsSection`): sección propia; catálogo suma Instagram + Facebook ("Próximamente") junto a Web Varela + Mercado Libre (operativos), Zonaprop/Argenprop (próximamente).
+- **Estadísticas** (`StatsSection`): métricas solo lectura — Visitas reales + Consultas/Favoritos/Conversión/Rendimiento/Insights ("Próximamente"). TrackingSection (visitas) queda bajo Estadísticas.
+- **PENDIENTE (DDL del usuario)**: crear tabla `people` (SQL en `supabase_schema.sql`). Sin ella, `/api/people` da 500 y el selector/modal de propietario no operan; el resto del Workspace renderiza OK (verificado por screenshot). Tras crearla → testear flujo CRUD de propietarios + status bar.
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.

@@ -1,43 +1,67 @@
+import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { Mail, Phone, UserPlus } from 'lucide-react';
+import { Mail, Phone, UserPlus, Plus } from 'lucide-react';
 import { Select, Textarea } from '@vera/ui';
-import { ownerService } from '@vera/services';
+import type { Person } from '@vera/types';
+import { useOwners } from '@app/hooks/usePeople';
+import { NewPersonModal } from './NewPersonModal';
 import type { PropertyFormValues } from './form-schema';
 
-// Architecture note: OwnerService returns a list so a property can link multiple
-// owners in the future. For now the workspace links a single owner.
-const OWNER_OPTIONS = [
-  { value: '', label: 'Seleccioná un propietario' },
-  ...ownerService.listOwners().map((o) => ({ value: o.id, label: o.name })),
-];
-
+/**
+ * Propietario — primer rol de la App Personas. Selector de Personas (rol propietario)
+ * + "Nuevo propietario" que crea la Persona real sin salir de la ficha y la asocia
+ * automáticamente. El selector se refresca solo (react-query) sin recargar la página.
+ */
 export const OwnerSection = () => {
-  const { register, watch } = useFormContext<PropertyFormValues>();
+  const { register, watch, setValue } = useFormContext<PropertyFormValues>();
+  const { data: owners = [], isLoading } = useOwners();
+  const [modalOpen, setModalOpen] = useState(false);
+
   const ownerId = watch('ownerId');
-  const owner = ownerId ? ownerService.getOwner(ownerId) : null;
+  const owner = owners.find((o) => o.id === ownerId) ?? null;
+
+  const options = [
+    { value: '', label: isLoading ? 'Cargando propietarios…' : 'Seleccioná un propietario' },
+    ...owners.map((o) => ({ value: o.id, label: o.fullName })),
+  ];
+
+  const onCreated = (person: Person) => {
+    setValue('ownerId', person.id, { shouldDirty: true });
+  };
 
   return (
     <div className="vera-form">
-      <Select
-        label="Propietario vinculado"
-        options={OWNER_OPTIONS}
-        data-testid="select-owner"
-        {...register('ownerId')}
-      />
+      <div className="vera-owner__select">
+        <Select
+          label="Propietario vinculado"
+          options={options}
+          data-testid="select-owner"
+          {...register('ownerId')}
+        />
+        <button
+          type="button"
+          className="vera-owner__new"
+          data-testid="new-owner-trigger"
+          onClick={() => setModalOpen(true)}
+        >
+          <Plus size={15} /> Nuevo propietario
+        </button>
+      </div>
 
       {owner ? (
         <div className="vera-owner__card" data-testid="owner-details">
-          <span className="vera-owner__row">
-            <Mail size={14} /> {owner.email}
-          </span>
-          <span className="vera-owner__row">
-            <Phone size={14} /> {owner.phone}
-          </span>
+          <strong className="vera-owner__name">{owner.fullName}</strong>
+          {owner.phone && (
+            <span className="vera-owner__row"><Phone size={14} /> {owner.phone}</span>
+          )}
+          {owner.email && (
+            <span className="vera-owner__row"><Mail size={14} /> {owner.email}</span>
+          )}
         </div>
       ) : (
         <div className="vera-nextstep vera-nextstep--soft" data-testid="owner-nextstep">
           <UserPlus size={15} />
-          Vinculá al propietario para avanzar con la publicación.
+          Vinculá al propietario o creá uno nuevo sin salir de la ficha.
         </div>
       )}
 
@@ -48,6 +72,8 @@ export const OwnerSection = () => {
         data-testid="input-owner-observations"
         {...register('ownerObservations')}
       />
+
+      <NewPersonModal open={modalOpen} onClose={() => setModalOpen(false)} onCreated={onCreated} />
     </div>
   );
 };

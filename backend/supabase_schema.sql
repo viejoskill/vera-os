@@ -117,3 +117,18 @@ alter table public.properties
   add column if not exists legacy_id text,
   add column if not exists codigo text;
 create index if not exists idx_properties_legacy_id on public.properties(legacy_id);
+
+-- App Personas (base). Una Persona puede tener múltiples roles (propietario,
+-- comprador, inquilino, contacto, escribano...). Hoy el rol operativo es 'propietario'.
+-- La propiedad ya referencia a la persona vía properties.owner_id.
+create table if not exists public.people (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id text not null default 'vera-default',
+  full_name text not null,
+  phone text default '',
+  email text default '',
+  notes text default '',
+  roles jsonb not null default '["propietario"]'::jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_people_workspace on public.people(workspace_id);

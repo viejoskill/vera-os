@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const propertyFormSchema = z.object({
-  title: z.string().min(3, 'Ingresá un título de al menos 3 caracteres'),
+  title: z.string(),
   operation: z.enum(['venta', 'alquiler']),
   type: z.string().min(1, 'Elegí un tipo'),
   price: z.string().min(1, 'Ingresá el precio'),

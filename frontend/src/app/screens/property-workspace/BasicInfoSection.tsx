@@ -20,16 +20,6 @@ export const BasicInfoSection = () => {
   return (
     <div className="vera-form">
       <div className="vera-field">
-        <Input
-          label="Título de la publicación"
-          placeholder="Ej.: Departamento 3 ambientes con balcón"
-          data-testid="input-title"
-          error={errors.title?.message}
-          {...register('title')}
-        />
-      </div>
-
-      <div className="vera-field">
         <span className="vera-field__label">Operación</span>
         <div className="vera-segment" role="group" aria-label="Operación">
           {(['venta', 'alquiler'] as const).map((op) => (

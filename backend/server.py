@@ -16,6 +16,7 @@ import routes_files
 import routes_insights
 import routes_integrations
 import routes_migration
+import routes_people
 import routes_properties
 
 app = FastAPI(title="VERA OS API")
@@ -40,6 +41,7 @@ api_router.include_router(routes_brain.router)
 api_router.include_router(routes_integrations.router)
 api_router.include_router(routes_insights.router)
 api_router.include_router(routes_migration.router)
+api_router.include_router(routes_people.router)
 app.include_router(api_router)
 
 app.add_middleware(

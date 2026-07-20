@@ -14,6 +14,8 @@ export const CHANNELS: Channel[] = [
   { id: 'mercadolibre', label: 'Mercado Libre', enabled: true },
   { id: 'zonaprop', label: 'Zonaprop', enabled: false },
   { id: 'argenprop', label: 'Argenprop', enabled: false },
+  { id: 'instagram', label: 'Instagram', enabled: false },
+  { id: 'facebook', label: 'Facebook', enabled: false },
 ];
 
 export type PublicationStatus = 'none' | 'published' | 'pending' | 'error' | 'syncing';

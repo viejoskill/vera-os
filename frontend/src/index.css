@@ -5383,3 +5383,167 @@ p {
   cursor: pointer;
 }
 
+/* ===================== Property Workspace v1.0 ===================== */
+.vera-workspace__code {
+  display: inline-block;
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  letter-spacing: 0.04em;
+  color: var(--vera-color-primary);
+  background: color-mix(in srgb, var(--vera-color-primary) 12%, transparent);
+  padding: 2px 8px;
+  border-radius: var(--vera-radius-sm);
+  margin-bottom: 6px;
+}
+
+.vera-status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vera-space-xs);
+  margin: 0 0 var(--vera-space-md);
+}
+.vera-status-bar__btn {
+  border: 1px solid var(--vera-color-border);
+  background: var(--vera-color-surface);
+  color: var(--vera-color-text-secondary);
+  font-family: var(--vera-font-family);
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-medium);
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.vera-status-bar__btn:hover:not(:disabled) {
+  border-color: var(--vera-color-text-secondary);
+  color: var(--vera-color-text);
+}
+.vera-status-bar__btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.vera-status-bar__btn--active {
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.16);
+}
+.vera-status-bar__btn--active.vera-status-bar__btn--active { color: #fff; }
+.vera-status-bar__btn--active.vera-status-bar__btn--active.vera-status-bar__btn--active { }
+.vera-status-bar__btn--active.vera-status-bar__btn--active { }
+.vera-status-bar__btn--active { }
+
+.vera-owner__select {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--vera-space-sm);
+}
+.vera-owner__select > *:first-child {
+  flex: 1;
+}
+.vera-owner__new {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  border: 1px dashed var(--vera-color-primary);
+  background: color-mix(in srgb, var(--vera-color-primary) 8%, transparent);
+  color: var(--vera-color-primary);
+  font-family: var(--vera-font-family);
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-medium);
+  padding: 9px 14px;
+  border-radius: var(--vera-radius-md);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.vera-owner__new:hover {
+  background: color-mix(in srgb, var(--vera-color-primary) 16%, transparent);
+}
+.vera-owner__name {
+  font-size: var(--vera-font-size-md);
+  color: var(--vera-color-text);
+}
+
+.vera-modal__error {
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-danger);
+}
+
+.vera-commerce {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-md);
+}
+.vera-commerce__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--vera-space-sm);
+}
+.vera-commerce__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--vera-space-md);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-surface);
+}
+.vera-commerce__k {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-text-secondary);
+}
+.vera-commerce__v {
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-semibold);
+  color: var(--vera-color-text);
+}
+.vera-commerce__states {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vera-space-md);
+}
+.vera-commerce__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text-secondary);
+}
+.vera-commerce__state--active {
+  color: var(--vera-color-primary);
+  font-weight: var(--vera-font-weight-semibold);
+}
+.vera-commerce__hint {
+  font-size: var(--vera-font-size-xs);
+}
+
+.vera-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--vera-space-sm);
+  margin-bottom: var(--vera-space-lg);
+}
+.vera-stat__soon {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--vera-color-text-secondary);
+  opacity: 0.7;
+}
+@media (max-width: 640px) {
+  .vera-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .vera-commerce__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Colores del estado seleccionado por tipo (clases --st-* evitan colisión con --active) */
+.vera-status-bar__btn--active.vera-status-bar__btn--st-active { background: #16a34a; }
+.vera-status-bar__btn--active.vera-status-bar__btn--st-reserved { background: #d97706; }
+.vera-status-bar__btn--active.vera-status-bar__btn--st-sold { background: #2563eb; }
+.vera-status-bar__btn--active.vera-status-bar__btn--st-archived { background: #6b7280; }

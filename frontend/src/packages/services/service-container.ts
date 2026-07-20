@@ -7,6 +7,7 @@ import {
   ApiPropertyFilesGateway,
   ApiPropertyRepository,
   ApiPublicationGateway,
+  ApiPeopleGateway,
 } from '@vera/repositories';
 import { PropertyService } from './property-service';
 import { MockStudioProvider } from './studio/mock-studio-provider';
@@ -15,6 +16,7 @@ import { VeraAssistantService } from './assistant/assistant-service';
 import { OwnerService } from './owner/owner-service';
 import { AiContentService } from './ai/ai-content-service';
 import { PublicationService } from './publication/publication-service';
+import { PeopleService } from './people/people-service';
 import { WorkspaceService } from './workspace/workspace-service';
 
 // --- Repositories & gateways (persistence lives behind the backend/Supabase) ---
@@ -33,3 +35,4 @@ export const assistantService = new VeraAssistantService();
 export const ownerService = new OwnerService();
 export const aiContentService = new AiContentService(new ApiAiContentGateway());
 export const publicationService = new PublicationService(new ApiPublicationGateway());
+export const peopleService = new PeopleService(new ApiPeopleGateway());

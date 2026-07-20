@@ -237,3 +237,31 @@ class ExpressResponse(CamelModel):
 class PublicationAction(CamelModel):
     action: str  # publish | update | unpublish
     url: Optional[str] = None  # None = no cambiar; "" = limpiar; valor = setear
+
+
+class PersonCreate(CamelModel):
+    """Persona (base de App Personas). `roles` habilita múltiples capacidades
+    a futuro (propietario, comprador, inquilino, contacto, escribano...)."""
+    full_name: str
+    phone: str = ""
+    email: str = ""
+    notes: str = ""
+    roles: list[str] = []
+
+
+class PersonUpdate(CamelModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    notes: Optional[str] = None
+    roles: Optional[list[str]] = None
+
+
+class PersonResponse(CamelModel):
+    id: str
+    full_name: str = ""
+    phone: str = ""
+    email: str = ""
+    notes: str = ""
+    roles: list[str] = []
+    created_at: Optional[datetime] = None
