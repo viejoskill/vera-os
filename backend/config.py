@@ -23,6 +23,10 @@ DB_NAME = os.environ.get("DB_NAME", "vera")
 # El importador LEE de acá (PostgREST) y mapea a VERA. Solo lectura.
 CRM_SUPABASE_URL = os.environ.get("CRM_SUPABASE_URL") or None
 CRM_SUPABASE_KEY = os.environ.get("CRM_SUPABASE_KEY") or None
+# Key para ESCRIBIR en la web (canal web-varela). El service_role evita el bloqueo RLS
+# del trigger de historial de precios. Si no está, cae a la key pública (INSERT ok,
+# pero updates de precio fallan por RLS del trigger `historial_precios`).
+CRM_SUPABASE_WRITE_KEY = os.environ.get("CRM_SUPABASE_WRITE_KEY") or CRM_SUPABASE_KEY
 
 
 def crm_configured() -> bool:

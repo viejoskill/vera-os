@@ -1,10 +1,12 @@
 """Property CRUD endpoints. All persistence goes through SupabasePropertyRepository."""
+import logging
 from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 
 import config
+import web_publisher
 from property_repository import property_repository
 from schemas import (
     PropertyCreate,
@@ -19,6 +21,8 @@ from serializers import property_to_detail, property_to_response, visit_to_respo
 from storage_service import get_storage
 
 router = APIRouter(prefix="/properties", tags=["properties"])
+
+logger = logging.getLogger("vera")
 
 
 def _ensure() -> None:
@@ -59,6 +63,12 @@ async def update_property(property_id: str, payload: PropertyUpdate):
     prop = await property_repository.update(property_id, payload.model_dump(exclude_none=True))
     if prop is None:
         raise HTTPException(404, "Property not found")
+    # Auto-sync: si ya está publicada en la web, reflejar cambios (precio, fotos, estado, descripción).
+    if (prop.get("publications") or {}).get("web-varela", {}).get("status") == "published":
+        try:
+            await web_publisher.publish(prop)
+        except Exception:  # noqa: BLE001 — best-effort, no romper el guardado
+            logger.warning("Web re-sync falló para %s", property_id)
     return await property_to_detail(prop)
 
 
@@ -115,13 +125,26 @@ async def set_publication(property_id: str, channel: str, payload: PublicationAc
     publications = dict(prop.get("publications") or {})
     existing = publications.get(channel) or {}
     if payload.action == "unpublish":
+        if channel == "web-varela":
+            try:
+                await web_publisher.unpublish(prop)
+            except Exception as e:  # noqa: BLE001
+                raise HTTPException(502, f"No se pudo despublicar de la web: {e}")
         publications[channel] = {"status": "none", "lastSync": None, "url": ""}
     else:  # publish | update
-        keep_url = existing.get("url", "")
+        url_value = existing.get("url", "")
+        if channel == "web-varela":
+            try:
+                await web_publisher.publish(prop)
+                url_value = web_publisher.web_url(prop)
+            except Exception as e:  # noqa: BLE001
+                raise HTTPException(502, f"No se pudo publicar en la web: {e}")
+        elif payload.url is not None:
+            url_value = payload.url
         publications[channel] = {
             "status": "published",
             "lastSync": datetime.now(timezone.utc).isoformat(),
-            "url": keep_url if payload.url is None else payload.url,
+            "url": url_value,
         }
 
     updated = await property_repository.update(property_id, {"publications": publications})
