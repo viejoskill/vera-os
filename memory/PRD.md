@@ -600,6 +600,13 @@ Usuario decidió: **VERA = única fuente de verdad**; `www.varelapropiedadescde.
 - Definición de "Workspace Propiedades terminado": CRUD ✅, Fotos ✅, Documentos ✅, Propietarios ✅, Publicación Web sobre dominio propio (pendiente deploy+dominio), Publicación Mercado Libre (pendiente deploy+redirect prod).
 
 
+## Fix bugs "Ver en la web" (dominio) + ML datetime — 2026-07-20
+Reportados por el usuario (producción, código viejo pre-redeploy):
+- **"Ver en la web" apuntaba a `/web/{id}` (dominio VERA)** en vez del dominio real. Causa: `ChannelsSection.tsx` armaba el link para el canal web con `webUrl = ${origin}/web/${id}` (espejo VERA), ignorando el `url` guardado. Fix: `href={url || webUrl}` (usa el `url` persistido, que `web_publisher` setea a `https://www.varelapropiedadescde.com.ar/?propiedad=<legacyId|vera-id>`). VERIFICADO que el sitio real lee `params.get('propiedad')` → el formato del link es el correcto y abre la ficha puntual. La `publications['web-varela'].url` en la base compartida ya quedó con el dominio real.
+- **ML "can't compare offset-naive and offset-aware datetimes"**: `mercadolibre/service.py::_valid_token` comparaba `tok["expires_at"]` (Mongo devuelve datetimes NAIVE) con `_now()` (aware). Fix: normalizar `expires_at` a UTC-aware antes de comparar. Verificado (token simulado naive → `_valid_token` no crashea). El usuario YA está conectado a ML (el token existe); el bug solo rompía la comparación al publicar.
+- Ambos fixes en PREVIEW → requieren REDEPLOY para verse en producción. tsc limpio.
+
+
 ## "Publicar en Web" escribe en la web ACTUAL de Varela (CRM Legacy) — 2026-07-20
 Decisión del usuario (revisada): NO reemplazar la web actual todavía. La web `www.varelapropiedadescde.com.ar` es una página estática que lee EN VIVO la tabla `propiedades` del CRM Supabase (`fwwzjynerfghqsakkyvq`) y muestra toda propiedad con `estado` ∈ {Disponible, Reservada, Vendida} (query verificada en el JS del sitio). Objetivo del sprint: que "Publicar en Web" haga aparecer la propiedad en ESA web.
 - **Driver desacoplado** `backend/web_publisher.py` (canal `web-varela`): `publish()` hace upsert en `propiedades` (mapeo VERA→CRM: type→tipo, operation→operacion, status→estado [active=Disponible, reserved=Reservada, sold=Vendida], price→precio, address/neighborhood/city/province, rooms/bedrooms/bathrooms, area_m2→mts_cubiertos, lot_area_m2→mts, amenities, fotos[]=URLs firmadas TTL ~10 años de las imágenes de VERA, codigo). `unpublish()` oculta poniendo `estado='Pausada'` (la web no lo muestra; fila conservada). `web_url()` → `https://www.varelapropiedadescde.com.ar/?propiedad=<legacyId>`.

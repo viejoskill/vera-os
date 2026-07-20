@@ -132,7 +132,7 @@ export const ChannelsSection = ({
                   )}
                 </span>
                 {published && isWeb && (
-                  <a className="vera-channel__link" href={webUrl} target="_blank" rel="noreferrer" data-testid={`view-listing-${ch.id}`}>
+                  <a className="vera-channel__link" href={url || webUrl} target="_blank" rel="noreferrer" data-testid={`view-listing-${ch.id}`}>
                     <ExternalLink size={12} /> Ver en la web
                   </a>
                 )}

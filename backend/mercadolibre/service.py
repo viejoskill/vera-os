@@ -82,7 +82,10 @@ async def _valid_token() -> str:
     tok = await _db()["ml_tokens"].find_one({"_id": "connected"})
     if not tok:
         raise ValueError("Mercado Libre no está conectado.")
-    if tok["expires_at"] > _now() + timedelta(minutes=5):
+    expires_at = tok["expires_at"]
+    if isinstance(expires_at, datetime) and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)  # Mongo devuelve fechas naive
+    if expires_at > _now() + timedelta(minutes=5):
         return tok["access_token"]
     async with httpx.AsyncClient(timeout=30) as h:
         r = await h.post(
