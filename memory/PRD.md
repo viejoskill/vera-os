@@ -569,6 +569,13 @@ El "Sitio Web" pasa a ser una **vista pública de VERA que lee EN VIVO** la cart
 - **Personas multi-rol**: `NewPersonModal` con selector de Roles (5 chips `role-{propietario|vendedor|comprador|inquilino|contacto}`), props `title`/`defaultRoles`. `OwnerSection` muestra roles como tags (`owner-roles`, `PERSON_ROLE_LABELS`). Backend `people` ya soportaba `roles: string[]`. Nuevos exports en `@vera/types/person.ts`: `PERSON_ROLES`, `PERSON_ROLE_LABELS`.
 - Nota: el guard de salida solo aplica a propiedad nueva/borrador (alcance). ML OAuth real lo hace el usuario (conectar su cuenta vendedor).
 
+## Disclaimer legal de imágenes IA (auto) — 2026-07-20
+Opción A (solo en publicaciones, sin tocar la descripción editable): se agrega automáticamente el disclaimer de imágenes optimizadas por IA al final de la descripción en cada publicación.
+- **Web pública** (`PublicPropertyDetail.tsx`): párrafo `.vera-pub-detail__disclaimer` (fuente menor 0.78rem + cursiva + muted, `#8a8a8f`), siempre al final de la sección Descripción (se muestra aunque no haya descripción). data-testid `public-detail-disclaimer`. Texto en constante `AI_IMAGE_DISCLAIMER`.
+- **Mercado Libre** (`mercadolibre/service.py`): `_description_with_disclaimer(prop)` agrega el disclaimer como párrafo al final del `plain_text` (ML no admite formato/tamaño). Aplica tanto en publicar (POST) como en actualizar (PUT description). Constante `_AI_IMAGE_DISCLAIMER`.
+- No se guarda en el campo Descripción editable (no ensucia ni duplica al regenerar). Verificado por screenshot (Web, cursiva/menor) + prueba backend.
+
+
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.
 - All visual values come from `@vera/design-tokens`; never hardcode.

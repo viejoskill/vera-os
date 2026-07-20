@@ -16,6 +16,9 @@ interface Detail {
 const money = (n: number, c: string) =>
   n ? `${c === 'USD' ? 'US$' : '$'} ${n.toLocaleString('es-AR')}` : 'Consultar';
 
+const AI_IMAGE_DISCLAIMER =
+  'Algunas imágenes de esta publicación pueden haber sido optimizadas digitalmente mediante inteligencia artificial con fines ilustrativos, con el objetivo de mostrar el potencial de la propiedad. Las características reales deberán verificarse durante la visita.';
+
 /** Ficha pública de una propiedad (sin login, sin datos privados). */
 export const PublicPropertyDetail = () => {
   const { id } = useParams();
@@ -98,12 +101,17 @@ export const PublicPropertyDetail = () => {
         </aside>
       </div>
 
-      {data.description && (
-        <section className="vera-pub-detail__section">
-          <h2 className="vera-pub-detail__h2">Descripción</h2>
-          <p className="vera-pub-detail__desc">{data.description}</p>
-        </section>
-      )}
+      <section className="vera-pub-detail__section">
+        {data.description && (
+          <>
+            <h2 className="vera-pub-detail__h2">Descripción</h2>
+            <p className="vera-pub-detail__desc">{data.description}</p>
+          </>
+        )}
+        <p className="vera-pub-detail__disclaimer" data-testid="public-detail-disclaimer">
+          {AI_IMAGE_DISCLAIMER}
+        </p>
+      </section>
 
       {data.amenities?.length > 0 && (
         <section className="vera-pub-detail__section">

@@ -127,6 +127,17 @@ _CATEGORY = {
 }
 _OPERATION = {"venta": "Venta", "alquiler": "Alquiler", "alquiler_temporario": "Alquiler temporal"}
 
+_AI_IMAGE_DISCLAIMER = (
+    "Algunas imágenes de esta publicación pueden haber sido optimizadas digitalmente "
+    "mediante inteligencia artificial con fines ilustrativos, con el objetivo de mostrar "
+    "el potencial de la propiedad. Las características reales deberán verificarse durante la visita."
+)
+
+
+def _description_with_disclaimer(prop: dict) -> str:
+    base = (prop.get("description") or prop.get("title") or "").strip()
+    return f"{base}\n\n{_AI_IMAGE_DISCLAIMER}" if base else _AI_IMAGE_DISCLAIMER
+
 
 def _payload(prop: dict, images: list[dict]) -> dict:
     pics = [{"source": i["url"]} for i in images if i.get("url")][:12]
@@ -141,7 +152,7 @@ def _payload(prop: dict, images: list[dict]) -> dict:
         "listing_type_id": "silver",
         "condition": "not_specified",
         "pictures": pics,
-        "description": {"plain_text": prop.get("description") or prop.get("title") or ""},
+        "description": {"plain_text": _description_with_disclaimer(prop)},
         "location": {
             "address_line": prop.get("address") or "",
             "city": {"name": prop.get("city") or ""},
