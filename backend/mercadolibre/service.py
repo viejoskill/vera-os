@@ -124,11 +124,55 @@ async def disconnect() -> None:
 
 
 # --- Publicación ---------------------------------------------------------- #
-_CATEGORY = {
-    "casa": "MLA1466", "departamento": "MLA1472", "ph": "MLA1476",
-    "terreno": "MLA1493", "local": "MLA1499", "oficina": "MLA1497",
+# Para PUBLICAR (POST /items) ML exige la categoría HOJA por tipo+operación
+# (MLA1466/MLA1472... son domain_id de búsqueda, NO categorías publicables).
+# La categoría real se resuelve dinámicamente vía domain_discovery; este mapa
+# es solo fallback si la API de discovery no responde.
+_CATEGORY_FALLBACK = {
+    ("casa", "venta"): "MLA401685",
+    ("casa", "alquiler"): "MLA401684",
+    ("casa", "alquiler_temporario"): "MLA401684",
+    ("departamento", "venta"): "MLA401686",
+    ("departamento", "alquiler"): "MLA401687",
+    ("departamento", "alquiler_temporario"): "MLA401687",
+    ("ph", "venta"): "MLA401685",
+    ("terreno", "venta"): "MLA50541",
+    ("local", "venta"): "MLA79242",
+    ("oficina", "venta"): "MLA79243",
 }
+_TYPE_LABEL = {
+    "casa": "casa", "departamento": "departamento", "ph": "ph",
+    "terreno": "terreno", "local": "local comercial", "oficina": "oficina",
+}
+_OP_LABEL = {"venta": "venta", "alquiler": "alquiler", "alquiler_temporario": "alquiler temporal"}
 _OPERATION = {"venta": "Venta", "alquiler": "Alquiler", "alquiler_temporario": "Alquiler temporal"}
+
+
+async def _resolve_listing(access: str, prop: dict) -> tuple[str, list[dict]]:
+    """Resuelve la categoría HOJA y atributos sugeridos (OPERATION_TYPE/PROPERTY_TYPE)
+    con /sites/MLA/domain_discovery/search. Cae al mapa fallback si falla."""
+    q = f"{_TYPE_LABEL.get(prop.get('type'), 'casa')} en {_OP_LABEL.get(prop.get('operation'), 'venta')}"
+    try:
+        async with httpx.AsyncClient(timeout=20) as h:
+            r = await h.get(
+                f"{config.MELI_API}/sites/MLA/domain_discovery/search",
+                params={"q": q, "limit": 1},
+                headers={"Authorization": f"Bearer {access}"},
+            )
+        data = r.json() if r.status_code == 200 else []
+        if data and data[0].get("category_id"):
+            attrs = [
+                {"id": a["id"], "value_id": a["value_id"]}
+                for a in (data[0].get("attributes") or [])
+                if a.get("id") and a.get("value_id")
+            ]
+            return data[0]["category_id"], attrs
+    except Exception:  # noqa: BLE001
+        logger.warning("ML domain_discovery falló; uso categoría fallback")
+    fallback = _CATEGORY_FALLBACK.get(
+        (prop.get("type"), prop.get("operation"))
+    ) or _CATEGORY_FALLBACK.get((prop.get("type"), "venta"), "MLA401685")
+    return fallback, []
 
 _AI_IMAGE_DISCLAIMER = (
     "Algunas imágenes de esta publicación pueden haber sido optimizadas digitalmente "
@@ -163,25 +207,45 @@ def _num_attr(attr_id: str, value: int) -> dict | None:
     return {"id": attr_id, "value_name": str(value)}
 
 
-def _attributes(prop: dict) -> list[dict]:
+def _location(prop: dict) -> dict:
+    """Ubicación por coordenadas cuando existen (ML resuelve ciudad/estado y evita
+    el error item.location por nombres que no matchean)."""
+    loc: dict = {
+        "address_line": prop.get("address") or "",
+        "neighborhood": {"name": prop.get("neighborhood") or ""},
+        "city": {"name": prop.get("city") or ""},
+        "state": {"name": prop.get("province") or "Buenos Aires"},
+    }
+    lat, lng = prop.get("latitude"), prop.get("longitude")
+    if lat is not None and lng is not None:
+        loc["latitude"] = lat
+        loc["longitude"] = lng
+    return loc
+
+
+def _attributes(prop: dict, discovered: list[dict]) -> list[dict]:
     total = _int(prop.get("lot_area_m2")) or _int(prop.get("area_m2"))
     covered = _int(prop.get("area_m2"))
-    op = _OPERATION.get(prop.get("operation"), "Venta")
-    attrs: list[dict | None] = [
-        {"id": "OPERATION", "value_name": op},
+    seen = {a["id"] for a in discovered}
+    attrs: list[dict] = list(discovered)
+    if "OPERATION" not in seen and "OPERATION_TYPE" not in seen:
+        attrs.append({"id": "OPERATION", "value_name": _OPERATION.get(prop.get("operation"), "Venta")})
+    for a in (
         _area_attr("TOTAL_AREA", total),
         _area_attr("COVERED_AREA", covered),
         _num_attr("BEDROOMS", _int(prop.get("bedrooms"))),
         _num_attr("FULL_BATHROOMS", _int(prop.get("bathrooms"))),
-    ]
-    return [a for a in attrs if a]
+    ):
+        if a and a["id"] not in seen:
+            attrs.append(a)
+    return attrs
 
 
-def _payload(prop: dict, images: list[dict]) -> dict:
+def _payload(prop: dict, images: list[dict], category_id: str, discovered: list[dict]) -> dict:
     pics = [{"source": i["url"]} for i in images if i.get("url")][:12]
     return {
         "title": (prop.get("title") or "Propiedad")[:60],
-        "category_id": _CATEGORY.get(prop.get("type"), "MLA1466"),
+        "category_id": category_id,
         "price": prop.get("price") or 1,
         "currency_id": "USD" if (prop.get("currency") == "USD") else "ARS",
         "available_quantity": 1,
@@ -190,20 +254,16 @@ def _payload(prop: dict, images: list[dict]) -> dict:
         "condition": "not_specified",
         "pictures": pics,
         "description": {"plain_text": _description_with_disclaimer(prop)},
-        "location": {
-            "address_line": prop.get("address") or "",
-            "city": {"name": prop.get("city") or ""},
-            "state": {"name": prop.get("province") or "Buenos Aires"},
-            "neighborhood": {"name": prop.get("neighborhood") or ""},
-        },
-        "attributes": _attributes(prop),
+        "location": _location(prop),
+        "attributes": _attributes(prop, discovered),
     }
 
 
 async def publish(prop: dict, images: list[dict], existing_item_id: str | None) -> dict:
     """Crea (POST /items) o actualiza (PUT /items/{id}) el aviso. Devuelve item id + permalink."""
     access = await _valid_token()
-    payload = _payload(prop, images)
+    category_id, discovered = await _resolve_listing(access, prop)
+    payload = _payload(prop, images, category_id, discovered)
     async with httpx.AsyncClient(timeout=40) as h:
         headers = {"Authorization": f"Bearer {access}", "Content-Type": "application/json"}
         if existing_item_id:
