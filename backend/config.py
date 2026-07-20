@@ -28,6 +28,17 @@ CRM_SUPABASE_KEY = os.environ.get("CRM_SUPABASE_KEY") or None
 def crm_configured() -> bool:
     return bool(CRM_SUPABASE_URL and CRM_SUPABASE_KEY)
 
+
+# Mercado Libre (API real). App del vendedor Varela. Secret solo en backend.
+MELI_APP_ID = os.environ.get("MELI_APP_ID") or None
+MELI_CLIENT_SECRET = os.environ.get("MELI_CLIENT_SECRET") or None
+MELI_AUTH_HOST = os.environ.get("MELI_AUTH_HOST", "https://auth.mercadolibre.com.ar")
+MELI_API = "https://api.mercadolibre.com"
+
+
+def meli_configured() -> bool:
+    return bool(MELI_APP_ID and MELI_CLIENT_SECRET)
+
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY") or None
 
 # Publication channels the agent can operate today (status board). Scalable: add

@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Globe, Loader2, RotateCcw, ExternalLink, Link2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Globe, Loader2, RotateCcw, ExternalLink, Link2, Plug } from 'lucide-react';
 import { Button } from '@vera/ui';
+import { env } from '@vera/config';
 import { publicationService } from '@vera/services';
 import type { PublicationsMap } from '@vera/repositories';
 import {
@@ -28,6 +30,20 @@ export const ChannelsSection = ({
   const [lastAction, setLastAction] = useState<Record<string, 'publish' | 'update' | 'unpublish'>>({});
   const [editing, setEditing] = useState<string | null>(null);
   const [draftUrl, setDraftUrl] = useState('');
+  const [mlError, setMlError] = useState('');
+
+  const { data: mlStatus } = useQuery<{ connected: boolean; nickname?: string }>({
+    queryKey: ['ml-status'],
+    queryFn: async () => (await fetch(`${env.backendUrl}/api/ml/status`)).json(),
+    staleTime: 60_000,
+  });
+  const mlConnected = !!mlStatus?.connected;
+
+  const connectMl = async () => {
+    const res = await fetch(`${env.backendUrl}/api/ml/oauth/start?origin=${encodeURIComponent(window.location.origin)}`);
+    const { auth_url } = await res.json();
+    window.location.href = auth_url;
+  };
 
   if (!propertyId) {
     return (
@@ -42,6 +58,34 @@ export const ChannelsSection = ({
     action: 'publish' | 'update' | 'unpublish',
     url?: string,
   ) => {
+    // Mercado Libre: API real (publicar/actualizar/finalizar).
+    if (channel === 'mercadolibre') {
+      setBusy(channel);
+      setLastAction((m) => ({ ...m, [channel]: action }));
+      setPubs((p) => ({ ...p, [channel]: { ...p[channel], status: 'syncing' } }));
+      try {
+        const path = action === 'unpublish' ? 'close' : 'publish';
+        const res = await fetch(`${env.backendUrl}/api/ml/listings/${propertyId}/${path}`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.detail || 'Error de Mercado Libre');
+        setPubs((p) => ({
+          ...p,
+          mercadolibre: {
+            ...p.mercadolibre,
+            status: data.status === 'none' ? 'none' : 'published',
+            url: data.url || '',
+            lastSync: new Date().toISOString(),
+          },
+        }));
+      } catch (e) {
+        setPubs((p) => ({ ...p, mercadolibre: { ...p.mercadolibre, status: 'error' } }));
+        setMlError(e instanceof Error ? e.message : 'Error de Mercado Libre');
+      } finally {
+        setBusy(null);
+        setEditing(null);
+      }
+      return;
+    }
     setBusy(channel);
     setLastAction((m) => ({ ...m, [channel]: action }));
     setPubs((p) => ({ ...p, [channel]: { ...p[channel], status: 'syncing' } }));
@@ -71,6 +115,8 @@ export const ChannelsSection = ({
         const errored = state === 'error';
         const url = record?.url || '';
         const isWeb = ch.id === 'web-varela';
+        const isMl = ch.id === 'mercadolibre';
+        const autoLink = isWeb || isMl;
         const webUrl = `${window.location.origin}/web/${propertyId}`;
         return (
           <div key={ch.id} className="vera-channel" data-testid={`channel-${ch.id}`}>
@@ -99,6 +145,13 @@ export const ChannelsSection = ({
             </div>
 
             {ch.enabled ? (
+              isMl && !mlConnected ? (
+                <div className="vera-channel__actions">
+                  <Button type="button" variant="primary" size="sm" data-testid="ml-connect" onClick={connectMl}>
+                    <Plug size={14} /> Conectar Mercado Libre
+                  </Button>
+                </div>
+              ) : (
               <div className="vera-channel__actions">
                 <span className="vera-channel__sync">{published ? relativeTime(record?.lastSync) : ''}</span>
                 {errored ? (
@@ -107,7 +160,7 @@ export const ChannelsSection = ({
                   </Button>
                 ) : published ? (
                   <>
-                    {!isWeb && (
+                    {!autoLink && (
                       <button
                         type="button"
                         className="vera-ai-action"
@@ -117,11 +170,16 @@ export const ChannelsSection = ({
                         <Link2 size={13} /> {url ? 'Editar link' : 'Agregar link'}
                       </button>
                     )}
+                    {isMl && url && (
+                      <a className="vera-channel__link" href={url} target="_blank" rel="noreferrer" data-testid={`view-listing-${ch.id}`}>
+                        <ExternalLink size={12} /> Ver aviso
+                      </a>
+                    )}
                     <Button type="button" variant="ghost" size="sm" disabled={isBusy} data-testid={`update-${ch.id}`} onClick={() => act(ch.id, 'update')}>
                       Actualizar
                     </Button>
                     <Button type="button" variant="secondary" size="sm" disabled={isBusy} data-testid={`unpublish-${ch.id}`} onClick={() => act(ch.id, 'unpublish')}>
-                      Despublicar
+                      {isMl ? 'Finalizar' : 'Despublicar'}
                     </Button>
                   </>
                 ) : (
@@ -130,11 +188,16 @@ export const ChannelsSection = ({
                   </Button>
                 )}
               </div>
+              )
             ) : (
               <span className="vera-channel__soon">Próximamente</span>
             )}
 
-            {editing === ch.id && !isWeb && (
+            {isMl && mlError && (
+              <p className="vera-modal__error" data-testid="ml-error">{mlError}</p>
+            )}
+
+            {editing === ch.id && !autoLink && (
               <div className="vera-channel__linkedit" data-testid={`link-edit-${ch.id}`}>
                 <input
                   type="url"
