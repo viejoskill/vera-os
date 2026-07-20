@@ -239,6 +239,10 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
         if (detail.archived) await propertyService.restore(propertyId);
         await propertyService.updateProperty(propertyId, { status: target });
       }
+      // Reflejo inmediato en la UI (sin esperar el refetch).
+      queryClient.setQueryData(['property', propertyId], (prev: PropertyDetail | undefined) =>
+        prev ? { ...prev, status: target === 'archived' ? prev.status : target, archived: target === 'archived' } : prev,
+      );
       await queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
       await queryClient.invalidateQueries({ queryKey: ['properties'] });
       await queryClient.invalidateQueries({ queryKey: ['today'] });
