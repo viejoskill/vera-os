@@ -600,6 +600,16 @@ Usuario decidió: **VERA = única fuente de verdad**; `www.varelapropiedadescde.
 - Definición de "Workspace Propiedades terminado": CRUD ✅, Fotos ✅, Documentos ✅, Propietarios ✅, Publicación Web sobre dominio propio (pendiente deploy+dominio), Publicación Mercado Libre (pendiente deploy+redirect prod).
 
 
+## "Publicar en Web" escribe en la web ACTUAL de Varela (CRM Legacy) — 2026-07-20
+Decisión del usuario (revisada): NO reemplazar la web actual todavía. La web `www.varelapropiedadescde.com.ar` es una página estática que lee EN VIVO la tabla `propiedades` del CRM Supabase (`fwwzjynerfghqsakkyvq`) y muestra toda propiedad con `estado` ∈ {Disponible, Reservada, Vendida} (query verificada en el JS del sitio). Objetivo del sprint: que "Publicar en Web" haga aparecer la propiedad en ESA web.
+- **Driver desacoplado** `backend/web_publisher.py` (canal `web-varela`): `publish()` hace upsert en `propiedades` (mapeo VERA→CRM: type→tipo, operation→operacion, status→estado [active=Disponible, reserved=Reservada, sold=Vendida], price→precio, address/neighborhood/city/province, rooms/bedrooms/bathrooms, area_m2→mts_cubiertos, lot_area_m2→mts, amenities, fotos[]=URLs firmadas TTL ~10 años de las imágenes de VERA, codigo). `unpublish()` oculta poniendo `estado='Pausada'` (la web no lo muestra; fila conservada). `web_url()` → `https://www.varelapropiedadescde.com.ar/?propiedad=<legacyId>`.
+- **Idempotencia**: id de la fila web = `legacy_id` (importadas) o `vera-<id>` (nacidas en VERA).
+- **Wiring**: `routes_properties.py` `set_publication` llama publish/unpublish para `web-varela` (502 si falla) y setea `publications['web-varela'].url` al link real del sitio. `update_property` hace **auto-resync** best-effort: si está publicada, re-publica al Guardar (refleja precio/fotos/estado/descripción). Frontend ya cableado (`ApiPublicationGateway` → mismo endpoint).
+- **BLOQUEO RESUELTO**: `propiedades` tiene trigger que inserta en `historial_precios`; la key `anon/publishable` NO puede escribir ahí (RLS 42501) → cualquier UPDATE con `precio` fallaba (INSERT nuevo sí funcionaba). Solución: usar **service_role**. Nuevo env `CRM_SUPABASE_WRITE_KEY` (service_role, en backend/.env, SOLO server-side) usado por `web_publisher._headers()`; cae a la publishable si no está. `config.CRM_SUPABASE_WRITE_KEY`.
+- **Verificado (curl + UI)**: publicar nueva, cambiar precio+estado con auto-resync, re-publicar sobre existente, despublicar/ocultar; UI muestra "Publicada" (verde) + "Ver en la web" + Actualizar/Despublicar. Todas las pruebas limpiadas de la base.
+- **PENDIENTE DE DEPLOY**: todo esto está en PREVIEW. Requiere REDEPLOY a producción; el env `CRM_SUPABASE_WRITE_KEY` debe viajar en el deploy. Recordar también el redirect de ML en prod.
+
+
 
 
 
