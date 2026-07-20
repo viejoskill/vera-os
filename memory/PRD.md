@@ -587,6 +587,19 @@ Tres mejoras sobre `ExpressSection.tsx` (opciones 1/3/4 elegidas por el usuario)
 - **Usar y guardar (op.3)**: prop `persist?(patch)` que baja desde `PropertyWorkspace` (`persistField`, solo en propiedad EXISTENTE → `propertyService.updateProperty` + invalida caches + pill "Guardado"). En existente el botón dice **"Usar y guardar"** y aplica+persiste en un paso; en propiedad nueva (sin id) dice "Usar" y solo aplica al form (se guarda con "Guardar"/"Guardar borrador"). Feedback `savedKey` → "Guardado" transitorio.
 - Verificado: screenshot en propiedad existente (ML/ZP editables + "Generar otro" + "Usar y guardar"), curl de los 3 modes de `/api/ai/content`, tsc limpio.
 
+## Contenido comercial A PRUEBA DE ERRORES (Título/Descripción = campos del form) — 2026-07-20
+Bug reportado (producción): usuario cargó, dio "Guardar", propiedad quedó `active` pero título y descripción VACÍOS en la base (verificado por curl: `title=''`, `description=''`). Causa: el contenido de la IA vivía en estado local y solo llegaba al form al tocar "Usar"; si guardaban sin "Usar", se guardaba vacío.
+- **Fix**: `ExpressSection.tsx` reescrito. Título (`manual-title`) y Descripción (`manual-description`) ahora son campos CONTROLADOS del formulario (`value={watch('title'/'description')}` + `setValue` onChange). Lo que se ve = lo que se guarda con "Guardar". Se eliminó el paso "Usar"/"Usar y guardar" y la prop `persist` (y `persistField` en `PropertyWorkspace`). "Generar publicación completa" y "Generar con VERA" (por campo) escriben directo al form vía `setValue`. Portales ML/Zonaprop siguen editables locales solo para copiar (no se persisten).
+- Verificado en preview: crear propiedad + escribir título/descripción + un solo "Guardar" → `title` y `description` persistidos en la base (curl). tsc limpio.
+- **PENDIENTE DE DEPLOY**: este fix (y toda la integración ML) está en PREVIEW; producción corre código viejo. Requiere REDEPLOY. La caja "vuelve sin hacer nada" de Mercado Libre en producción se explica porque los endpoints `/api/ml/*` no existen en el deploy viejo.
+
+## Decisión de arquitectura — Web pública definitiva (2026-07-20)
+Usuario decidió: **VERA = única fuente de verdad**; `www.varelapropiedadescde.com.ar` pasa a ser el sitio público de VERA. Sin CRM Legacy, sin sync, sin dos sistemas. El `/web` ya lee en vivo de VERA (arquitectura ya correcta).
+- Custom domain: Emergent soporta "Link domain" → "Entri" (DNS), SSL automático, www + apex, sin costo extra (dentro del fee de deploy). Cambios de código requieren REDEPLOY manual.
+- PENDIENTE (esperando alcance del usuario): Home/landing, contacto/leads (tel/WhatsApp/form), buscador de texto libre, SEO (title/meta/OG/sitemap; hoy es SPA con title "VERA OS"), y servir el sitio público en la raíz del dominio con el sistema interno en ruta aparte.
+- Definición de "Workspace Propiedades terminado": CRUD ✅, Fotos ✅, Documentos ✅, Propietarios ✅, Publicación Web sobre dominio propio (pendiente deploy+dominio), Publicación Mercado Libre (pendiente deploy+redirect prod).
+
+
 
 
 

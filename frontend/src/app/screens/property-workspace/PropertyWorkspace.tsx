@@ -287,20 +287,6 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
     else navigate('/propiedades');
   };
 
-  // Persistir un campo puntual (para "Usar y guardar" del contenido comercial).
-  // Solo en propiedades existentes; en una nueva se aplica al form y se guarda con "Guardar".
-  const persistField = async (patch: Partial<Property>) => {
-    if (isNew) return;
-    try {
-      await propertyService.updateProperty(propertyId, patch);
-      await queryClient.invalidateQueries({ queryKey: ['properties'] });
-      await queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
-      notify('saved');
-    } catch {
-      showToast({ message: 'No pudimos guardar el cambio.', tone: 'default' });
-    }
-  };
-
   // Estado de la propiedad — acción rápida de un clic desde el encabezado.
   const currentStatus: LifecycleStatus = detail
     ? detail.archived
@@ -484,7 +470,7 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
             {/* 5 — Comercialización (título, descripción y textos para portales) */}
             <div id="ws-section-commercialization">
               <Panel title="Comercialización" description="Título, descripción y textos para portales. VERA propone; vos decidís.">
-                <ExpressSection persist={isNew ? undefined : persistField} />
+                <ExpressSection />
               </Panel>
             </div>
 
