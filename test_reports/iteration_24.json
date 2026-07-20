@@ -1,0 +1,35 @@
+{
+  "summary": "Sprint 'Property Workspace v1.0' UI E2E validation. Login OK con qa_temp@vera.test. 28 propiedades reales listadas. Ficha reestructurada: código VAR-xxxxx en encabezado + barra de estado (4 botones) OK; campo Título eliminado de Datos; orden de secciones correcto (Datos → Características → Amenities → Fotos → Propietario → Documentos → Comercialización → Publicaciones → Estadísticas). Cambio de estado 1 clic persiste tras F5 (verificado Reservada). Selector de Propietario incluye Sebastián Gómez; modal '+ Nuevo propietario' crea Ana Torres, se cierra y la tarjeta owner-details muestra el nombre nuevo sin recargar. 'Abrir en Studio' navega a /studio?property=<id>. Publicaciones incluye web-varela, mercadolibre (id correcto), zonaprop, argenprop, instagram, facebook. Estadísticas: Visitas con valor real + resto 'Próximamente'. Único hallazgo: el resaltado del botón activo de la barra de estado puede tardar unos segundos en refrescarse tras el clic (el PATCH persiste correctamente y al F5 se ve el nuevo estado). Es un pequeño delay de refetch de react-query, no bloquea el flujo.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "PropertyWorkspace / status-bar",
+        "issue": "Al hacer click en un botón de estado (p.ej. status-reserved), el resaltado 'active' del botón no siempre se refresca en 3-4s tras la mutación (aunque el estado sí se persiste y aparece correctamente tras un F5). Con esperas más largas (>=5s) sí termina refrescándose. Sugerencia: en changeStatus, al éxito, hacer un setQueryData/optimistic update sobre ['property', propertyId] con el nuevo status para reflejar el cambio de forma inmediata en la UI, o bien await queryClient.refetchQueries({ queryKey: ['property', propertyId] }) en lugar de sólo invalidateQueries.",
+        "selector": "[data-testid=\"status-bar\"] .vera-status-bar__btn--active",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Nice-to-have (LOW): actualización optimista del estado en PropertyWorkspace.changeStatus para que el botón activo de la barra refleje el cambio de manera inmediata (sin depender del refetch). Ej.: queryClient.setQueryData(['property', propertyId], (prev) => prev ? { ...prev, status: target, archived: target === 'archived' } : prev) antes/después del await."
+  ],
+  "critical_code_review_comments": [
+    "PropertyWorkspace.tsx: changeStatus invalida ['property', id] pero no fuerza refetch inmediato ni hace optimistic update — provoca un pequeño lag visual en el botón activo. Considerar setQueryData optimista para UX de '1 clic'.",
+    "OwnerSection: buen patrón — useCreatePerson refresca cache de useOwners, la selección automática vía setValue funciona; owner-details aparece sin recargar. OK.",
+    "CommercializationSection: cumple 'solo estado + Abrir en Studio'. OK.",
+    "StatsSection: Visitas usa datos reales de visitService, resto marcado 'Próximamente'. OK.",
+    "ChannelsSection: incluye mercadolibre (habilitado) + zonaprop/argenprop/instagram/facebook como 'Próximamente'. IDs bien definidos en channels-catalog. OK."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped por request)", "frontend": "100% de los criterios de aceptación del sprint (con nota LOW sobre delay visual del status)"},
+  "test_credentials": "qa_temp@vera.test / QaPilot!2026xz (definido en /app/memory/test_credentials.md)",
+  "seed_data_creation": "Se creó vía modal 'Ana Torres' (rol propietario, teléfono +54 11 4444-0000, email ana_<timestamp>@test.com). La propiedad de prueba (VAR-432272) quedó con estado FINAL 'Disponible' (limpio).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Todos los criterios del sprint Property Workspace v1.0 pasaron. Único punto abierto: mejora UX opcional en el refresco inmediato del botón activo de status-bar (ver action_items). El resto del flujo (código, orden de secciones, sin campo Título, modal de propietario con auto-selección, Studio, canales, stats) está OK.",
+  "rca of the issue": "Delay visual en status-bar: PropertyWorkspace.changeStatus hace await propertyService.updateProperty(...) + queryClient.invalidateQueries(['property', id]). invalidateQueries sólo marca stale y dispara refetch; el tiempo entre marca->refetch->render->re-render con el nuevo detail.status puede pasar los ~3s. Al hacer F5, el fetch inicial trae ya el status actualizado, por eso persiste. Fix propuesto: optimistic update con setQueryData + refetchQueries (no sólo invalidate)."
+}
