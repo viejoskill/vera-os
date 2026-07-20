@@ -8,6 +8,8 @@ import { VeraBotWorkspace } from '@app/vera-bot';
 import { IntegrationsScreen } from '@app/integraciones';
 import { LoginScreen } from '@app/screens/LoginScreen';
 import { PlaceholderScreen } from '@app/screens/PlaceholderScreen';
+import { PublicListing } from '@app/public/PublicListing';
+import { PublicPropertyDetail } from '@app/public/PublicPropertyDetail';
 import { AuthProvider } from '@app/auth/AuthProvider';
 import { RequireAuth } from '@app/auth/RequireAuth';
 
@@ -24,6 +26,8 @@ export const VeraOS = () => (
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginScreen />} />
+          <Route path="/web" element={<PublicListing />} />
+          <Route path="/web/:id" element={<PublicPropertyDetail />} />
           <Route element={<RequireAuth />}>
             <Route element={<AppLayout />}>
               <Route index element={<Navigate to="/hoy" replace />} />

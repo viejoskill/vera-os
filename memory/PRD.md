@@ -543,6 +543,15 @@ Reestructuración de la ficha al flujo natural inmobiliario + base de la App Per
 - **Estadísticas** (`StatsSection`): métricas solo lectura — Visitas reales + Consultas/Favoritos/Conversión/Rendimiento/Insights ("Próximamente"). TrackingSection (visitas) queda bajo Estadísticas.
 - **DDL RESUELTO 2026-07-20**: el usuario creó la tabla `people`. Flujo verificado E2E por testing agent (100% de criterios): orden de secciones, código VAR en encabezado, barra de estado 1 clic (persiste tras F5), Título eliminado, modal "+ Nuevo propietario" crea Persona real y auto-asocia sin recargar, Comercialización→Studio, Publicaciones con IG/FB "Próximamente", Estadísticas con Visitas reales. Hallazgo LOW (delay de resaltado del botón de estado) corregido con optimistic update (`queryClient.setQueryData(['property', id], ...)`) en `changeStatus`. Personas de prueba borradas → tabla `people` limpia para propietarios reales.
 
+## Sprint "Publicaciones + Sitio Web público (VERA fuente única)" (2026-07-20)
+El "Sitio Web" pasa a ser una **vista pública de VERA que lee EN VIVO** la cartera (sin sync ni duplicación, sin escribir al CRM viejo). Verificado E2E (curl + screenshots).
+- **Backend público** (`routes_public.py`, montado en server.py): `GET /api/public/listings` (activas + publicadas en canal `web-varela`, no archivadas) y `GET /api/public/listings/{id}` (404 si no cumple). Sin auth, sin datos privados (dropea ownerId/ownerObservations/publications/documents). Reusa serializers (signed URLs).
+- **NO requiere columna nueva**: el estado "publicado en web" vive en el jsonb `publications['web-varela'].status`. "Publicar en Web" = botón Publicar del canal web (ya existente).
+- **Vista pública** (fuera de RequireAuth): rutas `/web` (grilla `PublicListing.tsx`) y `/web/:id` (`PublicPropertyDetail.tsx` con galería). Marca "VARELA PROPIEDADES", tema oscuro, responsive. CSS `vera-pub*` en index.css.
+- **Automatización inherente**: al marcar Vendida/Archivada la propiedad **desaparece sola** de la web (la query pública exige status=='active' y no archivada). Precio/fotos/descripción/portada se reflejan solos porque se leen en cada request. Verificado: prop sold → 404; listings excluye no-activas (23 de 28 visibles).
+- **Panel de Publicaciones** (`ChannelsSection`): Web Varela + Mercado Libre operativos con Estado/última sync/URL/Publicar/Actualizar/Despublicar; Zonaprop/Argenprop/Instagram/Facebook "Próximamente". El canal Web muestra link automático **"Ver en la web"** → `/web/{id}` (no requiere pegar URL).
+- **Mercado Libre**: queda como **panel controlado** (operado manualmente: publicar/actualizar/despublicar + ML link/estado). La API real de ML (OAuth publish automático, ML ID, detección de errores) queda PENDIENTE de credenciales del usuario (app de developers.mercadolibre.com Client ID/Secret + cuenta vendedor) → usar integration_expert cuando las provea.
+
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.

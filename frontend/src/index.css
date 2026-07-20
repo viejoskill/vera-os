@@ -5551,3 +5551,275 @@ p {
 .vera-status-bar__btn--active.vera-status-bar__btn--st-reserved { background: #d97706; }
 .vera-status-bar__btn--active.vera-status-bar__btn--st-sold { background: #2563eb; }
 .vera-status-bar__btn--active.vera-status-bar__btn--st-archived { background: #6b7280; }
+
+/* ===================== Vista pública de VERA (/web) ===================== */
+.vera-pub {
+  min-height: 100vh;
+  background: #0e0f13;
+  color: #f4f4f5;
+  font-family: var(--vera-font-family);
+  padding: 0 0 60px;
+}
+.vera-pub__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: sticky;
+  top: 0;
+  background: rgba(14, 15, 19, 0.9);
+  backdrop-filter: blur(12px);
+  z-index: 5;
+}
+.vera-pub__brand {
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  font-size: 15px;
+  color: #fbe000;
+}
+.vera-pub__brand span {
+  color: #f4f4f5;
+  margin-left: 6px;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  font-size: 11px;
+}
+.vera-pub__count {
+  font-size: 13px;
+  color: #a1a1aa;
+}
+.vera-pub__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #f4f4f5;
+  text-decoration: none;
+  font-size: 14px;
+}
+.vera-pub__back:hover { color: #fbe000; }
+.vera-pub__hero {
+  padding: 52px 32px 28px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.vera-pub__h1 {
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 700;
+  margin: 0;
+}
+.vera-pub__sub {
+  color: #a1a1aa;
+  margin: 8px 0 0;
+}
+.vera-pub__empty {
+  text-align: center;
+  color: #a1a1aa;
+  padding: 80px 20px;
+}
+.vera-pub__footer {
+  text-align: center;
+  color: #71717a;
+  font-size: 12px;
+  padding: 40px 0 0;
+}
+.vera-pub__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+.vera-pub-card {
+  background: #17181d;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.18s ease, border-color 0.18s ease;
+  display: flex;
+  flex-direction: column;
+}
+.vera-pub-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(251, 224, 0, 0.5);
+}
+.vera-pub-card__media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: #23242a;
+}
+.vera-pub-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.vera-pub-card__noimg {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #23242a, #17181d);
+}
+.vera-pub-card__op {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.vera-pub-card__body {
+  padding: 16px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.vera-pub-card__price {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fbe000;
+}
+.vera-pub-card__title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.vera-pub-card__loc {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: #a1a1aa;
+}
+.vera-pub-card__specs {
+  display: flex;
+  gap: 14px;
+  margin-top: 4px;
+  color: #d4d4d8;
+  font-size: 13px;
+}
+.vera-pub-card__specs span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.vera-pub-card__code {
+  font-size: 11px;
+  color: #71717a;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+.vera-pub-detail {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 32px 0;
+  display: grid;
+  grid-template-columns: 1.7fr 1fr;
+  gap: 32px;
+}
+.vera-pub-detail__main {
+  width: 100%;
+  border-radius: 16px;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  display: block;
+}
+.vera-pub-detail__thumbs {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.vera-pub-detail__thumb {
+  width: 84px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  background: #23242a;
+}
+.vera-pub-detail__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.vera-pub-detail__thumb--active {
+  border-color: #fbe000;
+}
+.vera-pub-detail__info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.vera-pub-detail__price {
+  font-size: 30px;
+  font-weight: 800;
+  color: #fbe000;
+}
+.vera-pub-detail__title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.3;
+}
+.vera-pub-detail__specs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 10px;
+  color: #d4d4d8;
+  font-size: 14px;
+}
+.vera-pub-detail__specs span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.vera-pub-detail__section {
+  max-width: 1200px;
+  margin: 32px auto 0;
+  padding: 0 32px;
+}
+.vera-pub-detail__h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+.vera-pub-detail__desc {
+  color: #d4d4d8;
+  line-height: 1.7;
+  white-space: pre-line;
+  max-width: 820px;
+}
+.vera-pub-detail__amenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.vera-pub-detail__amenity {
+  background: #17181d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  text-transform: capitalize;
+  color: #e4e4e7;
+}
+@media (max-width: 860px) {
+  .vera-pub-detail {
+    grid-template-columns: 1fr;
+  }
+}

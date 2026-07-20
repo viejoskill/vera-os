@@ -70,6 +70,8 @@ export const ChannelsSection = ({
         const published = state === 'published';
         const errored = state === 'error';
         const url = record?.url || '';
+        const isWeb = ch.id === 'web-varela';
+        const webUrl = `${window.location.origin}/web/${propertyId}`;
         return (
           <div key={ch.id} className="vera-channel" data-testid={`channel-${ch.id}`}>
             <div className="vera-channel__id">
@@ -83,7 +85,12 @@ export const ChannelsSection = ({
                     <><span className={`vera-dot vera-dot--${meta.dot}`} /> {ch.enabled ? meta.label : 'Próximamente'}</>
                   )}
                 </span>
-                {published && url && (
+                {published && isWeb && (
+                  <a className="vera-channel__link" href={webUrl} target="_blank" rel="noreferrer" data-testid={`view-listing-${ch.id}`}>
+                    <ExternalLink size={12} /> Ver en la web
+                  </a>
+                )}
+                {published && !isWeb && url && (
                   <a className="vera-channel__link" href={url} target="_blank" rel="noreferrer" data-testid={`view-listing-${ch.id}`}>
                     <ExternalLink size={12} /> Ver aviso
                   </a>
@@ -100,14 +107,16 @@ export const ChannelsSection = ({
                   </Button>
                 ) : published ? (
                   <>
-                    <button
-                      type="button"
-                      className="vera-ai-action"
-                      data-testid={`link-${ch.id}`}
-                      onClick={() => { setEditing(editing === ch.id ? null : ch.id); setDraftUrl(url); }}
-                    >
-                      <Link2 size={13} /> {url ? 'Editar link' : 'Agregar link'}
-                    </button>
+                    {!isWeb && (
+                      <button
+                        type="button"
+                        className="vera-ai-action"
+                        data-testid={`link-${ch.id}`}
+                        onClick={() => { setEditing(editing === ch.id ? null : ch.id); setDraftUrl(url); }}
+                      >
+                        <Link2 size={13} /> {url ? 'Editar link' : 'Agregar link'}
+                      </button>
+                    )}
                     <Button type="button" variant="ghost" size="sm" disabled={isBusy} data-testid={`update-${ch.id}`} onClick={() => act(ch.id, 'update')}>
                       Actualizar
                     </Button>
@@ -125,7 +134,7 @@ export const ChannelsSection = ({
               <span className="vera-channel__soon">Próximamente</span>
             )}
 
-            {editing === ch.id && (
+            {editing === ch.id && !isWeb && (
               <div className="vera-channel__linkedit" data-testid={`link-edit-${ch.id}`}>
                 <input
                   type="url"
