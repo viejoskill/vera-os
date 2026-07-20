@@ -530,9 +530,7 @@ Se reemplazó la migración simulada por la **importación de la cartera REAL** 
 - **Idempotencia**: por `legacy_id` (= `id` del CRM) + código comercial `codigo` (VAR-xxxxx). El importador **auto-detecta** si existen las columnas `legacy_id`/`codigo` y las persiste; si no, cae al mapa Mongo (idempotencia sigue funcionando) y `code` usa el fallback derivado del id. Serializer: `code = codigo || _property_code(id)`.
 - **Reset**: `POST /api/migration/reset?confirm=BORRAR-TODO` borra todas las propiedades + objetos de Storage + mapa Mongo. Se ejecutó (borró las 62 propiedades fake) y luego se importaron las 28 reales.
 - **Limpieza**: eliminado el exportador simulado `legacy_crm/` (y su montaje en `server.py`) + `LEGACY_EXPORT_URL`. Botón/Modal renombrados "Importar desde **CRM Varela**".
-- **PENDIENTE (DDL del usuario)**: correr en Supabase SQL Editor de VERA:
-  `alter table public.properties add column if not exists legacy_id text, add column if not exists codigo text; create index if not exists idx_properties_legacy_id on public.properties(legacy_id);`
-  (ya está en `supabase_schema.sql`). Tras correrlo, **re-importar** rellena `legacy_id` + `codigo` real (VAR-208896…) en las 28 existentes SIN duplicar (idempotente). Hasta entonces, el código comercial se muestra con el fallback derivado.
+- **PENDIENTE (DDL del usuario)**: RESUELTO 2026-07-20 — el usuario corrió el `ALTER TABLE`. Se re-importó (0 creadas, 28 actualizadas, sin re-bajar fotos): las 28 quedaron con `legacy_id` (id del CRM) y `codigo` real (VAR-432272, VAR-208954…) poblados. Idempotencia global activa. Las tarjetas muestran el código comercial real. Estado final: **workspace = solo cartera real (28), 0 fake, 0 duplicados; "Hoy" sin ruido de propiedades**.
 
 ## Notes for continuation (no chat history needed)
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
