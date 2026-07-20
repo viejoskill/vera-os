@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Clock,
@@ -25,12 +25,10 @@ import {
   CloudLightning,
   type LucideIcon,
 } from 'lucide-react';
-import { useToday } from '@app/hooks/useToday';
-import { useProperties } from '@app/hooks/useProperties';
+import { useInsights } from '@app/insights';
 import { useAuthUser } from '@app/auth/useAuthUser';
 import { useWeather } from '@app/hooks/useWeather';
 import { useDolar } from '@app/hooks/useDolar';
-import type { InboxRecommendation } from '@vera/types';
 
 /* --------------------------- Saludo / Fecha / Hora ---------------------- */
 const greetingText = (h: number) => (h < 12 ? 'Buen día' : h < 20 ? 'Buenas tardes' : 'Buenas noches');
@@ -53,51 +51,38 @@ export const GreetingWidget = () => {
   );
 };
 
-/* ----------------------------- Prioridades (VIE) ------------------------ */
-const recUrl = (r: InboxRecommendation): string => {
-  const t = r.target;
-  if (!t?.entityId) return '/propiedades';
-  const p = new URLSearchParams({ section: t.section });
-  if (t.focus) p.set('focus', t.focus);
-  return `/propiedades/${t.entityId}?${p.toString()}`;
-};
-
+/* ----------------------------- Prioridades (VERA Insights) -------------- */
 const PRIORITY_LABEL: Record<string, string> = {
-  alta: 'Alta prioridad',
-  atencion: 'Requiere atención',
-  lista: 'Al día',
+  high: 'Alta prioridad',
+  medium: 'Requiere atención',
+  low: 'Al día',
 };
 
-/** Prioridades de hoy — hero card: la foto principal de la propiedad como fondo,
- * con overlay, título, badge de prioridad y acción "Ver detalles". Muestra la
- * prioridad más importante del día. */
-export const PrioridadesWidget = () => {
-  const { data, isLoading } = useToday();
-  const { data: properties } = useProperties();
-  const navigate = useNavigate();
+const PRIORITY_CLASS: Record<string, string> = {
+  high: 'alta',
+  medium: 'atencion',
+  low: 'lista',
+};
 
-  const coverById = useMemo(() => {
-    const m = new Map<string, string>();
-    (properties ?? []).forEach((p) => {
-      if (p.coverImage) m.set(p.id, p.coverImage);
-    });
-    return m;
-  }, [properties]);
+/** Prioridad de hoy — muestra el ÚNICO insight más importante que detectó VERA
+ * (misma fuente que VERA Insights, el motor decide el orden). No lista propiedades:
+ * es el siguiente mejor paso del día. Clic → abre el destino sugerido. */
+export const PrioridadesWidget = () => {
+  const { data, isLoading } = useInsights();
+  const navigate = useNavigate();
 
   if (isLoading) return <p className="vera-muted">VERA está revisando tu día…</p>;
 
-  const top = (data?.recommendations ?? [])[0];
+  const top = (data?.insights ?? [])[0];
   if (!top)
     return <p className="vera-muted" data-testid="widget-body-prioridades">Todo al día. Sin pendientes urgentes ✨</p>;
 
-  const cover = top.target?.entity === 'property' ? coverById.get(top.target.entityId) : undefined;
-  const go = () => navigate(recUrl(top));
+  const go = () => navigate(top.link_route || '/propiedades');
 
   return (
     <div
-      className={`vera-w-prio-hero ${cover ? '' : 'vera-w-prio-hero--noimg'}`.trim()}
+      className="vera-w-prio-hero vera-w-prio-hero--noimg"
       data-testid="widget-body-prioridades"
-      style={cover ? { backgroundImage: `url("${cover}")` } : undefined}
       role="button"
       tabIndex={0}
       onClick={go}
@@ -106,9 +91,9 @@ export const PrioridadesWidget = () => {
       <div className="vera-w-prio-hero__scrim" aria-hidden="true" />
       <div className="vera-w-prio-hero__content">
         <h3 className="vera-w-prio-hero__title">{top.title}</h3>
-        <p className="vera-w-prio-hero__sub">{top.subject}</p>
+        <p className="vera-w-prio-hero__sub">{top.reason}</p>
         <div className="vera-w-prio-hero__foot">
-          <span className={`vera-w-prio-hero__badge vera-w-prio-hero__badge--${top.priority}`}>
+          <span className={`vera-w-prio-hero__badge vera-w-prio-hero__badge--${PRIORITY_CLASS[top.priority] ?? 'atencion'}`}>
             {PRIORITY_LABEL[top.priority] ?? 'Prioridad'}
           </span>
           <button
@@ -120,7 +105,7 @@ export const PrioridadesWidget = () => {
               go();
             }}
           >
-            Ver detalles <ArrowRight size={14} />
+            {top.link_label || 'Ver detalles'} <ArrowRight size={14} />
           </button>
         </div>
       </div>

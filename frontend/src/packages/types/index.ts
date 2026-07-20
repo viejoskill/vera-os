@@ -4,4 +4,3 @@ export * from './owner';
 export * from './document';
 export * from './studio';
 export * from './assistant';
-export * from './intelligence';

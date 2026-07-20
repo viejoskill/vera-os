@@ -10,7 +10,7 @@ const greeting = (): string => {
 };
 
 const TYPE_INFO: Record<string, { color: string; sing: string; plur: string }> = {
-  priority: { color: '#b06bf0', sing: 'propiedad para atender', plur: 'propiedades para atender' },
+  priority: { color: '#b06bf0', sing: 'asunto prioritario', plur: 'asuntos prioritarios' },
   risk: { color: '#f0932b', sing: 'riesgo detectado', plur: 'riesgos detectados' },
   opportunity: { color: '#46e08a', sing: 'oportunidad comercial', plur: 'oportunidades comerciales' },
   recommendation: { color: '#4aa3f0', sing: 'recomendación', plur: 'recomendaciones' },

@@ -106,8 +106,10 @@ class FollowUpRule(InsightRule):
 
 
 class PropertyHealthRule(InsightRule):
-    """Recommendation/Priority sobre datos REALES de la cartera: propiedades activas
-    sin fotos o sin publicar. Detecta hechos; el usuario decide."""
+    """Salud de la cartera — AGREGADA. VERA NO emite una tarjeta por propiedad:
+    resume el estado de toda la cartera en un único insight por situación
+    (propiedades sin publicar, propiedades sin fotos). El motor decide qué mostrar;
+    el usuario decide dónde profundizar. Detecta hechos reales; nunca ejecuta nada."""
 
     async def detect(self) -> list[Insight]:
         if not config.supabase_configured():
@@ -117,26 +119,50 @@ class PropertyHealthRule(InsightRule):
         except Exception:  # noqa: BLE001
             return []
 
+        active = [r for r in rows if not r.get("archived") and r.get("status") == "active"]
+        no_pub = [r for r in active if not (r.get("publications") or [])]
+        no_photos = [r for r in active if not (r.get("property_images") or [])]
+
         out: list[Insight] = []
-        for r in rows:
-            if r.get("archived") or r.get("status") != "active":
-                continue
-            pid = r.get("id", "")
-            title = r.get("title") or "Propiedad sin título"
-            if not (r.get("property_images") or []):
-                out.append(Insight(
-                    id=f"prop-photos-{pid}", type="recommendation", category="property_health",
-                    priority="medium", title=title, reason="Propiedad activa sin fotos cargadas.",
-                    suggested_action="Sumá al menos una foto de portada para fortalecer la publicación.",
-                    link_route="/propiedades", link_label="Abrir propiedad",
-                    signals=["Sin fotos"], meta={"property_id": pid},
-                ))
-            if not (r.get("publications") or []):
-                out.append(Insight(
-                    id=f"prop-pub-{pid}", type="priority", category="property_health",
-                    priority="high", title=title, reason="Propiedad activa sin publicar en portales.",
-                    suggested_action="Publicá esta propiedad en Mercado Libre / Zonaprop para captar consultas.",
-                    link_route="/propiedades", link_label="Abrir propiedad",
-                    signals=["Sin publicaciones"], meta={"property_id": pid},
-                ))
+
+        if no_pub:
+            n = len(no_pub)
+            noun = "propiedades" if n > 1 else "propiedad"
+            out.append(Insight(
+                id="cartera-sin-publicar",
+                type="priority",
+                category="property_health",
+                priority="high",
+                title=f"{n} {noun} sin publicar",
+                reason=(
+                    f"Tenés {n} {noun} activa{'s' if n > 1 else ''} que todavía no "
+                    f"{'están' if n > 1 else 'está'} publicada{'s' if n > 1 else ''} en portales."
+                ),
+                suggested_action="Publicalas en Mercado Libre / Zonaprop para empezar a captar consultas.",
+                link_route="/propiedades",
+                link_label="Ver propiedades",
+                signals=[f"{n} sin publicaciones"],
+                meta={"count": n, "property_ids": [r.get("id") for r in no_pub]},
+            ))
+
+        if no_photos:
+            n = len(no_photos)
+            noun = "propiedades" if n > 1 else "propiedad"
+            out.append(Insight(
+                id="cartera-sin-fotos",
+                type="recommendation",
+                category="property_health",
+                priority="medium",
+                title=f"{n} {noun} sin fotos",
+                reason=(
+                    f"{n} {noun} activa{'s' if n > 1 else ''} no "
+                    f"{'tienen' if n > 1 else 'tiene'} fotos cargadas."
+                ),
+                suggested_action="Sumá al menos una foto de portada para fortalecer las publicaciones.",
+                link_route="/propiedades",
+                link_label="Ver propiedades",
+                signals=[f"{n} sin fotos"],
+                meta={"count": n, "property_ids": [r.get("id") for r in no_photos]},
+            ))
+
         return out

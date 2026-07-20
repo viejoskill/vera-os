@@ -8,8 +8,4 @@ export * from './owner/owner-service';
 export * from './ai/ai-content-service';
 export * from './publication/publication-service';
 export * from './workspace/workspace-service';
-export * from './intelligence/intelligence-provider';
-export * from './intelligence/vera-intelligence-engine';
-export * from './intelligence/properties-provider';
-export * from './intelligence/intelligence-service';
 export * from './service-container';
