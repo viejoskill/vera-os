@@ -788,6 +788,10 @@ p {
   font-size: var(--vera-font-size-sm);
   color: var(--vera-color-text-secondary);
 }
+.vera-channel__status--published {
+  color: #22c55e;
+  font-weight: var(--vera-font-weight-medium);
+}
 .vera-channel__actions {
   display: flex;
   align-items: center;

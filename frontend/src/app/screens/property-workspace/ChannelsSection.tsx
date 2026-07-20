@@ -76,7 +76,7 @@ export const ChannelsSection = ({
               <span className="vera-channel__logo"><Globe size={18} /></span>
               <div>
                 <p className="vera-channel__name">{ch.label}</p>
-                <span className="vera-channel__status" data-testid={`channel-status-${ch.id}`}>
+                <span className={`vera-channel__status ${published ? 'vera-channel__status--published' : ''}`.trim()} data-testid={`channel-status-${ch.id}`}>
                   {isBusy ? (
                     <><Loader2 size={13} className="vera-spin" /> Sincronizando</>
                   ) : (
