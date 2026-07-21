@@ -91,6 +91,7 @@ async def people_table(
     _ensure()
     from people import table
 
+    pageSize = max(1, min(pageSize, 200))
     rows = await table.build_rows(
         role=role, query=query, facts=_parse_facts(facts),
         budget_min=budgetMin, budget_max=budgetMax,

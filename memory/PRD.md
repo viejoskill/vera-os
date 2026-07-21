@@ -735,3 +735,15 @@ Verificado: testing_agent iteration_30 (frontend 100%, backend 8/9 → el único
 - Swap mocks in `src/packages/services/service-container.ts` (single wiring point).
 - New App = new screen + feature-flag flip in `@vera/config` + route in `VeraOS.tsx`.
 - All visual values come from `@vera/design-tokens`; never hardcode.
+
+
+## Implemented (Sprint "Personas — Tabla configurable + Exportación" — 2026-07)
+App Personas ahora tiene DOS vistas con toggle (persistido en localStorage `vera:people:view`, default **Tabla**): **Tarjetas** (visual) y **Tabla** (data grid configurable enriquecida con conocimiento). Verificado 100% por testing agent (iteration_32): backend 16/16 pytest + frontend todos los flujos E2E, `tsc` limpio. Base pensada para reutilizar en el futuro módulo **Audiencias**.
+- **Filtros de negocio (no de base de datos), combinables con AND**: Rol, Relación con Varela, Intención, Tipo de propiedad de interés, Zona de interés (selects alimentados por `GET /api/people/facets`), Presupuesto mín./máx. (USD), Última interacción (7/30/90 días) y Nivel de confianza (Alta ≥0.85 / Media ≥0.6). Botón "Limpiar (N)".
+- **Columnas configurables**: menú con checkboxes por columna (catálogo de 15 keys, 9 por defecto), persistido en localStorage `vera:people:columns`.
+- **Selección de filas** (select-all + por fila) y **Exportación CSV / Excel** que respeta filtros, columnas visibles y la selección. Excel (`openpyxl`) profesional: encabezados, `auto_filter`, `freeze_panes`, ancho automático, fechas válidas (tz stripped → naive UTC).
+- **Backend** (`/app/backend/people/table.py`, `routes_people.py`): `GET /api/people/table` (rows enriquecidas + filtros AND multi-hecho + orden + paginación, pageSize clamp 1–200), `GET /api/people/facets`, `GET /api/people/export?format=csv|xlsx`. `build_rows` acepta `facts: list[(type,value)]`, `confidence_min`, `contacted_within_days`. `knowledge/store.summarize()` ahora expone `relationship`, `intent`, `propertyType`. `openpyxl==3.1.5` en `requirements.txt`.
+- **Frontend**: `DataTable.tsx` (grid genérico reutilizable en `@vera/ui`), `PeopleScreen` (contenedor + toggle), `PeopleTableView`, `PeopleFilters`, `PeopleCardsView`; gateway `table()/facets()/exportUrl()`; hooks `usePeopleTable`/`usePeopleFacets`.
+- **Backlog registrado (no bloqueante, del code review)**: OR-within-type si un filtro pasa a multi-valor; debounce en inputs de presupuesto; merge de columnas nuevas del catálogo cuando localStorage está desactualizado; hora local AR en Excel; export vía fetch+Blob si el backend suma JWT.
+- **Upcoming**: P0 promover "Operaciones" → "Hoy" (landing con actividad y prioridades del día); P1 Matching de propiedades con hechos del Knowledge Engine; P2 APIs reales Zonaprop/Argenprop; P2 módulo Audiencias reusando `DataTable`.
+
