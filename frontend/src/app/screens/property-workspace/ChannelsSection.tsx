@@ -197,11 +197,6 @@ export const ChannelsSection = ({
                         <Link2 size={13} /> {url ? 'Editar link' : 'Agregar link'}
                       </button>
                     )}
-                    {isMl && mlLink && (
-                      <a className="vera-channel__link" href={mlLink} target="_blank" rel="noreferrer" data-testid={`view-listing-action-${ch.id}`}>
-                        <ExternalLink size={12} /> Ver aviso
-                      </a>
-                    )}
                     <Button type="button" variant="ghost" size="sm" disabled={isBusy} data-testid={`update-${ch.id}`} onClick={() => act(ch.id, 'update')}>
                       Actualizar
                     </Button>
