@@ -168,6 +168,37 @@ def _readable(facts: list[dict]) -> list[str]:
     return out
 
 
+async def facts_for_persons(person_ids: list[str]) -> dict[str, list[dict]]:
+    """Todos los hechos de un conjunto de personas, en UNA consulta (para la tabla)."""
+    await _ensure()
+    out: dict[str, list[dict]] = {}
+    if not person_ids:
+        return out
+    cur = _db()["knowledge_facts"].find({"person_id": {"$in": list(person_ids)}})
+    async for d in cur:
+        out.setdefault(d["person_id"], []).append(_shape(d))
+    return out
+
+
+def summarize(facts: list[dict]) -> dict:
+    """Resumen tabular del conocimiento de una persona (para columnas/filtros)."""
+    active = [f for f in facts if f["status"] == "active"]
+    roles = [f["value"] for f in active if f["type"] == "role"]
+    interests = [str(f["value"]) for f in active if f["type"] in ("intent", "property_type", "interest")]
+    budget = next((f for f in active if f["type"] == "budget"), None)
+    location = next((f["value"] for f in active if f["type"] == "location"), "")
+    profession = next((f["value"] for f in active if f["type"] == "profession"), "")
+    conf = round(sum(f["confidence"] or 0 for f in active) / len(active), 2) if active else 0.0
+    label = "Alta" if conf >= 0.85 else "Media" if conf >= 0.6 else "Baja" if active else "—"
+    return {
+        "knowledgeRoles": roles, "interests": interests,
+        "budget": budget["value"] if budget else None,
+        "budgetCurrency": (budget or {}).get("currency"),
+        "location": location, "profession": profession,
+        "confidence": conf, "confidenceLabel": label,
+    }
+
+
 async def view(person_id: str) -> dict:
     """Vista de conocimiento para la ficha Persona (categorizada + legible)."""
     facts = await list_for_person(person_id)

@@ -53,6 +53,71 @@ async def list_people(role: Optional[str] = None):
     return out
 
 
+@router.get("/table")
+async def people_table(
+    role: Optional[str] = None, query: Optional[str] = None,
+    factType: Optional[str] = None, factValue: Optional[str] = None,
+    budgetMin: Optional[float] = None, budgetMax: Optional[float] = None,
+    sortBy: str = "fullName", sortDir: str = "asc",
+    page: int = 1, pageSize: int = 25,
+):
+    """Vista tabla enriquecida con conocimiento + filtros por hechos + orden + paginación.
+    Base reutilizable para el futuro módulo Audiencias."""
+    _ensure()
+    from people import table
+
+    rows = await table.build_rows(
+        role=role, query=query, fact_type=factType, fact_value=factValue,
+        budget_min=budgetMin, budget_max=budgetMax, sort_by=sortBy, sort_dir=sortDir,
+    )
+    total = len(rows)
+    start = max(0, (page - 1) * pageSize)
+    return {
+        "rows": rows[start:start + pageSize],
+        "total": total, "page": page, "pageSize": pageSize,
+        "columns": table.COLUMNS,
+    }
+
+
+@router.get("/export")
+async def people_export(
+    format: str = "csv", columns: Optional[str] = None, ids: Optional[str] = None,
+    role: Optional[str] = None, query: Optional[str] = None,
+    factType: Optional[str] = None, factValue: Optional[str] = None,
+    budgetMin: Optional[float] = None, budgetMax: Optional[float] = None,
+    sortBy: str = "fullName", sortDir: str = "asc",
+):
+    """Exporta CSV o Excel (.xlsx) respetando filtros y la selección (ids)."""
+    _ensure()
+    from fastapi.responses import Response
+
+    from people import table
+
+    rows = await table.build_rows(
+        role=role, query=query, fact_type=factType, fact_value=factValue,
+        budget_min=budgetMin, budget_max=budgetMax, sort_by=sortBy, sort_dir=sortDir,
+    )
+    if ids:
+        idset = {i for i in ids.split(",") if i}
+        rows = [r for r in rows if r["id"] in idset]
+    cols = [c for c in (columns.split(",") if columns else table.DEFAULT_COLUMNS) if c in table.COLUMNS]
+    if not cols:
+        cols = table.DEFAULT_COLUMNS
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M")
+    if format == "xlsx":
+        data = table.to_xlsx(rows, cols)
+        return Response(
+            content=data,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f'attachment; filename="personas_{stamp}.xlsx"'},
+        )
+    data = table.to_csv(rows, cols)
+    return Response(
+        content=data, media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="personas_{stamp}.csv"'},
+    )
+
+
 @router.post("", response_model=PersonResponse, status_code=201)
 async def create_person(payload: PersonCreate):
     _ensure()
