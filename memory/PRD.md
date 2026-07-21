@@ -747,3 +747,14 @@ App Personas ahora tiene DOS vistas con toggle (persistido en localStorage `vera
 - **Backlog registrado (no bloqueante, del code review)**: OR-within-type si un filtro pasa a multi-valor; debounce en inputs de presupuesto; merge de columnas nuevas del catálogo cuando localStorage está desactualizado; hora local AR en Excel; export vía fetch+Blob si el backend suma JWT.
 - **Upcoming**: P0 promover "Operaciones" → "Hoy" (landing con actividad y prioridades del día); P1 Matching de propiedades con hechos del Knowledge Engine; P2 APIs reales Zonaprop/Argenprop; P2 módulo Audiencias reusando `DataTable`.
 
+
+
+## Implemented (Sprint "Exportar / Backup de fotos de la propiedad" — 2026-07)
+Primer paso de VERA como **repositorio confiable de activos digitales**: descarga de los archivos ORIGINALES de una propiedad. Verificado 100% por testing agent (iteration_33): backend 6/6 pytest + frontend 3/3, `tsc` limpio. Sin mutar datos reales.
+- **Descarga individual**: botón en cada foto (aparece al hover) → `GET /api/properties/{id}/images/{imageId}/download` (archivo original, con su nombre, Content-Disposition RFC 5987).
+- **Descargar todas (.zip)**: botón en la galería → `GET /api/properties/{id}/export/photos.zip`. ZIP con las fotos **originales** en el **orden del usuario** (`position`) y **nombres secuenciales** `01-<nombreOriginal>.ext`, `02-...`. Nombre del ZIP: `VAR-XXXXXX-fotos.zip`.
+- **Regla permanente**: VERA nunca modifica el archivo original; al exportar entrega siempre el original tal cual se subió (el pipeline "Studio" sigue deshabilitado; miniaturas/optimizadas/IA futuras nunca reemplazan al original).
+- **Diseño reutilizable para el futuro "Exportar Propiedad"**: `property_export.py` (`ExportEntry`, `photo_entries`, `build_zip`, `zip_filename`) recibe una lista de entradas y arma el ZIP descargando objetos originales de Storage. Para sumar documentos/planos/videos/datos: agregar colectores de entradas (sin cambiar el builder). `StorageService.download()` nuevo (bytes del original). Frontend: `triggerBrowserDownload` + gateway `imageDownloadUrl()`/`photosZipUrl()`; los botones solo aparecen en propiedades ya guardadas (guard `isNew`).
+- **Backlog (del code review, para cuando escale "Exportar Propiedad")**: paralelizar descargas (asyncio.gather + Semaphore) y usar `StreamingResponse`/zipstream para ZIPs grandes (docs+videos); log cuando falta `original_name`; transliterar el fallback ascii del filename; `:focus-visible` en el botón de descarga por foto; endurecer ambos endpoints con JWT cuando se active auth.
+- **Próximo paso definido por el usuario**: modelo de METADATA de imágenes más rico (tipo por foto: Frente/Living/Cocina/Dormitorio/Baño…) que servirá para exportación, Studio, publicaciones automáticas, validaciones de calidad y análisis por IA. (Se evita agregar un campo "descripción" que después haya que reemplazar.)
+
