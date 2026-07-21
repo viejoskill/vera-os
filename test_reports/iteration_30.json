@@ -1,0 +1,60 @@
+{
+  "summary": "Sprint 'Operaciones + Completar Proyecciones' — end-to-end testing (backend + frontend). Backend: wrote /app/backend/tests/test_operaciones_sprint30.py (9 pytest cases). Result 8/9 PASSED. All 4 acceptance criteria from the review request PASS: (1) GET /api/core/kpis returns full {personas, leadsActivos, oportunidadesAbiertas, tareasPendientes, conversacionesHoy} shape with values coherent against /api/people, /api/core/leads and /api/core/tasks. (2) GET /api/core/activity?limit=40 returns Spanish labels ('Persona creada', 'Mensaje recibido', 'Consulta de propiedad', 'Visita agendada', 'Oferta enviada', 'Propiedad reservada', 'Venta cerrada', etc.) and is ordered DESC by 'at'. (3) Seeding POST /api/events PropertyInquiry with a unique +549… phone (and again for a second conversationId) correctly projects the Person with lastContact != null and conversationsCount >= 1 (and >=2 after a second distinct conversationId). (4) PATCH /api/core/tasks/{id} {\"status\":\"hecha\"} removes the task from GET /api/core/tasks?status=pendiente AND decrements kpis.tareasPendientes. Also: opportunity seeding via VisitScheduled with subject.propertyId correctly creates an opp reachable at /api/core/opportunities (used by the Ops funnel + 'Abrir Propiedad' button). One test failure (test_patch_task_non_objectid_should_not_500) exposes a MINOR backend bug: PATCH /api/core/tasks/{id} with a non-ObjectId string returns 500 instead of 404/422 because store.update_task_status(...) calls ObjectId(tid) unguarded (bson.errors.InvalidId propagates). Same pattern likely present in update_opportunity_by_id(). Frontend: full Playwright E2E via REACT_APP_BACKEND_URL. Login with qa_varela@vera.test / VeraQA!2026ml succeeds; /operaciones renders [data-testid=operaciones-screen] with all 5 KPIs (kpi-personas=13, kpi-leads=9, kpi-opps=6, kpi-tasks=10→9 after completing a task, kpi-convs=1), all 4 columns (ops-col-leads/opps/tasks/activity), and all 6 opp stages (interes/visita_agendada/visitada/oferta/reserva/ganada) with per-stage counters. Activity column populated with 23 events after refresh (Spanish labels rendered). Interactions all work: (a) lead-ver-persona-{id} navigates to /personas/{id} and person-open-arturito is visible with 'Abrir Arturito' text; (b) task-complete-{id} disables + removes the task and decrements kpi-tasks by 1 after refresh (auto-refresh 15s or manual ops-refresh); (c) opp-abrir-propiedad-{id} navigates to /propiedades/{propertyId} (with synthetic qa-p2 the Propiedades screen shows 'Abriendo la propiedad…' loader — the routing works, the property just doesn't exist since we seeded a synthetic id).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "PATCH /api/core/tasks/{id}",
+        "issue": "When {id} is not a valid ObjectId format (e.g. 'does-not-exist-abcd'), the endpoint returns 500 (bson.errors.InvalidId leaks from core/store.update_task_status). Should return 404 (or 422). Fix: wrap `ObjectId(tid)` in try/except InvalidId → return None (so routes_core raises 404). Same pattern applies to core/store.update_opportunity_by_id().",
+        "priority": "LOW"
+      },
+      {
+        "endpoint": "POST /api/events",
+        "issue": "Returns 201 (Created), which is semantically correct, but iteration_29 tests assert 200. Not a bug (per HTTP semantics 201 is even more correct), just heads-up that any test expecting 200 will break.",
+        "priority": "INFO"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "OperacionesScreen → Actividad reciente (first paint)",
+        "issue": "On the very first render after landing on /operaciones, the Actividad column briefly shows 'Todavía no pasó nada.' before the /api/core/activity response arrives (~1s). Same is true for other columns but they show '—' inside populated cards, whereas the activity column uses the empty-state message which reads like 'no data exists'. Consider a loading/skeleton state to avoid the 'flash of empty state' before data arrives. Not blocking — data does render correctly after ~1s and after manual refresh.",
+        "affected_selectors": ["[data-testid=ops-col-activity] .vera-ops__empty"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_operaciones_sprint30.py",
+    "/app/test_reports/pytest/operaciones_sprint30.xml"
+  ],
+  "action_items": [
+    "MINOR (backend): guard ObjectId(tid) in core/store.update_task_status and core/store.update_opportunity_by_id — catch bson.errors.InvalidId and return None so the route responds 404 instead of leaking 500.",
+    "OPTIONAL (frontend UX): add a loading placeholder to ops-col-activity (and possibly other columns) during the first fetch, to avoid the brief 'Todavía no pasó nada.' flash before data arrives from /api/core/activity."
+  ],
+  "critical_code_review_comments": [
+    "routes_core.core_kpis: correctly cross-references leads/opps/tasks/people/events. Uses list_events(event_type='ConversationStarted', limit=500) which caps 'conversacionesHoy' at 500 conversations per day. For MVP that's fine; if daily conversation volume grows past 500 the KPI will silently understate — consider a Mongo count with $match on occurredAt regex ^today.",
+    "routes_core.core_activity: reads at most `limit` events but performs a per-person GET for names (people_repository.get in a loop). N+1 pattern — for limit=40 that's up to 40 Mongo calls. For MVP OK, but consider batching (people_repository.list_by_ids([...])) if the ops board becomes a hot page.",
+    "people/service.enrich_list_item: reads events per person with limit=300. For heavy users this is a bounded N (people count) × 300 (events per person). At a few hundred people this becomes noticeable on the /api/people list endpoint. Consider aggregating in a single Mongo pipeline (group by personId, max occurredAt, addToSet conversationId).",
+    "OperacionesScreen.tsx: uses refetchInterval:15_000 on 5 separate queries — that's 5 polls every 15s per open tab. Consider consolidating into a single /api/core/board endpoint (kpis+leads+opps+tasks+activity in one payload) to halve traffic and improve consistency (right now KPI can be a step ahead of the list).",
+    "OperacionesScreen.tsx: `complete` mutation only invalidates tasks + kpis; the timeline (activity) is NOT invalidated after completing a task. Not critical because there is no 'TaskCompleted' event today, but if that event is added later this mutation should also invalidate ['ops','activity'].",
+    "core/store.update_task_status: `ObjectId(tid)` should be wrapped in try/except InvalidId to distinguish 'invalid id format' from 'valid id, not found'. Same for update_opportunity_by_id. This is a small hardening, not a functional bug.",
+    "PersonDetail.tsx: person-open-arturito uses window.open('https://app.arturito.ai', '_blank', 'noopener'). Correct target/rel. Note that this navigates to an external tab, not an internal Vera route — expected per spec.",
+    "OperacionesScreen.tsx: OPP_FUNNEL is hard-coded with 6 stages and does not render 'perdida' (correct per spec — the perdida stage is closed and not part of the funnel view)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_operaciones_sprint30.py (new)"
+  ],
+  "success_rate": {
+    "backend": "89% (8/9 — the 1 failure is the minor 500-on-invalid-ObjectId issue documented above)",
+    "frontend": "100% (all 9 acceptance criteria verified)"
+  },
+  "test_credentials": "Frontend Supabase login used the ACTIVE QA user from /app/memory/test_credentials.md: qa_varela@vera.test / VeraQA!2026ml. Backend endpoints have no auth (service_role).",
+  "seed_data_creation": "The pytest suite created ~5 disposable Persons + their leads/opps/tasks in Mongo via POST /api/events. Names are prefixed 'QA Uno/Dos/Opp/Task/422 <hex>' with unique +549299xxxxxxx phones and idempotencyKeys of the form 'qa-seed-*', 'qa-task-*', 'qa-opp-*', 'qa-422-*'. Synthetic property ids used: 'qa-p1', 'qa-p2', 'qa-task-1', 'qa-422', 'qa-opp-*'. These are visible in the /operaciones board (see the leads/opps columns in the screenshot) — main agent can safely delete them post-sprint by matching person_name /^QA (Uno|Dos|Opp|Task|422) / on leads/opportunities/core_tasks collections and the corresponding events by idempotencyKey prefix. IMPORTANT: 'Cata 💓' is REAL data and must be preserved.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Regression file: /app/backend/tests/test_operaciones_sprint30.py — run with `pytest -n 2 backend/tests/test_operaciones_sprint30.py`. It uses REACT_APP_BACKEND_URL from env. If the main agent fixes the ObjectId guard, re-run just test_patch_task_non_objectid_should_not_500 to confirm. iteration_29 already covers the full projection matrix (28/28). For frontend regression, the Playwright flow in this iteration exercises: login → /operaciones → verify KPIs + columns + funnel stages → click lead-ver-persona → verify person-open-arturito → back to /operaciones → click task-complete-{id} → verify task disappears + kpi decrements → click opp-abrir-propiedad → verify /propiedades/{id} route. All flows currently pass.",
+  "rca of the issue": "500 on PATCH /api/core/tasks/{non-objectid}: routes_core.update_task → core.store.update_task_status(tid,...) → ObjectId(tid) raises bson.errors.InvalidId with 'X is not a valid ObjectId'. The exception is not caught anywhere, so FastAPI's default handler returns 500. Reproduction: `curl -X PATCH http://localhost:8001/api/core/tasks/foo -H 'Content-Type: application/json' -d '{\"status\":\"hecha\"}'` → HTTP/1.1 500. Mitigation (2 lines in /app/backend/core/store.py update_task_status and update_opportunity_by_id): `try: oid = ObjectId(tid) except InvalidId: return None`. The route already handles None → 404."
+}

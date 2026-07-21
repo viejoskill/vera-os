@@ -62,11 +62,22 @@ async def properties_owned(person_id: str) -> list[dict]:
 
 
 async def enrich_list_item(person: dict, owner_counts: dict[str, int]) -> dict:
-    convs = await _conversations_for(person)
-    last_contact = max((c.last_at for c in convs if c.last_at), default=None)
+    """Deriva último contacto y # de conversaciones desde el EVENT STORE real
+    (fuente de verdad). Antes se calculaba desde el proveedor MOCKEADO y por eso
+    las personas creadas por Arturito quedaban en 0 / sin último contacto."""
+    from events.store import list_events
+
+    evs = await list_events(person_id=person["id"], limit=300)
+    last_contact = evs[0].get("occurredAt") if evs else None
+    conv_ids = {
+        (e.get("payload") or {}).get("conversationId")
+        for e in evs if (e.get("payload") or {}).get("conversationId")
+    }
+    conv_starts = sum(1 for e in evs if e.get("type") == "ConversationStarted")
+    conversations = len(conv_ids) if conv_ids else conv_starts
     return {
         "propertiesCount": owner_counts.get(person["id"], 0),
-        "conversationsCount": len(convs),
+        "conversationsCount": conversations,
         "lastContact": last_contact,
     }
 

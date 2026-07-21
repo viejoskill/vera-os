@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft, Plus, X, Save, Loader2, Building2,
   MessageSquare, Clock, UserPlus, MessageCircle, KeyRound,
-  Handshake, Send, BadgeCheck,
+  Handshake, Send, BadgeCheck, Bot,
 } from 'lucide-react';
 import { Card, Input, Textarea, Button, Badge } from '@vera/ui';
 import { PERSON_ROLES, PERSON_ROLE_LABELS, type PersonUpdateInput } from '@vera/types';
@@ -63,6 +63,14 @@ export const PersonDetail = () => {
             </span>
           </div>
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          data-testid="person-open-arturito"
+          onClick={() => window.open('https://app.arturito.ai', '_blank', 'noopener')}
+        >
+          <Bot size={15} /> Abrir Arturito
+        </Button>
       </header>
 
       <nav className="vera-tabs" role="tablist" data-testid="person-tabs">

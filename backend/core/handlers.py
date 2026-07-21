@@ -38,18 +38,20 @@ _LEAD_TARGET = {
 
 
 async def _person_name(person_id: str, contact: dict) -> str:
-    name = (contact or {}).get("name")
-    if name:
-        return name
+    """Nombre CANÓNICO de la persona (VERA Core es la fuente de verdad de identidad).
+    Se prefiere el nombre del registro de la persona por sobre el alias que traiga
+    cada evento conversacional (que puede variar entre conversaciones/canales)."""
     try:
         from people.repository import people_repository
 
         p = await people_repository.get(person_id)
+        if p and p.get("full_name"):
+            return p["full_name"]
         if p:
-            return p.get("full_name") or p.get("primary_phone") or "el contacto"
+            return p.get("primary_phone") or (contact or {}).get("name") or "el contacto"
     except Exception:  # noqa: BLE001
         pass
-    return "el contacto"
+    return (contact or {}).get("name") or "el contacto"
 
 
 async def project(event: dict) -> None:

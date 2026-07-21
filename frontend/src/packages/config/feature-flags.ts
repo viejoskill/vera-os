@@ -19,7 +19,7 @@ export const featureFlags: FeatureFlags = {
   veraBot: true, // "Vera Bot" — integración de mensajería (motor: Arturito)
   propiedades: true,
   personas: true,
-  operaciones: false,
+  operaciones: true, // "Operaciones" — tablero operativo (Leads/Oportunidades/Tareas/Actividad)
   studio: false,
   integraciones: true, // "Integraciones" — Centro de Integraciones (Sprint 05)
   eventLog: true, // "Event Log" — vista técnica del Conversation Event Pipeline (dev/debug)

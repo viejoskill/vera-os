@@ -21,6 +21,79 @@ async def core_summary():
     return await store.summary()
 
 
+_ACTIVITY_LABELS = {
+    "PersonCreated": "Persona creada",
+    "ConversationStarted": "Conversación iniciada",
+    "MessageReceived": "Mensaje recibido",
+    "PropertyInquiry": "Consulta de propiedad",
+    "VisitScheduled": "Visita agendada",
+    "PropertyVisited": "Propiedad visitada",
+    "OpportunityCreated": "Oportunidad creada",
+    "OfferSent": "Oferta enviada",
+    "PropertyReserved": "Propiedad reservada",
+    "PropertySold": "Venta cerrada",
+}
+
+
+@router.get("/kpis")
+async def core_kpis():
+    """KPIs superiores del tablero. Sólo cuenta el estado de VERA Core (no decide nada)."""
+    from datetime import datetime, timezone
+
+    from events.store import list_events
+    from people.repository import people_repository
+
+    leads = await store.list_leads()
+    opps = await store.list_opportunities()
+    pending = await store.list_tasks("pendiente")
+    try:
+        people = await people_repository.list()
+    except Exception:  # noqa: BLE001
+        people = []
+    conv = await list_events(event_type="ConversationStarted", limit=500)
+    today = datetime.now(timezone.utc).date().isoformat()
+    conv_today = len({
+        (e.get("payload") or {}).get("conversationId") or e["id"]
+        for e in conv if (e.get("occurredAt") or "").startswith(today)
+    })
+    return {
+        "personas": len(people),
+        "leadsActivos": len([l for l in leads if l["status"] not in ("convertido", "perdido")]),
+        "oportunidadesAbiertas": len([o for o in opps if o["stage"] not in ("ganada", "perdida")]),
+        "tareasPendientes": len(pending),
+        "conversacionesHoy": conv_today,
+    }
+
+
+@router.get("/activity")
+async def core_activity(limit: int = 40):
+    """Timeline GLOBAL (todas las personas) derivado del event store inmutable."""
+    from events.store import list_events
+    from people.repository import people_repository
+
+    evs = await list_events(limit=limit)
+    names: dict[str, str] = {}
+    for pid in {e.get("personId") for e in evs if e.get("personId")}:
+        try:
+            p = await people_repository.get(pid)
+        except Exception:  # noqa: BLE001
+            p = None
+        if p:
+            names[pid] = p.get("full_name") or ""
+    return {"activity": [
+        {
+            "id": e["id"],
+            "at": e.get("occurredAt"),
+            "type": e["type"],
+            "label": _ACTIVITY_LABELS.get(e["type"], e["type"]),
+            "personId": e.get("personId"),
+            "personName": names.get(e.get("personId")) or (e.get("contact") or {}).get("name") or "",
+            "source": e.get("source"),
+        }
+        for e in evs
+    ]}
+
+
 @router.post("/rebuild")
 async def core_rebuild():
     """Reconstruye Leads/Oportunidades/Tareas reproduciendo el event stream."""
