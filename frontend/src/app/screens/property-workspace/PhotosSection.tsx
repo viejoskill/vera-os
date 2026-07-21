@@ -1,5 +1,5 @@
 import { useRef, useState, type DragEvent } from 'react';
-import { UploadCloud, X, Loader2, Star, ArrowUp, ArrowDown } from 'lucide-react';
+import { UploadCloud, X, Loader2, Star, ArrowUp, ArrowDown, Download, Archive } from 'lucide-react';
 import type { PhotoAsset } from '@vera/types';
 
 interface PhotosSectionProps {
@@ -8,6 +8,10 @@ interface PhotosSectionProps {
   onRemove: (id: string) => void;
   onSetCover: (id: string) => void;
   onMove: (from: number, to: number) => void;
+  /** Descarga del archivo ORIGINAL de una foto (solo en propiedades guardadas). */
+  onDownloadPhoto?: (id: string) => void;
+  /** Descarga el ZIP con todas las fotos originales (orden del usuario). */
+  onDownloadAll?: () => void;
 }
 
 export const PhotosSection = ({
@@ -16,6 +20,8 @@ export const PhotosSection = ({
   onRemove,
   onSetCover,
   onMove,
+  onDownloadPhoto,
+  onDownloadAll,
 }: PhotosSectionProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -63,10 +69,23 @@ export const PhotosSection = ({
 
       {photos.length > 0 && (
         <>
-          <p className="vera-muted">
-            Arrastrá para reordenar la galería · Clic en una foto para elegir la portada. VERA
-            sugiere, vos decidís.
-          </p>
+          <div className="vera-photos__bar">
+            <p className="vera-muted">
+              Arrastrá para reordenar la galería · Clic en una foto para elegir la portada. VERA
+              sugiere, vos decidís.
+            </p>
+            {onDownloadAll && (
+              <button
+                type="button"
+                className="vera-photos__zip"
+                data-testid="download-all-photos"
+                onClick={onDownloadAll}
+                title="Descargar todas las fotos originales en un ZIP"
+              >
+                <Archive size={15} /> Descargar todas (.zip)
+              </button>
+            )}
+          </div>
           <div className="vera-photos" data-testid="photos-grid">
             {photos.map((p, index) => (
               <div
@@ -118,6 +137,21 @@ export const PhotosSection = ({
                 >
                   <X size={14} />
                 </button>
+                {onDownloadPhoto && p.status === 'ready' && !p.id.startsWith('temp-') && (
+                  <button
+                    type="button"
+                    className="vera-photo__download"
+                    aria-label="Descargar foto original"
+                    data-testid={`download-photo-${p.id}`}
+                    title="Descargar foto original"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDownloadPhoto(p.id);
+                    }}
+                  >
+                    <Download size={14} />
+                  </button>
+                )}
                 <div className="vera-photo__move">
                   <button
                     type="button"

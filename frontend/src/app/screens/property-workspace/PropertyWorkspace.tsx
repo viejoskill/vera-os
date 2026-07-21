@@ -8,6 +8,7 @@ import { ArrowLeft, Building2, AlertTriangle, Save } from 'lucide-react';
 import { Button, Panel, Progress, Toast } from '@vera/ui';
 import {
   assistantService,
+  propertyFilesGateway,
   propertyService,
   studioService,
   workspaceService,
@@ -35,6 +36,16 @@ interface ToastState {
   message: string;
   tone: 'default' | 'success';
 }
+
+/** Dispara la descarga de un archivo desde el navegador (sin navegar de página). */
+const triggerBrowserDownload = (url: string) => {
+  const a = document.createElement('a');
+  a.href = url;
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+};
 
 type LifecycleStatus = 'active' | 'reserved' | 'sold' | 'archived';
 
@@ -130,6 +141,12 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
   const onRemovePhoto = isNew ? studio.removePhoto : gallery.removePhoto;
   const onSetCover = isNew ? studio.setCover : gallery.setCover;
   const onMovePhoto = isNew ? studio.movePhoto : gallery.movePhoto;
+  const onDownloadPhoto = isNew
+    ? undefined
+    : (id: string) => triggerBrowserDownload(propertyFilesGateway.imageDownloadUrl(propertyId, id));
+  const onDownloadAllPhotos = isNew || photos.length === 0
+    ? undefined
+    : () => triggerBrowserDownload(propertyFilesGateway.photosZipUrl(propertyId));
   const onAddDoc = isNew ? localDocs.addDocument : liveDocs.addDocument;
   const onRemoveDoc = isNew ? localDocs.removeDocument : liveDocs.removeDocument;
 
@@ -449,6 +466,8 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
                   onRemove={onRemovePhoto}
                   onSetCover={onSetCover}
                   onMove={onMovePhoto}
+                  onDownloadPhoto={onDownloadPhoto}
+                  onDownloadAll={onDownloadAllPhotos}
                 />
               </Panel>
             </div>

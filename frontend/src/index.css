@@ -1254,6 +1254,52 @@ p {
   opacity: 0.4;
   cursor: not-allowed;
 }
+.vera-photo__download {
+  position: absolute;
+  top: var(--vera-space-xs);
+  right: calc(var(--vera-space-xs) + 30px);
+  width: 26px;
+  height: 26px;
+  border-radius: var(--vera-radius-pill);
+  border: none;
+  background: var(--vera-color-glass);
+  color: var(--vera-color-text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.16s ease, color 0.16s ease;
+}
+.vera-photo:hover .vera-photo__download { opacity: 1; }
+.vera-photo__download:hover { color: var(--vera-color-primary); }
+.vera-photos__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vera-space-md);
+  flex-wrap: wrap;
+}
+.vera-photos__zip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  border: 1px solid var(--vera-color-border);
+  background: var(--vera-color-surface);
+  color: var(--vera-color-text);
+  font-family: var(--vera-font-family);
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-medium);
+  padding: 6px 14px;
+  border-radius: var(--vera-radius-pill);
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease;
+}
+.vera-photos__zip:hover { border-color: var(--vera-color-primary); color: var(--vera-color-primary); }
+@media (max-width: 900px) {
+  .vera-photo__download { opacity: 1; }
+}
+
 .vera-health__path {
   display: flex;
   flex-direction: column;

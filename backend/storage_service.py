@@ -22,6 +22,9 @@ class StorageService(ABC):
     async def signed_url(self, bucket: str, object_path: str, expires_in: int) -> str: ...
 
     @abstractmethod
+    async def download(self, bucket: str, object_path: str) -> bytes: ...
+
+    @abstractmethod
     async def delete(self, bucket: str, object_path: str) -> None: ...
 
     @staticmethod
@@ -57,6 +60,13 @@ class SupabaseStorageService(StorageService):
 
         res = await asyncio.to_thread(_do)
         return res.get("signedURL") or res.get("signedUrl") or ""
+
+    async def download(self, bucket: str, object_path: str) -> bytes:
+        """Descarga el objeto ORIGINAL tal cual fue subido (nunca un derivado)."""
+        def _do():
+            return self.client.storage.from_(bucket).download(object_path)
+
+        return await asyncio.to_thread(_do)
 
     async def delete(self, bucket: str, object_path: str) -> None:
         def _do():

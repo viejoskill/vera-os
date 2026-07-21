@@ -17,6 +17,10 @@ export interface PropertyFilesGateway {
   reorderImages(propertyId: string, imageIds: string[]): Promise<void>;
   deleteImage(propertyId: string, imageId: string): Promise<void>;
   deleteDocument(propertyId: string, docId: string): Promise<void>;
+  /** URL de descarga del ARCHIVO ORIGINAL de una foto. */
+  imageDownloadUrl(propertyId: string, imageId: string): string;
+  /** URL del ZIP con todas las fotos originales (orden del usuario). */
+  photosZipUrl(propertyId: string): string;
 }
 
 export class ApiPropertyFilesGateway implements PropertyFilesGateway {
@@ -71,5 +75,13 @@ export class ApiPropertyFilesGateway implements PropertyFilesGateway {
   async deleteDocument(propertyId: string, docId: string): Promise<void> {
     const res = await fetch(`${this.base}/${propertyId}/documents/${docId}`, { method: 'DELETE' });
     if (!res.ok) throw new Error(`Delete document failed: ${res.status}`);
+  }
+
+  imageDownloadUrl(propertyId: string, imageId: string): string {
+    return `${this.base}/${propertyId}/images/${imageId}/download`;
+  }
+
+  photosZipUrl(propertyId: string): string {
+    return `${this.base}/${propertyId}/export/photos.zip`;
   }
 }

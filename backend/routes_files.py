@@ -1,8 +1,12 @@
 """File endpoints. Uploads go to private Supabase buckets via StorageService;
 only metadata + object paths are stored in the DB. Reads use signed URLs."""
+from urllib.parse import quote
+
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.responses import Response
 
 import config
+import property_export
 from property_repository import property_repository
 from schemas import DocumentResponse, ImageResponse, ReorderRequest
 from serializers import document_to_response, image_to_response
@@ -14,6 +18,12 @@ router = APIRouter(prefix="/properties", tags=["files"])
 def _ensure() -> None:
     if not config.supabase_configured():
         raise HTTPException(503, "Supabase is not configured.")
+
+
+def _content_disposition(filename: str) -> str:
+    """Content-Disposition seguro para nombres con acentos/emojis (RFC 5987)."""
+    ascii_name = (filename.encode("ascii", "ignore").decode() or "download").replace('"', "")
+    return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(filename)}"
 
 
 @router.patch("/{property_id}/images/reorder", status_code=204)
@@ -126,3 +136,40 @@ async def delete_document(property_id: str, doc_id: str):
     await get_storage().delete(doc["bucket"], doc["object_path"])
     await property_repository.delete_document(doc_id)
     await property_repository.touch(property_id)
+
+
+# --- Exportación / respaldo de archivos ORIGINALES ------------------------- #
+@router.get("/{property_id}/images/{image_id}/download")
+async def download_image(property_id: str, image_id: str):
+    """Descarga una foto individual (archivo ORIGINAL, con su nombre)."""
+    _ensure()
+    image = await property_repository.get_image(image_id)
+    if image is None or image.get("property_id") != property_id:
+        raise HTTPException(404, "Image not found")
+    data = await get_storage().download(image["bucket"], image["object_path"])
+    filename = image.get("original_name") or image.get("stored_name") or "foto.jpg"
+    return Response(
+        content=data,
+        media_type=image.get("mime_type") or "application/octet-stream",
+        headers={"Content-Disposition": _content_disposition(filename)},
+    )
+
+
+@router.get("/{property_id}/export/photos.zip")
+async def export_photos(property_id: str):
+    """ZIP con TODAS las fotos originales, en el orden definido por el usuario
+    y con nombres secuenciales (01-..., 02-...). Base reutilizable para el
+    futuro 'Exportar Propiedad' (documentos, planos, videos, datos)."""
+    _ensure()
+    prop = await property_repository.get(property_id)
+    if prop is None:
+        raise HTTPException(404, "Property not found")
+    entries = property_export.photo_entries(prop)
+    if not entries:
+        raise HTTPException(404, "La propiedad no tiene fotos para exportar.")
+    data = await property_export.build_zip(entries)
+    return Response(
+        content=data,
+        media_type="application/zip",
+        headers={"Content-Disposition": _content_disposition(property_export.zip_filename(prop, "fotos"))},
+    )
