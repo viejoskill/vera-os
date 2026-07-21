@@ -1121,7 +1121,6 @@ p {
   width: 6px;
   height: 6px;
   border-radius: var(--vera-radius-pill);
-  background: var(--vera-color-text-secondary);
 }
 
 /* ------------------------------- Photos --------------------------------- */

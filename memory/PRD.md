@@ -650,6 +650,11 @@ El usuario pidió ver de un vistazo, en cada tarjeta de la grilla, el estado de 
 - **Verificado E2E** (iteration_27.json): 10/10 tarjetas renderizan el semáforo; propiedad 9c1d4217 con ambos puntos verdes; layout intacto; sin errores de consola. tsc limpio.
 - **PENDIENTE DE DEPLOY**: en PREVIEW → requiere REDEPLOY.
 
+## Fix color del semáforo + confirmación sync de estado a la web — 2026-07-21
+1. **Bug color semáforo**: los puntos salían grises. Causa: había una SEGUNDA definición `.vera-dot` en `index.css` (después de los modificadores `.vera-dot--published/error/none`) que fijaba `background` gris y, por orden de cascada (misma especificidad), pisaba el color. Fix: quité `background` de esa segunda `.vera-dot` (solo define tamaño). Verificado con Playwright: los puntos de la propiedad publicada computan `rgb(34,197,94)` (verde). 
+2. **Estado → web (Reservada/Vendida)**: YA funcionaba. `web_publisher._row` mapea status→estado (reserved→Reservada, sold→Vendida) y `routes_properties.update_property` hace auto-resync al CRM `propiedades` cuando `web-varela` está published (las 29 propiedades lo están). Verificado E2E: PATCH status=reserved en VERA → CRM `estado="Reservada"` (dispara el sello RESERVADA/VENDIDA que la web ya renderiza); revertido a Disponible. El sitio ya soporta los sellos por `estado`; no requiere cambios en la web. Si el usuario no lo veía, es por deploy viejo / caché del sitio.
+- **PENDIENTE DE DEPLOY**: el fix del color está en PREVIEW → REDEPLOY. El sync de estado ya debería estar en prod si redeployó tras el sprint web.
+
 
 
 
