@@ -11,6 +11,7 @@ export interface FeatureFlags {
   operaciones: boolean;
   studio: boolean;
   integraciones: boolean;
+  eventLog: boolean;
 }
 
 export const featureFlags: FeatureFlags = {
@@ -21,4 +22,5 @@ export const featureFlags: FeatureFlags = {
   operaciones: false,
   studio: false,
   integraciones: true, // "Integraciones" — Centro de Integraciones (Sprint 05)
+  eventLog: true, // "Event Log" — vista técnica del Conversation Event Pipeline (dev/debug)
 };

@@ -2557,6 +2557,37 @@ p {
 .vera-person__card .vera-timeline__item:not(:last-child)::before { left: 12px; top: 28px; }
 .vera-timeline__date { font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); }
 
+/* ===================== Event Log (técnico) ===================== */
+.vera-eventlog__head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--vera-space-md); }
+.vera-eventlog { display: flex; flex-direction: column; gap: var(--vera-space-sm); }
+.vera-event {
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-card);
+  padding: var(--vera-space-sm) var(--vera-space-md);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.vera-event__top { display: flex; align-items: center; gap: var(--vera-space-sm); flex-wrap: wrap; }
+.vera-event__type { font-weight: var(--vera-font-weight-semibold); font-size: var(--vera-font-size-sm); color: var(--vera-color-text); }
+.vera-event__ver { font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); }
+.vera-event__time { margin-left: auto; font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); font-variant-numeric: tabular-nums; }
+.vera-event__meta { display: flex; flex-wrap: wrap; gap: var(--vera-space-md); font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); }
+.vera-event__meta code { font-family: var(--vera-font-mono, monospace); color: var(--vera-color-text); }
+.vera-event__payload {
+  margin: 0;
+  padding: var(--vera-space-sm);
+  background: var(--vera-color-surface);
+  border-radius: var(--vera-radius-sm);
+  font-family: var(--vera-font-mono, monospace);
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-text-secondary);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* ===================== Modal ===================== */
 .vera-modal {
   position: fixed;

@@ -12,6 +12,7 @@ from starlette.middleware.cors import CORSMiddleware
 import config
 import routes_ai
 import routes_brain
+import routes_events
 import routes_files
 import routes_insights
 import routes_integrations
@@ -46,6 +47,7 @@ api_router.include_router(routes_migration.router)
 api_router.include_router(routes_people.router)
 api_router.include_router(routes_public.router)
 api_router.include_router(routes_ml.router)
+api_router.include_router(routes_events.router)
 app.include_router(api_router)
 
 app.add_middleware(

@@ -1,5 +1,5 @@
 import { createElement, type ReactNode } from 'react';
-import { Sun, Bot, Building2, Users, GitBranch, Clapperboard, Blocks } from 'lucide-react';
+import { Sun, Bot, Building2, Users, GitBranch, Clapperboard, Blocks, Activity } from 'lucide-react';
 import { featureFlags } from '@vera/config';
 
 export interface NavRoute {
@@ -61,5 +61,12 @@ export const navRoutes: NavRoute[] = [
     path: '/integraciones',
     icon: createElement(Blocks, { size: 18 }),
     enabled: featureFlags.integraciones,
+  },
+  {
+    id: 'event-log',
+    label: 'Event Log',
+    path: '/eventos',
+    icon: createElement(Activity, { size: 18 }),
+    enabled: featureFlags.eventLog,
   },
 ];

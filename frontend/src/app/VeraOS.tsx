@@ -5,6 +5,7 @@ import { PropertiesScreen } from '@app/screens/PropertiesScreen';
 import { PropertyWorkspace } from '@app/screens/property-workspace';
 import { PeopleScreen } from '@app/screens/people/PeopleScreen';
 import { PersonDetail } from '@app/screens/people/PersonDetail';
+import { EventLogScreen } from '@app/screens/EventLogScreen';
 import { WorkspaceHome } from '@app/workspace/WorkspaceHome';
 import { VeraBotWorkspace } from '@app/vera-bot';
 import { IntegrationsScreen } from '@app/integraciones';
@@ -40,6 +41,7 @@ export const VeraOS = () => (
               <Route path="vera-bot" element={<VeraBotWorkspace />} />
               <Route path="personas" element={<PeopleScreen />} />
               <Route path="personas/:id" element={<PersonDetail />} />
+              <Route path="eventos" element={<EventLogScreen />} />
               <Route path="operaciones" element={<PlaceholderScreen title="Operaciones" />} />
               <Route path="studio" element={<PlaceholderScreen title="Studio" />} />
               <Route path="integraciones" element={<IntegrationsScreen />} />

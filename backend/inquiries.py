@@ -5,25 +5,10 @@ el evento 'Website Property Inquiry' en VERA. Base para la futura integración d
 (identificar propiedad, canal y URL; asociar el lead y crear la oportunidad)."""
 from __future__ import annotations
 
-import logging
-from datetime import datetime, timezone
 from urllib.parse import quote, urlencode
-
-from motor.motor_asyncio import AsyncIOMotorClient
 
 import config
 from serializers import _property_code
-
-logger = logging.getLogger("vera")
-
-_client: AsyncIOMotorClient | None = None
-
-
-def _db():
-    global _client
-    if _client is None:
-        _client = AsyncIOMotorClient(config.MONGO_URL)
-    return _client[config.DB_NAME]
 
 
 def property_code(prop: dict) -> str:
@@ -62,21 +47,19 @@ def whatsapp_url(prop: dict) -> str:
 
 
 async def register_inquiry(prop: dict) -> dict:
-    """Registra el evento de consulta (lead pendiente) asociado a la propiedad."""
-    doc = {
-        "event": "Website Property Inquiry",
-        "channel": "Website",
-        "origin": "Ficha de Propiedad",
-        "property_id": prop["id"],
-        "property_code": property_code(prop),
-        "property_title": prop.get("title") or "",
-        "url": public_url(prop),
-        "status": "pendiente_contacto",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    }
-    try:
-        res = await _db()["website_inquiries"].insert_one(dict(doc))
-        doc["id"] = str(res.inserted_id)
-    except Exception:  # noqa: BLE001 — no romper la consulta si falla el registro
-        logger.warning("No se pudo registrar la consulta web para %s", prop.get("id"))
-    return doc
+    """Registra la consulta como evento PropertyInquiry en el store unificado
+    (fuente única). La consulta web es anónima (sin contacto) → sin person_id."""
+    from events import pipeline  # import diferido para evitar ciclos
+
+    event = await pipeline.emit(
+        "PropertyInquiry",
+        source="website",
+        subject={"property_id": prop["id"], "property_code": property_code(prop)},
+        payload={
+            "origin": "Ficha de Propiedad",
+            "property_title": prop.get("title") or "",
+            "url": public_url(prop),
+            "status": "pendiente_contacto",
+        },
+    )
+    return {"id": event["id"]}
