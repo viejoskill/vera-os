@@ -62,6 +62,25 @@ interface CardActions {
   onDuplicate: (id: string) => void;
 }
 
+/** Semáforo de canales: verde = publicado, rojo = error, gris = sin publicar. */
+const channelTone = (status?: string): string =>
+  status === 'published' ? 'published' : status === 'error' ? 'error' : 'none';
+
+const ChannelSemaphore = ({ publications }: { publications?: Property['publications'] }) => {
+  const web = publications?.['web-varela']?.status;
+  const ml = publications?.['mercadolibre']?.status;
+  return (
+    <div className="vera-prop__channels" data-testid="property-channels">
+      <span className="vera-prop__channel" data-testid="property-channel-web">
+        <span className={`vera-dot vera-dot--${channelTone(web)}`} /> Web
+      </span>
+      <span className="vera-prop__channel" data-testid="property-channel-ml">
+        <span className={`vera-dot vera-dot--${channelTone(ml)}`} /> ML
+      </span>
+    </div>
+  );
+};
+
 const PropertyCard = ({ property, actions }: { property: Property; actions: CardActions }) => {
   const meta = STATUS_META[property.status];
   const [imgFailed, setImgFailed] = useState(false);
@@ -160,6 +179,7 @@ const PropertyCard = ({ property, actions }: { property: Property; actions: Card
             )}
           </div>
         )}
+        <ChannelSemaphore publications={property.publications} />
       </div>
     </Card>
   );

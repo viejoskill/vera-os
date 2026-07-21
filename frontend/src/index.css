@@ -271,6 +271,23 @@ p {
   align-items: center;
   gap: 6px;
 }
+.vera-prop__channels {
+  display: flex;
+  gap: var(--vera-space-md);
+  margin-top: var(--vera-space-xs);
+  padding-top: var(--vera-space-xs);
+  border-top: 1px solid var(--vera-color-border);
+}
+.vera-prop__channel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  letter-spacing: 0.02em;
+  color: var(--vera-color-text-secondary);
+}
+
 
 /* --------------------------------- Badge --------------------------------- */
 .vera-badge {

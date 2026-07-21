@@ -1,0 +1,20 @@
+{
+  "summary": "Verified the new channel semaphore (Web / ML) on the Properties grid (/propiedades). Logged in as qa_varela@vera.test → landed on /hoy → navigated to /propiedades → clicked 'Todas'. All property cards render a [data-testid=property-channels] block containing [data-testid=property-channel-web] and [data-testid=property-channel-ml], each with a colored dot (.vera-dot--published/.vera-dot--error/.vera-dot--none). For the target property 9c1d4217-2522-4649-a269-bbd536a71f39 BOTH dots are GREEN — Web dot class = 'vera-dot vera-dot--published' and ML dot class = 'vera-dot vera-dot--published'. Sampled the first 10 cards on the grid: 10/10 have the semaphore rendered. Layout inspection: semaphore is placed inside the card body just below the specs row (Bed / Bath / m²) with bounding box height 25px and width 350px — it does not push the card layout nor overflow. No console errors during the flow.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PropertiesScreen.tsx ChannelSemaphore: mapping is defensive (publications?.['web-varela']?.status) and channelTone() collapses any non-'published'/'error' value (including missing) to grey ('none'). OK.",
+    "The semaphore is always rendered (even when publications map is absent), showing two grey dots. This is the desired 'at a glance' behavior — draft/unpublished properties correctly show grey. OK.",
+    "Minor a11y suggestion (not a bug): the dots are decorative spans without aria-label. Consider adding aria-label='Publicada en Web' / 'No publicada en Web' etc. on each channel span for screen readers. Not blocking."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only test)", "frontend": "100% (5/5 acceptance criteria)"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (from /app/memory/test_credentials.md — QA temp user for ML sprint)",
+  "seed_data_creation": "None. Used existing property 9c1d4217-2522-4649-a269-bbd536a71f39 which already has web-varela=published and mercadolibre=published (MLA1908216003).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Sprint UI enhancement (channel semaphore on property cards) verified end-to-end in preview. Target property 9c1d4217 stays as the canonical dual-published (Web + ML) sample for grid-level assertions. Do NOT publish/unpublish anything to avoid consuming Mercado Libre seller quota.",
+  "rca of the issue": "N/A — no bug. Feature implemented correctly."
+}
