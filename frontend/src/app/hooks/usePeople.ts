@@ -50,6 +50,14 @@ export function usePersonTimeline(id: string | undefined) {
   });
 }
 
+export function usePersonKnowledge(id: string | undefined) {
+  return useQuery({
+    queryKey: ['person', id, 'knowledge'],
+    queryFn: () => peopleService.knowledge(id as string),
+    enabled: !!id,
+  });
+}
+
 export function useCreatePerson() {
   const queryClient = useQueryClient();
   return useMutation({

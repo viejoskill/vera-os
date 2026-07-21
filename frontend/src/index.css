@@ -6373,3 +6373,35 @@ p {
   .vera-ops__board { grid-template-columns: 1fr; }
   .vera-ops__col { max-height: none; }
 }
+
+/* ==========================================================================
+   Ficha Persona — pestaña 🧠 Conocimiento (Knowledge Engine)
+   ========================================================================== */
+.vera-knowledge { display: flex; flex-direction: column; gap: var(--vera-space-md); }
+.vera-knowledge__head { display: flex; align-items: center; justify-content: space-between; gap: var(--vera-space-md); }
+.vera-knowledge__conf {
+  font-size: var(--vera-font-size-xs); font-weight: var(--vera-font-weight-semibold);
+  padding: 3px 12px; border-radius: var(--vera-radius-pill); border: 1px solid var(--vera-color-border);
+}
+.vera-knowledge__conf--alta { color: #0b3; border-color: rgba(0,187,51,.4); background: rgba(0,187,51,.08); }
+.vera-knowledge__conf--media { color: var(--vera-color-primary); border-color: var(--vera-color-primary); background: var(--vera-color-glass); }
+.vera-knowledge__conf--baja { color: var(--vera-color-text-secondary); }
+.vera-knowledge__readable { margin: var(--vera-space-sm) 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.vera-knowledge__readable li { color: var(--vera-color-text); font-size: var(--vera-font-size-sm); }
+.vera-knowledge__updated { margin-top: var(--vera-space-sm); font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); }
+.vera-knowledge__grid { display: flex; flex-direction: column; gap: var(--vera-space-md); }
+.vera-knowledge__section { display: flex; flex-direction: column; gap: 6px; }
+.vera-knowledge__section-title {
+  font-size: var(--vera-font-size-xs); font-weight: var(--vera-font-weight-semibold);
+  text-transform: uppercase; letter-spacing: .04em; color: var(--vera-color-text-secondary);
+}
+.vera-knowledge__facts { display: flex; flex-wrap: wrap; gap: 6px; }
+.vera-knowledge__fact {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--vera-color-glass); border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-pill); padding: 4px 10px;
+  font-size: var(--vera-font-size-sm); color: var(--vera-color-text);
+}
+.vera-knowledge__fact-conf { font-size: 10px; color: var(--vera-color-text-secondary); font-style: normal; }
+.vera-knowledge__fact--review { border-color: rgba(255,170,0,.5); background: rgba(255,170,0,.08); }
+.vera-knowledge__review .vera-person__card-title { color: #d98200; }

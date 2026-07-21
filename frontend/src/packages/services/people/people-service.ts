@@ -4,6 +4,7 @@ import type {
   Person,
   PersonConversation,
   PersonEvent,
+  PersonKnowledge,
   PersonListItem,
   PersonPropertyRelation,
   PersonUpdateInput,
@@ -42,5 +43,10 @@ export class PeopleService {
 
   timeline(id: string): Promise<PersonEvent[]> {
     return this.gateway.timeline(id);
+  }
+
+  /** Lo que VERA SABE de la persona (conocimiento estructurado del Knowledge Engine). */
+  knowledge(id: string): Promise<PersonKnowledge> {
+    return this.gateway.knowledge(id);
   }
 }

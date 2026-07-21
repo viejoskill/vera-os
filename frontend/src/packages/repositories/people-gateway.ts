@@ -3,6 +3,7 @@ import type {
   Person,
   PersonConversation,
   PersonEvent,
+  PersonKnowledge,
   PersonListItem,
   PersonPropertyRelation,
   PersonUpdateInput,
@@ -17,4 +18,5 @@ export interface PeopleGateway {
   relations(id: string): Promise<PersonPropertyRelation[]>;
   conversations(id: string): Promise<PersonConversation[]>;
   timeline(id: string): Promise<PersonEvent[]>;
+  knowledge(id: string): Promise<PersonKnowledge>;
 }

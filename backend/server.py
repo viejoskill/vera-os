@@ -14,6 +14,8 @@ import routes_ai
 import routes_brain
 import routes_core
 import routes_events
+import routes_knowledge
+import knowledge.projection  # noqa: F401 — registra el handler del Knowledge Engine
 import routes_files
 import routes_insights
 import routes_integrations
@@ -50,6 +52,7 @@ api_router.include_router(routes_public.router)
 api_router.include_router(routes_ml.router)
 api_router.include_router(routes_events.router)
 api_router.include_router(routes_core.router)
+api_router.include_router(routes_knowledge.router)
 app.include_router(api_router)
 
 app.add_middleware(

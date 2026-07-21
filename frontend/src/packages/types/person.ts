@@ -92,3 +92,37 @@ export interface PersonEvent {
   meta: Record<string, unknown>;
   occurredAt?: string | null;
 }
+
+/** Un HECHO de conocimiento estructurado (VERA Brain). Nunca texto libre. */
+export interface PersonFact {
+  id: string;
+  personId: string;
+  type: string;
+  value: string | number;
+  currency?: string | null;
+  confidence: number;
+  source: string;
+  sourceRef?: string;
+  firstDetected?: string;
+  lastConfirmed?: string;
+  status: 'active' | 'review' | 'superseded';
+  hits?: number;
+}
+
+/** Lo que VERA SABE de una persona: conocimiento estructurado y acumulativo. */
+export interface PersonKnowledge {
+  personId: string;
+  roles: PersonFact[];
+  relationship: PersonFact[];
+  interests: PersonFact[];
+  preferences: PersonFact[];
+  facts: PersonFact[];
+  businessContext: PersonFact[];
+  aiTags: PersonFact[];
+  confidence: number;
+  confidenceLabel: string;
+  lastUpdated?: string | null;
+  readable: string[];
+  factCount: number;
+  needsReview: PersonFact[];
+}

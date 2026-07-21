@@ -4,6 +4,7 @@ import type {
   Person,
   PersonConversation,
   PersonEvent,
+  PersonKnowledge,
   PersonListItem,
   PersonPropertyRelation,
   PersonUpdateInput,
@@ -52,5 +53,9 @@ export class ApiPeopleGateway implements PeopleGateway {
   async timeline(id: string): Promise<PersonEvent[]> {
     const res = await this.request<{ events: PersonEvent[] }>(`/${id}/timeline`);
     return res.events;
+  }
+
+  knowledge(id: string): Promise<PersonKnowledge> {
+    return this.request<PersonKnowledge>(`/${id}/knowledge`);
   }
 }

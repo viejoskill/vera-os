@@ -3,17 +3,19 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft, Plus, X, Save, Loader2, Building2,
   MessageSquare, Clock, UserPlus, MessageCircle, KeyRound,
-  Handshake, Send, BadgeCheck, Bot,
+  Handshake, Send, BadgeCheck, Bot, Brain, AlertTriangle,
 } from 'lucide-react';
 import { Card, Input, Textarea, Button, Badge } from '@vera/ui';
 import { PERSON_ROLES, PERSON_ROLE_LABELS, type PersonUpdateInput } from '@vera/types';
 import {
   usePerson, useUpdatePerson, usePersonRelations, usePersonConversations, usePersonTimeline,
+  usePersonKnowledge,
 } from '@app/hooks/usePeople';
 
-type Tab = 'datos' | 'relaciones' | 'conversaciones' | 'timeline';
+type Tab = 'datos' | 'conocimiento' | 'relaciones' | 'conversaciones' | 'timeline';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'datos', label: 'Datos' },
+  { id: 'conocimiento', label: '🧠 Conocimiento' },
   { id: 'relaciones', label: 'Relaciones' },
   { id: 'conversaciones', label: 'Conversaciones' },
   { id: 'timeline', label: 'Timeline' },
@@ -89,6 +91,7 @@ export const PersonDetail = () => {
       </nav>
 
       {tab === 'datos' && <DatosTab key={person.id} person={person} onSave={(patch) => update.mutateAsync(patch)} saving={update.isPending} />}
+      {tab === 'conocimiento' && <ConocimientoTab id={person.id} />}
       {tab === 'relaciones' && <RelacionesTab id={person.id} />}
       {tab === 'conversaciones' && <ConversacionesTab id={person.id} />}
       {tab === 'timeline' && <TimelineTab id={person.id} />}
@@ -272,6 +275,92 @@ const TimelineTab = ({ id }: { id: string }) => {
         })}
       </ol>
     </Card>
+  );
+};
+
+const KNOWLEDGE_SECTIONS: { key: keyof import('@vera/types').PersonKnowledge; label: string }[] = [
+  { key: 'roles', label: 'Roles' },
+  { key: 'relationship', label: 'Relación con Varela' },
+  { key: 'interests', label: 'Intereses' },
+  { key: 'preferences', label: 'Preferencias' },
+  { key: 'facts', label: 'Hechos' },
+  { key: 'businessContext', label: 'Contexto de negocio' },
+  { key: 'aiTags', label: 'AI Tags' },
+];
+
+const factText = (f: import('@vera/types').PersonFact) =>
+  f.type === 'budget' ? `${f.currency ?? ''} ${f.value}`.trim() : String(f.value);
+
+const ConocimientoTab = ({ id }: { id: string }) => {
+  const { data, isLoading } = usePersonKnowledge(id);
+  if (isLoading) return <p className="vera-people__empty">Cargando conocimiento…</p>;
+  if (!data || data.factCount === 0) {
+    return (
+      <Card className="vera-person__card">
+        <p className="vera-person__hint" data-testid="knowledge-empty">
+          VERA todavía no aprendió nada de esta persona. El conocimiento se genera
+          automáticamente a partir de los resúmenes de conversación de Arturito.
+        </p>
+      </Card>
+    );
+  }
+  const toneLabel = data.confidenceLabel;
+  return (
+    <div className="vera-knowledge" data-testid="knowledge-tab">
+      <Card className="vera-person__card vera-knowledge__summary">
+        <div className="vera-knowledge__head">
+          <h3 className="vera-person__card-title"><Brain size={16} /> Lo que VERA sabe</h3>
+          <span className={`vera-knowledge__conf vera-knowledge__conf--${toneLabel.toLowerCase()}`} data-testid="knowledge-confidence">
+            Confianza: {toneLabel}
+          </span>
+        </div>
+        <ul className="vera-knowledge__readable" data-testid="knowledge-readable">
+          {data.readable.map((line, i) => (
+            <li key={i}>{line}</li>
+          ))}
+        </ul>
+        {data.lastUpdated && (
+          <p className="vera-knowledge__updated">Última actualización: {fmtDate(data.lastUpdated)}</p>
+        )}
+      </Card>
+
+      {data.needsReview.length > 0 && (
+        <Card className="vera-person__card vera-knowledge__review" data-testid="knowledge-review">
+          <h3 className="vera-person__card-title"><AlertTriangle size={16} /> Para revisar (contradicciones)</h3>
+          <div className="vera-knowledge__facts">
+            {data.needsReview.map((f) => (
+              <span key={f.id} className="vera-knowledge__fact vera-knowledge__fact--review">
+                {f.type}: {factText(f)}
+              </span>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <Card className="vera-person__card">
+        <h3 className="vera-person__card-title">Conocimiento estructurado</h3>
+        <div className="vera-knowledge__grid">
+          {KNOWLEDGE_SECTIONS.map((s) => {
+            const items = (data[s.key] as import('@vera/types').PersonFact[]) || [];
+            if (!Array.isArray(items) || items.length === 0) return null;
+            return (
+              <div key={s.key} className="vera-knowledge__section" data-testid={`knowledge-section-${s.key}`}>
+                <span className="vera-knowledge__section-title">{s.label}</span>
+                <div className="vera-knowledge__facts">
+                  {items.map((f) => (
+                    <span key={f.id} className={`vera-knowledge__fact ${f.status === 'review' ? 'vera-knowledge__fact--review' : ''}`.trim()}
+                      title={`Confianza ${Math.round((f.confidence || 0) * 100)}% · ${f.source}`}>
+                      {factText(f)}
+                      <em className="vera-knowledge__fact-conf">{Math.round((f.confidence || 0) * 100)}%</em>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+    </div>
   );
 };
 

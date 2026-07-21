@@ -120,3 +120,32 @@ async def person_timeline(person_id: str):
     if row is None:
         raise HTTPException(404, "Persona no encontrada.")
     return {"events": await service.timeline_for(row)}
+
+
+@router.get("/{person_id}/knowledge")
+async def person_knowledge(person_id: str):
+    """Lo que VERA SABE de la persona (conocimiento estructurado y acumulativo)."""
+    _ensure()
+    if await people_repository.get(person_id) is None:
+        raise HTTPException(404, "Persona no encontrada.")
+    from knowledge import service as knowledge_service
+
+    return await knowledge_service.person_knowledge(person_id)
+
+
+@router.post("/{person_id}/knowledge/learn")
+async def person_knowledge_learn(person_id: str, payload: dict):
+    """Aprende de un resumen de forma síncrona (útil para pruebas/backfill manual)."""
+    _ensure()
+    row = await people_repository.get(person_id)
+    if row is None:
+        raise HTTPException(404, "Persona no encontrada.")
+    from knowledge import service as knowledge_service
+
+    summary = (payload or {}).get("summary", "")
+    result = await knowledge_service.learn_from_summary(
+        person_id, summary, (payload or {}).get("sourceRef", "manual"),
+        source="manual", person_name=row.get("full_name", ""),
+    )
+    result["knowledge"] = await knowledge_service.person_knowledge(person_id)
+    return result
