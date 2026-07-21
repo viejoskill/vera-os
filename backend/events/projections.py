@@ -1,8 +1,8 @@
 """Proyecciones — VERA Core consume los eventos y actualiza el estado derivado.
 Punto de extensión para la lógica de negocio (que vive SIEMPRE en VERA, nunca en
-Arturito). Hoy los read-models (timeline, contadores, último contacto) se calculan
-por consulta sobre el event store; acá quedan registrados los handlers write-time
-para cuando se agreguen oportunidades/tareas automáticas."""
+un adapter conversacional). Los handlers de negocio (Leads/Oportunidades/Tareas)
+se registran desde `core.handlers`; los read-models de timeline/contadores se
+calculan por consulta sobre el event store."""
 from __future__ import annotations
 
 import logging

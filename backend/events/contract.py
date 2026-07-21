@@ -1,10 +1,16 @@
-"""Contrato de eventos — la interfaz definitiva entre la capa conversacional
-(Arturito) y VERA Core. Arturito SÓLO transforma conversaciones en estos eventos
-tipados; la lógica de negocio vive exclusivamente en VERA.
+"""Contrato de eventos — la interfaz definitiva entre CUALQUIER capa conversacional
+y VERA Core (el "Conversation Adapter Contract").
+
+VERA Core NO conoce a ningún proveedor concreto. Cualquier motor conversacional
+(Arturito, WhatsApp Cloud, Kommo, un bot propio, la web…) es sólo un *adapter*:
+transforma sus conversaciones en estos eventos tipados y los envía a
+`POST /api/events`. Arturito es simplemente el PRIMER adapter; conectar otro motor
+no requiere cambios en VERA Core. Toda la lógica de negocio vive en VERA (proyecciones).
 
 Principios:
 - Eventos INMUTABLES: nunca se actualizan ni eliminan. Un cambio de estado = evento nuevo.
 - Contrato VERSIONADO (`event_version`) desde el inicio para compatibilidad futura.
+- AGNÓSTICO del proveedor: el mismo envelope sirve para todos los adapters.
 """
 from __future__ import annotations
 
@@ -30,8 +36,12 @@ EVENT_TYPES = {
     "PropertySold",
 }
 
-# Orígenes válidos de un evento.
-EVENT_SOURCES = {"arturito", "website", "crm", "app", "system"}
+# Orígenes (adapters) válidos. Cada motor conversacional se identifica con su propio
+# `source`; agregar un adapter nuevo = sumar su id acá (aditivo, retrocompatible).
+EVENT_SOURCES = {
+    "arturito", "website", "crm", "app", "system",
+    "conversation", "whatsapp", "kommo", "instagram", "facebook",
+}
 
 
 class _CamelBase(BaseModel):

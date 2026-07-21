@@ -1,0 +1,42 @@
+{
+  "summary": "Full backend testing of VERA Core projection handlers (Option A). Wrote /app/backend/tests/test_vera_core_projections.py (pytest, 28 tests, xdist=2 workers) covering the full acceptance matrix: event ingestion → Lead/Opportunity/Task creation, complete stage progression PropertyInquiry→VisitScheduled→PropertyVisited→OfferSent→PropertyReserved→PropertySold (interes→visita_agendada→visitada→oferta→reserva→ganada), no-regression guarantees on both Lead and Opportunity, MessageReceived counter bump + task dedupe (1 pending 'responder' per person+property), task lifecycle (hecha → new MessageReceived creates NEW pending task), idempotencyKey dedupe (deduped:true on 2nd POST, no duplicate lead/opp/task), validation 422 for invalid type/source/task-status/opp-stage/lead-status-query, manual PATCH on opportunities/tasks with 404 for non-existent ids, POST /api/core/rebuild replays event stream and is idempotent (2 consecutive rebuilds return identical counts), anonymous events (no contact identifier → personId=null → no projections), PersonCreated does NOT create Lead/Opp/Task, and provider-agnostic contract works for source ∈ {arturito, whatsapp, kommo, website}. Also verified GET /api/events/contract returns eventVersion=1 + full type/source lists. RESULT: 28/28 PASSED in 11.96s. Scanned /var/log/supervisor/backend.err.log during the run — ZERO 'Proyección falló' warnings emitted by any of the ~60 events ingested by the suite (the 2 pre-existing warnings in the log are from before the main agent's fix on 15:13:24, well before this test session). Backend implementation is functionally correct across the entire matrix specified by the main agent.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/events (anonymous PropertyInquiry)", "issue": "Events with no contact identifier are still persisted in the immutable event store even though they produce no business projections. This is by design (per pipeline.py) but worth flagging — an attacker could spam the event log with anonymous PropertyInquiry events. Consider rate-limiting or requiring at least a subject.propertyId for anonymous sources."},
+      {"endpoint": "GET /api/core/opportunities/{id}", "issue": "There is no GET-single endpoint for a specific opportunity by id — PATCH exists but no read. Not part of the spec, but would be useful for the frontend to refetch after PATCH. Currently the caller has to re-list all opportunities and filter."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_vera_core_projections.py",
+    "/app/test_reports/pytest/vera_core_projections.xml"
+  ],
+  "action_items": [
+    "None blocking. All 28 acceptance tests pass and the code matches the spec.",
+    "Optional: expose GET /api/core/opportunities/{id} and GET /api/core/tasks/{id} single-item reads so the frontend can refetch after PATCH without listing everything.",
+    "Optional: consider a light rate-limit on anonymous POST /api/events to protect the immutable log.",
+    "Optional (cleanup): the test suite created ~25 TEST_ persons with random +549… phone numbers plus their leads/opps/tasks in Mongo. They are harmless (unique phones, prefixed names) but can be pruned via `db.leads.deleteMany({person_name: /^TEST User/})` etc. if you want a clean DB."
+  ],
+  "critical_code_review_comments": [
+    "core/handlers.py project(): logic is clean and cohesive — event→stage/status/task maps are pure data, easy to extend. Person_id gate + PersonCreated exclusion is correct (verified). Lead upsert always runs first (even for pure MessageReceived) which is what makes the lead appear on the first conversational event as required.",
+    "core/handlers.py: `channel` is only added to $set when it's truthy — this was the original Mongo conflict bug the main agent already fixed; verified no more conflicts in this test run.",
+    "core/types.py opp_can_advance/lead_can_advance: rank-based comparison correctly prevents regression AND correctly treats terminals (ganada/perdida for opp, convertido/perdido for lead). Verified end-to-end.",
+    "core/store.upsert_opportunity: uses $setOnInsert for `stage` + `property_label` and only $sets `person_name`+`source`+`updated_at`. That means the stage inserted at creation time is never overwritten by the upsert itself — subsequent advance is done explicitly via set_opportunity_stage() only if opp_can_advance() allows. Correct.",
+    "core/store.create_task_if_absent: dedupes on (person_id, property_id, type, status=pendiente) — verified that marking a task 'hecha' correctly allows a new pending task to be created on the next event. property_id is normalized to '' when missing, which matches the dedupe key.",
+    "core/store._shape_lead/_shape_opp/_shape_task: properly convert MongoDB _id → id string and expose camelCase — no ObjectId leaks in any response.",
+    "events/pipeline.py ingest(): projections.apply is awaited synchronously inside the request path. For high-throughput ingestion this could become a bottleneck; consider fire-and-forget (asyncio.create_task) or a background worker if event volume grows. Not a bug — just a scaling note.",
+    "events/projections.py apply(): swallows handler exceptions with a WARNING. This is the correct choice for ingest resilience, BUT it means a broken projection is silent — recommend also emitting to a dead-letter collection so rebuild() can surface which events failed. Currently rebuild() uses the same pattern (best-effort with logger.warning) so a corrupted event would be silently skipped.",
+    "events/contract.py: EVENT_TYPES and EVENT_SOURCES are hard-coded sets. Solid for MVP; when a new adapter is added the source must be added here — well documented in the module docstring.",
+    "routes_core.py update_opportunity/update_task: they use HTTPException(422) for enum violation and 404 for missing id — verified both. The manual PATCH intentionally bypasses opp_can_advance(), meaning a human CAN move an opp backwards; this appears to be intentional (human override) but is not documented — recommend adding a docstring note or an explicit query param `?force=true` to make the override intent visible.",
+    "core/handlers.py: no explicit test coverage for the ConversationStarted event was requested — the code path only creates/updates the Lead (via upsert_lead) and does NOT generate a task or an opportunity, which is consistent with the _STAGE_BY_EVENT / task branches. Behavior implicitly covered by other tests."
+  ],
+  "updated_files": ["/app/backend/tests/test_vera_core_projections.py"],
+  "success_rate": {"backend": "100% (28/28)", "frontend": "N/A (backend-only test request)"},
+  "test_credentials": "Not required — VERA Core endpoints have no auth (backend uses Supabase service_role internally, as documented in the review request).",
+  "seed_data_creation": "The suite creates ~25 disposable persons with unique random phones (prefix +549…) and names 'TEST User <phone-suffix>' plus their associated leads/opportunities/tasks in Mongo. All rows use unique keys so they do not collide with existing data. No seed cleanup is done because the tests are idempotent and re-runnable with fresh phones each time.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "VERA Core projections are green end-to-end. The regression pytest file is /app/backend/tests/test_vera_core_projections.py — reuse it as a smoke test for any change to core/handlers.py, core/store.py, core/types.py, events/pipeline.py or events/contract.py. Run with `pytest -n 2 tests/test_vera_core_projections.py`. It uses REACT_APP_BACKEND_URL from env (falls back to localhost:8001). To reset the projections DB between debug sessions, POST /api/core/rebuild — it clears leads/opportunities/core_tasks and rebuilds from the immutable events collection. The event log itself is append-only and must not be truncated.",
+  "rca of the issue": "No functional bug found. The two 'Proyección falló' warnings visible in backend.err.log are from 2026-07-21 15:13:24 — BEFORE the main agent's fix for the Mongo $setOnInsert+$set channel conflict (visible right after those warnings there is a 'WatchFiles detected changes in core/handlers.py. Reloading…' entry). Every event ingested during this test session (15:18+) logged only INFO lines, confirming the fix is complete."
+}

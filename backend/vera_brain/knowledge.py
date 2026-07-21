@@ -31,7 +31,8 @@ class VeraKnowledgeSource(KnowledgeSource):
     DOCS = Path("/app/docs")
     DOC_ORDER = [
         "VISION.md", "COGNITION.md", "FOUNDATION.md", "BRAND.md",
-        "PROVIDERS.md", "RELATIONSHIPS.md", "WORKSPACE.md", "ROADMAP.md", "PILOT.md",
+        "PROVIDERS.md", "CONVERSATION_ADAPTER.md", "RELATIONSHIPS.md",
+        "WORKSPACE.md", "ROADMAP.md", "PILOT.md",
     ]
 
     _cache: str | None = None

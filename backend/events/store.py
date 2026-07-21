@@ -90,3 +90,16 @@ async def list_events(
         q["source"] = source
     cur = _db()["events"].find(q).sort("occurred_at", DESCENDING).limit(min(limit, 500))
     return [_shape(d) async for d in cur]
+
+
+async def list_ascending() -> list[dict]:
+    """Todos los eventos en orden cronológico ascendente (para reconstruir
+    proyecciones reproduciendo el stream). Incluye el `_id` crudo por evento."""
+    await _ensure_indexes()
+    cur = _db()["events"].find({}).sort("occurred_at", ASCENDING)
+    out = []
+    async for d in cur:
+        shaped = _shape(d)
+        shaped["_id"] = d.get("_id")
+        out.append(shaped)
+    return out
