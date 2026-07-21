@@ -172,9 +172,14 @@ async def get_opportunity_by_id(oid) -> dict | None:
 
 async def update_opportunity_by_id(oid, stage: str) -> dict | None:
     from bson import ObjectId
+    from bson.errors import InvalidId
 
+    try:
+        _oid = ObjectId(oid)
+    except InvalidId:
+        return None
     await _db()["opportunities"].update_one(
-        {"_id": ObjectId(oid)}, {"$set": {"stage": stage, "updated_at": _now()}}
+        {"_id": _oid}, {"$set": {"stage": stage, "updated_at": _now()}}
     )
     return await get_opportunity_by_id(oid)
 
@@ -222,9 +227,14 @@ async def get_task_by_id(tid) -> dict | None:
 
 async def update_task_status(tid, status: str) -> dict | None:
     from bson import ObjectId
+    from bson.errors import InvalidId
 
+    try:
+        _oid = ObjectId(tid)
+    except InvalidId:
+        return None
     await _db()["core_tasks"].update_one(
-        {"_id": ObjectId(tid)}, {"$set": {"status": status, "updated_at": _now()}}
+        {"_id": _oid}, {"$set": {"status": status, "updated_at": _now()}}
     )
     return await get_task_by_id(tid)
 

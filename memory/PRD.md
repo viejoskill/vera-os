@@ -708,6 +708,15 @@ VERA es ahora el **receptor primario** de los eventos de Arturito. Verificado E2
 - **Payload real confirmado** en `/app/docs/ARTURITO_API_DISCOVERY.md` §7.1 (lead bajo `lead`, id=`id`, mensaje/resumen en `conversation.summary`, `intent`).
 - **PENDIENTES**: (1) al redeployar, actualizar la URL del webhook a PRODUCCIÓN (`webhooks.update`); (2) backfill histórico vía tRPC tras validar; (3) mensaje completo (`getMessagesByConversationId`) sigue restringido con la key.
 
+## Sprint Operaciones + Completar Proyecciones — 2026-07-21
+Verificado: testing_agent iteration_30 (frontend 100%, backend 8/9 → el único fallo, 500 en ObjectId inválido, YA corregido → 404). Regresión: `/app/backend/tests/test_operaciones_sprint30.py`.
+- **Proyecciones de Persona completadas**: `people/service.enrich_list_item` ahora deriva `lastContact` y `conversationsCount` del **event store real** (antes venían del provider MOCKEADO → quedaban vacío/0 para personas de Arturito). Verificado con la persona real "Cata 💓" (lastContact ok, convs 1).
+- **Nombre canónico en proyecciones**: `core/handlers._person_name` usa el nombre del registro de la Persona (VERA Core = fuente de verdad de identidad) por sobre el alias de cada evento (una misma persona puede tener alias distintos entre conversaciones; ej. "Cata 💓" vs "Noelia" con el mismo teléfono → el resolver los unificó, y el Lead/Tarea muestran el nombre canónico).
+- **Endpoints nuevos** (`routes_core.py`): `GET /api/core/kpis` (personas, leadsActivos, oportunidadesAbiertas, tareasPendientes, conversacionesHoy) y `GET /api/core/activity?limit=` (timeline global con labels en español). Guard de `ObjectId` en `update_task_status`/`update_opportunity_by_id` → 404 en id inválido.
+- **App "Operaciones"** (`/app/frontend/src/app/screens/OperacionesScreen.tsx`, ruta `/operaciones`, flag `operaciones:true`): tablero READ-ONLY con KPIs + 4 columnas (Nuevos Leads, Oportunidades por etapa/embudo, Tareas pendientes con completar, Actividad reciente/timeline global). Auto-refresh 15s. Botones: Lead→"Ver Persona" (`/personas/:id`), Oportunidad→"Abrir Propiedad" (`/propiedades/:id`), y en la ficha de Persona→"Abrir Arturito" (`PersonDetail`). Sin lógica comercial: sólo refleja VERA Core. CSS `.vera-ops__*` en `index.css`.
+- **Limitación conocida**: los eventos de Arturito no traen `propertyId` de VERA → no crean Oportunidad (sólo Lead + tarea "Contactar"). La columna Oportunidades se puebla con eventos que sí traen propiedad (web/app/futuro matching).
+- **PROPUESTA DEL USUARIO (pendiente de decisión)**: renombrar/promover "Operaciones" a **"Hoy"** como tablero principal, dejando Personas/Propiedades/Arturito/Studio como apps especializadas. HOY `/hoy` = `WorkspaceHome` (escritorio ambiental existente). No se tocó; a confirmar si se reemplaza.
+
 
 
 

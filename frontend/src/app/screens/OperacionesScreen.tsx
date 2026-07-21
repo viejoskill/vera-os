@@ -60,7 +60,7 @@ export const OperacionesScreen = () => {
   const { data: leadsRes } = useQuery<{ leads: Lead[] }>({ queryKey: ['ops', 'leads'], queryFn: () => getJson('/leads'), ...opts });
   const { data: oppsRes } = useQuery<{ opportunities: Opp[] }>({ queryKey: ['ops', 'opps'], queryFn: () => getJson('/opportunities'), ...opts });
   const { data: tasksRes } = useQuery<{ tasks: Task[] }>({ queryKey: ['ops', 'tasks'], queryFn: () => getJson('/tasks?status=pendiente'), ...opts });
-  const { data: actRes, isFetching, refetch } = useQuery<{ activity: Activity[] }>({ queryKey: ['ops', 'activity'], queryFn: () => getJson('/activity?limit=40'), ...opts });
+  const { data: actRes, isFetching, isLoading: actLoading, refetch } = useQuery<{ activity: Activity[] }>({ queryKey: ['ops', 'activity'], queryFn: () => getJson('/activity?limit=40'), ...opts });
 
   const complete = useMutation({
     mutationFn: (id: string) => fetch(`${API}/tasks/${id}`, {
@@ -184,8 +184,11 @@ export const OperacionesScreen = () => {
         <section className="vera-ops__col" data-testid="ops-col-activity">
           <h2 className="vera-ops__col-title"><Clock size={15} /> Actividad reciente</h2>
           <div className="vera-ops__timeline">
-            {activity.length === 0 && <p className="vera-ops__empty">Todavía no pasó nada.</p>}
-            {activity.map((a) => (
+            {actLoading ? (
+              <p className="vera-ops__empty">Cargando actividad…</p>
+            ) : activity.length === 0 ? (
+              <p className="vera-ops__empty">Todavía no pasó nada.</p>
+            ) : activity.map((a) => (
               <div key={a.id} className="vera-ops__event" data-testid={`activity-${a.id}`}>
                 <span className="vera-ops__event-time">{timeOf(a.at)}</span>
                 <span className="vera-ops__event-node" />
