@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, BedDouble, Bath, Maximize, MapPin, Ruler, Compass } from 'lucide-react';
+import { ArrowLeft, BedDouble, Bath, Maximize, MapPin, Ruler, Compass, MessageCircle } from 'lucide-react';
 import { env } from '@vera/config';
+import { logInquiry } from './whatsappInquiry';
 
 interface Img { id: string; url: string; }
 interface Detail {
@@ -11,6 +12,7 @@ interface Detail {
   province: string; description: string; bedrooms: number; bathrooms: number; rooms: number;
   areaM2: number; lotAreaM2: number; orientation: string; condition: string;
   amenities: string[]; images: Img[]; coverImage: string; status: string;
+  whatsappUrl: string; publicUrl: string;
 }
 
 const money = (n: number, c: string) =>
@@ -97,6 +99,18 @@ export const PublicPropertyDetail = () => {
               return <span key={i}><Icon size={15} /> {s.label}</span>;
             })}
           </div>
+          {data.status !== 'sold' && data.whatsappUrl && (
+            <a
+              className="vera-wa-btn"
+              href={data.whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => logInquiry(data.id)}
+              data-testid="public-detail-whatsapp"
+            >
+              <MessageCircle size={18} /> Consultar por WhatsApp
+            </a>
+          )}
           <span className="vera-pub-card__code">{data.code}</span>
         </aside>
       </div>

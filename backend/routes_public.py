@@ -4,8 +4,10 @@ VERA. VERA es la única fuente de verdad. Una propiedad es visible solo si está
 Al venderse/archivarse desaparece sola; precio/fotos/descripción reflejan el dato
 actual porque se lee en cada request. Endpoints públicos (sin auth, sin datos privados)."""
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 import config
+import inquiries
 from property_repository import property_repository
 from serializers import property_to_detail, property_to_response
 
@@ -43,7 +45,10 @@ async def public_listings():
         if not _web_published(r):
             continue
         resp = (await property_to_response(r)).model_dump(by_alias=True)
-        out.append({k: resp.get(k) for k in _SUMMARY_KEYS})
+        item = {k: resp.get(k) for k in _SUMMARY_KEYS}
+        item["whatsappUrl"] = inquiries.whatsapp_url(r)
+        item["publicUrl"] = inquiries.public_url(r)
+        out.append(item)
     return out
 
 
@@ -57,4 +62,27 @@ async def public_listing(property_id: str):
     detail = (await property_to_detail(row)).model_dump(by_alias=True)
     for k in _DETAIL_DROP:
         detail.pop(k, None)
+    detail["whatsappUrl"] = inquiries.whatsapp_url(row)
+    detail["publicUrl"] = inquiries.public_url(row)
     return detail
+
+
+class InquiryRequest(BaseModel):
+    property_id: str
+
+
+@router.post("/inquiries")
+async def create_inquiry(payload: InquiryRequest):
+    """Registra la consulta por WhatsApp (evento base para Arturito) y devuelve el
+    deep link de WhatsApp con el contexto de la propiedad ya precompletado."""
+    if not config.supabase_configured():
+        raise HTTPException(404, "Propiedad no disponible.")
+    row = await property_repository.get(payload.property_id)
+    if not row or not _web_published(row):
+        raise HTTPException(404, "Propiedad no disponible.")
+    event = await inquiries.register_inquiry(row)
+    return {
+        "whatsappUrl": inquiries.whatsapp_url(row),
+        "publicUrl": inquiries.public_url(row),
+        "inquiryId": event.get("id"),
+    }

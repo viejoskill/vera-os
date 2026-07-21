@@ -655,6 +655,17 @@ El usuario pidió ver de un vistazo, en cada tarjeta de la grilla, el estado de 
 2. **Estado → web (Reservada/Vendida)**: YA funcionaba. `web_publisher._row` mapea status→estado (reserved→Reservada, sold→Vendida) y `routes_properties.update_property` hace auto-resync al CRM `propiedades` cuando `web-varela` está published (las 29 propiedades lo están). Verificado E2E: PATCH status=reserved en VERA → CRM `estado="Reservada"` (dispara el sello RESERVADA/VENDIDA que la web ya renderiza); revertido a Disponible. El sitio ya soporta los sellos por `estado`; no requiere cambios en la web. Si el usuario no lo veía, es por deploy viejo / caché del sitio.
 - **PENDIENTE DE DEPLOY**: el fix del color está en PREVIEW → REDEPLOY. El sync de estado ya debería estar en prod si redeployó tras el sprint web.
 
+## Consulta por WhatsApp con contexto de propiedad (base Arturito) — 2026-07-21
+Botón "Consultar por WhatsApp" por propiedad que abre WhatsApp con mensaje precompletado (código, título, link) + tracking, y registra el evento de consulta en VERA. Primer punto de contacto sitio público ↔ ecosistema VERA.
+- **Backend** (`inquiries.py` + `config.py` + `routes_public.py`):
+  - `config.WHATSAPP_NUMBER` (def 5492246586030, env override) y `config.PUBLIC_WEB_BASE_URL` (def https://www.varelapropiedadescde.com.ar).
+  - `inquiries.py`: `whatsapp_url(prop)` arma `https://wa.me/<num>?text=<msg url-encoded>`; `public_url(prop)` = `{base}/propiedades/{code.lower()}?source=website&property_id=<uuid>&property_code=<code>` (tracking para que Arturito identifique propiedad/canal/URL). `register_inquiry(prop)` inserta en Mongo `website_inquiries` (event 'Website Property Inquiry', channel Website, origin Ficha de Propiedad, property_id/code/title, url, status 'pendiente_contacto', created_at ISO). Nada hardcodeado: todo se genera por propiedad.
+  - `GET /api/public/listings` y `GET /api/public/listings/{id}` ahora incluyen `whatsappUrl` + `publicUrl`. Nuevo `POST /api/public/inquiries {property_id}` → registra evento y devuelve `{whatsappUrl, publicUrl, inquiryId}`.
+- **Frontend** (páginas públicas VERA `/web` y `/web/:id`): botón WhatsApp verde institucional (`.vera-wa-btn`). Ficha = CTA principal (abre wa.me, registra evento vía `logInquiry`). Grilla = botón por tarjeta (`openWhatsAppInquiry`: registra + window.open, con stopPropagation para no navegar al detalle). Se oculta en propiedades `sold`. Helper `whatsappInquiry.ts`. Mobile abre la app de WhatsApp (wa.me nativo).
+- **Verificado** (Playwright + curl + Mongo): 26 botones en grilla (oculto en VENDIDA), 1 en ficha con href correcto; POST registra el evento con contexto completo. tsc limpio.
+- **IMPORTANTE — dónde vive**: implementado en las páginas públicas de VERA (ESTE proyecto). El sitio EN VIVO del usuario (varelapropiedadescde.com.ar) es EXTERNO y NO está en este repo → para que el botón aparezca allí, ese sitio debe consumir `GET /api/public/listings` (usa `whatsappUrl`) y `POST /api/public/inquiries`, o migrar a las páginas públicas de VERA. El usuario no confirmó quién edita el sitio externo (ask_human quedó sin responder ese punto).
+- **PENDIENTE DE DEPLOY**: en PREVIEW → REDEPLOY.
+
 
 
 

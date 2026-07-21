@@ -56,3 +56,10 @@ def ai_configured() -> bool:
 
 def supabase_configured() -> bool:
     return bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
+
+# WhatsApp de consulta (sitio público). Constante de negocio, override por env.
+WHATSAPP_NUMBER = os.environ.get("WHATSAPP_NUMBER", "5492246586030")
+# Base de la web pública (para armar el link de cada propiedad en el mensaje).
+PUBLIC_WEB_BASE_URL = os.environ.get(
+    "PUBLIC_WEB_BASE_URL", "https://www.varelapropiedadescde.com.ar"
+).rstrip("/")

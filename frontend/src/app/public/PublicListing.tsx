@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { BedDouble, Bath, Maximize, MapPin } from 'lucide-react';
+import { BedDouble, Bath, Maximize, MapPin, MessageCircle } from 'lucide-react';
 import { env } from '@vera/config';
+import { openWhatsAppInquiry } from './whatsappInquiry';
 
 interface Listing {
   id: string;
@@ -21,6 +22,8 @@ interface Listing {
   lotAreaM2: number;
   rooms: number;
   status: string;
+  whatsappUrl: string;
+  publicUrl: string;
 }
 
 const money = (n: number, c: string) =>
@@ -161,6 +164,20 @@ export const PublicListing = () => {
                     )}
                   </div>
                   <span className="vera-pub-card__code">{p.code}</span>
+                  {p.status !== 'sold' && p.whatsappUrl && (
+                    <button
+                      type="button"
+                      className="vera-wa-btn vera-wa-btn--sm"
+                      data-testid={`public-card-whatsapp-${p.id}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openWhatsAppInquiry(p.id, p.whatsappUrl);
+                      }}
+                    >
+                      <MessageCircle size={15} /> Consultar por WhatsApp
+                    </button>
+                  )}
                 </div>
               </Link>
             );
