@@ -687,6 +687,17 @@ Los eventos del pipeline ahora generan AUTOMÁTICAMENTE las entidades de negocio
 - **Bug corregido**: `channel` aparecía en `$setOnInsert` y `$set` a la vez (conflicto Mongo code 40) → sólo en `$set` cuando presente. Regresión: `/app/backend/tests/test_vera_core_projections.py` (28 tests).
 - **PENDIENTE**: UI de Operaciones (Leads/Oportunidades/Tareas hoy sólo por API, la App Operaciones sigue "Próximamente"). Deploy: en PREVIEW → REDEPLOY.
 
+## Sprint Arturito API Discovery (SOLO descubrimiento, sin implementar) — 2026-07
+Se descubrió empíricamente la API de Arturito con la API Key `art_…` provista. Resultado en **`/app/docs/ARTURITO_API_DISCOVERY.md`** (agregar a DOC_ORDER cuando se implemente). Hallazgos clave:
+- **Arturito SÍ tiene API** (contra la conclusión previa de "plataforma cerrada"). Backend = **tRPC** en `https://app.arturito.ai/api/trpc/*` (mismo origen del Next.js/Vercel; auth del dashboard = Auth0). Sin OpenAPI público.
+- **Auth de la API Key**: header `Authorization: Bearer art_…` (X-Api-Key NO). Sin transformer (input JSON crudo en `?input=`). Respuestas `{"result":{"data":…}}`, errores Zod.
+- **La key puede LEER** agents/pipeline/leads/tags/métricas y **gestionar webhooks**; NO puede gestionar api keys (403). Atada a 1 workspace (`6a54f832f4c16e6124260f28`, agente "Vera").
+- **Webhooks salientes** (camino primario): eventos `lead.created` y `lead.attended`, firmados **HMAC-SHA256** (`X-Arturito-Signature`), filtro por agente, logs/reintentos. **YA existe** un webhook en `https://bot.varelapropiedadescde.com.ar/webhook/arturito` (decidir coexistencia vs reemplazo).
+- **Esquema del lead** (Chatwoot-backed + Tokko/GHL): phone/normalizedPhone, name, tags, pipelineStage (`qualifying/qualified/manual_attention/lost/won/paused`), leadScore, intentDetected, lastMessageContent, notes[], timestamps.
+- **Limitaciones**: transcript de mensajes (`getMessagesByConversationId`) devuelve 403/412 con la key; contrato no versionado/no autodescubrible; 1 key = 1 workspace.
+- **Recomendación (a implementar luego, con aprobación)**: `ArturitoWebhookAdapter` (PUSH → traduce a eventos del Conversation Adapter Contract → `POST /api/events`) + `ArturitoClient` tRPC (PULL para backfill/enriquecimiento). Mapeo de etapas casi 1:1 con VERA Core.
+- La API Key NO se guardó aún en `.env` (sprint de discovery). Al implementar: `ARTURITO_API_KEY` solo backend.
+
 
 
 
