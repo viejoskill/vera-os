@@ -193,29 +193,60 @@ def _int(value) -> int:
         return 0
 
 
-def _area_attr(attr_id: str, m2: int) -> dict | None:
-    """ML exige value_struct (number + unit 'm2' en ASCII) para superficies.
-    Nunca mezclar con value_name. Si es 0, se omite (evita 'attribute omitted')."""
-    if m2 <= 0:
+import unicodedata
+
+_STATES_CACHE: list[dict] = []
+
+
+def _norm(s: str) -> str:
+    s = unicodedata.normalize("NFKD", s or "")
+    return "".join(c for c in s if not unicodedata.combining(c)).strip().lower()
+
+
+async def _ar_states(access: str) -> list[dict]:
+    global _STATES_CACHE
+    if not _STATES_CACHE:
+        try:
+            async with httpx.AsyncClient(timeout=20) as h:
+                r = await h.get(
+                    f"{config.MELI_API}/classified_locations/countries/AR",
+                    headers={"Authorization": f"Bearer {access}"},
+                )
+            if r.status_code == 200:
+                _STATES_CACHE = r.json().get("states", [])
+        except Exception:  # noqa: BLE001
+            logger.warning("ML: no se pudo leer el catálogo de provincias")
+    return _STATES_CACHE
+
+
+async def _resolve_state_id(access: str, prop: dict) -> str | None:
+    states = await _ar_states(access)
+    prov = _norm(prop.get("province"))
+    if not states:
         return None
-    return {"id": attr_id, "value_struct": {"number": m2, "unit": "m2"}}
+    for s in states:  # match exacto por nombre
+        if _norm(s["name"]) == prov:
+            return s["id"]
+    if "buenos aires" in prov:  # zona costera de Varela → Interior
+        for s in states:
+            if _norm(s["name"]) == "buenos aires interior":
+                return s["id"]
+    for s in states:  # match parcial
+        if prov and prov in _norm(s["name"]):
+            return s["id"]
+    return None
 
 
-def _num_attr(attr_id: str, value: int) -> dict | None:
-    if value <= 0:
-        return None
-    return {"id": attr_id, "value_name": str(value)}
-
-
-def _location(prop: dict) -> dict:
-    """Ubicación por coordenadas cuando existen (ML resuelve ciudad/estado y evita
-    el error item.location por nombres que no matchean)."""
+async def _location(access: str, prop: dict) -> dict:
+    """ML valida la ubicación hasta nivel ciudad. Se resuelve la provincia contra el
+    catálogo oficial (state.id) + city.name libre + coordenadas."""
     loc: dict = {
         "address_line": prop.get("address") or "",
-        "neighborhood": {"name": prop.get("neighborhood") or ""},
+        "country": {"id": "AR"},
         "city": {"name": prop.get("city") or ""},
-        "state": {"name": prop.get("province") or "Buenos Aires"},
     }
+    state_id = await _resolve_state_id(access, prop)
+    loc["state"] = {"id": state_id} if state_id else {"name": prop.get("province") or ""}
     lat, lng = prop.get("latitude"), prop.get("longitude")
     if lat is not None and lng is not None:
         loc["latitude"] = lat
@@ -223,25 +254,51 @@ def _location(prop: dict) -> dict:
     return loc
 
 
-def _attributes(prop: dict, discovered: list[dict]) -> list[dict]:
-    total = _int(prop.get("lot_area_m2")) or _int(prop.get("area_m2"))
-    covered = _int(prop.get("area_m2"))
-    seen = {a["id"] for a in discovered}
-    attrs: list[dict] = list(discovered)
-    if "OPERATION" not in seen and "OPERATION_TYPE" not in seen:
-        attrs.append({"id": "OPERATION", "value_name": _OPERATION.get(prop.get("operation"), "Venta")})
-    for a in (
-        _area_attr("TOTAL_AREA", total),
-        _area_attr("COVERED_AREA", covered),
-        _num_attr("BEDROOMS", _int(prop.get("bedrooms"))),
-        _num_attr("FULL_BATHROOMS", _int(prop.get("bathrooms"))),
-    ):
-        if a and a["id"] not in seen:
-            attrs.append(a)
-    return attrs
+# Mapeo id-de-atributo-ML → valor numérico tomado de la propiedad VERA.
+_ATTR_VALUE = {
+    "TOTAL_AREA": lambda p: str(_int(p.get("lot_area_m2")) or _int(p.get("area_m2"))),
+    "COVERED_AREA": lambda p: str(_int(p.get("area_m2")) or _int(p.get("lot_area_m2"))),
+    "BEDROOMS": lambda p: str(_int(p.get("bedrooms"))),
+    "ROOMS": lambda p: str(_int(p.get("rooms")) or _int(p.get("bedrooms"))),
+    "FULL_BATHROOMS": lambda p: str(_int(p.get("bathrooms"))),
+    "PARKING_LOTS": lambda p: str(_int(p.get("parking_covered")) + _int(p.get("parking_uncovered"))),
+}
 
 
-def _payload(prop: dict, images: list[dict], category_id: str, discovered: list[dict]) -> dict:
+async def _category_attributes(access: str, category_id: str, prop: dict) -> list[dict]:
+    """Consulta el esquema de la categoría y arma SOLO los atributos obligatorios que
+    sabemos mapear desde la propiedad, con el formato exacto (number_unit usa la unidad
+    permitida por ML, p.ej. 'm²'). Evita mandar atributos fijos/ocultos (los pone ML)."""
+    try:
+        async with httpx.AsyncClient(timeout=20) as h:
+            r = await h.get(
+                f"{config.MELI_API}/categories/{category_id}/attributes",
+                headers={"Authorization": f"Bearer {access}"},
+            )
+        schema = r.json() if r.status_code == 200 else []
+    except Exception:  # noqa: BLE001
+        logger.warning("ML: no se pudo leer el esquema de %s", category_id)
+        schema = []
+
+    out: list[dict] = []
+    for attr in schema:
+        tags = attr.get("tags") or {}
+        if not tags.get("required") or tags.get("hidden") or tags.get("fixed"):
+            continue
+        aid = attr.get("id")
+        provider = _ATTR_VALUE.get(aid)
+        if not provider:
+            continue
+        value = provider(prop)
+        if attr.get("value_type") == "number_unit":
+            unit = ((attr.get("allowed_units") or [{}])[0]).get("id", "m²")
+            out.append({"id": aid, "value_name": f"{value} {unit}"})
+        else:
+            out.append({"id": aid, "value_name": value})
+    return out
+
+
+def _payload(prop: dict, images: list[dict], category_id: str, attributes: list[dict], location: dict) -> dict:
     pics = [{"source": i["url"]} for i in images if i.get("url")][:12]
     return {
         "title": (prop.get("title") or "Propiedad")[:60],
@@ -254,16 +311,18 @@ def _payload(prop: dict, images: list[dict], category_id: str, discovered: list[
         "condition": "not_specified",
         "pictures": pics,
         "description": {"plain_text": _description_with_disclaimer(prop)},
-        "location": _location(prop),
-        "attributes": _attributes(prop, discovered),
+        "location": location,
+        "attributes": attributes,
     }
 
 
 async def publish(prop: dict, images: list[dict], existing_item_id: str | None) -> dict:
     """Crea (POST /items) o actualiza (PUT /items/{id}) el aviso. Devuelve item id + permalink."""
     access = await _valid_token()
-    category_id, discovered = await _resolve_listing(access, prop)
-    payload = _payload(prop, images, category_id, discovered)
+    category_id, _ = await _resolve_listing(access, prop)
+    attributes = await _category_attributes(access, category_id, prop)
+    location = await _location(access, prop)
+    payload = _payload(prop, images, category_id, attributes, location)
     async with httpx.AsyncClient(timeout=40) as h:
         headers = {"Authorization": f"Bearer {access}", "Content-Type": "application/json"}
         if existing_item_id:

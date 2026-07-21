@@ -622,6 +622,15 @@ Error real capturado en `properties.publications['mercadolibre'].error` (prop 9c
 - **routes_ml.py**: el error guardado/propagado se amplió de 300→800 chars + `logger.error` con detalle completo, para depurar si ML devuelve otra causa.
 - **PENDIENTE**: verificación end-to-end del POST real a ML. En PREVIEW ML figura desconectado (tokens NO se comparten con producción). Requiere que el usuario conecte ML en Preview para testear, o REDEPLOY y probar en producción. tsc/backend OK.
 
+## Fix ML publish COMPLETO — categoría hoja + atributos por esquema + ubicación por catálogo — 2026-07-21 (RESUELTO E2E)
+El usuario conectó ML en Preview (cuenta INMOVARELA, seller 199060820) y se depuró la publicación real contra la API contra la propiedad 9c1d4217 hasta lograr **item creado: MLA3637392782**. Tres bloqueantes reales encontrados y resueltos en `mercadolibre/service.py`:
+1. **Categoría inválida** (`item.category_id.invalid`, MLA1466 no es hoja): ahora la categoría HOJA se resuelve DINÁMICAMENTE con `/sites/MLA/domain_discovery/search?q=<tipo> en <operación>` (`_resolve_listing`). Fallback `_CATEGORY_FALLBACK`. Ej.: casa venta→MLA401685, terreno venta→MLA401803.
+2. **Atributos obligatorios** (`item.attributes.missing_required` [TOTAL_AREA, COVERED_AREA, PARKING_LOTS]; y superficies "dropped"): se consulta el ESQUEMA real de la categoría `/categories/{id}/attributes` (`_category_attributes`) y se arman SOLO los atributos required que sabemos mapear (`_ATTR_VALUE`: TOTAL_AREA, COVERED_AREA, BEDROOMS, FULL_BATHROOMS, PARKING_LOTS, ROOMS). `number_unit` usa `value_name "<n> <unidad>"` con la unidad EXACTA del esquema (es **"m²"** con símbolo, NO "m2"). Se ignoran atributos fixed/hidden (OPERATION/PROPERTY_TYPE los pone la categoría). Robusto por tipo: terreno solo pide TOTAL_AREA.
+3. **Ubicación** (`item.location.invalid`, "requires up to city level"): coords solas no alcanzan. `_location` (async) resuelve `state.id` contra el catálogo `/classified_locations/countries/AR` (`_resolve_state_id`, match por nombre normalizado; BA→provincia válida) + `country.id="AR"` + `city.name` libre + lat/long. Cache de provincias en `_STATES_CACHE`.
+- **Verificado**: publish real 200 → status ML `not_yet_active` con sub_status `pack_quota_pending` + `picture_download_pending` (12 fotos cargadas). Esto NO es del código: `pack_quota_pending` depende del paquete/cupo de publicaciones de inmuebles de la cuenta ML (la cuenta tiene `silver`/"Plata" remaining_listings=66); `picture_download_pending` se resuelve solo. VERA marcó la propiedad `publications.mercadolibre.status=published` con itemId+url.
+- **Usuario QA temporal Preview**: `qa_varela@vera.test` / `VeraQA!2026ml` (Supabase compartido). Borrar al cerrar sprint.
+- **PENDIENTE DE DEPLOY**: fix en PREVIEW → requiere REDEPLOY para producción. Item de prueba MLA3637392782 quedó creado en la cuenta real (es la propiedad real del usuario; re-publicar hace UPDATE, no duplica).
+
 
 
 
