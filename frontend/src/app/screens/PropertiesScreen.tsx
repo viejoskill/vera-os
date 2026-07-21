@@ -69,12 +69,18 @@ const channelTone = (status?: string): string =>
 const ChannelSemaphore = ({ publications }: { publications?: Property['publications'] }) => {
   const web = publications?.['web-varela']?.status;
   const ml = publications?.['mercadolibre']?.status;
+  const label = (channel: string, status?: string) =>
+    status === 'published'
+      ? `Publicada en ${channel}`
+      : status === 'error'
+        ? `Error de publicación en ${channel}`
+        : `No publicada en ${channel}`;
   return (
     <div className="vera-prop__channels" data-testid="property-channels">
-      <span className="vera-prop__channel" data-testid="property-channel-web">
+      <span className="vera-prop__channel" data-testid="property-channel-web" title={label('Web', web)} aria-label={label('Web', web)}>
         <span className={`vera-dot vera-dot--${channelTone(web)}`} /> Web
       </span>
-      <span className="vera-prop__channel" data-testid="property-channel-ml">
+      <span className="vera-prop__channel" data-testid="property-channel-ml" title={label('Mercado Libre', ml)} aria-label={label('Mercado Libre', ml)}>
         <span className={`vera-dot vera-dot--${channelTone(ml)}`} /> ML
       </span>
     </div>

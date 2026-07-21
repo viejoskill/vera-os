@@ -643,6 +643,13 @@ El panel de Publicaciones ahora muestra el estado REAL del aviso en Mercado Libr
 - **Frontend** (`ChannelsSection.tsx`): `useQuery(['ml-state', propertyId])` habilitado cuando ML está conectado y la propiedad está publicada; `refetchInterval` 12s solo mientras `activating`. El estado del canal ML usa la etiqueta/tono en vivo (spinner si se está activando) y el link "Ver aviso" usa el permalink real de ML. tsc limpio, webpack "No issues found".
 - **PENDIENTE DE DEPLOY**: todo en PREVIEW → requiere REDEPLOY.
 
+## Semáforo de canales (Web + ML) en la grilla de Propiedades — 2026-07-21
+El usuario pidió ver de un vistazo, en cada tarjeta de la grilla, el estado de publicación en Web y en Mercado Libre.
+- **Frontend** (`PropertiesScreen.tsx`): nuevo componente `ChannelSemaphore` en el cuerpo de cada tarjeta (debajo de specs). Muestra dos indicadores "Web" y "ML" con un punto de color: verde=`published`, rojo=`error`, gris=sin publicar (`channelTone`). Lee `property.publications['web-varela'].status` y `['mercadolibre'].status` (el listado ya devuelve `publications`, sin llamadas extra por tarjeta). Con `aria-label`/`title` accesibles. CSS `.vera-prop__channels`/`.vera-prop__channel` en index.css reutilizando `.vera-dot--*`.
+- Decisión: en la grilla se usa el estado GUARDADO (barato, N tarjetas sin N llamadas a ML). El estado EN VIVO de ML (activándose/activo/pausado) queda en la ficha (sección Publicaciones).
+- **Verificado E2E** (iteration_27.json): 10/10 tarjetas renderizan el semáforo; propiedad 9c1d4217 con ambos puntos verdes; layout intacto; sin errores de consola. tsc limpio.
+- **PENDIENTE DE DEPLOY**: en PREVIEW → requiere REDEPLOY.
+
 
 
 
