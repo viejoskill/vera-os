@@ -316,29 +316,59 @@ def _payload(prop: dict, images: list[dict], category_id: str, attributes: list[
     }
 
 
+_EDITABLE_STATUS = {"active", "paused"}
+_PENDING_STATUS = {"not_yet_active", "payment_required", "under_review"}
+
+
+async def _item_status(access: str, item_id: str) -> str | None:
+    try:
+        async with httpx.AsyncClient(timeout=20) as h:
+            r = await h.get(
+                f"{config.MELI_API}/items/{item_id}?attributes=status",
+                headers={"Authorization": f"Bearer {access}"},
+            )
+        return r.json().get("status") if r.status_code == 200 else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
 async def publish(prop: dict, images: list[dict], existing_item_id: str | None) -> dict:
-    """Crea (POST /items) o actualiza (PUT /items/{id}) el aviso. Devuelve item id + permalink."""
+    """Crea (POST /items) o actualiza (PUT /items/{id}) el aviso. Devuelve item id + permalink.
+    ML NO permite modificar title ni currency_id, y un item cerrado/finalizado no es editable
+    (en ese caso se crea uno nuevo)."""
     access = await _valid_token()
     category_id, _ = await _resolve_listing(access, prop)
     attributes = await _category_attributes(access, category_id, prop)
     location = await _location(access, prop)
     payload = _payload(prop, images, category_id, attributes, location)
+    headers = {"Authorization": f"Bearer {access}", "Content-Type": "application/json"}
+
+    status = await _item_status(access, existing_item_id) if existing_item_id else None
+    if status in _PENDING_STATUS:
+        raise ValueError(
+            "El aviso todavía se está activando en Mercado Libre (puede tardar unos minutos). "
+            "Reintentá en un rato."
+        )
+
     async with httpx.AsyncClient(timeout=40) as h:
-        headers = {"Authorization": f"Bearer {access}", "Content-Type": "application/json"}
-        if existing_item_id:
-            # En update no se reenvían category/buying_mode (inmutables tras crear).
-            upd = {k: payload[k] for k in ("title", "price", "currency_id", "pictures", "available_quantity")}
+        if existing_item_id and status in _EDITABLE_STATUS:
+            # Solo campos modificables (title y currency_id no lo son en ML).
+            upd = {"price": payload["price"], "pictures": payload["pictures"]}
             r = await h.put(f"{config.MELI_API}/items/{existing_item_id}", headers=headers, json=upd)
-            await h.put(
-                f"{config.MELI_API}/items/{existing_item_id}/description",
-                headers=headers, json={"plain_text": payload["description"]["plain_text"]},
-            )
+            if r.status_code < 400:
+                await h.put(
+                    f"{config.MELI_API}/items/{existing_item_id}/description",
+                    headers=headers, json={"plain_text": payload["description"]["plain_text"]},
+                )
+            fallback_id = existing_item_id
         else:
+            # Sin publicación previa o item cerrado/no editable → crear uno nuevo.
             r = await h.post(f"{config.MELI_API}/items", headers=headers, json=payload)
+            fallback_id = None
     if r.status_code >= 400:
         raise MeliError(r.status_code, r.text)
     data = r.json()
-    return {"item_id": data.get("id", existing_item_id), "permalink": data.get("permalink", "")}
+    return {"item_id": data.get("id", fallback_id), "permalink": data.get("permalink", "")}
 
 
 async def close(item_id: str) -> None:

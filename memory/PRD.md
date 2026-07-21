@@ -631,6 +631,12 @@ El usuario conectó ML en Preview (cuenta INMOVARELA, seller 199060820) y se dep
 - **Usuario QA temporal Preview**: `qa_varela@vera.test` / `VeraQA!2026ml` (Supabase compartido). Borrar al cerrar sprint.
 - **PENDIENTE DE DEPLOY**: fix en PREVIEW → requiere REDEPLOY para producción. Item de prueba MLA3637392782 quedó creado en la cuenta real (es la propiedad real del usuario; re-publicar hace UPDATE, no duplica).
 
+## Fix ML update/reintento — aviso cerrado, título/moneda no modificables, guard "activándose" — 2026-07-21
+Reportado: publicó OK, luego actualizó (no subía foto principal), finalizó el aviso (quedó `closed`) y al reintentar ML tiró `item.title.not_modifiable` / `price.not_modifiable` / `field_not_updatable` (currency_id, pictures, available_quantity). Causa: el PUT reenviaba campos que ML NO permite modificar (title, currency_id) y encima el item estaba cerrado (no editable). Fix en `publish()`:
+- Antes de actualizar consulta el estado del item (`_item_status`). Si está `closed`/no editable o no hay itemId → **crea uno nuevo** (POST). Si está `active`/`paused` → PUT SOLO `price` + `pictures` (title y currency_id nunca son modificables en ML) + descripción aparte.
+- Si el item está `not_yet_active`/`payment_required`/`under_review` → NO duplica: lanza mensaje amigable "El aviso todavía se está activando en Mercado Libre… reintentá en un rato".
+- Verificado E2E: reintento sobre item cerrado → crea nuevo (MLA3637462078); guard de "activándose" devuelve el mensaje amigable; y update real (precio+fotos) sobre item ya `active` → 200 OK. La foto principal se actualiza al reenviar el set completo ordenado. La activación (`not_yet_active`→`active`) tarda unos minutos del lado de ML (pack_quota_assigned automático; la cuenta tiene 66 "Plata").
+
 
 
 
