@@ -1,8 +1,9 @@
 """Endpoints de la App Personas (VERA Core). CRUD + relaciones (sólo lectura) +
 timeline por eventos + PersonResolver (identidad única por `person_id`)."""
+from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 import config
 from people import events, service
@@ -53,29 +54,55 @@ async def list_people(role: Optional[str] = None):
     return out
 
 
+def _parse_facts(facts: Optional[list[str]]) -> list[tuple[str, Optional[str]]]:
+    """'type:value' → (type, value). Combinables con AND en la tabla."""
+    out: list[tuple[str, Optional[str]]] = []
+    for raw in facts or []:
+        if not raw:
+            continue
+        t, _, v = raw.partition(":")
+        t = t.strip()
+        v = v.strip() or None
+        if t:
+            out.append((t, v))
+    return out
+
+
+@router.get("/facets")
+async def people_facets():
+    """Valores disponibles por filtro de negocio (para los selectores). Base Audiencias."""
+    _ensure()
+    from people import table
+
+    return {"filters": table.BUSINESS_FILTERS, "values": await table.build_facets()}
+
+
 @router.get("/table")
 async def people_table(
     role: Optional[str] = None, query: Optional[str] = None,
-    factType: Optional[str] = None, factValue: Optional[str] = None,
+    facts: Optional[list[str]] = Query(default=None),
     budgetMin: Optional[float] = None, budgetMax: Optional[float] = None,
+    confidenceMin: Optional[float] = None, contactedWithin: Optional[int] = None,
     sortBy: str = "fullName", sortDir: str = "asc",
     page: int = 1, pageSize: int = 25,
 ):
-    """Vista tabla enriquecida con conocimiento + filtros por hechos + orden + paginación.
+    """Vista tabla enriquecida con conocimiento + filtros de negocio (AND) + orden + paginación.
     Base reutilizable para el futuro módulo Audiencias."""
     _ensure()
     from people import table
 
     rows = await table.build_rows(
-        role=role, query=query, fact_type=factType, fact_value=factValue,
-        budget_min=budgetMin, budget_max=budgetMax, sort_by=sortBy, sort_dir=sortDir,
+        role=role, query=query, facts=_parse_facts(facts),
+        budget_min=budgetMin, budget_max=budgetMax,
+        confidence_min=confidenceMin, contacted_within_days=contactedWithin,
+        sort_by=sortBy, sort_dir=sortDir,
     )
     total = len(rows)
     start = max(0, (page - 1) * pageSize)
     return {
         "rows": rows[start:start + pageSize],
         "total": total, "page": page, "pageSize": pageSize,
-        "columns": table.COLUMNS,
+        "columns": table.COLUMNS, "defaultColumns": table.DEFAULT_COLUMNS,
     }
 
 
@@ -83,8 +110,9 @@ async def people_table(
 async def people_export(
     format: str = "csv", columns: Optional[str] = None, ids: Optional[str] = None,
     role: Optional[str] = None, query: Optional[str] = None,
-    factType: Optional[str] = None, factValue: Optional[str] = None,
+    facts: Optional[list[str]] = Query(default=None),
     budgetMin: Optional[float] = None, budgetMax: Optional[float] = None,
+    confidenceMin: Optional[float] = None, contactedWithin: Optional[int] = None,
     sortBy: str = "fullName", sortDir: str = "asc",
 ):
     """Exporta CSV o Excel (.xlsx) respetando filtros y la selección (ids)."""
@@ -94,8 +122,10 @@ async def people_export(
     from people import table
 
     rows = await table.build_rows(
-        role=role, query=query, fact_type=factType, fact_value=factValue,
-        budget_min=budgetMin, budget_max=budgetMax, sort_by=sortBy, sort_dir=sortDir,
+        role=role, query=query, facts=_parse_facts(facts),
+        budget_min=budgetMin, budget_max=budgetMax,
+        confidence_min=confidenceMin, contacted_within_days=contactedWithin,
+        sort_by=sortBy, sort_dir=sortDir,
     )
     if ids:
         idset = {i for i in ids.split(",") if i}

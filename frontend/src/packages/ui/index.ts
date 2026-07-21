@@ -12,3 +12,4 @@ export * from './Toast';
 export * from './Sidebar';
 export * from './TopBar';
 export * from './BrandIcon';
+export * from './DataTable';

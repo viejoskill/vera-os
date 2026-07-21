@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { peopleService } from '@vera/services';
-import type { NewPersonInput, PersonUpdateInput } from '@vera/types';
+import type { NewPersonInput, PeopleTableParams, PersonUpdateInput } from '@vera/types';
 
 /** Propietarios (Personas con rol propietario). Se refresca solo tras crear. */
 export function useOwners() {
@@ -55,6 +55,23 @@ export function usePersonKnowledge(id: string | undefined) {
     queryKey: ['person', id, 'knowledge'],
     queryFn: () => peopleService.knowledge(id as string),
     enabled: !!id,
+  });
+}
+
+/** Vista Tabla (enriquecida + filtros de negocio). Reusable para Audiencias. */
+export function usePeopleTable(params: PeopleTableParams) {
+  return useQuery({
+    queryKey: ['people', 'table', params],
+    queryFn: () => peopleService.table(params),
+    placeholderData: (prev) => prev,
+  });
+}
+
+/** Valores disponibles por filtro de negocio (selectores). */
+export function usePeopleFacets() {
+  return useQuery({
+    queryKey: ['people', 'facets'],
+    queryFn: () => peopleService.facets(),
   });
 }
 

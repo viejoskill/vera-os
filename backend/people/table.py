@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import csv
 import io
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from knowledge import store as knowledge_store
 from people import service
@@ -19,22 +19,38 @@ COLUMNS: dict[str, str] = {
     "primaryPhone": "Teléfono",
     "primaryEmail": "Email",
     "roles": "Rol",
+    "relationship": "Relación con Varela",
+    "intent": "Intención",
+    "propertyType": "Tipo de propiedad",
+    "location": "Zona de interés",
+    "budget": "Presupuesto",
     "interests": "Intereses",
+    "profession": "Profesión",
     "confidenceLabel": "Confianza",
     "lastContact": "Última interacción",
     "conversationsCount": "Conversaciones",
-    "budget": "Presupuesto",
-    "location": "Zona",
-    "profession": "Profesión",
     "status": "Estado",
 }
-DEFAULT_COLUMNS = ["fullName", "primaryPhone", "primaryEmail", "roles", "interests", "confidenceLabel", "lastContact"]
+DEFAULT_COLUMNS = [
+    "fullName", "primaryPhone", "roles", "relationship", "intent",
+    "location", "budget", "confidenceLabel", "lastContact",
+]
+
+# Filtros de negocio → tipo de hecho del Knowledge Engine (base para Audiencias).
+BUSINESS_FILTERS: dict[str, str] = {
+    "role": "Rol",
+    "relationship": "Relación con Varela",
+    "intent": "Intención",
+    "property_type": "Tipo de propiedad de interés",
+    "location": "Zona de interés",
+}
 
 
 async def build_rows(
     *, role: str | None = None, query: str | None = None,
-    fact_type: str | None = None, fact_value: str | None = None,
+    facts: list[tuple[str, str | None]] | None = None,
     budget_min: float | None = None, budget_max: float | None = None,
+    confidence_min: float | None = None, contacted_within_days: int | None = None,
     sort_by: str = "fullName", sort_dir: str = "asc",
 ) -> list[dict]:
     rows = await people_repository.list(role)
@@ -66,17 +82,20 @@ async def build_rows(
             **knowledge,
         })
 
-    # Filtro por CUALQUIER hecho del Knowledge Engine.
-    if fact_type:
+    # Filtros de negocio combinables con AND: cada (tipo[, valor]) debe cumplirse.
+    for ftype, fvalue in (facts or []):
+        if not ftype:
+            continue
+        fv = fvalue.strip().lower() if fvalue else None
         keep = set()
-        fv = fact_value.strip().lower() if fact_value else None
         for pid, fs in facts_map.items():
             for f in fs:
-                if f["status"] == "review" or f["type"] != fact_type:
+                if f["status"] == "review" or f["type"] != ftype:
                     continue
                 if fv and str(f["value"]).strip().lower() != fv:
                     continue
                 keep.add(pid)
+                break
         result = [row for row in result if row["id"] in keep]
 
     if budget_min is not None or budget_max is not None:
@@ -95,6 +114,24 @@ async def build_rows(
             return True
         result = [row for row in result if ok(row)]
 
+    if confidence_min is not None:
+        result = [row for row in result if (row.get("confidence") or 0) >= confidence_min]
+
+    if contacted_within_days is not None:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=contacted_within_days)
+        def recent(row):
+            lc = row.get("lastContact")
+            if not lc:
+                return False
+            try:
+                dt = datetime.fromisoformat(str(lc).replace("Z", "+00:00"))
+            except ValueError:
+                return False
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt >= cutoff
+        result = [row for row in result if recent(row)]
+
     reverse = sort_dir == "desc"
 
     def key(row):
@@ -111,6 +148,21 @@ async def build_rows(
     return result
 
 
+async def build_facets() -> dict[str, list[str]]:
+    """Valores distintos por tipo de hecho de negocio (para los selectores de filtro).
+    Base reutilizable para Audiencias."""
+    rows = await people_repository.list(None)
+    facts_map = await knowledge_store.facts_for_persons([r["id"] for r in rows])
+    buckets: dict[str, set] = {t: set() for t in BUSINESS_FILTERS}
+    for fs in facts_map.values():
+        for f in fs:
+            if f["status"] == "review":
+                continue
+            if f["type"] in buckets and f["value"] not in (None, "", []):
+                buckets[f["type"]].add(str(f["value"]))
+    return {t: sorted(v) for t, v in buckets.items()}
+
+
 # --- Exportación ------------------------------------------------------------ #
 def _cell(row: dict, col: str):
     v = row.get(col)
@@ -120,7 +172,8 @@ def _cell(row: dict, col: str):
         return f"{row.get('budgetCurrency') or ''} {v}".strip()
     if col == "lastContact" and v:
         try:
-            return datetime.fromisoformat(str(v).replace("Z", "+00:00"))
+            dt = datetime.fromisoformat(str(v).replace("Z", "+00:00"))
+            return dt.replace(tzinfo=None)
         except ValueError:
             return v
     return "" if v is None else v

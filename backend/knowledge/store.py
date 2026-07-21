@@ -188,6 +188,9 @@ def summarize(facts: list[dict]) -> dict:
     budget = next((f for f in active if f["type"] == "budget"), None)
     location = next((f["value"] for f in active if f["type"] == "location"), "")
     profession = next((f["value"] for f in active if f["type"] == "profession"), "")
+    relationship = next((f["value"] for f in active if f["type"] == "relationship"), "")
+    intent = next((f["value"] for f in active if f["type"] == "intent"), "")
+    property_type = next((f["value"] for f in active if f["type"] == "property_type"), "")
     conf = round(sum(f["confidence"] or 0 for f in active) / len(active), 2) if active else 0.0
     label = "Alta" if conf >= 0.85 else "Media" if conf >= 0.6 else "Baja" if active else "—"
     return {
@@ -195,6 +198,7 @@ def summarize(facts: list[dict]) -> dict:
         "budget": budget["value"] if budget else None,
         "budgetCurrency": (budget or {}).get("currency"),
         "location": location, "profession": profession,
+        "relationship": relationship, "intent": intent, "propertyType": property_type,
         "confidence": conf, "confidenceLabel": label,
     }
 

@@ -1,15 +1,36 @@
 import { env } from '@vera/config';
 import type {
   NewPersonInput,
+  PeopleFacets,
+  PeopleTableParams,
   Person,
   PersonConversation,
   PersonEvent,
   PersonKnowledge,
   PersonListItem,
   PersonPropertyRelation,
+  PersonTableResponse,
   PersonUpdateInput,
 } from '@vera/types';
 import type { PeopleGateway } from './people-gateway';
+
+/** Construye el querystring de la tabla/exportación (filtros de negocio AND). */
+const buildTableQuery = (params: PeopleTableParams): URLSearchParams => {
+  const qs = new URLSearchParams();
+  if (params.query) qs.set('query', params.query);
+  (params.facts ?? []).forEach((f) => {
+    if (f.type) qs.append('facts', f.value ? `${f.type}:${f.value}` : f.type);
+  });
+  if (params.budgetMin != null) qs.set('budgetMin', String(params.budgetMin));
+  if (params.budgetMax != null) qs.set('budgetMax', String(params.budgetMax));
+  if (params.confidenceMin != null) qs.set('confidenceMin', String(params.confidenceMin));
+  if (params.contactedWithin != null) qs.set('contactedWithin', String(params.contactedWithin));
+  if (params.sortBy) qs.set('sortBy', params.sortBy);
+  if (params.sortDir) qs.set('sortDir', params.sortDir);
+  if (params.page != null) qs.set('page', String(params.page));
+  if (params.pageSize != null) qs.set('pageSize', String(params.pageSize));
+  return qs;
+};
 
 /** Habla con el backend de VERA (FastAPI). El frontend nunca conoce Supabase. */
 export class ApiPeopleGateway implements PeopleGateway {
@@ -57,5 +78,22 @@ export class ApiPeopleGateway implements PeopleGateway {
 
   knowledge(id: string): Promise<PersonKnowledge> {
     return this.request<PersonKnowledge>(`/${id}/knowledge`);
+  }
+
+  table(params: PeopleTableParams): Promise<PersonTableResponse> {
+    const qs = buildTableQuery(params).toString();
+    return this.request<PersonTableResponse>(`/table${qs ? `?${qs}` : ''}`);
+  }
+
+  facets(): Promise<PeopleFacets> {
+    return this.request<PeopleFacets>('/facets');
+  }
+
+  exportUrl(format: 'csv' | 'xlsx', params: PeopleTableParams, columns: string[], ids?: string[]): string {
+    const qs = buildTableQuery(params);
+    qs.set('format', format);
+    if (columns.length) qs.set('columns', columns.join(','));
+    if (ids && ids.length) qs.set('ids', ids.join(','));
+    return `${this.base}/export?${qs.toString()}`;
   }
 }

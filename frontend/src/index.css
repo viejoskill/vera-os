@@ -2480,6 +2480,225 @@ p {
   .vera-table__row { grid-template-columns: 1fr 1fr; row-gap: 4px; }
 }
 
+/* ---- View toggle (Tarjetas / Tabla) ---- */
+.vera-viewtoggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-pill);
+  background: var(--vera-color-surface);
+}
+.vera-viewtoggle__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: none;
+  color: var(--vera-color-text-secondary);
+  font-family: var(--vera-font-family);
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-medium);
+  padding: 6px 14px;
+  border-radius: var(--vera-radius-pill);
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+.vera-viewtoggle__btn:hover { color: var(--vera-color-text); }
+.vera-viewtoggle__btn.is-active {
+  background: var(--vera-color-primary);
+  color: var(--vera-color-primary-foreground);
+}
+
+/* ---- Filtros de negocio ---- */
+.vera-pfilters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  margin-bottom: var(--vera-space-md);
+}
+.vera-pfilters .vera-field { min-width: 170px; }
+.vera-pfilters__budget { display: inline-flex; align-items: center; gap: 6px; }
+.vera-pfilters__num { width: 108px; }
+.vera-pfilters__dash { color: var(--vera-color-text-secondary); }
+
+/* ---- Barra de acciones de la tabla ---- */
+.vera-ptable__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vera-space-md);
+  margin-bottom: var(--vera-space-sm);
+}
+.vera-ptable__count { font-size: var(--vera-font-size-sm); color: var(--vera-color-text-secondary); }
+.vera-ptable__actions { display: inline-flex; align-items: center; gap: var(--vera-space-xs); }
+.vera-ptable__colmenu { position: relative; }
+.vera-ptable__coldrop {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 220px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: var(--vera-space-xs);
+  background: var(--vera-color-card);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+.vera-ptable__colitem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--vera-radius-sm);
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text);
+  cursor: pointer;
+}
+.vera-ptable__colitem:hover { background: var(--vera-color-surface); }
+.vera-ptable__pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--vera-space-md);
+  margin-top: var(--vera-space-md);
+}
+.vera-ptable__pageinfo { font-size: var(--vera-font-size-sm); color: var(--vera-color-text-secondary); }
+
+/* ---- DataTable (genérico, reutilizable) ---- */
+.vera-dt {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-lg);
+  overflow: hidden;
+  background: var(--vera-color-card);
+}
+.vera-dt__head,
+.vera-dt__row {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  padding: var(--vera-space-sm) var(--vera-space-md);
+}
+.vera-dt__head {
+  background: var(--vera-color-surface);
+  border-bottom: 1px solid var(--vera-color-border);
+}
+.vera-dt__row {
+  border-bottom: 1px solid var(--vera-color-border);
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text);
+  transition: background-color 0.15s ease;
+}
+.vera-dt__row:last-child { border-bottom: none; }
+.vera-dt__row--clickable { cursor: pointer; }
+.vera-dt__row--clickable:hover { background: var(--vera-color-surface); }
+.vera-dt__row--selected { background: rgba(246, 230, 58, 0.06); }
+.vera-dt__cell {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vera-dt__cell--right { justify-content: flex-end; text-align: right; flex: 0 0 90px; }
+.vera-dt__cell--check { flex: 0 0 28px; justify-content: center; }
+.vera-dt__cell--check input { cursor: pointer; accent-color: var(--vera-color-primary); }
+.vera-dt__th {
+  background: none;
+  border: none;
+  color: var(--vera-color-text-secondary);
+  font-family: var(--vera-font-family);
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0;
+  cursor: default;
+}
+.vera-dt__th--sortable { cursor: pointer; }
+.vera-dt__th--sortable:hover { color: var(--vera-color-text); }
+.vera-dt__name { font-weight: var(--vera-font-weight-semibold); color: var(--vera-color-text); }
+.vera-dt__muted { color: var(--vera-color-text-secondary); }
+.vera-dt__roles { flex-wrap: wrap; gap: 4px; }
+.vera-dt__empty { padding: var(--vera-space-2xl); text-align: center; color: var(--vera-color-text-secondary); }
+
+/* ---- Chip de confianza ---- */
+.vera-conf {
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  padding: 2px 9px;
+  border-radius: var(--vera-radius-pill);
+  border: 1px solid transparent;
+}
+.vera-conf--alta { color: #32d74b; border-color: rgba(50, 215, 75, 0.4); background: rgba(50, 215, 75, 0.1); }
+.vera-conf--media { color: #ff9f0a; border-color: rgba(255, 159, 10, 0.4); background: rgba(255, 159, 10, 0.1); }
+.vera-conf--baja { color: var(--vera-color-text-secondary); border-color: var(--vera-color-border); }
+
+/* ---- Vista Tarjetas ---- */
+.vera-pcards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--vera-space-md);
+}
+.vera-pcard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vera-space-sm);
+  padding: var(--vera-space-md);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-lg);
+  background: var(--vera-color-card);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--vera-font-family);
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+.vera-pcard:hover { border-color: var(--vera-color-primary); transform: translateY(-2px); }
+.vera-pcard__head { display: flex; align-items: center; gap: var(--vera-space-sm); }
+.vera-pcard__avatar {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--vera-color-surface);
+  color: var(--vera-color-primary);
+  font-weight: var(--vera-font-weight-bold);
+  font-size: var(--vera-font-size-sm);
+}
+.vera-pcard__id { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.vera-pcard__name { font-weight: var(--vera-font-weight-semibold); color: var(--vera-color-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vera-pcard__contact { font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); }
+.vera-pcard__roles { display: flex; flex-wrap: wrap; gap: 4px; min-height: 20px; }
+.vera-pcard__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-md);
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-text-secondary);
+  padding-top: var(--vera-space-xs);
+  border-top: 1px solid var(--vera-color-border);
+}
+.vera-pcard__meta span { display: inline-flex; align-items: center; gap: 4px; }
+.vera-pcard__meta-last { margin-left: auto; }
+@media (max-width: 900px) {
+  .vera-dt__head { display: none; }
+  .vera-dt__cell--right { flex: 1 1 0; justify-content: flex-start; text-align: left; }
+}
+
+
 .vera-back {
   display: inline-flex;
   align-items: center;

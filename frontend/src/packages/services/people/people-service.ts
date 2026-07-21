@@ -1,12 +1,15 @@
 import type { PeopleGateway } from '@vera/repositories';
 import type {
   NewPersonInput,
+  PeopleFacets,
+  PeopleTableParams,
   Person,
   PersonConversation,
   PersonEvent,
   PersonKnowledge,
   PersonListItem,
   PersonPropertyRelation,
+  PersonTableResponse,
   PersonUpdateInput,
 } from '@vera/types';
 
@@ -48,5 +51,20 @@ export class PeopleService {
   /** Lo que VERA SABE de la persona (conocimiento estructurado del Knowledge Engine). */
   knowledge(id: string): Promise<PersonKnowledge> {
     return this.gateway.knowledge(id);
+  }
+
+  /** Vista Tabla enriquecida con conocimiento + filtros de negocio (base Audiencias). */
+  table(params: PeopleTableParams): Promise<PersonTableResponse> {
+    return this.gateway.table(params);
+  }
+
+  /** Valores disponibles por filtro de negocio (selectores). */
+  facets(): Promise<PeopleFacets> {
+    return this.gateway.facets();
+  }
+
+  /** URL de descarga (CSV/Excel) respetando filtros, columnas y selección. */
+  exportUrl(format: 'csv' | 'xlsx', params: PeopleTableParams, columns: string[], ids?: string[]): string {
+    return this.gateway.exportUrl(format, params, columns, ids);
   }
 }

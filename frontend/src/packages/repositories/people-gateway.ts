@@ -1,11 +1,14 @@
 import type {
   NewPersonInput,
+  PeopleFacets,
+  PeopleTableParams,
   Person,
   PersonConversation,
   PersonEvent,
   PersonKnowledge,
   PersonListItem,
   PersonPropertyRelation,
+  PersonTableResponse,
   PersonUpdateInput,
 } from '@vera/types';
 
@@ -19,4 +22,7 @@ export interface PeopleGateway {
   conversations(id: string): Promise<PersonConversation[]>;
   timeline(id: string): Promise<PersonEvent[]>;
   knowledge(id: string): Promise<PersonKnowledge>;
+  table(params: PeopleTableParams): Promise<PersonTableResponse>;
+  facets(): Promise<PeopleFacets>;
+  exportUrl(format: 'csv' | 'xlsx', params: PeopleTableParams, columns: string[], ids?: string[]): string;
 }

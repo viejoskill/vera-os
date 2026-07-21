@@ -1,0 +1,39 @@
+{
+  "summary": "Sprint 'Personas — Tabla y Exportación' end-to-end validated. Backend: created /app/backend/tests/test_people_table.py with 16 pytest cases → 16/16 PASSED. All acceptance criteria in the review request PASS: (1) GET /api/people/table returns the expected shape {rows,total,page,pageSize,columns,defaultColumns} with rows enriched by knowledge (roles, relationship, intent, propertyType, location, budget, confidenceLabel, lastContact, conversationsCount, status). (2) Pagination (page,pageSize) and sorting (sortBy,sortDir asc/desc) work. (3) Multi-fact AND: facts=role:Agrimensor returns exactly 'Juan Pedro Andersen' (1 row); facts=role:Agrimensor + facts=intent:'Servicio profesional' still Juan; two contradictory role facts → 0 rows. budgetMin/budgetMax, confidenceMin, contactedWithin all respond 200. (4) GET /api/people/facets returns {filters,values} with all 5 business filter types (role, relationship, intent, property_type, location) and Agrimensor + 'Servicio profesional' present. (5) CSV export starts with UTF-8 BOM, header is human-readable Spanish labels ('Nombre'…), Content-Disposition=attachment personas_YYYYMMDD_HHMM.csv. (6) XLSX export opens with openpyxl (no timezone crash), title='Personas', freeze_panes='A2', auto_filter set from A1 to last column, header row present. (7) columns param filters columns; ids param filters selection; both work in CSV+XLSX; facts filter respected in export. FRONTEND: Playwright via REACT_APP_BACKEND_URL preview URL, login qa_varela@vera.test / VeraQA!2026ml → /hoy → /personas. Verified: default view = Tabla (localStorage vera:people:view null → defaults to 'table'); toggling to Tarjetas persists 'cards' in localStorage and renders 6 person cards; toggling back to Tabla works; all 9 business filters visible (role, relationship, intent, property_type, location, budget-min, budget-max, contacted, confidence); baseline count '6 personas'; selecting role=Agrimensor narrows to '1 persona' and shows 'Limpiar (1)' clear button that resets to 6; Columnas menu opens with checkboxes; toggling 'interests' persists selection to localStorage vera:people:columns JSON; select-all header checkbox updates count line to '6 personas · 6 seleccionadas'; per-row checkbox updates to '· 1 seleccionadas'; Export CSV triggers GET /api/people/export?…&format=csv&columns=fullName%2C…&ids=<selectedId>; Export Excel triggers same with format=xlsx; column header click toggles sort; search box 'Juan' narrows to 1; clicking a row navigates to /personas/{id}; Cards view click on card also navigates to detail.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_people_table.py",
+    "/app/test_reports/pytest/people_table.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "backend/people/table.py build_rows: business-fact AND filter is done AFTER building all rows using facts_map keyed by person_id — correct, but 'keep' is recomputed per (ftype,fvalue) tuple and intersected implicitly via 'result = [row for row in result if row['id'] in keep]'. Because 'result' shrinks in place, the AND semantics is right; but note that filters on 'facts' with the SAME ftype and DIFFERENT values are also treated as AND (row must have BOTH values for the same type). If a user picks two locations in the same filter (future UI), they'd expect OR-within-type. Consider grouping by ftype and applying OR within a group + AND across groups (mimicking most BI filters). Not blocking for current UI (each business select is single-choice).",
+    "backend/people/table.py _cell: 'lastContact' is stripped of tzinfo to make openpyxl happy (fix from prev iteration) — but this silently converts to naive datetime in the server's UTC clock and, when Excel renders 'yyyy-mm-dd hh:mm', shows UTC not local time. That may confuse users in AR/CL. Consider converting to America/Argentina/Buenos_Aires before stripping tzinfo, or add a UTC suffix in the label.",
+    "backend/routes_people.py people_table: pageSize is not clamped (client can send pageSize=100000). Consider max(1, min(pageSize, 200)) to protect the server. Same for /export where 'rows' is built in memory then filtered — a huge dataset could blow memory; export currently ignores page/pageSize (by design) but doesn't cap.",
+    "frontend PeopleTableView.tsx: doExport builds URL with peopleService.exportUrl and does 'a.click()' — works but the request goes over the browser cookie/session; if backend later adds JWT auth this will need an ephemeral signed URL or a fetch+Blob+URL.createObjectURL flow. Note it for the Audiencias reuse.",
+    "frontend PeopleTableView.tsx: localStorage 'vera:people:columns' persists a client-side subset but the catalog can grow server-side (new columns added later). When the UI loads with a stale localStorage that lacks NEWLY added columns, users won't see them until they open the Columns menu and toggle them on. Consider merging new catalog keys into visibleCols the first time the catalog contains keys not previously seen, or exposing a 'Restaurar columnas por defecto' action.",
+    "frontend PeopleFilters.tsx: no debounce on budgetMin/budgetMax number inputs → every keystroke re-fires GET /api/people/table. Cheap now (6 rows) but should be debounced (250ms) before Audiencias scales.",
+    "frontend PeopleScreen.tsx: default view falls back to 'table' when localStorage is null; but if a legacy user has vera:people:view='cards' from a previous release, they'd land on Cards. Fine, but consider showing a subtle 'Nuevo: vista Tabla' hint the first time to encourage discovery of the new default."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_people_table.py (new — 16 pytest cases, 16/16 pass)"
+  ],
+  "success_rate": {
+    "backend": "100% (16/16)",
+    "frontend": "100% (all 10 acceptance flows verified end-to-end)"
+  },
+  "test_credentials": "Login via Supabase Auth with qa_varela@vera.test / VeraQA!2026ml (email confirmed, sourced from /app/memory/test_credentials.md). Backend endpoints /table, /facets, /export are open (service_role).",
+  "seed_data_creation": "None. Tests are read-only (GET requests + one row-selection click that only builds an export URL). No people, facts, events or knowledge were created or mutated. Juan Pedro Andersen and Cata 💓 are pre-existing real data untouched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Regression file: /app/backend/tests/test_people_table.py — run with `pytest -o addopts='' backend/tests/test_people_table.py` (xdist disabled to avoid worker-fixture races, same convention as the knowledge_engine tests). Facets currently expose only 5 filter types (role, relationship, intent, property_type, location). Column catalog has 15 keys; default 9. Only 1 person (Juan Pedro Andersen) has role=Agrimensor and intent='Servicio profesional', so most knowledge columns render '—' — that is expected per the review request note.",
+  "rca of the issue": "No issues found."
+}
