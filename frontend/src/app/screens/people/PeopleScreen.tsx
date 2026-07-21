@@ -54,9 +54,11 @@ export const PeopleScreen = () => {
         </Button>
       </div>
 
-      <p className="vera-people__count" data-testid="people-count">
-        {filtered.length} {filtered.length === 1 ? 'persona' : 'personas'}
-      </p>
+      {!isLoading && (
+        <p className="vera-people__count" data-testid="people-count">
+          {filtered.length} {filtered.length === 1 ? 'persona' : 'personas'}
+        </p>
+      )}
 
       {isLoading ? (
         <p className="vera-people__empty">Cargando personas…</p>
