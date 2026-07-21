@@ -382,6 +382,20 @@ async def close(item_id: str) -> None:
         raise MeliError(r.status_code, r.text)
 
 
+async def item_state(item_id: str) -> dict:
+    """Estado real del aviso en ML (status + sub_status + permalink)."""
+    access = await _valid_token()
+    async with httpx.AsyncClient(timeout=20) as h:
+        r = await h.get(
+            f"{config.MELI_API}/items/{item_id}?attributes=status,sub_status,permalink",
+            headers={"Authorization": f"Bearer {access}"},
+        )
+    if r.status_code != 200:
+        return {"status": None, "sub_status": [], "permalink": ""}
+    d = r.json()
+    return {"status": d.get("status"), "sub_status": d.get("sub_status") or [], "permalink": d.get("permalink") or ""}
+
+
 class MeliError(Exception):
     def __init__(self, status_code: int, detail: str):
         self.status_code = status_code

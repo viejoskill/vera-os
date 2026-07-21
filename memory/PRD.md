@@ -637,6 +637,12 @@ Reportado: publicó OK, luego actualizó (no subía foto principal), finalizó e
 - Si el item está `not_yet_active`/`payment_required`/`under_review` → NO duplica: lanza mensaje amigable "El aviso todavía se está activando en Mercado Libre… reintentá en un rato".
 - Verificado E2E: reintento sobre item cerrado → crea nuevo (MLA3637462078); guard de "activándose" devuelve el mensaje amigable; y update real (precio+fotos) sobre item ya `active` → 200 OK. La foto principal se actualiza al reenviar el set completo ordenado. La activación (`not_yet_active`→`active`) tarda unos minutos del lado de ML (pack_quota_assigned automático; la cuenta tiene 66 "Plata").
 
+## Estado ML en vivo en VERA (Publicaciones) — 2026-07-21
+El panel de Publicaciones ahora muestra el estado REAL del aviso en Mercado Libre, sin entrar a ML.
+- **Backend** (`mercadolibre/service.py::item_state` + `routes_ml.py GET /api/ml/listings/{property_id}/state`): lee `status`+`sub_status`+`permalink` reales de ML y los mapea a etiqueta ES + tono (`_ML_STATE_LABEL`): active→"Activo en Mercado Libre"(verde), paused→"Pausado", not_yet_active/under_review→"Activándose…"(spinner), payment_required→"Pago pendiente", closed/inactive→"Finalizado/Inactivo". Devuelve `activating` (bool) para el polling. Verificado por curl (devuelve "Activo").
+- **Frontend** (`ChannelsSection.tsx`): `useQuery(['ml-state', propertyId])` habilitado cuando ML está conectado y la propiedad está publicada; `refetchInterval` 12s solo mientras `activating`. El estado del canal ML usa la etiqueta/tono en vivo (spinner si se está activando) y el link "Ver aviso" usa el permalink real de ML. tsc limpio, webpack "No issues found".
+- **PENDIENTE DE DEPLOY**: todo en PREVIEW → requiere REDEPLOY.
+
 
 
 

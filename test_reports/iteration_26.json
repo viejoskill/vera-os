@@ -1,0 +1,21 @@
+{
+  "summary": "E2E verification of LIVE Mercado Libre status indicator (sprint enhancement). Backend endpoint GET /api/ml/listings/9c1d4217-2522-4649-a269-bbd536a71f39/state returns exactly the expected payload: hasListing=true, itemId='MLA1908216003', status='active', label='Activo en Mercado Libre', tone='published', activating=false, url=https://articulo.mercadolibre.com.ar/MLA-1908216003-... Backend /api/ml/status also confirms Mercado Libre is connected as seller INMOVARELA (seller_id 199060820). Frontend (login with qa_varela@vera.test → open /propiedades/9c1d4217-2522-4649-a269-bbd536a71f39 → scroll to Publicaciones) shows the Mercado Libre channel card with the LIVE label 'Activo en Mercado Libre' (not the generic 'Publicada') and a green dot (class vera-dot--published) driven by react-query ['ml-state', propertyId]. The 'Ver aviso' link (data-testid=view-listing-mercadolibre) points to the real mercadolibre.com.ar permalink and opens in a new tab. All acceptance criteria of the sprint are met end-to-end against real ML data.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "routes_ml.py::listing_state: correcto — devuelve hasListing=false si ML no está configurado o no hay itemId, y si ml.item_state falla externamente devuelve un fallback seguro (label '—', tone 'none') sin romper la UI. OK.",
+    "ChannelsSection.tsx: la query 'ml-state' está bien gateada por (mlConnected && mlPublished), evitando llamadas innecesarias. El polling condicional (refetchInterval sólo si activating=true, 12s) es una elección eficiente para no consumir cuota del seller. OK.",
+    "ChannelsSection.tsx: hay dos elementos 'Ver aviso' cuando el canal es ML publicado — uno dentro del bloque de identidad (data-testid=view-listing-mercadolibre) y otro dentro de acciones (data-testid=view-listing-action-mercadolibre). No es un bug, pero es redundante visualmente; considerá dejar un solo enlace 'Ver aviso' para el canal ML.",
+    "mercadolibre/service.py::item_state: consulta ?attributes=status,sub_status,permalink — bien acotada. Sin embargo, no maneja explícitamente 401 (token expirado no refrescable). _valid_token cubre el refresh proactivo (>5min buffer), por lo que en la práctica rara vez fallará; si alguna vez ocurre, listing_state devuelve el fallback seguro."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (2/2 endpoints)", "frontend": "100% (todas las aserciones del sprint)"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (según /app/memory/test_credentials.md, usuario QA temporal ML sprint)",
+  "seed_data_creation": "No se creó ni modificó data. La propiedad 9c1d4217-2522-4649-a269-bbd536a71f39 ya tenía la publicación ML activa (MLA1908216003) desde antes.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "El estado LIVE de Mercado Libre está OK en preview. Endpoint clave: GET /api/ml/listings/{id}/state. Item de prueba: MLA1908216003 (activo). Seller conectado: INMOVARELA. Evitar llamar publish/close para no consumir cuota real del vendedor.",
+  "rca of the issue": "N/A — sin bugs. Feature funciona end-to-end contra ML real."
+}

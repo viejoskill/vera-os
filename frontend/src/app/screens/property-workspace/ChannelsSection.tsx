@@ -12,6 +12,15 @@ import {
   type PublicationStatus,
 } from './channels-catalog';
 
+interface MlLiveState {
+  hasListing: boolean;
+  status?: string | null;
+  label?: string;
+  tone?: string;
+  activating?: boolean;
+  url?: string;
+}
+
 /**
  * Centro de Publicación (Canales de publicación). Tablero que administra DÓNDE está
  * publicada la propiedad. No genera textos (eso vive en Contenido comercial). VERA
@@ -38,6 +47,15 @@ export const ChannelsSection = ({
     staleTime: 60_000,
   });
   const mlConnected = !!mlStatus?.connected;
+
+  const mlPublished = pubs.mercadolibre?.status === 'published';
+  const { data: mlLive } = useQuery<MlLiveState>({
+    queryKey: ['ml-state', propertyId],
+    queryFn: async () => (await fetch(`${env.backendUrl}/api/ml/listings/${propertyId}/state`)).json(),
+    enabled: !!propertyId && mlConnected && mlPublished,
+    staleTime: 10_000,
+    refetchInterval: (query) => (query.state.data?.activating ? 12_000 : false),
+  });
 
   const connectMl = async () => {
     const res = await fetch(`${env.backendUrl}/api/ml/oauth/start?origin=${encodeURIComponent(window.location.origin)}`);
@@ -116,6 +134,8 @@ export const ChannelsSection = ({
         const url = record?.url || '';
         const isWeb = ch.id === 'web-varela';
         const isMl = ch.id === 'mercadolibre';
+        const mlInfo = isMl && mlLive?.hasListing ? mlLive : null;
+        const mlLink = mlInfo?.url || url;
         const autoLink = isWeb || isMl;
         const webUrl = `${window.location.origin}/web/${propertyId}`;
         return (
@@ -127,6 +147,13 @@ export const ChannelsSection = ({
                 <span className={`vera-channel__status ${published ? 'vera-channel__status--published' : ''}`.trim()} data-testid={`channel-status-${ch.id}`}>
                   {isBusy ? (
                     <><Loader2 size={13} className="vera-spin" /> Sincronizando</>
+                  ) : mlInfo ? (
+                    <>
+                      {mlInfo.activating
+                        ? <Loader2 size={13} className="vera-spin" />
+                        : <span className={`vera-dot vera-dot--${mlInfo.tone || 'none'}`} />}
+                      {mlInfo.label}
+                    </>
                   ) : (
                     <><span className={`vera-dot vera-dot--${meta.dot}`} /> {ch.enabled ? meta.label : 'Próximamente'}</>
                   )}
@@ -136,8 +163,8 @@ export const ChannelsSection = ({
                     <ExternalLink size={12} /> Ver en la web
                   </a>
                 )}
-                {published && !isWeb && url && (
-                  <a className="vera-channel__link" href={url} target="_blank" rel="noreferrer" data-testid={`view-listing-${ch.id}`}>
+                {published && !isWeb && (isMl ? mlLink : url) && (
+                  <a className="vera-channel__link" href={isMl ? mlLink : url} target="_blank" rel="noreferrer" data-testid={`view-listing-${ch.id}`}>
                     <ExternalLink size={12} /> Ver aviso
                   </a>
                 )}
@@ -170,8 +197,8 @@ export const ChannelsSection = ({
                         <Link2 size={13} /> {url ? 'Editar link' : 'Agregar link'}
                       </button>
                     )}
-                    {isMl && url && (
-                      <a className="vera-channel__link" href={url} target="_blank" rel="noreferrer" data-testid={`view-listing-${ch.id}`}>
+                    {isMl && mlLink && (
+                      <a className="vera-channel__link" href={mlLink} target="_blank" rel="noreferrer" data-testid={`view-listing-action-${ch.id}`}>
                         <ExternalLink size={12} /> Ver aviso
                       </a>
                     )}
