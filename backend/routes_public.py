@@ -29,10 +29,7 @@ _PUBLIC_STATUSES = {"active", "reserved", "sold"}
 
 
 def _web_published(row: dict) -> bool:
-    if row.get("archived") or row.get("status") not in _PUBLIC_STATUSES:
-        return False
-    web = (row.get("publications") or {}).get("web-varela") or {}
-    return web.get("status") == "published"
+    return inquiries.is_web_published(row)
 
 
 @router.get("/listings")
@@ -47,7 +44,7 @@ async def public_listings():
         resp = (await property_to_response(r)).model_dump(by_alias=True)
         item = {k: resp.get(k) for k in _SUMMARY_KEYS}
         item["whatsappUrl"] = inquiries.whatsapp_url(r)
-        item["publicUrl"] = inquiries.public_url(r)
+        item["publicUrl"] = inquiries.canonical_url(r)
         out.append(item)
     return out
 
@@ -63,7 +60,7 @@ async def public_listing(property_id: str):
     for k in _DETAIL_DROP:
         detail.pop(k, None)
     detail["whatsappUrl"] = inquiries.whatsapp_url(row)
-    detail["publicUrl"] = inquiries.public_url(row)
+    detail["publicUrl"] = inquiries.canonical_url(row)
     return detail
 
 
@@ -83,6 +80,6 @@ async def create_inquiry(payload: InquiryRequest):
     event = await inquiries.register_inquiry(row)
     return {
         "whatsappUrl": inquiries.whatsapp_url(row),
-        "publicUrl": inquiries.public_url(row),
+        "publicUrl": inquiries.canonical_url(row),
         "inquiryId": event.get("id"),
     }

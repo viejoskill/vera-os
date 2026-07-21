@@ -148,6 +148,7 @@ class PropertyResponse(CamelModel):
     condition: str = ""
     amenities: list[str] = []
     publications: dict = {}
+    public_url: Optional[str] = None
     archived: bool = False
     created_at: datetime
     updated_at: datetime

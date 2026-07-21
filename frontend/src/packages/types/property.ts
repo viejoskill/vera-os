@@ -49,6 +49,8 @@ export interface Property {
   condition?: string;
   amenities?: string[];
   publications?: Record<string, { status: string; lastSync?: string | null }>;
+  /** URL pública CANÓNICA (fuente única). `null` si la propiedad no está publicada. */
+  publicUrl?: string | null;
 }
 
 export interface PropertyImageAsset {

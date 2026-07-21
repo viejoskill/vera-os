@@ -16,8 +16,9 @@ import {
   RotateCcw,
   SlidersHorizontal,
   DownloadCloud,
+  Share2,
 } from 'lucide-react';
-import { Card, Input, Button } from '@vera/ui';
+import { Card, Input, Button, Toast } from '@vera/ui';
 import { appConfig } from '@vera/config';
 import { propertyService } from '@vera/services';
 import type { Property, PropertyStatus } from '@vera/types';
@@ -60,6 +61,7 @@ interface CardActions {
   onArchive: (id: string) => void;
   onRestore: (id: string) => void;
   onDuplicate: (id: string) => void;
+  onShare: (property: Property) => void;
 }
 
 /** Semáforo de canales: verde = publicado, rojo = error, gris = sin publicar. */
@@ -137,6 +139,28 @@ const PropertyCard = ({ property, actions }: { property: Property; actions: Card
               <button type="button" className="vera-menu__item" data-testid={`menu-duplicate-${property.id}`} onClick={runAction(() => actions.onDuplicate(property.id))}>
                 <Copy size={14} /> Duplicar
               </button>
+              {property.publicUrl ? (
+                <button
+                  type="button"
+                  className="vera-menu__item"
+                  data-testid={`menu-share-${property.id}`}
+                  onClick={runAction(() => actions.onShare(property))}
+                >
+                  <Share2 size={14} /> Compartir
+                </button>
+              ) : (
+                <div
+                  className="vera-menu__item vera-menu__item--disabled"
+                  data-testid={`menu-share-disabled-${property.id}`}
+                  title="Esta propiedad todavía no posee una URL pública."
+                  aria-disabled="true"
+                >
+                  <span className="vera-menu__row">
+                    <Share2 size={14} /> Compartir
+                  </span>
+                  <span className="vera-menu__hint">Esta propiedad todavía no posee una URL pública.</span>
+                </div>
+              )}
               {property.archived ? (
                 <button type="button" className="vera-menu__item" data-testid={`menu-restore-${property.id}`} onClick={runAction(() => actions.onRestore(property.id))}>
                   <RotateCcw size={14} /> Restaurar
@@ -199,6 +223,7 @@ export const PropertiesScreen = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [filters, setFilters] = useState<AdvFilters>(emptyFilters);
+  const [toast, setToast] = useState<string | null>(null);
 
   // Fetch once per status (cached); text search filters instantly on the client.
   const { data: properties, isLoading } = useProperties({ status });
@@ -241,6 +266,23 @@ export const PropertiesScreen = () => {
       const created = await propertyService.duplicate(id);
       invalidate();
       if (created) navigate(`/propiedades/${created.id}`);
+    },
+    onShare: async (property) => {
+      if (!property.publicUrl) return;
+      try {
+        await navigator.clipboard.writeText(property.publicUrl);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = property.publicUrl;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+      setToast('✅ Propiedad lista para compartir');
+      window.setTimeout(() => setToast(null), 2500);
     },
   };
 
@@ -327,6 +369,11 @@ export const PropertiesScreen = () => {
       )}
 
       <LegacyImportModal open={showImport} onClose={() => setShowImport(false)} onDone={() => invalidate()} />
+      {toast && (
+        <div className="vera-toast-wrap" data-testid="share-toast">
+          <Toast message={toast} tone="success" />
+        </div>
+      )}
     </div>
   );
 };

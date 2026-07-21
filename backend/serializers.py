@@ -61,6 +61,8 @@ async def document_to_response(doc: dict) -> DocumentResponse:
 
 
 async def property_to_response(prop: dict) -> PropertyResponse:
+    import inquiries  # deferido para evitar ciclo (inquiries importa serializers)
+
     images = prop.get("property_images") or []
     cover = next((i for i in images if i.get("is_cover")), None) or (
         images[0] if images else None
@@ -106,6 +108,7 @@ async def property_to_response(prop: dict) -> PropertyResponse:
         condition=prop.get("condition", "") or "",
         amenities=prop.get("amenities") or [],
         publications=prop.get("publications") or {},
+        public_url=inquiries.public_url_or_none(prop),
         archived=prop.get("archived", False) or False,
         created_at=prop["created_at"],
         updated_at=prop.get("updated_at") or prop["created_at"],

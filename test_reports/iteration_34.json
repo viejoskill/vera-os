@@ -1,0 +1,31 @@
+{
+  "summary": "Sprint 'Compartir Propiedades (Public URL)' verified end-to-end. Backend: 6/6 pytest cases pass — publicUrl canonical for published (VAR-163159 → .../propiedad/var-163159), null for draft, canonical (no tracking) on /api/public/listings and /api/public/listings/{id}. Frontend: Compartir action for published property copies canonical publicUrl to clipboard, shows toast '✅ Propiedad lista para compartir', does NOT open WhatsApp or any new tab. For draft, menu-share-disabled-{id} is present with correct hint and clicking is a no-op (no toast, no clipboard change).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_share_public_url.py",
+    "/app/test_reports/pytest/share_public_url.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "inquiries.py is the single source of truth for canonical_url/is_web_published/public_url_or_none — good separation. Reused by serializers.property_to_response and routes_public.",
+    "PropertyResponse.public_url (camelCase publicUrl on wire) is Optional[str] with default None — correct nullability contract.",
+    "PropertiesScreen.onShare falls back to a textarea + document.execCommand('copy') when navigator.clipboard is unavailable — good compat.",
+    "Non-published branch uses <div> with aria-disabled='true' and data-testid menu-share-disabled-{id}; keyboard interaction is fine because it is not a button. OK for scope."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (Supabase Auth, from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created TEST_share_unpub draft property via POST /api/properties during frontend test, deleted via DELETE /api/properties/{id} in the same run. Backend pytest also creates and cleans up its own draft.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Regression test file: /app/backend/tests/test_share_public_url.py. Published fixture used: id=9c1d4217-2522-4649-a269-bbd536a71f39, code=VAR-163159 → canonical https://www.varelapropiedadescde.com.ar/propiedad/var-163159. Do NOT mutate the fixture. When testing the toast in Playwright, prefer evaluating textContent/computed style on [data-testid='share-toast'] rather than wait_for_selector (visibility helper reports 'hidden' during CSS animation frames on this Toast component even though it is actually visible on screen). Grant clipboard-read/clipboard-write permissions before reading navigator.clipboard.",
+  "rca of the issue": "N/A — no bugs found; feature works as specified."
+}

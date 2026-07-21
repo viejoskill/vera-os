@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, BedDouble, Bath, Maximize, MapPin, Ruler, Compass, MessageCircle } from 'lucide-react';
@@ -35,6 +35,35 @@ export const PublicPropertyDetail = () => {
     retry: false,
   });
   const [active, setActive] = useState(0);
+
+  // Open Graph / Twitter Cards: la vista previa al compartir es responsabilidad del
+  // sitio público. Reflejamos aquí los metadatos desde la fuente de verdad de VERA
+  // (título, descripción, foto principal, URL canónica).
+  useEffect(() => {
+    if (!data) return;
+    const setMeta = (attr: 'property' | 'name', key: string, value: string) => {
+      let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`);
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, key);
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', value);
+    };
+    const desc = (data.description || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+    const image = data.coverImage || data.images?.[0]?.url || '';
+    const url = data.publicUrl || '';
+    document.title = `${data.title} · Varela Propiedades`;
+    setMeta('property', 'og:title', data.title);
+    setMeta('property', 'og:description', desc);
+    setMeta('property', 'og:image', image);
+    setMeta('property', 'og:url', url);
+    setMeta('property', 'og:type', 'website');
+    setMeta('name', 'twitter:card', 'summary_large_image');
+    setMeta('name', 'twitter:title', data.title);
+    setMeta('name', 'twitter:description', desc);
+    setMeta('name', 'twitter:image', image);
+  }, [data]);
 
   if (isLoading) return <div className="vera-pub"><p className="vera-pub__empty">Cargando…</p></div>;
 
