@@ -1,0 +1,34 @@
+{
+  "summary": "E2E frontend testing of new 'Personas' App (VERA Core) sprint. Verified 10/10 acceptance criteria on preview URL as qa_varela@vera.test. Login → /hoy. Sidebar shows 'Personas' link enabled WITHOUT 'Próximamente' badge (only Operaciones/Studio still show it, as expected). /personas renders the list (data-testid=people-screen, people-table, people-count='3 personas' initially). Instant search filters correctly — typing 'zzz_no_match_xyz' collapses table and shows people-empty state; clearing restores rows. Created 'ZZ Test Persona QA 58943' via NewPersonModal (nombre + teléfono +54 11 5555-9999 + email zztest.qa@vera.test + rol Contacto default). App auto-navigates to /personas/e62c9550-1201-4cca-bebb-2d4bb094cb7f. PersonDetail header shows exact name and 4 tabs (Datos/Relaciones/Conversaciones/Timeline) with correct data-testids. In Datos: toggled rol 'Vendedor' (aria-pressed false→true), set Estado=Inactivo, added extra phone '+54 11 7777-0000' via chip list, clicked Guardar. Reloaded the ficha — role Vendedor=true, status Inactivo=true, and the extra phone chip persisted (data survived reload). Relaciones tab shows relations-empty (persona has no properties). Conversaciones tab shows conversations-empty. Timeline tab shows exactly 1 event with data-testid=timeline-PersonCreated ('Persona creada · 21/07/2026, 02:36 p.m.'). Back on /personas the search 'ZZ Test Persona QA' returns 1 row with Contacto+Vendedor badges and Inactivo status — end-to-end persistence confirmed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "PeopleScreen (/personas) — initial load", "issues": ["The people-count '<n> personas' text is rendered ABOVE the isLoading check, so during the initial fetch it briefly shows '0 personas' while 'Cargando personas…' is also visible below. Cosmetic — should hide the count (or show a skeleton) while isLoading is true."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Optional/cosmetic: in PeopleScreen.tsx suppress the people-count paragraph while isLoading is true (or render 'Cargando…' inside it) so users don't see a transient '0 personas' before rows arrive.",
+    "Cleanup: delete the QA seed 'ZZ Test Persona QA 58943' (id e62c9550-1201-4cca-bebb-2d4bb094cb7f) via DELETE /api/people/{id} or Supabase once main agent wraps the sprint."
+  ],
+  "critical_code_review_comments": [
+    "PeopleScreen.tsx: search is client-side over the enriched list (name/phone/email/phones/emails). Good coverage for the acceptance criterion. If the dataset grows past a few thousand it should move to server-side but for MVP it is fine.",
+    "PersonDetail.tsx DatosTab.save() merges primaryPhone into `phones` and primaryEmail into `emails` before persisting — good, keeps invariant that the primary is always inside the list. However the local `phones`/`emails` state on mount FILTERs out the primary in ChipList's values but stores the full array in state; when Save merges again it re-adds primary — this is idempotent thanks to the `!phones.includes(primaryPhone)` guard. OK.",
+    "PersonDetail.tsx uses `key={person.id}` on DatosTab so switching persons remounts the form and resets local state — good UX pattern, prevents stale values.",
+    "PersonDetail.tsx: after saving there is no re-fetch of the person object; local state (which mirrors the saved payload) plus the setSaved badge is enough, but the header roles/status chips at the top come from `person` (React Query cache) and may not update until invalidation. Verified after a manual reload the change is there — confirms server persistence. Consider queryClient.invalidateQueries(['person', id]) inside useUpdatePerson.onSuccess so the header updates without reload.",
+    "PeopleScreen.tsx: the count paragraph is not gated by isLoading (see design_issues) — minor.",
+    "NewPersonModal integration: after a successful POST it correctly fires onCreated(person) and PeopleScreen navigates to /personas/{id}. The list is not visibly refreshed on return via back button — again a queryClient.invalidateQueries(['people']) inside useCreatePerson would keep the listing hot. Verified indirectly: a fresh navigation to /personas after creation DOES show the new row, so the query is being invalidated somewhere (likely on window focus). OK.",
+    "Accessibility: role='row' on a <button> and role='table' on a <div> is technically correct but screen readers work better with real <table><tr><td>. Not blocking for MVP.",
+    "PersonDetail.tsx timeline maps unknown ev.type to {label: ev.type, icon: Clock} — safe fallback, good."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only)", "frontend": "100% (10/10 acceptance criteria)"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "1 test persona created: 'ZZ Test Persona QA 58943' id=e62c9550-1201-4cca-bebb-2d4bb094cb7f (phone +54 11 5555-9999, email zztest.qa@vera.test, extra phone +54 11 7777-0000, roles [Contacto, Vendedor], status inactive). Not deleted — main agent to remove when sprint closes.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Personas App MVP fully functional in preview. Test persona 'ZZ Test Persona QA 58943' (id e62c9550-1201-4cca-bebb-2d4bb094cb7f) still lives in the DB — reuse or delete as needed. Existing production-ish sample data includes 'Eduardo Ocampos' (propietario), 'Alba Ibarra', 'Sebastián García'. Feature flag `personas` is true in /app/frontend/src/packages/config/feature-flags.ts — flipping it hides the sidebar entry and the route. Timeline currently emits PersonCreated only from the backend; ConversationStarted/PropertyVisited/etc. events are derived from mocked conversations (per problem statement) — Timeline for the freshly-created persona correctly shows just PersonCreated.",
+  "rca of the issue": "N/A — no functional bug. Single cosmetic finding (count shown as 0 during initial fetch) documented under design_issues."
+}
