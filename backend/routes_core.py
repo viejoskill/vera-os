@@ -49,7 +49,9 @@ async def list_opportunities(stage: Optional[str] = None):
 
 @router.patch("/opportunities/{opportunity_id}")
 async def update_opportunity(opportunity_id: str, payload: OpportunityUpdate):
-    """El humano puede mover una oportunidad de etapa manualmente."""
+    """El humano puede mover una oportunidad a CUALQUIER etapa manualmente (override).
+    A diferencia de las proyecciones automáticas, este endpoint NO aplica la regla de
+    'sólo avanzar': el humano decide (puede corregir o retroceder una etapa)."""
     if payload.stage not in OPP_STAGES:
         raise HTTPException(422, f"Etapa inválida. Válidas: {sorted(OPP_STAGES)}")
     updated = await store.update_opportunity_by_id(opportunity_id, payload.stage)

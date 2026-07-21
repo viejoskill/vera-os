@@ -675,6 +675,18 @@ Personas es la entidad maestra (identidad única por `person_id`). App de consul
 - **Verificado E2E**: backend por curl (create múltiples campos/roles, update, PersonResolver find+create, timeline PersonCreated); frontend por testing_agent iteration_28.json → 100% (10/10). Datos de prueba limpiados. Ajuste cosmético aplicado (contador oculto durante carga). Conversaciones/parte del timeline = MOCKEADOS hasta integrar WhatsApp/Kommo/Arturito.
 - **PENDIENTE DE DEPLOY**: en PREVIEW → REDEPLOY. Prioridad siguiente (usuario): Arturito + contrato de eventos Arturito→VERA. Botón WhatsApp del sitio externo: EN PAUSA.
 
+## Sprint VERA Core — Projection Handlers + Conversation Adapter Contract — 2026-07-21
+Los eventos del pipeline ahora generan AUTOMÁTICAMENTE las entidades de negocio (Leads, Oportunidades, Tareas). Verificado 100% por testing_agent (iteration_29: 28/28 backend) + curl. Todo referencia a la persona por `person_id`.
+- **Nuevo dominio `/app/backend/core/`** (VERA Core = lógica de negocio):
+  - `types.py`: enums + reglas puras. Lead (`nuevo→contactado→calificado→convertido→perdido`, sólo avanza), Opportunity stages (`interes→visita_agendada→visitada→oferta→reserva→ganada`/`perdida`, sólo avanza; `ganada`/`perdida` terminales), Task types (`responder·contactar·confirmar_visita·seguimiento·seguir_oferta`) + status (`pendiente·hecha·descartada`).
+  - `store.py`: proyecciones en MongoDB (`leads` único por `person_id`; `opportunities` único por `person_id`+`property_id`; `core_tasks` con dedupe de tarea PENDIENTE por persona+propiedad+tipo). Son read-models MUTABLES reconstruibles.
+  - `handlers.py`: `project(event)` mapea cada tipo de evento → Lead/Opportunity/Task; registrado en `events.projections`. `rebuild()` reproduce todo el stream en orden cronológico.
+- **Endpoints** (`routes_core.py`): `GET /api/core/leads|opportunities|tasks` (filtros por status/stage, 422 si inválido), `PATCH /api/core/tasks/{id}` (hecha/descartada — el humano decide), `PATCH /api/core/opportunities/{id}` (override manual de etapa, NO aplica la regla de sólo-avanzar), `POST /api/core/rebuild`, `GET /api/core/summary`.
+- **Conversation Adapter Contract** (agnóstico del proveedor): el contrato de eventos dejó de nombrar a Arturito como "la" capa; Arturito es sólo el PRIMER adapter. Cualquier motor conversacional envía los mismos eventos a `POST /api/events` sin cambios en VERA Core. `events/contract.py` reescrito (docstring + `EVENT_SOURCES` ampliado: arturito/website/crm/app/system/conversation/whatsapp/kommo/instagram/facebook). Doc nuevo `/app/docs/CONVERSATION_ADAPTER.md` (agregado a `DOC_ORDER` de VeraKnowledgeSource).
+- **Reglas de proyección**: Leads/Opps sólo avanzan (no retroceden); tareas no se duplican (una pendiente por tipo); eventos anónimos (sin `person_id`) y `PersonCreated` NO generan negocio; idempotencia por `idempotencyKey` (dedupe en ingesta) + claves naturales en proyecciones (rebuild idempotente).
+- **Bug corregido**: `channel` aparecía en `$setOnInsert` y `$set` a la vez (conflicto Mongo code 40) → sólo en `$set` cuando presente. Regresión: `/app/backend/tests/test_vera_core_projections.py` (28 tests).
+- **PENDIENTE**: UI de Operaciones (Leads/Oportunidades/Tareas hoy sólo por API, la App Operaciones sigue "Próximamente"). Deploy: en PREVIEW → REDEPLOY.
+
 
 
 
