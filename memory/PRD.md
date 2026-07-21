@@ -698,6 +698,16 @@ Se descubrió empíricamente la API de Arturito con la API Key `art_…` provist
 - **Recomendación (a implementar luego, con aprobación)**: `ArturitoWebhookAdapter` (PUSH → traduce a eventos del Conversation Adapter Contract → `POST /api/events`) + `ArturitoClient` tRPC (PULL para backfill/enriquecimiento). Mapeo de etapas casi 1:1 con VERA Core.
 - La API Key NO se guardó aún en `.env` (sprint de discovery). Al implementar: `ARTURITO_API_KEY` solo backend.
 
+## Sprint ArturitoWebhookAdapter (implementación PUSH) — 2026-07-21
+VERA es ahora el **receptor primario** de los eventos de Arturito. Verificado E2E (entrega real firmada de Arturito + POST firmado manual + idempotencia + firma inválida 401 + proyecciones de VERA Core). Sin backfill todavía (por decisión del usuario: validar primero con leads reales nuevos).
+- **Endpoint**: `POST /api/integrations/arturito/webhook` (`routes_integrations.py`). Valida `X-Arturito-Signature` (HMAC-SHA256 sobre el body crudo, prefijo `sha256=`); si el secret está configurado y la firma no valida → 401. Audita cada entrega en Mongo (`arturito_deliveries`); vista dev `GET /api/integrations/arturito/deliveries`.
+- **Adapter** (`integrations/arturito/adapter.py`): traduce `lead.created` → `ConversationStarted` + `PropertyInquiry` (VERA Core crea Lead `nuevo` + tarea "Contactar"); `lead.attended` → `MessageReceived` (actividad + tarea de seguimiento). Ingresa vía `pipeline.ingest` (Conversation Adapter Contract). Idempotencia por `event_id` (los reintentos de Arturito lo conservan).
+- **Client tRPC** (`integrations/arturito/client.py`): helpers `list/create/delete_webhook` (usados para provisionar) + base para el backfill futuro.
+- **Provisioning**: webhook de VERA creado (`webhooks.create`, id `01KY2Q55V8585DMWYK2J8FB9JW`) → PREVIEW url. Webhook viejo (`bot.varelapropiedadescde.com.ar`) ELIMINADO (`webhooks.delete`). Sólo queda el de VERA.
+- **Secrets en backend `.env`**: `ARTURITO_API_KEY`, `ARTURITO_WORKSPACE_ID`, `ARTURITO_WEBHOOK_SECRET` (secret del webhook, mostrado una sola vez por Arturito). Solo backend.
+- **Payload real confirmado** en `/app/docs/ARTURITO_API_DISCOVERY.md` §7.1 (lead bajo `lead`, id=`id`, mensaje/resumen en `conversation.summary`, `intent`).
+- **PENDIENTES**: (1) al redeployar, actualizar la URL del webhook a PRODUCCIÓN (`webhooks.update`); (2) backfill histórico vía tRPC tras validar; (3) mensaje completo (`getMessagesByConversationId`) sigue restringido con la key.
+
 
 
 

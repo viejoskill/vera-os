@@ -228,6 +228,42 @@ Observaciones:
 - (El payload exacto del webhook no se pudo capturar en este sprint —requiere disparar una
   entrega real de prueba a un endpoint nuestro; ver Recomendación.)
 
+### 7.1 Payload real del webhook (CONFIRMADO — capturado vía `webhooks.test`)
+Estructura verificada de una entrega real firmada:
+```json
+{
+  "event_id": "01KY2Q6ETFDQKEWBKM5SF2EQYJ",   // único por evento (los reintentos lo conservan)
+  "event": "lead.attended",                    // "lead.created" | "lead.attended"
+  "timestamp": "2026-07-21T16:12:29.391Z",
+  "workspace_id": "6a54f832f4c16e6124260f28",
+  "agent_id": "6a54f973…",
+  "lead": {
+    "id": "…", "name": "…", "phone": "+549…", "email": null,
+    "channel": "Channel::Whatsapp", "intent": null, "interest": null,
+    "tags": ["…"]
+  },
+  "conversation": {
+    "id": "…", "summary": "…(resumen del agente)…", "url": "https://app.arturito.ai/…",
+    "started_at": null, "ended_at": null
+  }
+}
+```
+- Firma: header `X-Arturito-Signature: sha256=<hmac_sha256(secret, body_crudo)>` (VERIFICADO).
+- El **lead viene bajo `lead`** (id = `id`, NO `_id`); el mensaje/resumen viaja en
+  `conversation.summary`. `intent` (no `intentDetected`).
+- ⚠️ `webhooks.test` con `eventType=lead.created` devolvió "Validation Error" del lado de
+  Arturito (su harness de prueba). El path `lead.created` se validó con un POST firmado
+  manualmente (misma estructura) → OK.
+
+### 7.2 Estado de implementación (2026-07-21)
+✅ **ArturitoWebhookAdapter IMPLEMENTADO** en `POST /api/integrations/arturito/webhook`
+(`/app/backend/integrations/arturito/`). Valida HMAC, traduce y publica en VERA Core.
+✅ Webhook de VERA **creado y activo** (id `01KY2Q55V8585DMWYK2J8FB9JW`) apuntando al
+entorno PREVIEW. ✅ Webhook viejo (`bot.varelapropiedadescde.com.ar`) **ELIMINADO** — VERA
+es el receptor primario. ⏳ Backfill histórico (tRPC `pipeline.getLeadsByStage`): pendiente
+(a ejecutar tras validar con leads reales). ⚠️ Al redeployar, actualizar la URL del webhook
+al dominio de PRODUCCIÓN (`webhooks.update`).
+
 > Nota: además existe una integración **Meta CAPI** interna con su propio mapeo de eventos
 > (`lead_created`, `lead_qualified`, `visit_scheduled`, `lead_won/Purchase`). No es para
 > terceros; se menciona sólo porque revela el ciclo de vida que Arturito modela.

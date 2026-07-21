@@ -10,7 +10,9 @@ import time
 from datetime import datetime, timezone
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+
+from integrations.arturito import adapter as arturito_adapter
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 logger = logging.getLogger("vera")
@@ -46,3 +48,35 @@ async def provider_health(provider: str):
         "latency_ms": int((time.perf_counter() - started) * 1000),
         "checked_at": datetime.now(timezone.utc).isoformat(),
     }
+
+
+@router.post("/arturito/webhook")
+async def arturito_webhook(request: Request):
+    """ArturitoWebhookAdapter — receptor primario de eventos de Arturito.
+    Valida la firma HMAC-SHA256, traduce lead.created/lead.attended al Conversation
+    Adapter Contract y los ingresa en VERA Core (pipeline.ingest)."""
+    raw = await request.body()
+    signature = request.headers.get("X-Arturito-Signature")
+    verified = arturito_adapter.verify_signature(raw, signature)
+
+    import config
+    require = bool(config.ARTURITO_WEBHOOK_SECRET)
+    try:
+        body = await request.json()
+    except Exception:  # noqa: BLE001
+        body = {}
+
+    # Firma inválida cuando hay secret configurado → rechazar (pero auditar).
+    if require and not verified:
+        await arturito_adapter.store_delivery(raw, dict(request.headers), verified, {"rejected": "bad_signature"})
+        raise HTTPException(401, "Firma inválida")
+
+    result = await arturito_adapter.handle(body)
+    await arturito_adapter.store_delivery(raw, dict(request.headers), verified, result)
+    return {"ok": True, "verified": verified, **result}
+
+
+@router.get("/arturito/deliveries")
+async def arturito_deliveries(limit: int = 20):
+    """Vista de auditoría (dev): últimas entregas recibidas de Arturito."""
+    return {"deliveries": await arturito_adapter.recent_deliveries(limit)}

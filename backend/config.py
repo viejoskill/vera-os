@@ -45,6 +45,15 @@ def meli_configured() -> bool:
 
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY") or None
 
+# Arturito (primer adapter conversacional). API Key + secret del webhook = solo backend.
+ARTURITO_API_KEY = os.environ.get("ARTURITO_API_KEY") or None
+ARTURITO_WEBHOOK_SECRET = os.environ.get("ARTURITO_WEBHOOK_SECRET") or None
+ARTURITO_WORKSPACE_ID = os.environ.get("ARTURITO_WORKSPACE_ID") or None
+
+
+def arturito_configured() -> bool:
+    return bool(ARTURITO_API_KEY and ARTURITO_WORKSPACE_ID)
+
 # Publication channels the agent can operate today (status board). Scalable: add
 # more providers here; the UI reads its own catalog. No integration is hardcoded.
 ENABLED_PUBLICATION_CHANNELS = {"web-varela", "mercadolibre"}
