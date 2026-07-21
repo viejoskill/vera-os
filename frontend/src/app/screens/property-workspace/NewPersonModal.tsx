@@ -63,8 +63,10 @@ export const NewPersonModal = ({
     try {
       const person = await create.mutateAsync({
         fullName: fullName.trim(),
-        phone: phone.trim(),
-        email: email.trim(),
+        primaryPhone: phone.trim(),
+        primaryEmail: email.trim(),
+        phones: phone.trim() ? [phone.trim()] : [],
+        emails: email.trim() ? [email.trim()] : [],
         notes: notes.trim(),
         roles,
       });

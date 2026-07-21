@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from '@app/layout/AppLayout';
 import { PropertiesScreen } from '@app/screens/PropertiesScreen';
 import { PropertyWorkspace } from '@app/screens/property-workspace';
+import { PeopleScreen } from '@app/screens/people/PeopleScreen';
+import { PersonDetail } from '@app/screens/people/PersonDetail';
 import { WorkspaceHome } from '@app/workspace/WorkspaceHome';
 import { VeraBotWorkspace } from '@app/vera-bot';
 import { IntegrationsScreen } from '@app/integraciones';
@@ -36,7 +38,8 @@ export const VeraOS = () => (
               <Route path="propiedades/nueva" element={<PropertyWorkspace />} />
               <Route path="propiedades/:id" element={<PropertyWorkspace />} />
               <Route path="vera-bot" element={<VeraBotWorkspace />} />
-              <Route path="personas" element={<PlaceholderScreen title="Personas" />} />
+              <Route path="personas" element={<PeopleScreen />} />
+              <Route path="personas/:id" element={<PersonDetail />} />
               <Route path="operaciones" element={<PlaceholderScreen title="Operaciones" />} />
               <Route path="studio" element={<PlaceholderScreen title="Studio" />} />
               <Route path="integraciones" element={<IntegrationsScreen />} />

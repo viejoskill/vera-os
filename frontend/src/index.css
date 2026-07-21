@@ -2418,6 +2418,145 @@ p {
   color: var(--vera-color-text);
 }
 
+/* ===================== App Personas ===================== */
+.vera-people__count {
+  font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-text-secondary);
+}
+.vera-people__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  padding: var(--vera-space-2xl) 0;
+  color: var(--vera-color-text-secondary);
+  text-align: center;
+}
+.vera-table {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-lg);
+  overflow: hidden;
+  background: var(--vera-color-card);
+}
+.vera-table__head,
+.vera-table__row {
+  display: grid;
+  grid-template-columns: 1.6fr 1.1fr 1.5fr 1.4fr 1fr 0.5fr 0.5fr 0.9fr;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  padding: var(--vera-space-sm) var(--vera-space-md);
+}
+.vera-table__head {
+  font-size: var(--vera-font-size-xs);
+  font-weight: var(--vera-font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--vera-color-text-secondary);
+  background: var(--vera-color-surface);
+  border-bottom: 1px solid var(--vera-color-border);
+}
+.vera-table__row {
+  border: none;
+  border-bottom: 1px solid var(--vera-color-border);
+  background: transparent;
+  color: var(--vera-color-text);
+  font-size: var(--vera-font-size-sm);
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--vera-font-family);
+  transition: background-color 0.15s ease;
+}
+.vera-table__row:last-child { border-bottom: none; }
+.vera-table__row:hover { background: var(--vera-color-surface); }
+.vera-table__row span { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.vera-table__name { font-weight: var(--vera-font-weight-semibold); }
+.vera-table__muted { color: var(--vera-color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vera-table__num { justify-content: flex-end; text-align: right; }
+.vera-table__roles { flex-wrap: wrap; gap: 4px; }
+@media (max-width: 900px) {
+  .vera-table__head { display: none; }
+  .vera-table__row { grid-template-columns: 1fr 1fr; row-gap: 4px; }
+}
+
+.vera-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--vera-color-text-secondary);
+  font-size: var(--vera-font-size-sm);
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+.vera-back:hover { color: var(--vera-color-text); }
+
+.vera-person__head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--vera-space-md); }
+.vera-person__name { font-size: var(--vera-font-size-2xl); font-weight: var(--vera-font-weight-bold); color: var(--vera-color-text); }
+.vera-person__status { font-size: var(--vera-font-size-xs); padding: 3px 10px; border-radius: var(--vera-radius-pill); border: 1px solid var(--vera-color-border); }
+.vera-person__status--on { color: #22c55e; }
+.vera-person__status--off { color: var(--vera-color-text-secondary); }
+
+.vera-tabs { display: flex; gap: var(--vera-space-xs); border-bottom: 1px solid var(--vera-color-border); }
+.vera-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--vera-color-text-secondary);
+  font-family: var(--vera-font-family);
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-medium);
+  padding: var(--vera-space-sm) var(--vera-space-md);
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.vera-tab:hover { color: var(--vera-color-text); }
+.vera-tab--active { color: var(--vera-color-text); border-bottom-color: var(--vera-color-primary); }
+
+.vera-person__grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--vera-space-lg); align-items: start; }
+@media (max-width: 900px) { .vera-person__grid { grid-template-columns: 1fr; } }
+.vera-person__card { padding: var(--vera-space-lg); display: flex; flex-direction: column; gap: var(--vera-space-md); }
+.vera-person__card-title { display: flex; align-items: center; gap: 8px; font-size: var(--vera-font-size-md); font-weight: var(--vera-font-weight-semibold); color: var(--vera-color-text); }
+.vera-person__hint { font-size: var(--vera-font-size-sm); color: var(--vera-color-text-secondary); }
+.vera-person__save { margin-top: var(--vera-space-sm); }
+
+.vera-field { display: flex; flex-direction: column; gap: 6px; }
+.vera-field__label { font-size: var(--vera-font-size-sm); font-weight: var(--vera-font-weight-medium); color: var(--vera-color-text-secondary); }
+.vera-chiplist { display: flex; flex-wrap: wrap; gap: 6px; }
+.vera-chiplist:empty { display: none; }
+.vera-chiplist .vera-chip { display: inline-flex; align-items: center; gap: 6px; cursor: default; }
+.vera-chiplist .vera-chip button { display: grid; place-items: center; background: none; border: none; color: var(--vera-color-text-secondary); cursor: pointer; padding: 0; }
+.vera-chiplist .vera-chip button:hover { color: var(--vera-color-text); }
+.vera-chiplist__add { display: flex; gap: var(--vera-space-xs); align-items: center; }
+.vera-chiplist__add .vera-field { flex: 1; }
+
+.vera-rel-list { display: flex; flex-direction: column; gap: var(--vera-space-sm); }
+.vera-rel-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vera-space-md);
+  padding: var(--vera-space-sm) var(--vera-space-md);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-surface);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease;
+}
+.vera-rel-item:hover { border-color: var(--vera-color-primary); }
+.vera-rel-item strong { display: block; font-size: var(--vera-font-size-sm); color: var(--vera-color-text); }
+.vera-rel-item__meta { font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); }
+
+.vera-person__card .vera-timeline__dot { display: grid; place-items: center; width: 26px; height: 26px; color: var(--vera-color-primary-foreground); }
+.vera-person__card .vera-timeline__item:not(:last-child)::before { left: 12px; top: 28px; }
+.vera-timeline__date { font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); }
+
 /* ===================== Modal ===================== */
 .vera-modal {
   position: fixed;

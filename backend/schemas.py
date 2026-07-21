@@ -240,28 +240,60 @@ class PublicationAction(CamelModel):
 
 
 class PersonCreate(CamelModel):
-    """Persona (base de App Personas). `roles` habilita múltiples capacidades
-    a futuro (propietario, comprador, inquilino, contacto, escribano...)."""
+    """Persona (entidad de VERA Core). `roles` permite múltiples capacidades
+    (propietario, comprador, inquilino, contacto, escribano...). primary_phone y
+    primary_email son explícitos, además de las listas phones/emails."""
     full_name: str
-    phone: str = ""
-    email: str = ""
+    primary_phone: str = ""
+    primary_email: str = ""
+    phones: list[str] = []
+    emails: list[str] = []
+    document: str = ""
     notes: str = ""
     roles: list[str] = []
+    status: str = "active"
 
 
 class PersonUpdate(CamelModel):
     full_name: Optional[str] = None
-    phone: Optional[str] = None
-    email: Optional[str] = None
+    primary_phone: Optional[str] = None
+    primary_email: Optional[str] = None
+    phones: Optional[list[str]] = None
+    emails: Optional[list[str]] = None
+    document: Optional[str] = None
     notes: Optional[str] = None
     roles: Optional[list[str]] = None
+    status: Optional[str] = None
 
 
 class PersonResponse(CamelModel):
     id: str
     full_name: str = ""
-    phone: str = ""
-    email: str = ""
+    primary_phone: str = ""
+    primary_email: str = ""
+    phones: list[str] = []
+    emails: list[str] = []
+    document: str = ""
     notes: str = ""
     roles: list[str] = []
+    status: str = "active"
     created_at: Optional[datetime] = None
+
+
+class PersonListItem(PersonResponse):
+    """Fila del listado de Personas, enriquecida con métricas de relación."""
+    properties_count: int = 0
+    conversations_count: int = 0
+    last_contact: Optional[str] = None
+
+
+class PersonResolveRequest(CamelModel):
+    """Contrato genérico del PersonResolver. Hoy resuelve por teléfono/email; mañana
+    podrá resolver por whatsapp/instagram/document/crm_id SIN cambiar la interfaz."""
+    phone: Optional[str] = None
+    whatsapp: Optional[str] = None
+    email: Optional[str] = None
+    document: Optional[str] = None
+    crm_id: Optional[str] = None
+    full_name: Optional[str] = None
+    role: Optional[str] = None

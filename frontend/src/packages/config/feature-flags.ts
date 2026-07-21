@@ -17,7 +17,7 @@ export const featureFlags: FeatureFlags = {
   hoy: true, // "Hoy" — VERA operational Inbox
   veraBot: true, // "Vera Bot" — integración de mensajería (motor: Arturito)
   propiedades: true,
-  personas: false,
+  personas: true,
   operaciones: false,
   studio: false,
   integraciones: true, // "Integraciones" — Centro de Integraciones (Sprint 05)

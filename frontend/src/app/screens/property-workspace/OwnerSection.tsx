@@ -51,11 +51,11 @@ export const OwnerSection = () => {
       {owner ? (
         <div className="vera-owner__card" data-testid="owner-details">
           <strong className="vera-owner__name">{owner.fullName}</strong>
-          {owner.phone && (
-            <span className="vera-owner__row"><Phone size={14} /> {owner.phone}</span>
+          {owner.primaryPhone && (
+            <span className="vera-owner__row"><Phone size={14} /> {owner.primaryPhone}</span>
           )}
-          {owner.email && (
-            <span className="vera-owner__row"><Mail size={14} /> {owner.email}</span>
+          {owner.primaryEmail && (
+            <span className="vera-owner__row"><Mail size={14} /> {owner.primaryEmail}</span>
           )}
           {owner.roles?.length > 0 && (
             <div className="vera-role-tags" data-testid="owner-roles">
