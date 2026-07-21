@@ -21,8 +21,15 @@ async def _on_event(event: dict) -> None:
     if not person_id or len(summary) < 15:
         return
     source_ref = payload.get("arturitoEventId") or str(event.get("_id") or event.get("id") or "")
-    # Fire-and-forget: no bloquea la ingesta.
-    asyncio.create_task(service.learn_from_summary(person_id, summary, source_ref))
+    # Fire-and-forget: no bloquea la ingesta. Logueamos si la tarea falla.
+    task = asyncio.create_task(service.learn_from_summary(person_id, summary, source_ref))
+    task.add_done_callback(_log_task_error)
+
+
+def _log_task_error(task: asyncio.Task) -> None:
+    exc = task.exception() if not task.cancelled() else None
+    if exc:
+        logger.warning("Knowledge Engine: la extracción en background falló: %s", exc)
 
 
 projections.register(_on_event)

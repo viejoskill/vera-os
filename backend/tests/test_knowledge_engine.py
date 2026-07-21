@@ -306,8 +306,7 @@ class TestNotFound:
         )
         assert r.status_code == 404
 
-    def test_invalid_uuid_leaks_500_bug(self, api_client):
-        """XFAIL/known-bug: id no-UUID hoy devuelve 500 (debería 404 o 422)."""
+    def test_invalid_uuid_returns_404(self, api_client):
+        """id no-UUID → 404 (el bug de 500 fue corregido en people_repository.get)."""
         r = api_client.get(f"{API}/people/nonexistent-{uuid.uuid4().hex}/knowledge")
-        # documentar el comportamiento actual (bug)
-        assert r.status_code == 500, f"si esto pasa a 404 el bug fue corregido: {r.status_code}"
+        assert r.status_code == 404, f"esperado 404, obtenido {r.status_code}"

@@ -11,6 +11,12 @@ from datetime import datetime, timezone
 
 from supabase_client import get_supabase
 
+try:
+    from postgrest.exceptions import APIError
+except Exception:  # noqa: BLE001
+    class APIError(Exception):  # type: ignore
+        code = None
+
 TABLE = "people"
 _COLS = {
     "full_name", "phone", "email", "notes", "roles", "workspace_id", "created_at",
@@ -44,7 +50,13 @@ class PeopleRepository:
     async def get(self, person_id: str) -> dict | None:
         def _q():
             return get_supabase().table(TABLE).select("*").eq("id", person_id).limit(1).execute()
-        res = await asyncio.to_thread(_q)
+        try:
+            res = await asyncio.to_thread(_q)
+        except APIError as exc:
+            # id no es un UUID válido → la persona no existe (no un 500).
+            if getattr(exc, "code", None) == "22P02":
+                return None
+            raise
         return (res.data or [None])[0]
 
     async def find_one(self, column: str, value: str) -> dict | None:

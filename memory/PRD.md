@@ -717,6 +717,16 @@ Verificado: testing_agent iteration_30 (frontend 100%, backend 8/9 → el único
 - **Limitación conocida**: los eventos de Arturito no traen `propertyId` de VERA → no crean Oportunidad (sólo Lead + tarea "Contactar"). La columna Oportunidades se puebla con eventos que sí traen propiedad (web/app/futuro matching).
 - **PROPUESTA DEL USUARIO (pendiente de decisión)**: renombrar/promover "Operaciones" a **"Hoy"** como tablero principal, dejando Personas/Propiedades/Arturito/Studio como apps especializadas. HOY `/hoy` = `WorkspaceHome` (escritorio ambiental existente). No se tocó; a confirmar si se reemplaza.
 
+## Sprint VERA Brain v1 — Knowledge Engine — 2026-07-21
+"Arturito conversa, VERA aprende". VERA NO guarda conversaciones; transforma el resumen (lead.attended) en **conocimiento estructurado y acumulativo**. Verificado: testing_agent iteration_31 (backend 10/10, frontend 9/9) + regresión `tests/test_knowledge_engine.py`.
+- **Módulo `/app/backend/knowledge/`** (VERA Core): `extractor.py` (LLM Claude vía `vera_brain.active_provider` → HECHOS JSON, sin texto libre), `store.py` (colección Mongo `knowledge_facts` — un doc por hecho con metadatos {type,value,confidence,source,first_detected,last_confirmed,status}; merge acumulativo; contradicción en tipos single-valued → conserva ambos y marca `review`; nunca borra), `service.py` (learn_from_summary + person_knowledge/view), `projection.py` (dispara aprendizaje en BACKGROUND cuando un evento trae `payload.summary`).
+- **Endpoints**: `GET /api/people/{id}/knowledge` (vista categorizada + readable + confianza), `POST /api/people/{id}/knowledge/learn` (síncrono, para pruebas/backfill), `GET /api/knowledge/facts?type=&value=` (consulta estructurada del activo, ej. "todos los agrimensores", "budget>...").
+- **Modelo de conocimiento**: categorías roles/relationship/interests/preferences/facts/businessContext/aiTags + confidence (Alta/Media/Baja) + lastUpdated. Tipos: role, relationship, intent, profession, company, business_context, property_type, location, budget(+currency), bedrooms, payment_method, accepts_credit, preference, restriction, next_step, decision_maker, involved_person, fact, tag.
+- **Frontend**: pestaña **🧠 Conocimiento** en la ficha Persona (`PersonDetail.tsx` → `ConocimientoTab`, hook `usePersonKnowledge`, gateway `knowledge()`): "Lo que VERA sabe" (bullets), badge de confianza, sección "Para revisar (contradicciones)", y conocimiento estructurado por categoría con % de confianza. CSS `.vera-knowledge__*`.
+- **Bug corregido (de iteration_31)**: `people_repository.get` con id no-UUID devolvía 500 → ahora captura APIError 22P02 → 404 (beneficia a todas las rutas `/people/{id}`).
+- **Validado**: extracción real (Juan Pedro Andersen → Agrimensor/Proveedor/Servicio profesional, coincide con el ejemplo del sprint), trigger automático en background (comprador → budget/bedrooms/credit/zona), idempotencia (confirmed sin duplicar), contradicción→review, consulta estructurada.
+- **NO implementado (por decisión)**: campañas, recomendaciones, matching, automatizaciones, prompts de Arturito. Sólo el motor que transforma conversaciones en conocimiento (reutilizable a futuro por Studio/Marketing/Matching/Dashboard).
+
 
 
 
