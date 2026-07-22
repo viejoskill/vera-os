@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 import config
 import inquiries
+import web_publisher
 from property_repository import property_repository
 from serializers import property_to_detail, property_to_response
 
@@ -44,7 +45,7 @@ async def public_listings():
         resp = (await property_to_response(r)).model_dump(by_alias=True)
         item = {k: resp.get(k) for k in _SUMMARY_KEYS}
         item["whatsappUrl"] = inquiries.whatsapp_url(r)
-        item["publicUrl"] = inquiries.canonical_url(r)
+        item["publicUrl"] = web_publisher.stored_public_url(r)
         out.append(item)
     return out
 
@@ -60,7 +61,7 @@ async def public_listing(property_id: str):
     for k in _DETAIL_DROP:
         detail.pop(k, None)
     detail["whatsappUrl"] = inquiries.whatsapp_url(row)
-    detail["publicUrl"] = inquiries.canonical_url(row)
+    detail["publicUrl"] = web_publisher.stored_public_url(row)
     return detail
 
 
@@ -80,6 +81,6 @@ async def create_inquiry(payload: InquiryRequest):
     event = await inquiries.register_inquiry(row)
     return {
         "whatsappUrl": inquiries.whatsapp_url(row),
-        "publicUrl": inquiries.canonical_url(row),
+        "publicUrl": web_publisher.stored_public_url(row),
         "inquiryId": event.get("id"),
     }

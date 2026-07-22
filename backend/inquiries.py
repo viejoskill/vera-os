@@ -20,35 +20,30 @@ _PUBLIC_STATUSES = {"active", "reserved", "sold"}
 
 
 def is_web_published(prop: dict) -> bool:
-    """Fuente única de verdad: una propiedad está publicada en la web cuando está
-    activa/reservada/vendida, no archivada y con el canal Web en estado 'published'."""
+    """Una propiedad está publicada en la web cuando está activa/reservada/vendida,
+    no archivada y con el canal Web en estado 'published'."""
     if prop.get("archived") or prop.get("status") not in _PUBLIC_STATUSES:
         return False
     web = (prop.get("publications") or {}).get("web-varela") or {}
     return web.get("status") == "published"
 
 
-def canonical_url(prop: dict) -> str:
-    """URL pública CANÓNICA de la propiedad (sin parámetros). VERA es dueño de esta
-    URL; toda la app (Compartir, Studio, QR, emails, campañas) la reutiliza."""
-    code = property_code(prop)
-    return f"{config.PUBLIC_WEB_BASE_URL}/propiedad/{code.lower()}"
-
-
-def public_url_or_none(prop: dict) -> str | None:
-    """URL canónica si la propiedad está publicada; `None` en caso contrario."""
-    return canonical_url(prop) if is_web_published(prop) else None
-
-
 def public_url(prop: dict) -> str:
-    """URL con parámetros de tracking (WhatsApp/consultas) — derivada de la canónica
-    para que Arturito identifique automáticamente propiedad/canal/URL."""
+    """URL pública con parámetros de tracking (WhatsApp/consultas). Se DERIVA de la
+    ÚNICA fuente de verdad (`publications['web-varela'].url`); nunca se construye por
+    convención. Devuelve '' si la propiedad no tiene URL pública persistida."""
+    from web_publisher import stored_public_url  # import diferido (evita ciclos)
+
+    base = stored_public_url(prop)
+    if not base:
+        return ""
+    sep = "&" if "?" in base else "?"
     params = urlencode({
         "source": "website",
         "property_id": prop["id"],
         "property_code": property_code(prop),
     })
-    return f"{canonical_url(prop)}?{params}"
+    return f"{base}{sep}{params}"
 
 
 def whatsapp_message(prop: dict) -> str:

@@ -63,12 +63,24 @@ async def update_property(property_id: str, payload: PropertyUpdate):
     prop = await property_repository.update(property_id, payload.model_dump(exclude_none=True))
     if prop is None:
         raise HTTPException(404, "Property not found")
-    # Auto-sync: si ya está publicada en la web, reflejar cambios (precio, fotos, estado, descripción).
-    if (prop.get("publications") or {}).get("web-varela", {}).get("status") == "published":
+    # Auto-sync: si ya está publicada en la web, reflejar cambios y garantizar que la
+    # URL pública quede persistida (fuente única: publications['web-varela'].url).
+    web = (prop.get("publications") or {}).get("web-varela") or {}
+    if web.get("status") in ("published", "inconsistent"):
         try:
-            await web_publisher.publish(prop)
-        except Exception:  # noqa: BLE001 — best-effort, no romper el guardado
-            logger.warning("Web re-sync falló para %s", property_id)
+            url_value = await web_publisher.publish(prop)  # valida persistencia en la web
+            pubs = dict(prop.get("publications") or {})
+            pubs["web-varela"] = {
+                "status": "published",
+                "lastSync": datetime.now(timezone.utc).isoformat(),
+                "url": url_value,
+            }
+            prop = await property_repository.update(property_id, {"publications": pubs}) or prop
+        except Exception as e:  # noqa: BLE001 — best-effort, no romper el guardado
+            logger.error("Re-sync web INCONSISTENTE para %s: %s", property_id, e)
+            pubs = dict(prop.get("publications") or {})
+            pubs["web-varela"] = {**web, "status": "inconsistent", "url": ""}
+            prop = await property_repository.update(property_id, {"publications": pubs}) or prop
     return await property_to_detail(prop)
 
 
@@ -135,9 +147,15 @@ async def set_publication(property_id: str, channel: str, payload: PublicationAc
         url_value = existing.get("url", "")
         if channel == "web-varela":
             try:
-                await web_publisher.publish(prop)
-                url_value = web_publisher.web_url(prop)
+                url_value = await web_publisher.publish(prop)  # valida persistencia
             except Exception as e:  # noqa: BLE001
+                logger.error("Publicación web INCONSISTENTE para %s: %s", property_id, e)
+                publications[channel] = {
+                    "status": "inconsistent",
+                    "lastSync": datetime.now(timezone.utc).isoformat(),
+                    "url": "",
+                }
+                await property_repository.update(property_id, {"publications": publications})
                 raise HTTPException(502, f"No se pudo publicar en la web: {e}")
         elif payload.url is not None:
             url_value = payload.url

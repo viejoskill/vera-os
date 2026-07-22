@@ -45,6 +45,16 @@ def web_url(prop: dict) -> str:
     return f"{WEB_SITE_URL}/?propiedad={_legacy_id(prop)}"
 
 
+def stored_public_url(prop: dict) -> str | None:
+    """ÚNICA fuente de verdad de la URL pública: `publications['web-varela'].url`.
+    Devuelve la URL SOLO si el canal está 'published' y la url está persistida.
+    Si está 'inconsistent' o vacía → None (mejor sin botón que con link roto)."""
+    web = (prop.get("publications") or {}).get("web-varela") or {}
+    if web.get("status") == "published" and web.get("url"):
+        return web["url"]
+    return None
+
+
 def _headers() -> dict:
     return {
         "apikey": config.CRM_SUPABASE_WRITE_KEY,
@@ -101,8 +111,19 @@ async def _row(prop: dict) -> dict:
     }
 
 
+async def _row_exists(lid: str) -> bool:
+    """Confirma que la fila quedó realmente persistida en la web (validación)."""
+    url = f"{config.CRM_SUPABASE_URL}/rest/v1/propiedades?id=eq.{lid}&select=id"
+    async with httpx.AsyncClient(timeout=30, follow_redirects=True) as c:
+        r = await c.get(url, headers=_headers())
+        return r.status_code < 400 and len(r.json()) > 0
+
+
 async def publish(prop: dict) -> str:
-    """Upsert de la propiedad en la web actual (tabla `propiedades`). Devuelve el id usado."""
+    """Upsert de la propiedad en la web actual (tabla `propiedades`) y VALIDA que
+    haya quedado persistida. Devuelve la URL pública canónica confirmada.
+    Lanza RuntimeError si el upsert o la verificación fallan (el caller debe marcar
+    la publicación como inconsistente y NO exponer una publicUrl)."""
     if not config.crm_configured():
         raise RuntimeError("La web (CRM) no está configurada (CRM_SUPABASE_URL / CRM_SUPABASE_KEY).")
     row = await _row(prop)
@@ -112,7 +133,9 @@ async def publish(prop: dict) -> str:
         r = await c.post(url, headers=headers, json=row)
         if r.status_code >= 400:
             raise RuntimeError(f"Web publish {r.status_code}: {r.text[:300]}")
-    return row["id"]
+    if not await _row_exists(row["id"]):
+        raise RuntimeError("La fila no quedó persistida en la web tras el upsert (verificación fallida).")
+    return web_url(prop)
 
 
 async def unpublish(prop: dict) -> None:

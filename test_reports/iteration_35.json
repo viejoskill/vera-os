@@ -1,0 +1,28 @@
+{
+  "summary": "Refactor 'Compartir Propiedades' (single source of truth = publications['web-varela'].url) verified end-to-end. Backend: 10/10 pytest cases pass — publicUrl format '.../?propiedad=<idPublico>' on GET /api/properties (29/29 web-published, 0 inconsistent, 0 null), publicUrl null on draft, /api/public/listings and /listings/{id} expose canonical publicUrl from single source, whatsappUrl derives from that same URL (contains 'propiedad=vera-9c1d4217-...' url-encoded + 'source=website' tracking), POST .../publications/web-varela publish is idempotent and persists {status:'published', url:'.../?propiedad=vera-9c1d4217-...'}, PATCH with unchanged title preserves publications['web-varela'].url (auto re-sync does not clear it). Frontend: on /propiedades, card menu of published property 9c1d4217 shows enabled 'Compartir' (menu-share-<id>), no disabled variant; clicking copies EXACTLY 'https://www.varelapropiedadescde.com.ar/?propiedad=vera-9c1d4217-2522-4649-a269-bbd536a71f39' to clipboard and displays toast '✅ Propiedad lista para compartir'.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_share_public_url.py",
+    "/app/test_reports/pytest/share_public_url.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "web_publisher.stored_public_url() is the single reader of the source of truth (publications['web-varela'].url) — used by serializers.property_to_response, routes_public and inquiries.public_url. Clean separation, no URL construction by convention leaks.",
+    "routes_properties.set_publication (web-varela publish) correctly delegates to web_publisher.publish() which validates persistence via _row_exists; on failure it persists status='inconsistent' with url='' and returns 502 — matches the requested contract.",
+    "update_property re-syncs to web when publications.web-varela.status ∈ {published, inconsistent} and rewrites publications with the URL returned by publish(); on exception it flips to 'inconsistent' + url='' rather than silently leaving stale state. Good.",
+    "inquiries.public_url() derives WhatsApp tracking URL from stored_public_url and correctly uses '&' as separator when the base already has '?' (which is the case for '?propiedad=...') — no double-'?' bug.",
+    "PropertiesScreen.onShare uses navigator.clipboard.writeText with a legacy execCommand fallback and derives the shared URL exclusively from property.publicUrl (no client-side URL construction) — aligned with backend single-source contract.",
+    "Minor (out of scope for this test): _property_code() in serializers.py silently falls back to VAR-000000 on invalid uuid; not exercised in this sprint but worth a defensive log/raise later."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_share_public_url.py (rewritten for new '?propiedad=<idPublico>' format, added whatsappUrl derivation test, publish idempotency test, PATCH re-sync test, single-source-consistency test across ALL properties)"
+  ],
+  "success_rate": {"backend": "100% (10/10)", "frontend": "100%"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (Supabase Auth, from /app/memory/test_credentials.md)",
+  "seed_data_creation": "TEST_share_singlesource_draft: created via POST /api/properties then DELETEd in the same test (TestDraftHasNullPublicUrl). No leftovers. Idempotent re-publish executed on fixture 9c1d4217-2522-4649-a269-bbd536a71f39 (allowed per review_request; no other properties mutated).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Regression tests live at /app/backend/tests/test_share_public_url.py. Fixture: published property id=9c1d4217-2522-4649-a269-bbd536a71f39 (VAR-163159), expected publicUrl=https://www.varelapropiedadescde.com.ar/?propiedad=vera-9c1d4217-2522-4649-a269-bbd536a71f39 (no legacy_id → uses vera-<uuid>). Other published rows may use their legacy_id (e.g. mr2nfg6kyj13zx0mfu). DO NOT assert on <code> in publicUrl — the new format uses <idPublico>, not <code>. When testing frontend Share flow, grant clipboard-read/write permissions and read via navigator.clipboard.readText(). Toast selector [data-testid='share-toast'] works reliably now (text: '✅ Propiedad lista para compartir').",
+  "rca of the issue": "N/A — feature implemented and verified as specified. Prior format '/propiedad/<code>' has been fully removed from responses (asserted across all 29 web-published rows). No inconsistent publications after backfill."
+}

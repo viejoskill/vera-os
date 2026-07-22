@@ -92,11 +92,15 @@ def _map_property(lg: dict) -> dict:
 
 
 def _map_publications(lg: dict) -> dict:
-    """Estado de publicación por canal, desde los flags del CRM."""
+    """Estado de publicación por canal, desde los flags del CRM. La URL pública se
+    persiste desde el pipeline (fuente única): `?propiedad=<legacy_id>`."""
+    import web_publisher  # deferido para evitar ciclos
+
     pubs: dict = {}
     now = _now()
     if lg.get("publicado_web"):
-        pubs["web-varela"] = {"status": "published", "lastSync": now, "url": ""}
+        url = web_publisher.web_url({"legacy_id": lg.get("id")})
+        pubs["web-varela"] = {"status": "published", "lastSync": now, "url": url}
     if lg.get("publicado_ml"):
         pubs["mercadolibre"] = {"status": "published", "lastSync": now, "url": lg.get("ml_link") or ""}
     if lg.get("publicado_zp"):
