@@ -1,0 +1,29 @@
+{
+  "summary": "Sprint 2 (Document Creation Wizard) verified end-to-end. Backend: 7/7 pytest cases pass on POST /api/documents/resolve and POST /api/documents (create) — camelCase requirements {needsProperty:false, personRoles:['vendedor'], inputFields:[]}; missing=['seller_name'] & ready=false with no person; resolved.seller_name populated & ready=true when person assigned to role vendedor (field.origin='person'); input override works without a person (origin='input'); create blocks with 422 when required vendedor person is missing (detail contains 'seller_name'); create with valid person returns 201 with camelCase resolvedVariables (seller_name populated) + person relationship (entityType='person', entityId, role='vendedor') + event history; new document appears in GET /api/documents. Frontend: /documentos shows 'Nuevo Documento' button (data-testid=new-document-btn) navigating to /documentos/nuevo; wizard steps adapt to the template (Autorización de Venta triggers Template → Personas → Revisión; the property step is correctly skipped because template has no property variables); role select 'wizard-role-select-vendedor' populated with real people; Review step shows only 'review-resolved' group with seller_name row and origin badge 'Persona'; 'Crear documento' enabled; clicking creates the document (201) and navigates back to /documentos where the new row appears.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_documents_wizard.py",
+    "/app/test_reports/pytest/documents_wizard.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "documents/resolver.py: clean separation of concerns — requirements() reads the template shape, resolve() computes resolved/missing/warnings/fields/ready. Origin tagging (property/person/system/input) is explicit per field. Good.",
+    "documents/service.create_document: relationship check runs BEFORE resolver (order matters). If persons=[] and property=None, you always hit 'requires at least one relationship' with 422, never reach the 'missing required variable' 422. That means an API client sending an empty persons list gets a message about relationships, not about the missing variable. Consider running the resolver first (or merging both errors) so the response always reflects the truest cause. In practice the wizard sends the persons list, so the message the user sees is correct — but the API contract is slightly ambiguous for direct API consumers.",
+    "documents/api.py: POST /documents/resolve returns service dict directly (correctly camelCase because resolver already emits camelCase keys — requirements.needsProperty, resolved, missing, warnings, fields, ready). Confirmed by the frontend consuming { requirements, resolved, missing, warnings, fields, ready } without any transform.",
+    "DocumentWizard.tsx: 'needsUser' filter includes source==='input' && status==='optional' rows, so optional input-source variables also appear in the ✏️ Requiere tu intervención group (even though not blocking). This is a UX choice — reasonable — but it slightly conflicts with the 3-category contract in the PRD where ✏️ is 'required missing fields' and ⚠️ is 'optional VERA could not complete'. For this template (only one required person variable), the review shows only ✅, matching expectations perfectly.",
+    "DocumentWizard.tsx: 'canAdvance' returns false on the review step (only 'wizard-create' progresses). Fine — but the guard is implicit; a small comment would help. Not a bug.",
+    "useDocuments.ts: apiPost extracts detail from FastAPI errors and re-throws as Error(message). When detail is a dict (e.g. the 422 with {message, missing:[...]}), it falls through to `${res.status}` (i.e. shows '422' as the wizard error). Consider stringifying dict details so the user sees the missing keys inline. Non-blocking for this sprint since the wizard prevents the situation via its ready check."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_documents_wizard.py (new)",
+    "/app/test_reports/pytest/documents_wizard.xml (new)"
+  ],
+  "success_rate": {"backend": "100% (7/7)", "frontend": "100%"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (Supabase Auth, from /app/memory/test_credentials.md).",
+  "seed_data_creation": "Created 2 TEST_wizard_* documents via POST /api/documents (real Supabase). No DELETE endpoint by design — left as identifiable test rows. No templates or persons were created.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Sprint 2 wizard is fully green. Regression tests at /app/backend/tests/test_documents_wizard.py cover /resolve (missing / ready / input override / 404) and /documents create (blocks on missing required, persists resolvedVariables + relationship + history, appears in list). The Autorización de Venta template (id 7a9a0897-5c27-4ce3-a2d7-7c5ae7d8dc0d, one required variable seller_name source=person role=vendedor) is the fixture. For future wizard extensions with source=property templates, also assert the 'Propiedad' step appears (data-testid=step-property) and one wizard-property-<id> card is clickable. The review-warnings group and review-input-<key> inputs were not exercised in this sprint because the fixture template has no optional/property/input variables — consider adding a mixed-variable template if you want end-to-end coverage of the three review categories.",
+  "rca of the issue": "N/A — no defects found. All specified behaviors (resolve shape, missing/ready flip, input override, 422 on missing required, 201 create with resolvedVariables + relationship + event, wizard dynamic steps, Review 3-groups, camelCase contract) work as expected."
+}

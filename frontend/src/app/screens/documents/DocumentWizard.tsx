@@ -1,0 +1,316 @@
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  ArrowLeft, ArrowRight, Check, CheckCircle2, FileText, Home, Layers,
+  Loader2, PencilLine, TriangleAlert, Users,
+} from 'lucide-react';
+import { Button, Input } from '@vera/ui';
+import { PERSON_ROLE_LABELS } from '@vera/types';
+import { useProperties } from '@app/hooks/useProperties';
+import { usePeople } from '@app/hooks/usePeople';
+import {
+  useTemplates, useTemplate, useResolveDocument, useCreateDocument,
+  type PersonLinkInput, type ResolveResult,
+} from './useDocuments';
+
+type Step = 'template' | 'property' | 'people' | 'review';
+
+const ORIGIN_LABEL: Record<string, string> = {
+  property: 'Propiedad', person: 'Persona', system: 'Configuración', input: 'Ingresado por vos',
+};
+
+function roleLabel(role: string): string {
+  return PERSON_ROLE_LABELS[role] ?? role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+/** Wizard "Nuevo Documento" (ruta dedicada `/documentos/nuevo`).
+ * Template → Propiedad → Personas → Revisión. VERA completa lo que ya sabe;
+ * el usuario solo aporta lo que falta. */
+export const DocumentWizard = () => {
+  const navigate = useNavigate();
+  const [step, setStep] = useState<Step>('template');
+  const [templateId, setTemplateId] = useState<string>('');
+  const [propertyId, setPropertyId] = useState<string>('');
+  const [personByRole, setPersonByRole] = useState<Record<string, string>>({});
+  const [inputs, setInputs] = useState<Record<string, string>>({});
+
+  const templates = useTemplates();
+  const template = useTemplate(templateId || undefined);
+  const properties = useProperties();
+  const people = usePeople();
+  const resolve = useResolveDocument();
+  const create = useCreateDocument();
+
+  const requirements = template.data
+    ? {
+        needsProperty: template.data.variables.some((v) => v.source === 'property'),
+        personRoles: Array.from(
+          new Set(
+            template.data.variables
+              .filter((v) => v.source === 'person' && v.role)
+              .map((v) => v.role as string),
+          ),
+        ).sort(),
+      }
+    : { needsProperty: false, personRoles: [] as string[] };
+
+  // Pasos activos según lo que el template pide (extensible por definición).
+  const steps = useMemo<Step[]>(() => {
+    const s: Step[] = ['template'];
+    if (requirements.needsProperty) s.push('property');
+    if (requirements.personRoles.length) s.push('people');
+    s.push('review');
+    return s;
+  }, [requirements.needsProperty, requirements.personRoles.length]);
+
+  const persons: PersonLinkInput[] = useMemo(
+    () =>
+      Object.entries(personByRole)
+        .filter(([, id]) => id)
+        .map(([role, personId]) => ({ role, personId })),
+    [personByRole],
+  );
+
+  // Revalida en vivo al entrar a Revisión y al editar datos faltantes.
+  useEffect(() => {
+    if (step !== 'review' || !templateId) return;
+    const t = setTimeout(() => {
+      resolve.mutate({ templateId, propertyId: propertyId || null, persons, inputs });
+    }, 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, templateId, propertyId, persons, inputs]);
+
+  const result: ResolveResult | undefined = resolve.data;
+
+  const stepIndex = steps.indexOf(step);
+  const goNext = () => setStep(steps[Math.min(stepIndex + 1, steps.length - 1)]);
+  const goBack = () => {
+    if (stepIndex === 0) navigate('/documentos');
+    else setStep(steps[stepIndex - 1]);
+  };
+
+  const canAdvance = (): boolean => {
+    if (step === 'template') return !!templateId && !!template.data;
+    if (step === 'property') return !requirements.needsProperty || !!propertyId;
+    if (step === 'people') return requirements.personRoles.every((r) => personByRole[r]);
+    return false;
+  };
+
+  const handleCreate = async () => {
+    const doc = await create.mutateAsync({
+      templateId,
+      title: template.data?.name ?? '',
+      propertyId: propertyId || null,
+      persons,
+      inputs,
+      origin: 'manual',
+    });
+    navigate('/documentos', { state: { createdId: doc.id } });
+  };
+
+  const resolved = result?.fields.filter((f) => f.status === 'resolved') ?? [];
+  const needsUser = result?.fields.filter((f) => f.status === 'missing' || (f.source === 'input' && f.status === 'optional')) ?? [];
+  const warnings = result?.fields.filter((f) => f.status === 'warning') ?? [];
+
+  return (
+    <div className="vera-screen" data-testid="document-wizard">
+      <div className="vera-wizard__head">
+        <button type="button" className="vera-wizard__back" onClick={goBack} data-testid="wizard-back">
+          <ArrowLeft size={18} />
+        </button>
+        <div>
+          <h1 className="vera-wizard__title">Nuevo Documento</h1>
+          <p className="vera-wizard__sub">VERA completa lo que ya sabe; vos aportás lo que falta.</p>
+        </div>
+      </div>
+
+      {/* Progreso de pasos */}
+      <ol className="vera-wizard__steps" data-testid="wizard-steps">
+        {steps.map((s, i) => {
+          const label =
+            s === 'template' ? 'Template' : s === 'property' ? 'Propiedad' : s === 'people' ? 'Personas' : 'Revisión';
+          const state = i < stepIndex ? 'done' : i === stepIndex ? 'active' : 'pending';
+          return (
+            <li key={s} className={`vera-wizard__step is-${state}`} data-testid={`wizard-step-${s}`}>
+              <span className="vera-wizard__dot">{state === 'done' ? <Check size={14} /> : i + 1}</span>
+              {label}
+            </li>
+          );
+        })}
+      </ol>
+
+      {/* Paso 1: Template */}
+      {step === 'template' && (
+        <section className="vera-wizard__body" data-testid="step-template">
+          <h2 className="vera-wizard__h2"><Layers size={16} /> Elegí el tipo de documento</h2>
+          {templates.isLoading && <p className="vera-docs__empty">Cargando templates…</p>}
+          {templates.data?.length === 0 && (
+            <div className="vera-docs__empty" data-testid="templates-empty">
+              <Layers size={24} />
+              <p>Todavía no hay templates. Creá el primero desde la solapa Templates.</p>
+            </div>
+          )}
+          <div className="vera-wizard__cards">
+            {templates.data?.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`vera-wizard__card ${templateId === t.id ? 'is-selected' : ''}`}
+                onClick={() => setTemplateId(t.id)}
+                data-testid={`wizard-template-${t.id}`}
+              >
+                <FileText size={18} className="vera-wizard__card-icon" />
+                <span className="vera-wizard__card-title">{t.name}</span>
+                <span className="vera-wizard__card-meta">{t.category} · v{t.version}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Paso 2: Propiedad */}
+      {step === 'property' && (
+        <section className="vera-wizard__body" data-testid="step-property">
+          <h2 className="vera-wizard__h2"><Home size={16} /> Elegí la propiedad</h2>
+          {properties.isLoading && <p className="vera-docs__empty">Cargando propiedades…</p>}
+          <div className="vera-wizard__cards">
+            {properties.data?.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className={`vera-wizard__card ${propertyId === p.id ? 'is-selected' : ''}`}
+                onClick={() => setPropertyId(p.id)}
+                data-testid={`wizard-property-${p.id}`}
+              >
+                <Home size={18} className="vera-wizard__card-icon" />
+                <span className="vera-wizard__card-title">{p.title || p.address || 'Propiedad'}</span>
+                <span className="vera-wizard__card-meta">
+                  {[p.address, p.city].filter(Boolean).join(' · ')}
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Paso 3: Personas por rol */}
+      {step === 'people' && (
+        <section className="vera-wizard__body" data-testid="step-people">
+          <h2 className="vera-wizard__h2"><Users size={16} /> Asigná las personas</h2>
+          <p className="vera-wizard__hint">Este template necesita: {requirements.personRoles.map(roleLabel).join(', ')}.</p>
+          {requirements.personRoles.map((role) => (
+            <div key={role} className="vera-wizard__role" data-testid={`wizard-role-${role}`}>
+              <label className="vera-wizard__role-label">{roleLabel(role)}</label>
+              <select
+                className="vera-select"
+                value={personByRole[role] ?? ''}
+                onChange={(e) => setPersonByRole((prev) => ({ ...prev, [role]: e.target.value }))}
+                data-testid={`wizard-role-select-${role}`}
+              >
+                <option value="">Seleccioná una persona…</option>
+                {people.data?.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.fullName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {/* Paso 4: Revisión */}
+      {step === 'review' && (
+        <section className="vera-wizard__body" data-testid="step-review">
+          <h2 className="vera-wizard__h2"><CheckCircle2 size={16} /> Revisión</h2>
+          {resolve.isPending && !result && (
+            <p className="vera-docs__empty"><Loader2 size={16} className="vera-spin" /> Analizando datos…</p>
+          )}
+
+          {result && (
+            <>
+              {/* ✅ Completado por VERA */}
+              <div className="vera-review__group vera-review__group--ok" data-testid="review-resolved">
+                <h3 className="vera-review__title"><CheckCircle2 size={16} /> Completado por VERA</h3>
+                {resolved.length === 0 && <p className="vera-review__none">VERA todavía no pudo completar datos.</p>}
+                {resolved.map((f) => (
+                  <div key={f.key} className="vera-review__row" data-testid={`review-resolved-${f.key}`}>
+                    <span className="vera-review__label">{f.label}</span>
+                    <span className="vera-review__value">{String(f.value)}</span>
+                    <span className="vera-review__origin">{ORIGIN_LABEL[f.origin ?? ''] ?? '—'}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* ✏️ Requiere tu intervención */}
+              {needsUser.length > 0 && (
+                <div className="vera-review__group vera-review__group--edit" data-testid="review-missing">
+                  <h3 className="vera-review__title"><PencilLine size={16} /> Requiere tu intervención</h3>
+                  {needsUser.map((f) => (
+                    <Input
+                      key={f.key}
+                      label={`${f.label}${f.required ? ' *' : ' (opcional)'}`}
+                      value={inputs[f.key] ?? ''}
+                      onChange={(e) => setInputs((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                      placeholder={f.required ? 'Dato obligatorio' : 'Opcional'}
+                      data-testid={`review-input-${f.key}`}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* ⚠️ Advertencias */}
+              {warnings.length > 0 && (
+                <div className="vera-review__group vera-review__group--warn" data-testid="review-warnings">
+                  <h3 className="vera-review__title"><TriangleAlert size={16} /> Advertencias</h3>
+                  <p className="vera-review__none">
+                    VERA no pudo completar estos datos (no son obligatorios). Podés cargarlos igual.
+                  </p>
+                  {warnings.map((f) => (
+                    <Input
+                      key={f.key}
+                      label={f.label}
+                      value={inputs[f.key] ?? ''}
+                      onChange={(e) => setInputs((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                      placeholder="Opcional"
+                      data-testid={`review-warning-${f.key}`}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {create.isError && (
+                <p className="vera-field__error" data-testid="wizard-create-error">
+                  {(create.error as Error)?.message ?? 'No se pudo crear el documento.'}
+                </p>
+              )}
+            </>
+          )}
+        </section>
+      )}
+
+      {/* Navegación */}
+      <div className="vera-wizard__nav">
+        <Button variant="ghost" onClick={goBack} data-testid="wizard-nav-back">
+          <ArrowLeft size={16} /> {stepIndex === 0 ? 'Cancelar' : 'Atrás'}
+        </Button>
+        {step === 'review' ? (
+          <Button
+            onClick={handleCreate}
+            disabled={!result?.ready || create.isPending}
+            data-testid="wizard-create"
+          >
+            {create.isPending ? <Loader2 size={16} className="vera-spin" /> : <Check size={16} />} Crear documento
+          </Button>
+        ) : (
+          <Button onClick={goNext} disabled={!canAdvance()} data-testid="wizard-next">
+            Siguiente <ArrowRight size={16} />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default DocumentWizard;

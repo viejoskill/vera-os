@@ -14,6 +14,7 @@ from documents.models import (
     CreateTemplateRequest,
     NewTemplateVersionRequest,
     RelationshipInput,
+    ResolveRequest,
     SignatureInput,
     TransitionRequest,
     UpdateDocumentRequest,
@@ -87,6 +88,13 @@ async def list_documents(status: Optional[str] = None, templateKey: Optional[str
         status=status, template_key=templateKey, entity_type=entityType, entity_id=entityId,
     )
     return [to_api_document(r) for r in rows]
+
+
+@router.post("/resolve")
+async def resolve_document(body: ResolveRequest):
+    """Previsualiza qué completa VERA y qué falta, SIN crear el documento."""
+    _ensure()
+    return await service.resolve_document(body.model_dump())
 
 
 @router.post("", status_code=201)

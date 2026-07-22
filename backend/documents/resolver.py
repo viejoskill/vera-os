@@ -1,8 +1,9 @@
 """Resolución automática de variables de un documento.
 
 VERA completa la información desde las entidades existentes (Personas, Propiedades,
-sistema) — NO se duplica lo que ya existe. Devuelve qué se resolvió y qué datos
-obligatorios faltan para poder crear el documento.
+sistema) — NO se duplica lo que ya existe. Devuelve, por variable, qué se resolvió
+(y desde dónde), qué datos OBLIGATORIOS faltan (requieren al usuario) y qué datos
+opcionales no se pudieron completar (advertencias, no bloquean la creación).
 """
 from datetime import date
 
@@ -24,6 +25,8 @@ _PROPERTY_PATHS = {
     "code": "codigo", "codigo": "codigo",
 }
 
+_EMPTY = (None, "", [])
+
 
 def requirements(template: dict) -> dict:
     """Qué necesita el template según sus variables."""
@@ -41,8 +44,15 @@ def requirements(template: dict) -> dict:
 
 async def resolve(template: dict, property_id: str | None,
                   persons: list[dict], inputs: dict) -> dict:
-    """Resuelve cada variable del template. `persons` = [{personId, role}]."""
+    """Resuelve cada variable del template. `persons` = [{personId, role}].
+
+    Devuelve tres categorías para la Revisión del wizard:
+      - `resolved`  → ✅ lo que VERA completó (origen: property/person/system/input)
+      - `missing`   → ✏️ obligatorios sin valor (requieren intervención del usuario)
+      - `warnings`  → ⚠️ opcionales que VERA no pudo completar (no bloquean)
+    """
     variables = template.get("variables") or []
+    inputs = inputs or {}
     prop = await property_repository.get(property_id) if property_id else None
 
     # Persona por rol (una por rol; el rol es el vínculo con el documento).
@@ -54,27 +64,62 @@ async def resolve(template: dict, property_id: str | None,
 
     resolved: dict = {}
     missing: list[str] = []
+    warnings: list[str] = []
+    fields: list[dict] = []
+
     for v in variables:
         key, source, path = v["key"], v.get("source", "input"), v.get("path")
+        required = bool(v.get("required"))
         value = None
+        origin = None
+
         if source == "system":
-            value = date.today().isoformat() if key in ("date", "today") else None
-        elif source == "input":
-            value = (inputs or {}).get(key)
-        elif source == "property" and prop:
-            value = prop.get(_PROPERTY_PATHS.get(path, path)) if path else None
+            if key in ("date", "today"):
+                value, origin = date.today().isoformat(), "system"
+        elif source == "property" and prop and path:
+            raw = prop.get(_PROPERTY_PATHS.get(path, path))
+            if raw not in _EMPTY:
+                value, origin = raw, "property"
         elif source == "person":
             person = persons_by_role.get(v.get("role"))
             if person and path:
-                value = person.get(_PERSON_PATHS.get(path, path))
-        if value not in (None, "", []):
+                raw = person.get(_PERSON_PATHS.get(path, path))
+                if raw not in _EMPTY:
+                    value, origin = raw, "person"
+
+        # Un valor tipeado por el usuario (override) siempre puede completar / corregir.
+        if value in _EMPTY and inputs.get(key) not in _EMPTY:
+            value, origin = inputs[key], "input"
+
+        if value not in _EMPTY:
             resolved[key] = value
-        elif v.get("required"):
+            status = "resolved"
+        elif required:
             missing.append(key)
+            status = "missing"
+        elif source in ("property", "person", "system"):
+            warnings.append(key)
+            status = "warning"
+        else:
+            status = "optional"
+
+        fields.append({
+            "key": key,
+            "label": v.get("label", key),
+            "type": v.get("type", "text"),
+            "source": source,
+            "role": v.get("role"),
+            "required": required,
+            "value": value,
+            "origin": origin,
+            "status": status,
+        })
 
     return {
         "requirements": requirements(template),
         "resolved": resolved,
         "missing": missing,
+        "warnings": warnings,
+        "fields": fields,
         "ready": len(missing) == 0,
     }

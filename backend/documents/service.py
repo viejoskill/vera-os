@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 from fastapi import HTTPException
 
-from documents import events
+from documents import events, resolver
 from documents.models import (
     DOCUMENT_TRANSITIONS,
     ENTITY_TYPES,
