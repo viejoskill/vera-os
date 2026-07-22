@@ -15,12 +15,15 @@ from documents.models import (
     NewTemplateVersionRequest,
     RelationshipInput,
     ResolveRequest,
+    SendSignatureRequest,
+    SetSignatureMethodRequest,
     SignatureInput,
     TransitionRequest,
     UpdateDocumentRequest,
     UpdateSignatureRequest,
     UpdateTemplateRequest,
     to_api_document,
+    to_api_participant,
     to_api_relationship,
     to_api_signature,
     to_api_template,
@@ -165,3 +168,23 @@ async def add_signature(document_id: str, body: SignatureInput):
 async def update_signature(document_id: str, sig_id: str, body: UpdateSignatureRequest):
     _ensure()
     return to_api_signature(await service.update_signature(document_id, sig_id, body.status))
+
+
+# ============================ Motor de firmas ============================== #
+@router.get("/{document_id}/participants")
+async def list_participants(document_id: str):
+    _ensure()
+    return [to_api_participant(p) for p in await service.list_participants(document_id)]
+
+
+@router.patch("/{document_id}/signature-method")
+async def set_signature_method(document_id: str, body: SetSignatureMethodRequest):
+    _ensure()
+    return to_api_document(await service.set_signature_method(document_id, body.signature_method))
+
+
+@router.post("/{document_id}/participants/{participant_id}/send")
+async def send_signature(document_id: str, participant_id: str, body: SendSignatureRequest):
+    """Genera el enlace seguro de firma y arma el envío por canal (whatsapp|email|link)."""
+    _ensure()
+    return await service.send_signature(document_id, participant_id, body.channel, body.base_url)

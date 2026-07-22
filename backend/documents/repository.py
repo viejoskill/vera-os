@@ -15,6 +15,7 @@ TABLE_TEMPLATES = "document_templates"
 TABLE_DOCUMENTS = "documents"
 TABLE_RELATIONSHIPS = "document_relationships"
 TABLE_SIGNATURES = "document_signatures"
+TABLE_PARTICIPANTS = "document_participants"
 
 
 def _now() -> str:
@@ -155,7 +156,45 @@ class SignatureRepository:
         return rows[0] if rows else None
 
 
+# --- Participants (motor de firmas) ----------------------------------------- #
+class ParticipantRepository:
+    async def list(self, document_id: str) -> list[dict]:
+        def _do():
+            return (_c().table(TABLE_PARTICIPANTS).select("*").eq("document_id", document_id)
+                    .order("order").order("created_at").execute())
+        return (await asyncio.to_thread(_do)).data or []
+
+    async def get(self, participant_id: str) -> Optional[dict]:
+        def _do():
+            return (_c().table(TABLE_PARTICIPANTS).select("*")
+                    .eq("id", participant_id).limit(1).execute())
+        rows = (await asyncio.to_thread(_do)).data or []
+        return rows[0] if rows else None
+
+    async def find_by_token(self, token: str) -> Optional[dict]:
+        def _do():
+            return (_c().table(TABLE_PARTICIPANTS).select("*")
+                    .eq("sign_token", token).limit(1).execute())
+        rows = (await asyncio.to_thread(_do)).data or []
+        return rows[0] if rows else None
+
+    async def insert_many(self, rows: list[dict]) -> list[dict]:
+        if not rows:
+            return []
+        def _do():
+            return _c().table(TABLE_PARTICIPANTS).insert(rows).execute()
+        return (await asyncio.to_thread(_do)).data or []
+
+    async def update(self, participant_id: str, patch: dict) -> Optional[dict]:
+        patch = {**patch, "updated_at": _now()}
+        def _do():
+            return _c().table(TABLE_PARTICIPANTS).update(patch).eq("id", participant_id).execute()
+        rows = (await asyncio.to_thread(_do)).data or []
+        return rows[0] if rows else None
+
+
 template_repository = TemplateRepository()
 document_repository = DocumentRepository()
 relationship_repository = RelationshipRepository()
 signature_repository = SignatureRepository()
+participant_repository = ParticipantRepository()

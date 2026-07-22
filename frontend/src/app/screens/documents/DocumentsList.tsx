@@ -1,4 +1,5 @@
 import { FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Badge } from '@vera/ui';
 import { useDocuments } from './useDocuments';
 
@@ -8,6 +9,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 export const DocumentsList = () => {
   const { data = [], isLoading, isError } = useDocuments();
+  const navigate = useNavigate();
 
   if (isLoading) return <p className="vera-docs__empty">Cargando documentos…</p>;
   if (isError)
@@ -28,14 +30,20 @@ export const DocumentsList = () => {
   return (
     <div className="vera-docs__list" data-testid="documents-list">
       {data.map((d) => (
-        <div key={d.id} className="vera-docs__row" data-testid={`document-${d.id}`}>
+        <button
+          type="button"
+          key={d.id}
+          className="vera-docs__row vera-docs__row--btn"
+          onClick={() => navigate(`/documentos/${d.id}`)}
+          data-testid={`document-${d.id}`}
+        >
           <span className="vera-docs__icon"><FileText size={16} /></span>
           <div className="vera-docs__main">
             <span className="vera-docs__name">{d.title || 'Documento'} {d.number ? `#${d.number}` : ''}</span>
             <span className="vera-docs__meta">{d.category} · {d.templateKey} v{d.templateVersion}</span>
           </div>
           <Badge tone="muted">{STATUS_LABEL[d.status] ?? d.status}</Badge>
-        </div>
+        </button>
       ))}
     </div>
   );

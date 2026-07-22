@@ -6900,3 +6900,118 @@ p {
   border: 1px solid var(--vera-color-border);
   white-space: nowrap;
 }
+/* ===== Documentos · Firmantes en wizard ===== */
+.vera-docs__row--btn { width: 100%; text-align: left; cursor: pointer; background: var(--vera-color-cards); font: inherit; }
+.vera-docs__row--btn:hover { border-color: var(--vera-color-primary); }
+
+.vera-wizard__signers { display: flex; flex-direction: column; gap: var(--vera-space-xs); margin-top: var(--vera-space-md); }
+.vera-wizard__signer {
+  display: flex; align-items: center; gap: var(--vera-space-sm);
+  padding: 10px 12px; border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md); background: var(--vera-color-cards); cursor: pointer;
+}
+.vera-wizard__signer input { accent-color: var(--vera-color-primary); }
+.vera-wizard__signer-name { font-weight: var(--vera-font-weight-medium); color: var(--vera-color-text); }
+.vera-wizard__signer-role { margin-left: auto; font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); }
+
+/* ===== Documento · Detalle (centro de operaciones) ===== */
+.vera-detail__grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: var(--vera-space-lg); }
+@media (max-width: 900px) { .vera-detail__grid { grid-template-columns: 1fr; } }
+.vera-detail__col { display: flex; flex-direction: column; gap: var(--vera-space-lg); }
+.vera-detail__card {
+  border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-lg);
+  background: var(--vera-color-cards); padding: var(--vera-space-lg);
+  display: flex; flex-direction: column; gap: var(--vera-space-md);
+}
+.vera-detail__stat { display: flex; align-items: center; justify-content: space-between; }
+.vera-detail__stat-label { color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-sm); }
+.vera-detail__muted { color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-sm); }
+.vera-detail__method-pick { display: flex; gap: var(--vera-space-xs); }
+.vera-detail__action-row { display: flex; align-items: center; gap: var(--vera-space-sm); }
+.vera-badge-soon {
+  font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary);
+  border: 1px solid var(--vera-color-border); border-radius: 999px; padding: 2px 8px;
+}
+
+.vera-chip {
+  font: inherit; font-size: var(--vera-font-size-sm); cursor: pointer;
+  padding: 6px 12px; border-radius: 999px; border: 1px solid var(--vera-color-border);
+  background: var(--vera-color-surface); color: var(--vera-color-text);
+  transition: border-color 200ms ease, background-color 200ms ease;
+}
+.vera-chip:hover { border-color: var(--vera-color-primary); }
+.vera-chip.is-on { background: var(--vera-color-primary); color: var(--vera-color-primary-foreground); border-color: var(--vera-color-primary); }
+.vera-chip:disabled { opacity: 0.5; cursor: default; }
+
+.vera-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: var(--vera-radius-md);
+  border: 1px solid var(--vera-color-border); background: var(--vera-color-surface);
+  color: var(--vera-color-text-secondary); cursor: pointer;
+  transition: border-color 200ms ease, color 200ms ease;
+}
+.vera-icon-btn:hover { border-color: var(--vera-color-primary); color: var(--vera-color-primary); }
+
+.vera-sig-row { display: flex; align-items: center; gap: var(--vera-space-sm); padding: 8px 0; border-top: 1px solid var(--vera-color-border); }
+.vera-sig-row__ic { display: inline-flex; }
+.vera-sig-row__main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.vera-sig-row__name { font-weight: var(--vera-font-weight-medium); color: var(--vera-color-text); }
+.vera-sig-row__meta { font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); }
+.vera-sig-row__actions { display: flex; gap: 6px; }
+.vera-sig-ic--ok { color: #35c47f; }
+.vera-sig-ic--bad { color: #e5484d; }
+.vera-sig-ic--wait { color: #e0a63a; }
+.vera-sig-ic--muted { color: var(--vera-color-text-secondary); }
+
+.vera-timeline { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; }
+.vera-timeline__item { display: flex; gap: var(--vera-space-sm); padding: 8px 0; }
+.vera-timeline__dot { width: 10px; height: 10px; border-radius: 999px; background: var(--vera-color-primary); margin-top: 5px; flex-shrink: 0; }
+.vera-timeline__label { display: block; color: var(--vera-color-text); font-size: var(--vera-font-size-sm); }
+.vera-timeline__at { display: block; color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-xs); }
+
+.vera-flash {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--vera-color-primary); color: var(--vera-color-primary-foreground);
+  padding: 10px 18px; border-radius: 999px; font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-medium); z-index: 60; box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+/* ===== Pantalla pública de firma ===== */
+.vera-sign {
+  min-height: 100vh; background: var(--vera-color-background);
+  display: flex; align-items: center; justify-content: center; padding: var(--vera-space-lg);
+}
+.vera-sign__card {
+  width: 100%; max-width: 560px; background: var(--vera-color-cards);
+  border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-lg);
+  padding: var(--vera-space-2xl); display: flex; flex-direction: column; gap: var(--vera-space-md);
+}
+.vera-sign__brand { display: inline-flex; align-items: center; gap: 8px; color: var(--vera-color-primary); font-weight: var(--vera-font-weight-semibold); }
+.vera-sign__title { font-size: var(--vera-font-size-xl); font-weight: var(--vera-font-weight-semibold); color: var(--vera-color-text); }
+.vera-sign__who { color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-sm); }
+.vera-sign__muted { color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-sm); }
+.vera-sign__state { display: flex; flex-direction: column; align-items: center; gap: var(--vera-space-sm); text-align: center; padding: var(--vera-space-lg) 0; }
+.vera-sign__doc {
+  background: #fff; color: #111; border-radius: var(--vera-radius-md);
+  padding: var(--vera-space-lg); max-height: 260px; overflow-y: auto;
+  font-size: 14px; line-height: 1.6; display: flex; flex-direction: column; gap: 10px;
+}
+.vera-sign__modes { display: flex; gap: var(--vera-space-xs); }
+.vera-sign__field { display: flex; flex-direction: column; gap: 6px; font-size: var(--vera-font-size-sm); color: var(--vera-color-text-secondary); }
+.vera-sign__field input {
+  padding: 10px 12px; border-radius: var(--vera-radius-md);
+  border: 1px solid var(--vera-color-border); background: var(--vera-color-surface); color: var(--vera-color-text);
+}
+.vera-sign__pad { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.vera-sign__pad canvas { width: 100%; max-width: 520px; height: 180px; background: #fff; border-radius: var(--vera-radius-md); touch-action: none; cursor: crosshair; }
+.vera-sign__cert { display: inline-flex; align-items: center; gap: 6px; color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-xs); }
+.vera-sign__actions { display: flex; gap: var(--vera-space-sm); margin-top: var(--vera-space-sm); }
+.vera-sign__btn {
+  font: inherit; font-weight: var(--vera-font-weight-medium); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: var(--vera-radius-md);
+  border: 1px solid var(--vera-color-border); transition: opacity 200ms ease, background-color 200ms ease;
+}
+.vera-sign__btn--primary { background: var(--vera-color-primary); color: var(--vera-color-primary-foreground); border-color: var(--vera-color-primary); flex: 1; justify-content: center; }
+.vera-sign__btn--ghost { background: transparent; color: var(--vera-color-text-secondary); }
+.vera-sign__btn:disabled { opacity: 0.5; cursor: default; }
+

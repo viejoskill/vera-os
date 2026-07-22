@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, ArrowRight, Check, CheckCircle2, FileText, Home, Layers,
-  Loader2, PencilLine, TriangleAlert, Users,
+  Loader2, PencilLine, PenLine, TriangleAlert, Users,
 } from 'lucide-react';
 import { Button, Input } from '@vera/ui';
 import { PERSON_ROLE_LABELS } from '@vera/types';
@@ -13,10 +13,16 @@ import {
   type PersonLinkInput, type ResolveResult,
 } from './useDocuments';
 
-type Step = 'template' | 'property' | 'people' | 'review';
+type Step = 'template' | 'property' | 'people' | 'signature' | 'review';
 
 const ORIGIN_LABEL: Record<string, string> = {
   property: 'Propiedad', person: 'Persona', system: 'Configuración', input: 'Ingresado por vos',
+};
+
+const METHOD_LABEL: Record<string, string> = { presencial: 'Presencial', digital: 'Digital' };
+const METHOD_HINT: Record<string, string> = {
+  presencial: 'Se firma en persona: papel, en pantalla o firma escaneada.',
+  digital: 'Se firma a distancia desde un enlace seguro (certificación VERA).',
 };
 
 function roleLabel(role: string): string {
@@ -33,6 +39,8 @@ export const DocumentWizard = () => {
   const [propertyId, setPropertyId] = useState<string>('');
   const [personByRole, setPersonByRole] = useState<Record<string, string>>({});
   const [inputs, setInputs] = useState<Record<string, string>>({});
+  const [signatureMethod, setSignatureMethod] = useState<string>('');
+  const [signerRequired, setSignerRequired] = useState<Record<string, boolean>>({});
 
   const templates = useTemplates();
   const template = useTemplate(templateId || undefined);
@@ -54,14 +62,17 @@ export const DocumentWizard = () => {
       }
     : { needsProperty: false, personRoles: [] as string[] };
 
+  const signatureMethods = template.data?.signatureMethods ?? [];
+
   // Pasos activos según lo que el template pide (extensible por definición).
   const steps = useMemo<Step[]>(() => {
     const s: Step[] = ['template'];
     if (requirements.needsProperty) s.push('property');
     if (requirements.personRoles.length) s.push('people');
+    if (signatureMethods.length) s.push('signature');
     s.push('review');
     return s;
-  }, [requirements.needsProperty, requirements.personRoles.length]);
+  }, [requirements.needsProperty, requirements.personRoles.length, signatureMethods.length]);
 
   const persons: PersonLinkInput[] = useMemo(
     () =>
@@ -94,10 +105,19 @@ export const DocumentWizard = () => {
     if (step === 'template') return !!templateId && !!template.data;
     if (step === 'property') return !requirements.needsProperty || !!propertyId;
     if (step === 'people') return requirements.personRoles.every((r) => personByRole[r]);
+    if (step === 'signature') return !!signatureMethod;
     return false;
   };
 
   const handleCreate = async () => {
+    const signers = signatureMethod
+      ? persons.map((p, i) => ({
+          personId: p.personId,
+          role: p.role,
+          order: i,
+          signatureRequired: signerRequired[p.personId] ?? true,
+        }))
+      : [];
     const doc = await create.mutateAsync({
       templateId,
       title: template.data?.name ?? '',
@@ -105,8 +125,10 @@ export const DocumentWizard = () => {
       persons,
       inputs,
       origin: 'manual',
+      signatureMethod: signatureMethod || null,
+      signers,
     });
-    navigate('/documentos', { state: { createdId: doc.id } });
+    navigate(`/documentos/${doc.id}`);
   };
 
   const resolved = result?.fields.filter((f) => f.status === 'resolved') ?? [];
@@ -129,7 +151,11 @@ export const DocumentWizard = () => {
       <ol className="vera-wizard__steps" data-testid="wizard-steps">
         {steps.map((s, i) => {
           const label =
-            s === 'template' ? 'Template' : s === 'property' ? 'Propiedad' : s === 'people' ? 'Personas' : 'Revisión';
+            s === 'template' ? 'Template'
+            : s === 'property' ? 'Propiedad'
+            : s === 'people' ? 'Personas'
+            : s === 'signature' ? 'Firma'
+            : 'Revisión';
           const state = i < stepIndex ? 'done' : i === stepIndex ? 'active' : 'pending';
           return (
             <li key={s} className={`vera-wizard__step is-${state}`} data-testid={`wizard-step-${s}`}>
@@ -220,7 +246,49 @@ export const DocumentWizard = () => {
         </section>
       )}
 
-      {/* Paso 4: Revisión */}
+      {/* Paso 4: Firma (método permitido por el template) */}
+      {step === 'signature' && (
+        <section className="vera-wizard__body" data-testid="step-signature">
+          <h2 className="vera-wizard__h2"><PenLine size={16} /> Método de firma</h2>
+          <p className="vera-wizard__hint">Este template permite: {signatureMethods.map((m) => METHOD_LABEL[m] ?? m).join(', ')}.</p>
+          <div className="vera-wizard__cards">
+            {signatureMethods.map((m) => (
+              <button
+                key={m}
+                type="button"
+                className={`vera-wizard__card ${signatureMethod === m ? 'is-selected' : ''}`}
+                onClick={() => setSignatureMethod(m)}
+                data-testid={`wizard-method-${m}`}
+              >
+                <PenLine size={18} className="vera-wizard__card-icon" />
+                <span className="vera-wizard__card-title">{METHOD_LABEL[m] ?? m}</span>
+                <span className="vera-wizard__card-meta">{METHOD_HINT[m] ?? ''}</span>
+              </button>
+            ))}
+          </div>
+
+          {persons.length > 0 && (
+            <div className="vera-wizard__signers" data-testid="wizard-signers">
+              <h3 className="vera-review__title"><Users size={16} /> Firmantes</h3>
+              {persons.map((p, i) => (
+                <label key={p.personId} className="vera-wizard__signer" data-testid={`wizard-signer-${p.personId}`}>
+                  <input
+                    type="checkbox"
+                    checked={signerRequired[p.personId] ?? true}
+                    onChange={(e) => setSignerRequired((prev) => ({ ...prev, [p.personId]: e.target.checked }))}
+                  />
+                  <span className="vera-wizard__signer-name">
+                    {people.data?.find((x) => x.id === p.personId)?.fullName ?? 'Persona'}
+                  </span>
+                  <span className="vera-wizard__signer-role">{roleLabel(p.role ?? '')} · #{i + 1}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Paso 5: Revisión */}
       {step === 'review' && (
         <section className="vera-wizard__body" data-testid="step-review">
           <h2 className="vera-wizard__h2"><CheckCircle2 size={16} /> Revisión</h2>

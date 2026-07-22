@@ -21,6 +21,13 @@ SIGNATURE_REQUESTED = "document.signature.requested"
 SIGNATURE_SIGNED = "document.signature.signed"
 SIGNATURE_REJECTED = "document.signature.rejected"
 
+# Motor de firmas — eventos por PARTICIPANTE (append-only en el ledger).
+METHOD_SET = "document.signature.method_set"
+PARTICIPANT_SENT = "document.participant.sent"
+PARTICIPANT_VIEWED = "document.participant.viewed"
+PARTICIPANT_SIGNED = "document.participant.signed"
+PARTICIPANT_REJECTED = "document.participant.rejected"
+
 # Estado del documento → tipo de evento de ciclo de vida.
 LIFECYCLE_EVENT = {
     "generated": GENERATED,

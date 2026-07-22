@@ -33,6 +33,16 @@ async function apiPost<T>(path: string, body: unknown): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+async function apiPatch<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`${res.status}`);
+  return res.json() as Promise<T>;
+}
+
 export interface TemplateRow {
   id: string;
   templateKey: string;
@@ -56,6 +66,7 @@ export interface TemplateVariable {
 export interface TemplateDetail extends TemplateRow {
   description: string;
   variables: TemplateVariable[];
+  signatureMethods: string[];
   body?: unknown;
 }
 
@@ -105,6 +116,54 @@ export interface CreateDocumentPayload {
   persons: PersonLinkInput[];
   inputs: Record<string, unknown>;
   origin?: string;
+  signatureMethod?: string | null;
+  signers?: { personId: string; role?: string | null; signatureRequired?: boolean; order?: number }[];
+}
+
+export interface DocumentParticipant {
+  id: string;
+  documentId: string;
+  personId?: string | null;
+  personName?: string | null;
+  role?: string | null;
+  signatureRequired: boolean;
+  signatureStatus: 'pending' | 'sent' | 'viewed' | 'signed' | 'rejected' | 'expired';
+  signatureMethod?: string | null;
+  order?: number | null;
+  sentAt?: string | null;
+  viewedAt?: string | null;
+  signedAt?: string | null;
+  rejectedAt?: string | null;
+}
+
+export interface DocumentDetail extends DocumentRow {
+  templateId: string;
+  signatureMethod?: string | null;
+  signatureState: 'none' | 'pending' | 'in_progress' | 'signed' | 'rejected';
+  templateSnapshot?: { signatureMethods?: string[]; body?: unknown };
+  lockedAt?: string | null;
+  participants: DocumentParticipant[];
+  relationships: { id: string; entityType: string; entityId: string; role?: string | null }[];
+}
+
+export interface DocumentEvent {
+  id?: string;
+  type: string;
+  createdAt?: string;
+  occurredAt?: string;
+  payload?: Record<string, unknown>;
+}
+
+export interface SendPayload {
+  channel: 'whatsapp' | 'email' | 'link';
+  baseUrl: string;
+}
+export interface SendResult {
+  channel: string;
+  url: string;
+  message: string;
+  whatsappUrl?: string;
+  mailtoUrl?: string;
 }
 
 export function useTemplates() {
@@ -123,6 +182,22 @@ export function useDocuments() {
   return useQuery({ queryKey: ['documents', 'list'], queryFn: () => apiGet<DocumentRow[]>('') });
 }
 
+export function useDocument(id: string | undefined) {
+  return useQuery({
+    queryKey: ['documents', 'detail', id],
+    queryFn: () => apiGet<DocumentDetail>(`/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useDocumentHistory(id: string | undefined) {
+  return useQuery({
+    queryKey: ['documents', 'history', id],
+    queryFn: () => apiGet<DocumentEvent[]>(`/${id}/history`),
+    enabled: !!id,
+  });
+}
+
 export function useResolveDocument() {
   return useMutation({
     mutationFn: (payload: Omit<CreateDocumentPayload, 'title' | 'origin'>) =>
@@ -135,5 +210,26 @@ export function useCreateDocument() {
   return useMutation({
     mutationFn: (payload: CreateDocumentPayload) => apiPost<DocumentRow>('', payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['documents'] }),
+  });
+}
+
+export function useSetSignatureMethod(documentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (signatureMethod: string) =>
+      apiPatch<DocumentDetail>(`/${documentId}/signature-method`, { signatureMethod }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['documents', 'detail', documentId] }),
+  });
+}
+
+export function useSendSignature(documentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ participantId, ...payload }: SendPayload & { participantId: string }) =>
+      apiPost<SendResult>(`/${documentId}/participants/${participantId}/send`, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents', 'detail', documentId] });
+      queryClient.invalidateQueries({ queryKey: ['documents', 'history', documentId] });
+    },
   });
 }

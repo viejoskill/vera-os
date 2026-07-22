@@ -9,18 +9,23 @@ from datetime import datetime, timezone
 
 from fastapi import HTTPException
 
-from documents import events, resolver
+from documents import events, resolver, signatures
 from documents.models import (
     DOCUMENT_TRANSITIONS,
     ENTITY_TYPES,
+    PARTICIPANT_TRANSITIONS,
+    SIGNATURE_METHODS,
     TEMPLATE_CATEGORIES,
+    signature_state,
 )
 from documents.repository import (
     document_repository,
+    participant_repository,
     relationship_repository,
     signature_repository,
     template_repository,
 )
+from people.repository import people_repository
 
 
 def _now() -> str:
@@ -87,7 +92,22 @@ def _hash_document(document: dict) -> str:
 async def _hydrate(document: dict) -> dict:
     document["relationships"] = await relationship_repository.list(document["id"])
     document["signatures"] = await signature_repository.list(document["id"])
+    try:
+        participants = await participant_repository.list(document["id"])
+    except Exception:  # noqa: BLE001 — tabla document_participants aún sin migrar
+        participants = []
+    document["participants"] = await _hydrate_participants(participants)
+    document["signature_state"] = signature_state(document["participants"])
     return document
+
+
+async def _hydrate_participants(participants: list[dict]) -> list[dict]:
+    """Completa `person_name` desde el repositorio de Personas (para la UI)."""
+    for p in participants:
+        if p.get("person_id"):
+            person = await people_repository.get(p["person_id"])
+            p["person_name"] = person.get("full_name") if person else None
+    return participants
 
 
 async def resolve_document(data: dict) -> dict:
@@ -104,6 +124,7 @@ async def create_document(data: dict) -> dict:
     template = await template_repository.get(data["template_id"])
     if template is None:
         raise HTTPException(404, "Template no encontrado")
+    _validate_signature_method(template, data.get("signature_method"))
 
     # Relaciones desde el wizard (property + persons con rol) y/o explícitas.
     rels: list[dict] = []
@@ -135,6 +156,7 @@ async def create_document(data: dict) -> dict:
         "name": template["name"],
         "version": template["version"],
         "variables": template.get("variables", []),
+        "signatureMethods": template.get("signature_methods", []),
         "body": template.get("body"),
     }
     row = {
@@ -151,6 +173,8 @@ async def create_document(data: dict) -> dict:
         "created_by": data.get("created_by"),
         "last_modified_by": data.get("created_by"),
     }
+    if data.get("signature_method"):
+        row["signature_method"] = data["signature_method"]
     document = await document_repository.insert(row)
 
     await relationship_repository.insert_many([{
@@ -167,8 +191,46 @@ async def create_document(data: dict) -> dict:
     } for s in (data.get("signatures") or [])]
     await signature_repository.insert_many(sig_rows)
 
+    # Motor de firmas: participantes (paso "Firma" del wizard). Si hay método y no
+    # se detallan firmantes, se derivan de las personas (todos obligatorios, en orden).
+    await _create_participants(document, data)
+
     await events.record(events.CREATED, document, actor=data.get("created_by"))
     return await _hydrate(document)
+
+
+def _validate_signature_method(template: dict, method: str | None) -> None:
+    if method is None:
+        return
+    if method not in SIGNATURE_METHODS:
+        raise HTTPException(422, f"signatureMethod inválido. Válidos: {SIGNATURE_METHODS}")
+    allowed = template.get("signature_methods") or []
+    if allowed and method not in allowed:
+        raise HTTPException(422, f"El template no permite firma '{method}'. Permitidos: {allowed}")
+
+
+async def _create_participants(document: dict, data: dict) -> None:
+    method = data.get("signature_method")
+    if not method:
+        return
+    signers = data.get("signers") or []
+    if not signers:
+        # Derivar de las personas seleccionadas, en orden de selección.
+        signers = [
+            {"person_id": p["person_id"], "role": p.get("role"),
+             "signature_required": True, "order": i}
+            for i, p in enumerate(data.get("persons") or [])
+        ]
+    rows = [{
+        "document_id": document["id"],
+        "person_id": s.get("person_id"),
+        "role": s.get("role"),
+        "signature_required": s.get("signature_required", True),
+        "signature_method": s.get("signature_method") or method,
+        "order": s.get("order") if s.get("order") is not None else i,
+        "signature_status": "pending",
+    } for i, s in enumerate(signers)]
+    await participant_repository.insert_many(rows)
 
 
 async def list_documents(**filters) -> list[dict]:
@@ -270,3 +332,164 @@ async def update_signature(document_id: str, sig_id: str, status: str) -> dict:
     if updated is None:
         raise HTTPException(404, "Firma no encontrada")
     return updated
+
+
+
+# ========================= Motor de firmas (participantes) ================= #
+async def list_participants(document_id: str) -> list[dict]:
+    if await document_repository.get(document_id) is None:
+        raise HTTPException(404, "Documento no encontrado")
+    return await _hydrate_participants(await participant_repository.list(document_id))
+
+
+async def set_signature_method(document_id: str, method: str, actor: str | None = None) -> dict:
+    document = await document_repository.get(document_id)
+    if document is None:
+        raise HTTPException(404, "Documento no encontrado")
+    if document.get("locked_at"):
+        raise HTTPException(409, "El documento está firmado: no se puede cambiar el método.")
+    template = await template_repository.get(document["template_id"])
+    _validate_signature_method(template or {}, method)
+    document = await document_repository.update(document_id, {"signature_method": method})
+    # El método del documento se propaga a participantes que aún no eligieron uno.
+    for p in await participant_repository.list(document_id):
+        if not p.get("signature_method"):
+            await participant_repository.update(p["id"], {"signature_method": method})
+    await events.record(events.METHOD_SET, document, actor=actor, extra={"signatureMethod": method})
+    return await _hydrate(document)
+
+
+def _check_participant_transition(current: str, target: str) -> None:
+    if target not in PARTICIPANT_TRANSITIONS.get(current, set()):
+        raise HTTPException(422, f"Transición de firma inválida: {current} → {target}")
+
+
+async def send_signature(document_id: str, participant_id: str, channel: str,
+                         base_url: str, actor: str | None = None) -> dict:
+    """Genera (o refresca) el token del participante y arma el envío por canal.
+
+    Todos los canales usan EL MISMO token de firma. VERA no envía sola: devuelve
+    el enlace + mensaje sugerido para que el usuario lo comparta.
+    """
+    document = await document_repository.get(document_id)
+    if document is None:
+        raise HTTPException(404, "Documento no encontrado")
+    participant = await participant_repository.get(participant_id)
+    if participant is None or participant["document_id"] != document_id:
+        raise HTTPException(404, "Participante no encontrado")
+    if participant.get("signature_status") == "signed":
+        raise HTTPException(409, "El participante ya firmó.")
+
+    token = signatures.new_token()
+    await participant_repository.update(participant_id, {
+        "sign_token": token,
+        "expires_at": signatures.token_expiry(),
+        "signature_status": "sent",
+        "sent_at": _now(),
+    })
+    # Enviar mueve el documento a "compartido" (evento de ciclo de vida).
+    if document.get("status") in ("draft", "generated"):
+        document = await document_repository.update(document_id, {"status": "shared"})
+        await events.record(events.SHARED, document, actor=actor)
+
+    hydrated = await _hydrate_participants([await participant_repository.get(participant_id)])
+    url = signatures.sign_url(base_url, token)
+    payload = signatures.channel_payload(channel, url, document, hydrated[0])
+    await events.record(events.PARTICIPANT_SENT, document, actor=actor, extra={
+        "participantId": participant_id, "channel": channel, "role": hydrated[0].get("role"),
+    })
+    return payload
+
+
+async def public_sign_view(token: str) -> dict:
+    """Vista pública para el firmante (sin auth). Registra la apertura (visto)."""
+    participant = await participant_repository.find_by_token(token)
+    if participant is None:
+        raise HTTPException(404, "Enlace de firma inválido.")
+    document = await document_repository.get(participant["document_id"])
+    if document is None:
+        raise HTTPException(404, "Documento no encontrado")
+    expired = not signatures.is_token_valid(participant)
+
+    # Marcar "visto" la primera vez que se abre (si sigue pendiente de firma).
+    if not expired and participant.get("signature_status") == "sent":
+        await participant_repository.update(participant["id"],
+                                            {"signature_status": "viewed", "viewed_at": _now()})
+        participant["signature_status"] = "viewed"
+        await events.record(events.PARTICIPANT_VIEWED, document,
+                            extra={"participantId": participant["id"]})
+
+    hydrated = (await _hydrate_participants([participant]))[0]
+    snapshot = document.get("template_snapshot") or {}
+    return {
+        "token": token,
+        "expired": expired,
+        "alreadySigned": participant.get("signature_status") == "signed",
+        "document": {
+            "id": document["id"],
+            "title": document.get("title"),
+            "category": document.get("category"),
+            "signatureMethod": participant.get("signature_method") or document.get("signature_method"),
+            "body": snapshot.get("body"),
+            "resolvedVariables": document.get("resolved_variables") or {},
+        },
+        "participant": {
+            "id": hydrated["id"],
+            "name": hydrated.get("person_name"),
+            "role": hydrated.get("role"),
+            "status": hydrated.get("signature_status"),
+            "signatureMethod": hydrated.get("signature_method"),
+        },
+    }
+
+
+async def submit_signature(token: str, submission: dict) -> dict:
+    """El firmante firma o rechaza desde el enlace público. Invalida el token."""
+    participant = await participant_repository.find_by_token(token)
+    if participant is None:
+        raise HTTPException(404, "Enlace de firma inválido.")
+    if not signatures.is_token_valid(participant):
+        raise HTTPException(410, "El enlace de firma venció o ya fue usado.")
+    document = await document_repository.get(participant["document_id"])
+    if document is None:
+        raise HTTPException(404, "Documento no encontrado")
+
+    action = submission.get("action", "sign")
+    current = participant.get("signature_status", "pending")
+
+    if action == "reject":
+        _check_participant_transition(current, "rejected")
+        await participant_repository.update(participant["id"], {
+            "signature_status": "rejected", "rejected_at": _now(),
+            "sign_token": None,  # invalida el token
+            "signature_data": {"reason": submission.get("reason")},
+        })
+        await events.record(events.PARTICIPANT_REJECTED, document,
+                            extra={"participantId": participant["id"], "reason": submission.get("reason")})
+        return await _recompute_and_return(document)
+
+    _check_participant_transition(current, "signed")
+    data = signatures.active_signature_provider.build_signature_data(participant, submission)
+    await participant_repository.update(participant["id"], {
+        "signature_status": "signed", "signed_at": _now(),
+        "sign_token": None,  # el token se invalida tras firmar
+        "presencial_mode": submission.get("mode"),
+        "signature_data": data,
+    })
+    await events.record(events.PARTICIPANT_SIGNED, document, extra={
+        "participantId": participant["id"], "role": participant.get("role"),
+        "provider": data.get("provider"),
+    })
+    return await _recompute_and_return(document)
+
+
+async def _recompute_and_return(document: dict) -> dict:
+    """Recalcula el estado agregado; si todos los obligatorios firmaron, firma el doc."""
+    participants = await participant_repository.list(document["id"])
+    state = signature_state(participants)
+    if state == "signed" and not document.get("locked_at"):
+        document = await document_repository.update(document["id"], {
+            "status": "signed", "locked_at": _now(),
+        })
+        await events.record(events.SIGNED, document)
+    return {"signatureState": state, "documentStatus": document.get("status")}

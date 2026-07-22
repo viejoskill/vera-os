@@ -9,6 +9,7 @@ import { EventLogScreen } from '@app/screens/EventLogScreen';
 import { OperacionesScreen } from '@app/screens/OperacionesScreen';
 import { DocumentsScreen } from '@app/screens/documents/DocumentsScreen';
 import { DocumentWizard } from '@app/screens/documents/DocumentWizard';
+import { DocumentDetail } from '@app/screens/documents/DocumentDetail';
 import { WorkspaceHome } from '@app/workspace/WorkspaceHome';
 import { VeraBotWorkspace } from '@app/vera-bot';
 import { IntegrationsScreen } from '@app/integraciones';
@@ -16,6 +17,7 @@ import { LoginScreen } from '@app/screens/LoginScreen';
 import { PlaceholderScreen } from '@app/screens/PlaceholderScreen';
 import { PublicListing } from '@app/public/PublicListing';
 import { PublicPropertyDetail } from '@app/public/PublicPropertyDetail';
+import { SignScreen } from '@app/public/SignScreen';
 import { AuthProvider } from '@app/auth/AuthProvider';
 import { RequireAuth } from '@app/auth/RequireAuth';
 
@@ -34,6 +36,7 @@ export const VeraOS = () => (
           <Route path="/login" element={<LoginScreen />} />
           <Route path="/web" element={<PublicListing />} />
           <Route path="/web/:id" element={<PublicPropertyDetail />} />
+          <Route path="/firma/:token" element={<SignScreen />} />
           <Route element={<RequireAuth />}>
             <Route element={<AppLayout />}>
               <Route index element={<Navigate to="/hoy" replace />} />
@@ -48,6 +51,7 @@ export const VeraOS = () => (
               <Route path="operaciones" element={<OperacionesScreen />} />
               <Route path="documentos" element={<DocumentsScreen />} />
               <Route path="documentos/nuevo" element={<DocumentWizard />} />
+              <Route path="documentos/:id" element={<DocumentDetail />} />
               <Route path="studio" element={<PlaceholderScreen title="Studio" />} />
               <Route path="integraciones" element={<IntegrationsScreen />} />
               <Route path="*" element={<Navigate to="/hoy" replace />} />
