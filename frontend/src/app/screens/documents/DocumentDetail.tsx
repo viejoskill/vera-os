@@ -8,7 +8,7 @@ import { Badge, Button } from '@vera/ui';
 import { PERSON_ROLE_LABELS } from '@vera/types';
 import { useProperties } from '@app/hooks/useProperties';
 import {
-  useDocument, useDocumentHistory, useSendSignature, useSetSignatureMethod,
+  useDocument, useDocumentHistory, useSendSignature, useSetSignatureMethod, pdfUrl,
   type DocumentParticipant,
 } from './useDocuments';
 import { renderBlocks } from './render';
@@ -235,10 +235,13 @@ export const DocumentDetail = () => {
           <div className="vera-detail__card" data-testid="detail-actions">
             <h2 className="vera-review__title">Acciones</h2>
             <div className="vera-detail__action-row">
-              <Button variant="secondary" disabled title="Próximamente" data-testid="action-generate-pdf">
-                <FileText size={16} /> Generar PDF
+              <Button
+                variant="secondary"
+                onClick={() => window.open(pdfUrl(d.id), '_blank')}
+                data-testid="action-generate-pdf"
+              >
+                <FileText size={16} /> Generar / Descargar PDF
               </Button>
-              <span className="vera-badge-soon">Próximamente</span>
             </div>
           </div>
         </div>

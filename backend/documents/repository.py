@@ -120,6 +120,12 @@ class RelationshipRepository:
                     .order("created_at").execute())
         return (await asyncio.to_thread(_do)).data or []
 
+    async def list_by_entity(self, entity_type: str, entity_id: str) -> list[dict]:
+        def _do():
+            return (_c().table(TABLE_RELATIONSHIPS).select("*")
+                    .eq("entity_type", entity_type).eq("entity_id", entity_id).execute())
+        return (await asyncio.to_thread(_do)).data or []
+
     async def insert_many(self, rows: list[dict]) -> list[dict]:
         if not rows:
             return []

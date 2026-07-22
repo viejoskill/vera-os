@@ -7078,3 +7078,60 @@ p {
 .vera-doc-preview { display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; }
 .vera-doc-preview__h { font-size: 15px; font-weight: 700; color: var(--vera-color-text); }
 .vera-doc-preview__p { font-size: 13px; line-height: 1.6; color: var(--vera-color-text-secondary); }
+/* ===== Campanita de notificaciones ===== */
+.vera-notif { position: relative; }
+.vera-notif__bell {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: var(--vera-radius-md);
+  border: 1px solid var(--vera-color-border); background: var(--vera-color-surface);
+  color: var(--vera-color-text); cursor: pointer; transition: border-color 200ms ease;
+}
+.vera-notif__bell:hover { border-color: var(--vera-color-primary); }
+.vera-notif__dot {
+  position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px;
+  border-radius: 999px; background: #e5484d; color: #fff; font-size: 11px; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.vera-notif__panel {
+  position: absolute; right: 0; top: calc(100% + 8px); width: 340px; max-height: 440px; overflow-y: auto;
+  background: var(--vera-color-cards); border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-lg); box-shadow: 0 12px 32px rgba(0,0,0,0.35); z-index: 80;
+}
+.vera-notif__head {
+  display: flex; align-items: center; justify-content: space-between; padding: 12px 14px;
+  border-bottom: 1px solid var(--vera-color-border); font-weight: var(--vera-font-weight-semibold);
+  color: var(--vera-color-text); font-size: var(--vera-font-size-sm);
+}
+.vera-notif__mark {
+  display: inline-flex; align-items: center; gap: 4px; font: inherit; font-size: var(--vera-font-size-xs);
+  background: none; border: none; color: var(--vera-color-primary); cursor: pointer;
+}
+.vera-notif__empty { padding: 20px 14px; color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-sm); }
+.vera-notif__list { list-style: none; margin: 0; padding: 0; }
+.vera-notif__item {
+  display: flex; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--vera-color-border);
+  cursor: pointer; transition: background-color 200ms ease;
+}
+.vera-notif__item:hover { background: var(--vera-color-surface); }
+.vera-notif__item.is-unread { background: rgba(246, 230, 58, 0.05); }
+.vera-notif__ic { color: var(--vera-color-primary); flex-shrink: 0; margin-top: 2px; }
+.vera-notif__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.vera-notif__title { font-weight: var(--vera-font-weight-medium); color: var(--vera-color-text); font-size: var(--vera-font-size-sm); }
+.vera-notif__msg { color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-xs); line-height: 1.4; }
+.vera-notif__at { color: var(--vera-color-text-secondary); font-size: 10px; margin-top: 2px; }
+
+/* ===== Checklist de Documentación (propiedad) ===== */
+.vera-doclist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.vera-doclist__item {
+  display: flex; align-items: center; gap: var(--vera-space-sm); padding: 10px 12px;
+  border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-md); background: var(--vera-color-surface);
+}
+.vera-doclist__ic { display: inline-flex; }
+.vera-doclist__label { font-weight: var(--vera-font-weight-medium); color: var(--vera-color-text); }
+.vera-doclist__link, .vera-doclist__add {
+  margin-left: auto; font: inherit; font-size: var(--vera-font-size-sm); cursor: pointer;
+  background: none; border: none; color: var(--vera-color-primary);
+}
+.vera-doclist__add { color: var(--vera-color-text-secondary); }
+.vera-doclist__link:hover, .vera-doclist__add:hover { text-decoration: underline; }
+

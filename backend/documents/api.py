@@ -5,7 +5,7 @@ integra firmas (solo modelo).
 """
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response
 
 import config
 from documents import service
@@ -188,3 +188,22 @@ async def send_signature(document_id: str, participant_id: str, body: SendSignat
     """Genera el enlace seguro de firma y arma el envío por canal (whatsapp|email|link)."""
     _ensure()
     return await service.send_signature(document_id, participant_id, body.channel, body.base_url)
+
+
+@router.get("/by-property/{property_id}")
+async def documents_by_property(property_id: str):
+    """Documentos del módulo vinculados a una propiedad (para el checklist)."""
+    _ensure()
+    return [to_api_document(d) for d in await service.list_by_property(property_id)]
+
+
+@router.get("/{document_id}/pdf")
+async def document_pdf(document_id: str):
+    """Genera y descarga el PDF del documento a demanda."""
+    _ensure()
+    data, filename = await service.generate_pdf(document_id)
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )

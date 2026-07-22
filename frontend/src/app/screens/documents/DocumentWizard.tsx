@@ -369,6 +369,13 @@ export const DocumentWizard = () => {
                         value={val}
                         onChange={(e) => onChange(e.target.value)}
                         placeholder={f.required ? 'Dato obligatorio' : 'Opcional'}
+                        hint={
+                          f.status === 'missing' && f.source === 'person'
+                            ? 'La persona seleccionada no tiene este dato cargado; completalo acá.'
+                            : f.status === 'missing' && f.source === 'property'
+                            ? 'La propiedad no tiene este dato cargado; completalo acá.'
+                            : undefined
+                        }
                         data-testid={`review-input-${f.key}`}
                       />
                     );

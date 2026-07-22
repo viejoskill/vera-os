@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 from fastapi import HTTPException
 
-from documents import events, resolver, signatures
+from documents import events, notifications, pdf, resolver, signatures
 from documents.models import (
     DOCUMENT_TRANSITIONS,
     ENTITY_TYPES,
@@ -496,7 +496,19 @@ async def submit_signature(token: str, submission: dict) -> dict:
         "participantId": participant["id"], "role": participant.get("role"),
         "provider": data.get("provider"),
     })
-    return await _recompute_and_return(document)
+    # Aviso in-app al asesor: el cliente firmó.
+    signer = (await _hydrate_participants([await participant_repository.get(participant["id"])]))[0]
+    result = await _recompute_and_return(document)
+    completo = result["signatureState"] == "signed"
+    await notifications.create(
+        type="document.participant.signed",
+        title="✍️ Firma recibida",
+        message=(f"{signer.get('person_name') or 'Un participante'} firmó «{document.get('title') or 'el documento'}»."
+                 + (" El documento quedó firmado por completo." if completo else "")),
+        document_id=document["id"],
+        link=f"/documentos/{document['id']}",
+    )
+    return result
 
 
 async def _recompute_and_return(document: dict) -> dict:
@@ -509,3 +521,27 @@ async def _recompute_and_return(document: dict) -> dict:
         })
         await events.record(events.SIGNED, document)
     return {"signatureState": state, "documentStatus": document.get("status")}
+
+
+async def generate_pdf(document_id: str) -> tuple[bytes, str]:
+    """Genera el PDF del documento a demanda. Devuelve (bytes, filename)."""
+    document = await document_repository.get(document_id)
+    if document is None:
+        raise HTTPException(404, "Documento no encontrado")
+    participants = await _hydrate_participants(await participant_repository.list(document_id))
+    data = pdf.build_document_pdf(document, participants)
+    safe = (document.get("title") or "documento").lower().replace(" ", "_")
+    return data, f"{safe}.pdf"
+
+
+async def list_by_property(property_id: str) -> list[dict]:
+    """Documentos del módulo vinculados a una propiedad (para el checklist)."""
+    rels = await relationship_repository.list_by_entity("property", property_id)
+    docs = []
+    for r in rels:
+        doc = await document_repository.get(r["document_id"])
+        if doc:
+            doc["participants"] = await participant_repository.list(doc["id"])
+            doc["signature_state"] = signature_state(doc["participants"])
+            docs.append(doc)
+    return docs

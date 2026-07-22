@@ -26,6 +26,7 @@ import routes_public
 import routes_ml
 import routes_properties
 import routes_sign
+import routes_notifications
 
 app = FastAPI(title="VERA OS API")
 
@@ -57,6 +58,7 @@ api_router.include_router(routes_core.router)
 api_router.include_router(routes_knowledge.router)
 api_router.include_router(documents_router)
 api_router.include_router(routes_sign.router)
+api_router.include_router(routes_notifications.router)
 app.include_router(api_router)
 
 app.add_middleware(

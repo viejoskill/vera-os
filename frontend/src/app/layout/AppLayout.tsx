@@ -4,6 +4,7 @@ import { Sidebar, TopBar, type SidebarItem } from '@vera/ui';
 import { appConfig, workspaceConfig } from '@vera/config';
 import { navRoutes } from '@app/navigation';
 import { UserMenu } from './UserMenu';
+import { NotificationBell } from './NotificationBell';
 import { useAuthUser } from '@app/auth/useAuthUser';
 
 export const AppLayout = () => {
@@ -51,7 +52,7 @@ export const AppLayout = () => {
           title={active.label}
           subtitle={appConfig.tagline}
           onMenuClick={() => setMobileOpen((v) => !v)}
-          actions={<UserMenu />}
+          actions={<><NotificationBell /><UserMenu /></>}
         />
         <main className="vera-shell__content">
           <Outlet />

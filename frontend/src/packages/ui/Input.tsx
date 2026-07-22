@@ -3,11 +3,12 @@ import { forwardRef, useId, type InputHTMLAttributes } from 'react';
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  hint?: string;
 }
 
 /** VERA Input. Accessible (label + aria), token-driven, typed. */
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, id, className = '', ...props }, ref) => {
+  ({ label, error, hint, id, className = '', ...props }, ref) => {
     const autoId = useId();
     const inputId = id ?? autoId;
     const errorId = `${inputId}-error`;
@@ -29,6 +30,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           aria-describedby={error ? errorId : undefined}
           {...props}
         />
+        {hint && !error && <span className="vera-field__hint">{hint}</span>}
         {error && (
           <span id={errorId} className="vera-field__error">
             {error}

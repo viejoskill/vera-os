@@ -1,0 +1,43 @@
+{
+  "summary": "Sprint 4 (PDF descargable/imprimible) + Sprint 5 (notificación in-app 🔔) + aviso DNI + checklist Documentación en propiedad — validados backend + frontend e2e. Backend: 7/7 pytest en /app/backend/tests/test_documents_sprint4_5.py (PDF digital application/pdf con bloque de certificación 'Certificado' + 'Firmante' + 'Firma electrónica', PDF presencial con líneas de firma '____' y SIN cert; by-property retorna documentos con signatureState+category y [] para propiedad desconocida; sign genera notificación '✍️ Firma recibida' con link al doc; mark-read + mark-all bajan unread a 0). Frontend E2E (Playwright + qa_varela@vera.test): (1) DNI HINT: al elegir persona sin DNI en wizard Autorización de Venta, el input review-input-propietario_dni muestra .vera-field__hint 'La persona seleccionada no tiene este dato cargado; completalo acá.'. (2) FOCUS: tipear 185000 en 'Precio de publicación' y 30111222 en DNI mantiene el valor completo (no roba foco). (3) CREACIÓN: wizard-create HABILITADO tras completar; navega a /documentos/{id}. (4) PDF: action-generate-pdf sin disabled; fetch directo devuelve 200 application/pdf %PDF header size=3386. (5) FIRMA pública en /firma/{token}: sign-typed-name + sign-submit → sign-done OK. (6) NOTIFICACIÓN: al recargar el header, notif-bell muestra notif-badge='1'; notif-panel lista notif-item-* con título '✍️ Firma recibida'; click navega a /documentos/{id} y marca leída; notif-mark-all deja el badge en 0. (7) CHECKLIST DOCUMENTACIÓN en /propiedades/9c1d4217...: property-documentacion renderiza los 4 items — Autorización con ícono verde .vera-sig-ic--ok + 'Ver documento' (doc-view-autorizacion navega al /documentos/{id} firmado), Reserva con ícono naranja .vera-sig-ic--wait (in_progress) + 'Ver documento', Recibo y Escritura vacíos con .vera-sig-ic--muted + '+ Crear'. E2E integrador (autorización digital → firma pública → notif + checklist tildado + PDF) VERIFICADO.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/documents/by-property/{property_id}", "issue": "Performance: latencia ~15s en la propiedad de prueba (38 docs). El servicio itera cada relationship y hace 2 llamadas Supabase por doc (document_repository.get + participant_repository.list) secuenciales → N+1. La UI muestra 'nada' durante 15s (todos los items como '+ Crear') porque data=[] hasta que resuelve. Recomendar (a) batch por IDs con .in_() o (b) join en SQL/PostgREST embedding, o (c) mostrar loading spinner en DocumentacionSection para UX correcta durante la espera. curl -w %{time_total} devuelve 15.35s consistente."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Property → Documentación", "issue": "El componente no muestra estado 'cargando' mientras by-property responde (15s). Durante la espera el usuario ve los 4 items como '+ Crear' — engañoso. Consider `isLoading` skeleton en DocumentacionSection.", "affected_selectors": ["[data-testid=property-documentacion]"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_documents_sprint4_5.py",
+    "/app/test_reports/pytest/documents_sprint4_5.xml"
+  ],
+  "action_items": [
+    "Optimizar GET /api/documents/by-property/{id}: N+1 hoy (list_by_property itera relationships y hace 2 requests supabase por doc). Sugerido: batch con .in_('id', doc_ids) + agrupar participants por document_id, o embedding PostgREST. Objetivo <500ms.",
+    "En DocumentacionSection.tsx exponer isLoading del useDocumentsByProperty y renderizar un skeleton/'Buscando documentos…' en vez de 4 filas 'Crear' vacías mientras espera."
+  ],
+  "critical_code_review_comments": [
+    "documents/service.list_by_property (líneas 537–547) es N+1: `for r in rels: await document_repository.get(...)` + `await participant_repository.list(...)`. Con 38 relaciones + 2 requests HTTP a Supabase c/u → ~76 round-trips secuenciales. Latencia observada 15.35s. Recomendación: (a) `document_repository.get_many(doc_ids)` con `.in_('id', ids)` en un solo select y `participant_repository.list_many(doc_ids)` idem, luego agrupar en memoria; (b) alternativamente PostgREST embedding: `.select('*, document_participants(*)')`.",
+    "documents/notifications.py — el módulo abre un AsyncIOMotorClient global via `_client` singleton (lazy init) — bien. Pero `list_recent` sin filtro por asesor (multi-tenant): hoy la campanita muestra TODAS las notifs del sistema. Para MVP con un solo asesor está OK; documentar como TODO para agregar filtro por user_id/tenant cuando se sume auth de rol.",
+    "documents/pdf.py — 'Firma electrónica (VERA)' está hardcoded en español; correcto para UI española. El decode_data_url atrapa Exception genérica (BLE001) y silencia — aceptable para archivos malformados; podría loggear a nivel warn para debug.",
+    "DocumentacionSection.tsx — pick() usa `signatureState==='signed' || status==='signed'` (ok) pero también considera `signatureState==='in_progress' || status==='shared'` como 'progress'. Cuando conviven varios docs de la misma categoría, se elige `signed ?? inProgress ?? items[0]` — buena heurística. Sin embargo, si data=[] durante loading, se pinta 'empty'; recomendar exponer `isLoading` para UX.",
+    "NotificationBell.tsx — polling cada 20s vía useNotifications; sin backoff ni cancel al desmontar (aunque react-query lo maneja). El sort viene del backend (createdAt desc). Correcto.",
+    "El endpoint POST /api/notifications/{id}/read no valida existencia (mongo update_one silencioso si no matchea). Aceptable, es idempotente; pero podría devolver 404 si notification_id no existe (más honesto)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_documents_sprint4_5.py (new · 7 tests)",
+    "/app/test_reports/pytest/documents_sprint4_5.xml (new · junit)"
+  ],
+  "success_rate": {"backend": "100% (7/7 pytest)", "frontend": "100% (e2e wizard→PDF→sign→notif→checklist)"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml",
+  "seed_data_creation": "Se crearon ~6 TEST_sprint45_* docs vía POST /api/documents (algunos firmados vía POST /api/sign/{token}). Notificaciones (~6) generadas en la colección Mongo 'notifications'. Sin DELETE endpoint — persisten con prefijo TEST_sprint45_.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Sprints 4 y 5 verdes. Tests en /app/backend/tests/test_documents_sprint4_5.py cubren PDF (digital cert + presencial líneas + 404), by-property (docs con category/signatureState + [] para desconocidas), y notificaciones (create-on-sign + mark-read + mark-all). El único hallazgo abierto es PERFORMANCE en list_by_property (N+1, 15s con 38 docs seed). El UI funciona pero durante los 15s de espera muestra los 4 items como '+ Crear' — visualmente engañoso pero se corrige solo al llegar la respuesta. Data-testids completos: notif-bell, notif-badge, notif-panel, notif-item-{id}, notif-mark-all, doc-check-{cat}, doc-view-{cat}, doc-add-{cat}, action-generate-pdf, property-documentacion. Para futuras verificaciones tras optimización, medir con `time curl {BASE}/api/documents/by-property/9c1d4217...` — objetivo <500ms.",
+  "rca of the issue": "Performance de by-property: N+1 en documents/service.list_by_property (líneas 540-546). Reproducción: `curl -w %{time_total} .../api/documents/by-property/9c1d4217-2522-4649-a269-bbd536a71f39` → 15.35s. Mitigación: reemplazar el loop `for r in rels: get(...); list(...)` por (a) `document_repository.get_many(doc_ids)` con Supabase `.in_('id', doc_ids)` y (b) `participant_repository.list_many(doc_ids)` idem, luego agrupar por document_id en memoria. Alternativa: usar embedding PostgREST `.select('*, document_participants(*)')`. Objetivo: pasar de O(n·2·RTT) a O(2·RTT)."
+}

@@ -238,3 +238,15 @@ export function useSendSignature(documentId: string) {
     },
   });
 }
+
+export function pdfUrl(documentId: string): string {
+  return `${BASE}/${documentId}/pdf`;
+}
+
+export function useDocumentsByProperty(propertyId: string | undefined) {
+  return useQuery({
+    queryKey: ['documents', 'by-property', propertyId],
+    queryFn: () => apiGet<DocumentDetail[]>(`/by-property/${propertyId}`),
+    enabled: !!propertyId,
+  });
+}

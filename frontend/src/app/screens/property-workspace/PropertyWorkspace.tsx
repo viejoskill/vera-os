@@ -28,6 +28,7 @@ import { OwnerSection } from './OwnerSection';
 import { TrackingSection } from './TrackingSection';
 import { PhotosSection } from './PhotosSection';
 import { DocumentsSection } from './DocumentsSection';
+import { DocumentacionSection } from './DocumentacionSection';
 import { ExpressSection } from './ExpressSection';
 import { StatsSection } from './StatsSection';
 import { HealthScoreSection } from './HealthScoreSection';
@@ -485,6 +486,15 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
                 <DocumentsSection documents={documents} onAdd={onAddDoc} onRemove={onRemoveDoc} />
               </Panel>
             </div>
+
+            {/* 4b — Documentación del motor documental (Autorización, Reserva, etc.) */}
+            {propertyId && (
+              <div id="ws-section-documentacion">
+                <Panel title="Documentación" description="Documentos oficiales de VERA. Se tildan cuando se firman.">
+                  <DocumentacionSection propertyId={propertyId} />
+                </Panel>
+              </div>
+            )}
 
             {/* 5 — Comercialización (título, descripción y textos para portales) */}
             <div id="ws-section-commercialization">
