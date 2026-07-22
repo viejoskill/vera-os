@@ -1,14 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Check, PenLine, ShieldCheck, X } from 'lucide-react';
+import { Check, Download, PenLine, ShieldCheck, X } from 'lucide-react';
 import { env } from '@vera/config';
 
 interface SignView {
   token: string;
   expired: boolean;
   alreadySigned: boolean;
+  rejected?: boolean;
   document: { id: string; title: string; category: string; signatureMethod?: string | null; body?: unknown; resolvedVariables: Record<string, unknown> };
-  participant: { id: string; name?: string | null; role?: string | null; status: string; signatureMethod?: string | null };
+  participant: {
+    id: string; name?: string | null; role?: string | null; status: string;
+    signatureMethod?: string | null; signedAt?: string | null;
+    signatureData?: { hash?: string; typedName?: string; image?: string; method?: string; mode?: string } | null;
+  };
 }
 
 const API = `${env.backendUrl}/api/sign`;
@@ -33,7 +38,7 @@ export const SignScreen = () => {
       .then((data: SignView) => {
         setView(data);
         setTypedName(data.participant?.name ?? '');
-        setState(data.alreadySigned ? 'done' : data.expired ? 'error' : 'ready');
+        setState(data.alreadySigned ? 'done' : data.rejected ? 'rejected' : data.expired ? 'error' : 'ready');
       })
       .catch(() => setState('error'));
   }, [token]);
@@ -90,7 +95,14 @@ export const SignScreen = () => {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error();
-      setState(action === 'sign' ? 'done' : 'rejected');
+      if (action === 'sign') {
+        // Refrescar la vista para mostrar el documento firmado + certificación.
+        const refreshed = await fetch(`${API}/${token}`).then((r) => (r.ok ? r.json() : null));
+        if (refreshed) setView(refreshed);
+        setState('done');
+      } else {
+        setState('rejected');
+      }
     } catch {
       setState('error');
     } finally {
@@ -118,10 +130,50 @@ export const SignScreen = () => {
         )}
 
         {state === 'done' && (
-          <div className="vera-sign__state" data-testid="sign-done">
-            <Check size={28} className="vera-sig-ic--ok" />
-            <h1 className="vera-sign__title">¡Firma registrada!</h1>
-            <p className="vera-sign__muted">Gracias{view?.participant.name ? `, ${view.participant.name}` : ''}. VERA registró tu firma de forma segura.</p>
+          <div data-testid="sign-done">
+            <div className="vera-sign__state">
+              <Check size={28} className="vera-sig-ic--ok" />
+              <h1 className="vera-sign__title">¡Firma registrada!</h1>
+              <p className="vera-sign__muted">
+                Gracias{view?.participant.name ? `, ${view.participant.name}` : ''}. VERA registró tu firma de forma segura.
+              </p>
+            </div>
+
+            {view && (
+              <div className="vera-sign__printable" data-testid="signed-document">
+                <h2 className="vera-signed__doc-title">{view.document.title}</h2>
+                <div className="vera-sign__doc">
+                  {(view.document.body as { blocks?: { type: string; value: string }[] })?.blocks?.map((b, i) => (
+                    <p key={i}>{interpolate(b.value, view.document.resolvedVariables)}</p>
+                  )) ?? <p className="vera-sign__muted">Documento sin cuerpo definido.</p>}
+                </div>
+
+                <div className="vera-signed__cert" data-testid="signed-cert">
+                  <div className="vera-signed__cert-head"><ShieldCheck size={16} /> Certificado de firma · VERA</div>
+                  <div className="vera-signed__cert-row"><span>Firmante</span><strong>{view.participant.name ?? '—'}</strong></div>
+                  {view.participant.role && <div className="vera-signed__cert-row"><span>Rol</span><strong>{view.participant.role}</strong></div>}
+                  <div className="vera-signed__cert-row"><span>Método</span><strong>{view.participant.signatureMethod === 'presencial' ? 'Presencial' : 'Digital'}</strong></div>
+                  {view.participant.signedAt && (
+                    <div className="vera-signed__cert-row"><span>Fecha</span><strong>{new Date(view.participant.signedAt).toLocaleString('es-AR')}</strong></div>
+                  )}
+                  {view.participant.signatureData?.image && (
+                    <div className="vera-signed__cert-sign">
+                      <span>Firma</span>
+                      <img src={view.participant.signatureData.image} alt="Firma" />
+                    </div>
+                  )}
+                  {view.participant.signatureData?.hash && (
+                    <div className="vera-signed__cert-hash">Hash de integridad: {view.participant.signatureData.hash}</div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="vera-sign__actions vera-sign__actions--noprint">
+              <button type="button" className="vera-sign__btn vera-sign__btn--primary" onClick={() => window.print()} data-testid="download-signed">
+                <Download size={16} /> Descargar / Imprimir
+              </button>
+            </div>
           </div>
         )}
 

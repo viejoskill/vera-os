@@ -7015,3 +7015,31 @@ p {
 .vera-sign__btn--ghost { background: transparent; color: var(--vera-color-text-secondary); }
 .vera-sign__btn:disabled { opacity: 0.5; cursor: default; }
 
+/* ===== Documento firmado (pantalla pública) + impresión ===== */
+.vera-sign__printable {
+  background: #fff; color: #111; border-radius: var(--vera-radius-md);
+  padding: var(--vera-space-lg); margin-top: var(--vera-space-md);
+  display: flex; flex-direction: column; gap: var(--vera-space-md);
+}
+.vera-signed__doc-title { font-size: 18px; font-weight: 700; color: #111; }
+.vera-signed__cert {
+  border: 1px solid #d8d8d8; border-radius: 10px; padding: 14px;
+  display: flex; flex-direction: column; gap: 6px; background: #fafafa;
+}
+.vera-signed__cert-head { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: #111; margin-bottom: 4px; }
+.vera-signed__cert-row { display: flex; justify-content: space-between; font-size: 13px; color: #333; }
+.vera-signed__cert-row span { color: #777; }
+.vera-signed__cert-sign { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #777; }
+.vera-signed__cert-sign img { max-width: 220px; background: #fff; border: 1px solid #e5e5e5; border-radius: 6px; }
+.vera-signed__cert-hash { font-size: 11px; color: #999; word-break: break-all; margin-top: 4px; }
+
+@media print {
+  body * { visibility: hidden !important; }
+  .vera-sign__printable, .vera-sign__printable * { visibility: visible !important; }
+  .vera-sign__printable {
+    position: absolute; top: 0; left: 0; width: 100%;
+    margin: 0; padding: 24px; border-radius: 0; box-shadow: none;
+  }
+  .vera-sign__actions--noprint { display: none !important; }
+}
+

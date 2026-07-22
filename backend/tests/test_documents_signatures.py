@@ -212,9 +212,13 @@ class TestPublicSignFlow:
         assert p_signed["signatureStatus"] == "signed"
         assert p_signed.get("signedAt")
 
-        # 6. Token invalidated → subsequent GET or POST returns 404/410
+        # 6. Post-firma: el enlace sigue sirviendo para VER (alreadySigned),
+        #    pero re-firmar está bloqueado (410).
         again = api_client.get(f"{API}/sign/{token}")
-        assert again.status_code in (404, 410), again.text
+        assert again.status_code == 200, again.text
+        again_view = again.json()
+        assert again_view.get("alreadySigned") is True
+        assert again_view["participant"].get("signedAt")
         again_post = api_client.post(f"{API}/sign/{token}", json={
             "action": "sign", "typedName": "Again"
         })
@@ -254,7 +258,7 @@ class TestPublicSignFlow:
         assert rej.status_code == 200, rej.text
         assert rej.json().get("signatureState") == "rejected"
 
-        # Token invalidated
+        # Re-firmar tras rechazar está bloqueado (410); el enlace sigue viéndose.
         again = api_client.post(f"{API}/sign/{token}", json={"action": "sign"})
         assert again.status_code in (404, 410)
 

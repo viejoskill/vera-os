@@ -409,10 +409,22 @@ async def public_sign_view(token: str) -> dict:
     document = await document_repository.get(participant["document_id"])
     if document is None:
         raise HTTPException(404, "Documento no encontrado")
-    expired = not signatures.is_token_valid(participant)
+
+    status = participant.get("signature_status", "pending")
+    already_signed = status == "signed"
+    rejected = status == "rejected"
+    # Vencimiento por tiempo (distinto de "ya firmado/rechazado").
+    time_expired = False
+    exp = participant.get("expires_at")
+    if exp:
+        from datetime import datetime, timezone
+        try:
+            time_expired = datetime.fromisoformat(exp) < datetime.now(timezone.utc)
+        except ValueError:
+            time_expired = False
 
     # Marcar "visto" la primera vez que se abre (si sigue pendiente de firma).
-    if not expired and participant.get("signature_status") == "sent":
+    if not time_expired and status == "sent":
         await participant_repository.update(participant["id"],
                                             {"signature_status": "viewed", "viewed_at": _now()})
         participant["signature_status"] = "viewed"
@@ -423,8 +435,10 @@ async def public_sign_view(token: str) -> dict:
     snapshot = document.get("template_snapshot") or {}
     return {
         "token": token,
-        "expired": expired,
-        "alreadySigned": participant.get("signature_status") == "signed",
+        # "expired" solo si venció por tiempo SIN haber firmado/rechazado.
+        "expired": time_expired and not (already_signed or rejected),
+        "alreadySigned": already_signed,
+        "rejected": rejected,
         "document": {
             "id": document["id"],
             "title": document.get("title"),
@@ -439,6 +453,8 @@ async def public_sign_view(token: str) -> dict:
             "role": hydrated.get("role"),
             "status": hydrated.get("signature_status"),
             "signatureMethod": hydrated.get("signature_method"),
+            "signedAt": hydrated.get("signed_at"),
+            "signatureData": hydrated.get("signature_data"),  # certificación (hash, etc.)
         },
     }
 
@@ -461,7 +477,6 @@ async def submit_signature(token: str, submission: dict) -> dict:
         _check_participant_transition(current, "rejected")
         await participant_repository.update(participant["id"], {
             "signature_status": "rejected", "rejected_at": _now(),
-            "sign_token": None,  # invalida el token
             "signature_data": {"reason": submission.get("reason")},
         })
         await events.record(events.PARTICIPANT_REJECTED, document,
@@ -472,7 +487,6 @@ async def submit_signature(token: str, submission: dict) -> dict:
     data = signatures.active_signature_provider.build_signature_data(participant, submission)
     await participant_repository.update(participant["id"], {
         "signature_status": "signed", "signed_at": _now(),
-        "sign_token": None,  # el token se invalida tras firmar
         "presencial_mode": submission.get("mode"),
         "signature_data": data,
     })
