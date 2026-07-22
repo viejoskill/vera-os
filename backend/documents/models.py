@@ -101,6 +101,7 @@ class UpdateTemplateRequest(CamelModel):
     name: Optional[str] = None
     description: Optional[str] = None
     status: Optional[str] = None
+    signature_methods: Optional[list[str]] = None
 
 
 # --- Relationships ---------------------------------------------------------- #
