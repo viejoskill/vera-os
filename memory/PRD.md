@@ -769,3 +769,16 @@ Toda propiedad publicada tiene una **URL pública canónica** de la que VERA es 
 - **Open Graph — LIMITACIÓN IMPORTANTE**: se agregó inyección client-side de `og:title/description/image/url` + Twitter Cards en la página pública interna `/web/:id` (`PublicPropertyDetail`, usando la URL canónica). PERO los crawlers de WhatsApp/Telegram/Facebook/LinkedIn **NO ejecutan JS**, así que la vista previa al pegar el link **requiere SSR/prerender en el sitio público externo** (varelapropiedadescde.com.ar), que está fuera de este entorno y es responsabilidad del sitio público (como aclaró el usuario). La URL canónica ya queda lista para que ese sitio la sirva con OG server-side.
 - **Base para el futuro** (todo reutiliza la misma `publicUrl`): Generar QR, Compartir desde Studio, emails automáticos, landing pages, campañas, compartir con Personas, tracking de enlaces.
 
+
+
+## Fixed/Refactored (Sprint "URL pública — fuente única de verdad" — 2026-07)
+Corrige el 404 del sprint anterior (`/propiedad/{code}` no existe en el sitio público estático). Verificado 100% por testing agent (iteration_35): backend 10/10 pytest + frontend. Doc oficial: `/app/docs/architecture/publication-pipeline.md`.
+- **Regla de arquitectura (invariante)**: la ÚNICA fuente de verdad de la URL pública es `publications['web-varela'].url`. Ningún componente construye/infiere la URL por convención. Eliminadas `inquiries.canonical_url`/`public_url_or_none`.
+- **`property.publicUrl`** deriva exclusivamente de `web_publisher.stored_public_url(prop)` = `publications['web-varela'].url` si `status=='published'` y hay url; si no → `null` (también `null` si `inconsistent`).
+- **Pipeline escribe la url SIEMPRE**: al publicar (`set_publication`), al re-sincronizar (`PATCH` auto re-sync ahora persiste `.url`) y al importar (`legacy_import._map_publications`). Formato: `https://www.varelapropiedadescde.com.ar/?propiedad=<idPúblico>` (idPúblico = `legacy_id` del CRM o `vera-<uuid>`).
+- **Validación de integridad**: `web_publisher.publish()` hace upsert + `_row_exists()` (verifica que la fila quedó en el CRM). Si falla → `logger.error`, `status='inconsistent'`, `url=''`, `publicUrl=null` (sin botón Compartir). "Preferimos sin botón que con link roto."
+- **Backfill** (`backend/scripts/backfill_public_url.py`): corrida única → **28 corregidas, 0 inconsistentes, 1 ya OK** (29/29 con url válida verificada contra el CRM).
+- **WhatsApp/consultas** (`inquiries.public_url`) ahora DERIVA de `stored_public_url` + tracking (`source=website`), sin construir.
+- **Frontend**: "Compartir" ya consumía `property.publicUrl` (sin cambios); ahora copia la URL correcta (`?propiedad=<id>`).
+- **Deuda menor futura**: `serializers._property_code` cae a `VAR-000000` en uuid inválido (log/raise defensivo).
+
