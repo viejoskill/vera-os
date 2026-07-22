@@ -22,7 +22,13 @@ async function apiPost<T>(path: string, body: unknown): Promise<T> {
     } catch {
       detail = undefined;
     }
-    throw new Error(typeof detail === 'string' ? detail : `${res.status}`);
+    if (typeof detail === 'string') throw new Error(detail);
+    if (detail && typeof detail === 'object') {
+      const d = detail as { message?: string; missing?: string[] };
+      const msg = d.message ?? 'No se pudo crear el documento.';
+      throw new Error(d.missing?.length ? `${msg} Faltan: ${d.missing.join(', ')}` : msg);
+    }
+    throw new Error(`${res.status}`);
   }
   return res.json() as Promise<T>;
 }
