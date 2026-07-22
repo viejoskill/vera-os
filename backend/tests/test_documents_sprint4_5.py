@@ -18,12 +18,18 @@ import pytest
 import requests
 from pypdf import PdfReader
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv("/app/frontend/.env")
+except Exception:
+    pass
+
 
 def _extract_pdf_text(data: bytes) -> str:
     reader = PdfReader(io.BytesIO(data))
     return "\n".join((p.extract_text() or "") for p in reader.pages)
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL").rstrip("/")
+BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL") or "http://localhost:8001").rstrip("/")
 API = f"{BASE_URL}/api"
 
 TEMPLATE_ID = "ba0e6d91-f96c-4d95-b069-70c612315d3e"  # Autorización de Venta

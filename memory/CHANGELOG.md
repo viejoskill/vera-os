@@ -70,3 +70,7 @@ Verificado 100% (iteration_40): backend 7/7 pytest (`test_documents_sprint4_5.py
 - **Documentación en la Propiedad** (`DocumentacionSection.tsx`): tarjeta con checklist Autorización/Reserva/Recibo/Escritura; ☑ verde si hay documento firmado de esa categoría, ⏳ ámbar si está en proceso, ○ si no existe (+ "Crear"). "Ver documento" navega al detalle. Endpoint `GET /api/documents/by-property/{id}` (batch, sin N+1: 3 requests; ~1.7s con 38 docs vs 15s antes) + skeleton de carga.
 - **Aviso de DNI** (quick win): en la Revisión del wizard, los campos obligatorios que VERA no pudo autocompletar desde una persona/propiedad muestran un hint ("La persona seleccionada no tiene este dato cargado; completalo acá."). Nuevo prop `hint` en el `Input` de `@vera/ui`.
 - **TODO documentado** (code review): `notifications.list_recent` no filtra por asesor (OK para MVP mono-usuario; agregar filtro por tenant cuando haya auth de rol).
+
+## 2026-06 · Fix suite de tests + verificación formato PDF
+- **Fix pytest** (`tests/test_documents_sprint4_5.py`): `REACT_APP_BACKEND_URL` sólo vive en `/app/frontend/.env`, no en el backend → el test rompía con `AttributeError: 'NoneType'.rstrip`. Ahora el test hace `load_dotenv("/app/frontend/.env")` y usa fallback `http://localhost:8001`. Suite verde 7/7.
+- **Verificación formato PDF "Autorización de Venta"** (`documents/pdf.py`): confirmado vía API real (precio 129000) → encabezado "VARELA PROPIEDADES", `USD 129.000` (separador de miles argentino), negritas en DNI/nombres y rótulos de cláusula, bloque de certificación digital. OK.
