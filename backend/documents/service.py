@@ -535,13 +535,20 @@ async def generate_pdf(document_id: str) -> tuple[bytes, str]:
 
 
 async def list_by_property(property_id: str) -> list[dict]:
-    """Documentos del módulo vinculados a una propiedad (para el checklist)."""
+    """Documentos del módulo vinculados a una propiedad (para el checklist).
+
+    En lote (evita N+1): 1 request de relaciones + 1 de documentos + 1 de participantes.
+    """
     rels = await relationship_repository.list_by_entity("property", property_id)
-    docs = []
-    for r in rels:
-        doc = await document_repository.get(r["document_id"])
-        if doc:
-            doc["participants"] = await participant_repository.list(doc["id"])
-            doc["signature_state"] = signature_state(doc["participants"])
-            docs.append(doc)
+    doc_ids = list({r["document_id"] for r in rels})
+    if not doc_ids:
+        return []
+    docs = await document_repository.get_many(doc_ids)
+    parts = await participant_repository.list_many(doc_ids)
+    by_doc: dict[str, list] = {}
+    for p in parts:
+        by_doc.setdefault(p["document_id"], []).append(p)
+    for d in docs:
+        d["participants"] = by_doc.get(d["id"], [])
+        d["signature_state"] = signature_state(d["participants"])
     return docs

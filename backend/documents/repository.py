@@ -99,6 +99,13 @@ class DocumentRepository:
         rows = (await asyncio.to_thread(_do)).data or []
         return rows[0] if rows else None
 
+    async def get_many(self, ids: list[str]) -> list[dict]:
+        if not ids:
+            return []
+        def _do():
+            return _c().table(TABLE_DOCUMENTS).select("*").in_("id", ids).execute()
+        return (await asyncio.to_thread(_do)).data or []
+
     async def insert(self, row: dict) -> dict:
         def _do():
             return _c().table(TABLE_DOCUMENTS).insert(row).execute()
@@ -183,6 +190,14 @@ class ParticipantRepository:
                     .eq("sign_token", token).limit(1).execute())
         rows = (await asyncio.to_thread(_do)).data or []
         return rows[0] if rows else None
+
+    async def list_many(self, document_ids: list[str]) -> list[dict]:
+        if not document_ids:
+            return []
+        def _do():
+            return (_c().table(TABLE_PARTICIPANTS).select("*")
+                    .in_("document_id", document_ids).order("order").execute())
+        return (await asyncio.to_thread(_do)).data or []
 
     async def insert_many(self, rows: list[dict]) -> list[dict]:
         if not rows:

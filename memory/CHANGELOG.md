@@ -61,3 +61,12 @@ Bug reportado: al tipear un número/letra en los campos de la Revisión, "se aut
 - Ahora el resolve solo corre ante cambios ESTRUCTURALES (template/propiedad/personas), no al tipear.
 - La validación "listo para crear" se calcula localmente (`canCreate`) contra los inputs actuales + defaults; el backend sigue validando (422) al crear.
 - Verificado por navegador: tipeo lento en `precio` y `propietario_dni` sin pérdida de foco; el campo override permanece editable en "Requiere tu intervención".
+
+## Sprints 4 y 5 — PDF + Notificaciones + Documentación en Propiedad (2026-06)
+Verificado 100% (iteration_40): backend 7/7 pytest (`test_documents_sprint4_5.py`), frontend E2E completo, tsc limpio.
+
+- **Sprint 4 · Generación de PDF a demanda** (`documents/pdf.py`, reportlab): `GET /api/documents/{id}/pdf` devuelve `application/pdf` inline (ver/descargar/imprimir). Reusa cuerpo + bloques condicionales; según método: **presencial** → líneas de firma manuscrita (o imagen dibujada/escaneada), **digital** → bloque de certificación (firmante, fecha, hash). Botón "Generar / Descargar PDF" en el detalle. Sin almacenamiento (on-demand). `reportlab` agregado a requirements.
+- **Sprint 5 · Notificaciones in-app** (opción A, nativa, sin proveedores): colección Mongo `notifications` (`documents/notifications.py`) + `routes_notifications.py` (`GET /api/notifications`, `POST /{id}/read`, `POST /read-all`). Al firmar un participante se crea "✍️ Firma recibida" con el nombre del firmante y link al documento. **Campanita 🔔** en el header (`NotificationBell.tsx`, polling 20s) con badge de no leídas, panel, marcar leídas y navegación al documento.
+- **Documentación en la Propiedad** (`DocumentacionSection.tsx`): tarjeta con checklist Autorización/Reserva/Recibo/Escritura; ☑ verde si hay documento firmado de esa categoría, ⏳ ámbar si está en proceso, ○ si no existe (+ "Crear"). "Ver documento" navega al detalle. Endpoint `GET /api/documents/by-property/{id}` (batch, sin N+1: 3 requests; ~1.7s con 38 docs vs 15s antes) + skeleton de carga.
+- **Aviso de DNI** (quick win): en la Revisión del wizard, los campos obligatorios que VERA no pudo autocompletar desde una persona/propiedad muestran un hint ("La persona seleccionada no tiene este dato cargado; completalo acá."). Nuevo prop `hint` en el `Input` de `@vera/ui`.
+- **TODO documentado** (code review): `notifications.list_recent` no filtra por asesor (OK para MVP mono-usuario; agregar filtro por tenant cuando haya auth de rol).

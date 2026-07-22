@@ -21,8 +21,16 @@ function pick(docs: DocumentDetail[], category: string) {
 /** Tarjeta "Documentación" dentro de la propiedad: el ciclo de vida documental
  * vive junto a la propiedad (se tilda al firmar, con acceso directo al documento). */
 export const DocumentacionSection = ({ propertyId }: { propertyId: string }) => {
-  const { data = [] } = useDocumentsByProperty(propertyId);
+  const { data = [], isLoading } = useDocumentsByProperty(propertyId);
   const navigate = useNavigate();
+
+  if (isLoading) {
+    return (
+      <section className="ws-section" data-testid="property-documentacion">
+        <p className="vera-detail__muted" data-testid="doc-checklist-loading">Buscando documentos…</p>
+      </section>
+    );
+  }
 
   return (
     <section className="ws-section" data-testid="property-documentacion">
