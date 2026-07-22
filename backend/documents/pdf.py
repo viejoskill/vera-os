@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import base64
 import io
+import os
 import re
 
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
@@ -15,7 +16,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.platypus import (
-    Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle,
+    HRFlowable, Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle,
 )
 from reportlab.lib import colors
 
@@ -23,12 +24,59 @@ from documents import signatures
 
 _VAR_RE = re.compile(r"\{\{\s*([\w.]+)\s*\}\}")
 
+# Logo real de Varela (opcional): si existe este archivo, se usa en el encabezado.
+_LOGO_PATH = os.path.join(os.path.dirname(__file__), "assets", "varela_logo.png")
+_MONEDAS = {
+    "USD": "dólares estadounidenses USD",
+    "ARS": "pesos argentinos ARS",
+}
+# Variables monetarias: se muestran con separador de miles.
+_MONEY_KEYS = {"precio", "precio_minimo"}
+
+
+def _fmt_miles(value) -> str:
+    """129000 → 129.000 (formato argentino: punto como separador de miles)."""
+    s = str(value).strip()
+    if re.fullmatch(r"\d+", s):
+        return f"{int(s):,}".replace(",", ".")
+    if re.fullmatch(r"\d+\.\d+", s):
+        entero, dec = s.split(".")
+        return f"{int(entero):,}".replace(",", ".") + "," + dec
+    return s
+
+
+def _display_vars(resolved: dict) -> dict:
+    """Valores listos para mostrar: moneda con nombre completo + miles."""
+    out = {}
+    for k, v in (resolved or {}).items():
+        if k == "moneda":
+            out[k] = _MONEDAS.get(str(v), str(v))
+        elif k in _MONEY_KEYS:
+            out[k] = _fmt_miles(v)
+        else:
+            out[k] = v
+    return out
+
 
 def _interpolate(text: str, vars: dict) -> str:
+    """Interpola {{var}} en <b>negrita</b> (los datos importantes resaltan)."""
     def repl(m):
         v = vars.get(m.group(1))
-        return "" if v in (None, "") else str(v)
+        return "" if v in (None, "") else f"<b>{v}</b>"
     return _VAR_RE.sub(repl, text)
+
+
+_LABEL_RE = re.compile(r"^([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ /—-]{1,40})\.")
+
+
+def _emphasize(text: str) -> str:
+    """Resalta el rótulo de la cláusula (PRECIO., MODALIDAD — …) y AUTORIZANTE/AUTORIZADO."""
+    m = _LABEL_RE.match(text)
+    if m:
+        text = f"<b>{m.group(1)}</b>" + text[m.end() - 1:]
+    for word in ("AUTORIZANTE", "AUTORIZADO"):
+        text = text.replace(word, f"<b>{word}</b>")
+    return text
 
 
 def _visible(block: dict, vars: dict) -> bool:
@@ -55,7 +103,32 @@ def _styles():
                            fontSize=8.5, leading=12, textColor=colors.HexColor("#666666"))
     cert = ParagraphStyle("veraCert", parent=ss["Normal"], fontName="Helvetica",
                           fontSize=9.5, leading=14)
-    return {"body": body, "h1": h1, "small": small, "cert": cert}
+    brand = ParagraphStyle("veraBrand", parent=ss["Normal"], fontName="Helvetica-Bold",
+                           fontSize=13, textColor=colors.HexColor("#1a1a1a"), leading=15,
+                           spaceAfter=0)
+    brandsub = ParagraphStyle("veraBrandSub", parent=ss["Normal"], fontName="Helvetica",
+                              fontSize=7.5, textColor=colors.HexColor("#888888"), leading=10)
+    return {"body": body, "h1": h1, "small": small, "cert": cert,
+            "brand": brand, "brandsub": brandsub}
+
+
+def _header_flowables(st: dict) -> list:
+    """Encabezado de marca (logo real si existe; si no, wordmark Varela)."""
+    flow = []
+    if os.path.exists(_LOGO_PATH):
+        try:
+            img = Image(_LOGO_PATH, width=3.4 * cm, height=1.2 * cm, kind="proportional")
+            img.hAlign = "LEFT"
+            flow.append(img)
+        except Exception:  # noqa: BLE001
+            flow.append(Paragraph("VARELA <font color='#888888'>PROPIEDADES</font>", st["brand"]))
+    else:
+        flow.append(Paragraph("VARELA <font color='#888888'>PROPIEDADES</font>", st["brand"]))
+        flow.append(Paragraph("Inmobiliaria", st["brandsub"]))
+    flow.append(Spacer(1, 0.15 * cm))
+    flow.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor("#d8d8d8"),
+                           spaceBefore=2, spaceAfter=14))
+    return flow
 
 
 def _decode_data_url(data_url: str):
@@ -116,16 +189,19 @@ def _signature_flowables(document: dict, participants: list[dict], st: dict) -> 
 
 def build_document_pdf(document: dict, participants: list[dict]) -> bytes:
     st = _styles()
-    vars_ = document.get("resolved_variables") or {}
+    raw_vars = document.get("resolved_variables") or {}
+    disp_vars = _display_vars(raw_vars)
     snapshot = document.get("template_snapshot") or {}
     blocks = (snapshot.get("body") or {}).get("blocks", [])
 
-    story = []
+    story = _header_flowables(st)
     for b in blocks:
-        if not _visible(b, vars_):
+        if not _visible(b, raw_vars):
             continue
-        text = _interpolate(b.get("value", ""), vars_)
-        story.append(Paragraph(text, st["h1"] if b.get("type") == "heading" else st["body"]))
+        if b.get("type") == "heading":
+            story.append(Paragraph(_interpolate(b.get("value", ""), disp_vars), st["h1"]))
+        else:
+            story.append(Paragraph(_emphasize(_interpolate(b.get("value", ""), disp_vars)), st["body"]))
 
     story += _signature_flowables(document, participants, st)
 
