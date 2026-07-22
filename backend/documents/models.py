@@ -58,8 +58,10 @@ class TemplateVariable(CamelModel):
     source: str = "input"          # person | property | input | system
     role: Optional[str] = None     # p.ej. comprador/vendedor cuando source=person
     path: Optional[str] = None     # p.ej. full_name / address / price
-    type: str = "text"             # text | money | date | number
+    type: str = "text"             # text | number | date | select | textarea | money
     required: bool = False
+    options: list[dict] = []       # para type=select: [{value,label}]
+    default: Optional[Any] = None  # valor por defecto (editable) para source=input
 
 
 class DocumentTemplate(CamelModel):

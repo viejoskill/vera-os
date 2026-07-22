@@ -74,7 +74,7 @@ async def resolve(template: dict, property_id: str | None,
         origin = None
 
         if source == "system":
-            if key in ("date", "today"):
+            if key in ("date", "today", "fecha"):
                 value, origin = date.today().isoformat(), "system"
         elif source == "property" and prop and path:
             raw = prop.get(_PROPERTY_PATHS.get(path, path))
@@ -90,18 +90,25 @@ async def resolve(template: dict, property_id: str | None,
         # Un valor tipeado por el usuario (override) siempre puede completar / corregir.
         if value in _EMPTY and inputs.get(key) not in _EMPTY:
             value, origin = inputs[key], "input"
+        # Valor por defecto (editable) para variables de entrada sin dato.
+        if value in _EMPTY and v.get("default") not in (None, ""):
+            value, origin = v["default"], "default"
 
-        if value not in _EMPTY:
-            resolved[key] = value
-            status = "resolved"
+        empty = value in _EMPTY
+        if source == "input":
+            status = "input"              # siempre editable por el usuario
+        elif not empty:
+            status = "resolved"           # ✅ completado por VERA
         elif required:
-            missing.append(key)
-            status = "missing"
-        elif source in ("property", "person", "system"):
-            warnings.append(key)
-            status = "warning"
+            status = "missing"            # ✏️ obligatorio faltante (override)
         else:
-            status = "optional"
+            status = "warning"            # ⚠️ opcional que VERA no pudo completar
+            warnings.append(key)
+
+        if required and empty:
+            missing.append(key)
+        if not empty:
+            resolved[key] = value
 
         fields.append({
             "key": key,
@@ -110,6 +117,7 @@ async def resolve(template: dict, property_id: str | None,
             "source": source,
             "role": v.get("role"),
             "required": required,
+            "options": v.get("options", []),
             "value": value,
             "origin": origin,
             "status": status,

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Check, Download, PenLine, ShieldCheck, X } from 'lucide-react';
 import { env } from '@vera/config';
+import { renderBlocks } from '@app/screens/documents/render';
 
 interface SignView {
   token: string;
@@ -143,9 +144,11 @@ export const SignScreen = () => {
               <div className="vera-sign__printable" data-testid="signed-document">
                 <h2 className="vera-signed__doc-title">{view.document.title}</h2>
                 <div className="vera-sign__doc">
-                  {(view.document.body as { blocks?: { type: string; value: string }[] })?.blocks?.map((b, i) => (
-                    <p key={i}>{interpolate(b.value, view.document.resolvedVariables)}</p>
-                  )) ?? <p className="vera-sign__muted">Documento sin cuerpo definido.</p>}
+                  {renderBlocks(view.document.body, view.document.resolvedVariables).map((b, i) =>
+                    b.type === 'heading'
+                      ? <h3 key={i} className="vera-signed__doc-title">{b.value}</h3>
+                      : <p key={i}>{b.value}</p>,
+                  )}
                 </div>
 
                 <div className="vera-signed__cert" data-testid="signed-cert">
@@ -194,9 +197,11 @@ export const SignScreen = () => {
             </p>
 
             <div className="vera-sign__doc">
-              {(view.document.body as { blocks?: { type: string; value: string }[] })?.blocks?.map((b, i) => (
-                <p key={i}>{interpolate(b.value, view.document.resolvedVariables)}</p>
-              )) ?? <p className="vera-sign__muted">Documento sin cuerpo definido.</p>}
+              {renderBlocks(view.document.body, view.document.resolvedVariables).map((b, i) =>
+                b.type === 'heading'
+                  ? <h3 key={i} className="vera-signed__doc-title">{b.value}</h3>
+                  : <p key={i}>{b.value}</p>,
+              )}
             </div>
 
             {!isDigital && (
@@ -252,12 +257,5 @@ export const SignScreen = () => {
     </div>
   );
 };
-
-function interpolate(text: string, vars: Record<string, unknown>): string {
-  return text.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, key) => {
-    const v = vars[key as string];
-    return v === undefined || v === null ? `{{${key}}}` : String(v);
-  });
-}
 
 export default SignScreen;

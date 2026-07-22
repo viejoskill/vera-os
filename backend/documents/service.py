@@ -46,6 +46,7 @@ async def create_template(data: dict) -> dict:
         "version": 1,
         "description": data.get("description", ""),
         "variables": data.get("variables", []),
+        "signature_methods": data.get("signature_methods", []),
         "body": data.get("body"),
         "status": data.get("status", "draft"),
     }
@@ -65,6 +66,7 @@ async def new_template_version(template_id: str, patch: dict) -> dict:
         "version": next_version,
         "description": patch.get("description") if patch.get("description") is not None else base.get("description", ""),
         "variables": patch.get("variables") if patch.get("variables") is not None else base.get("variables", []),
+        "signature_methods": patch.get("signature_methods") if patch.get("signature_methods") is not None else base.get("signature_methods", []),
         "body": patch.get("body") if patch.get("body") is not None else base.get("body"),
         "status": "draft",
     }

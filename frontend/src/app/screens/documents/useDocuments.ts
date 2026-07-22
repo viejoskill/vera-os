@@ -61,6 +61,8 @@ export interface TemplateVariable {
   path?: string | null;
   type: string;
   required: boolean;
+  options?: { value: string; label: string }[];
+  default?: unknown;
 }
 
 export interface TemplateDetail extends TemplateRow {
@@ -95,9 +97,10 @@ export interface ResolveField {
   source: TemplateVariable['source'];
   role?: string | null;
   required: boolean;
+  options?: { value: string; label: string }[];
   value: unknown;
-  origin?: 'property' | 'person' | 'system' | 'input' | null;
-  status: 'resolved' | 'missing' | 'warning' | 'optional';
+  origin?: 'property' | 'person' | 'system' | 'input' | 'default' | null;
+  status: 'resolved' | 'input' | 'missing' | 'warning';
 }
 
 export interface ResolveResult {
@@ -141,7 +144,9 @@ export interface DocumentDetail extends DocumentRow {
   signatureMethod?: string | null;
   signatureState: 'none' | 'pending' | 'in_progress' | 'signed' | 'rejected';
   templateSnapshot?: { signatureMethods?: string[]; body?: unknown };
+  resolvedVariables?: Record<string, unknown>;
   lockedAt?: string | null;
+  createdAt?: string;
   participants: DocumentParticipant[];
   relationships: { id: string; entityType: string; entityId: string; role?: string | null }[];
 }

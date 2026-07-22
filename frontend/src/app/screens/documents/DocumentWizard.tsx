@@ -132,8 +132,11 @@ export const DocumentWizard = () => {
   };
 
   const resolved = result?.fields.filter((f) => f.status === 'resolved') ?? [];
-  const needsUser = result?.fields.filter((f) => f.status === 'missing' || (f.source === 'input' && f.status === 'optional')) ?? [];
+  const needsUser = result?.fields.filter((f) => f.status === 'input' || f.status === 'missing') ?? [];
   const warnings = result?.fields.filter((f) => f.status === 'warning') ?? [];
+
+  const fieldValue = (f: { key: string; value: unknown }) =>
+    inputs[f.key] ?? (f.value === null || f.value === undefined ? '' : String(f.value));
 
   return (
     <div className="vera-screen" data-testid="document-wizard">
@@ -315,16 +318,53 @@ export const DocumentWizard = () => {
               {needsUser.length > 0 && (
                 <div className="vera-review__group vera-review__group--edit" data-testid="review-missing">
                   <h3 className="vera-review__title"><PencilLine size={16} /> Requiere tu intervención</h3>
-                  {needsUser.map((f) => (
-                    <Input
-                      key={f.key}
-                      label={`${f.label}${f.required ? ' *' : ' (opcional)'}`}
-                      value={inputs[f.key] ?? ''}
-                      onChange={(e) => setInputs((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                      placeholder={f.required ? 'Dato obligatorio' : 'Opcional'}
-                      data-testid={`review-input-${f.key}`}
-                    />
-                  ))}
+                  {needsUser.map((f) => {
+                    const label = `${f.label}${f.required ? ' *' : ' (opcional)'}`;
+                    const val = fieldValue(f);
+                    const onChange = (v: string) => setInputs((prev) => ({ ...prev, [f.key]: v }));
+                    if (f.type === 'select') {
+                      return (
+                        <label key={f.key} className="vera-field">
+                          <span className="vera-field__label">{label}</span>
+                          <select
+                            className="vera-select"
+                            value={val}
+                            onChange={(e) => onChange(e.target.value)}
+                            data-testid={`review-input-${f.key}`}
+                          >
+                            {(f.options ?? []).map((o) => (
+                              <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
+                          </select>
+                        </label>
+                      );
+                    }
+                    if (f.type === 'textarea') {
+                      return (
+                        <label key={f.key} className="vera-field">
+                          <span className="vera-field__label">{label}</span>
+                          <textarea
+                            className="vera-textarea"
+                            rows={3}
+                            value={val}
+                            onChange={(e) => onChange(e.target.value)}
+                            data-testid={`review-input-${f.key}`}
+                          />
+                        </label>
+                      );
+                    }
+                    return (
+                      <Input
+                        key={f.key}
+                        label={label}
+                        type={f.type === 'number' ? 'number' : 'text'}
+                        value={val}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder={f.required ? 'Dato obligatorio' : 'Opcional'}
+                        data-testid={`review-input-${f.key}`}
+                      />
+                    );
+                  })}
                 </div>
               )}
 

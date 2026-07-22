@@ -7043,3 +7043,38 @@ p {
   .vera-sign__actions--noprint { display: none !important; }
 }
 
+
+/* ===== Controles select/textarea (wizard + detalle) ===== */
+.vera-select, .vera-textarea {
+  width: 100%; font: inherit; padding: 10px 12px;
+  border-radius: var(--vera-radius-md); border: 1px solid var(--vera-color-border);
+  background: var(--vera-color-surface); color: var(--vera-color-text);
+  transition: border-color 200ms ease;
+}
+.vera-select:focus, .vera-textarea:focus { outline: none; border-color: var(--vera-color-primary); }
+.vera-textarea { resize: vertical; min-height: 72px; }
+
+/* ===== Detalle · estado humano ===== */
+.vera-detail__hero { display: flex; align-items: center; gap: 10px; font-size: 20px; color: var(--vera-color-text); }
+.vera-detail__hero strong { font-size: 20px; font-weight: var(--vera-font-weight-semibold); }
+.vera-detail__hero.is-signed strong { color: #35c47f; }
+.vera-detail__hero-when { font-size: var(--vera-font-size-sm); color: var(--vera-color-text-secondary); font-weight: 400; }
+
+/* ===== Detalle · Relacionado con ===== */
+.vera-related__row {
+  display: flex; align-items: center; gap: var(--vera-space-sm); width: 100%; text-align: left;
+  padding: 10px; border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-md);
+  background: var(--vera-color-surface); color: var(--vera-color-text); font: inherit; cursor: pointer;
+  transition: border-color 200ms ease;
+}
+.vera-related__row:hover:not(:disabled):not(.is-static) { border-color: var(--vera-color-primary); }
+.vera-related__row:disabled, .vera-related__row.is-static { cursor: default; opacity: 0.85; }
+.vera-related__ic { color: var(--vera-color-primary); flex-shrink: 0; }
+.vera-related__main { display: flex; flex-direction: column; }
+.vera-related__label { font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); }
+.vera-related__value { font-weight: var(--vera-font-weight-medium); }
+
+/* ===== Detalle · preview del documento ===== */
+.vera-doc-preview { display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; }
+.vera-doc-preview__h { font-size: 15px; font-weight: 700; color: var(--vera-color-text); }
+.vera-doc-preview__p { font-size: 13px; line-height: 1.6; color: var(--vera-color-text-secondary); }

@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  ArrowLeft, Check, CircleDashed, Clock, Eye, FileText, History,
-  Link2, Mail, MessageCircle, PenLine, X,
+  ArrowLeft, Briefcase, Check, CheckCircle2, CircleDashed, Clock, Eye, FileText, History,
+  Home, Link2, Mail, MessageCircle, PenLine, User, X,
 } from 'lucide-react';
 import { Badge, Button } from '@vera/ui';
 import { PERSON_ROLE_LABELS } from '@vera/types';
+import { useProperties } from '@app/hooks/useProperties';
 import {
   useDocument, useDocumentHistory, useSendSignature, useSetSignatureMethod,
   type DocumentParticipant,
 } from './useDocuments';
+import { renderBlocks } from './render';
 
 const DOC_STATUS: Record<string, string> = {
   draft: 'Borrador', generated: 'Generado', shared: 'Compartido', signed: 'Firmado', archived: 'Archivado',
@@ -57,7 +59,12 @@ export const DocumentDetail = () => {
   const history = useDocumentHistory(id);
   const setMethod = useSetSignatureMethod(id ?? '');
   const send = useSendSignature(id ?? '');
+  const properties = useProperties();
   const [flash, setFlash] = useState<string>('');
+
+  const fmtDate = (dt?: string | null) => (dt ? new Date(dt).toLocaleDateString('es-AR') : '');
+  const fmtTime = (dt?: string | null) =>
+    dt ? new Date(dt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : '';
 
   if (doc.isLoading) return <div className="vera-screen"><p className="vera-docs__empty">Cargando documento…</p></div>;
   if (doc.isError || !doc.data)
@@ -74,6 +81,11 @@ export const DocumentDetail = () => {
   const d = doc.data;
   const allowedMethods = d.templateSnapshot?.signatureMethods ?? [];
   const participants = d.participants ?? [];
+  const propertyRel = d.relationships?.find((r) => r.entityType === 'property');
+  const property = properties.data?.find((p) => p.id === propertyRel?.entityId);
+  const opportunityRel = d.relationships?.find((r) => r.entityType === 'opportunity');
+  const blocks = renderBlocks(d.templateSnapshot?.body, d.resolvedVariables ?? {});
+  const isSigned = d.signatureState === 'signed' || d.status === 'signed';
 
   const notify = (msg: string) => {
     setFlash(msg);
@@ -107,9 +119,13 @@ export const DocumentDetail = () => {
         {/* Columna izquierda: estado + firmantes */}
         <div className="vera-detail__col">
           <div className="vera-detail__card" data-testid="detail-status-card">
-            <div className="vera-detail__stat">
-              <span className="vera-detail__stat-label">Estado</span>
-              <Badge tone="muted" data-testid="detail-doc-status">{DOC_STATUS[d.status] ?? d.status}</Badge>
+            <span className="vera-detail__stat-label">Estado del Documento</span>
+            <div className={`vera-detail__hero ${isSigned ? 'is-signed' : ''}`} data-testid="detail-doc-status">
+              {isSigned ? <CheckCircle2 size={22} className="vera-sig-ic--ok" /> : <Clock size={22} className="vera-sig-ic--wait" />}
+              <strong>{DOC_STATUS[d.status] ?? d.status}</strong>
+              {d.lockedAt && (
+                <span className="vera-detail__hero-when">· {fmtDate(d.lockedAt)} · {fmtTime(d.lockedAt)}</span>
+              )}
             </div>
             <div className="vera-detail__stat">
               <span className="vera-detail__stat-label">Firma</span>
@@ -152,6 +168,7 @@ export const DocumentDetail = () => {
                   <span className="vera-sig-row__name">{p.personName ?? 'Persona'}</span>
                   <span className="vera-sig-row__meta">
                     {roleLabel(p.role)}{p.signatureRequired ? '' : ' · opcional'} · {PART_STATUS[p.signatureStatus] ?? p.signatureStatus}
+                    {p.signedAt ? ` · ${fmtDate(p.signedAt)} ${fmtTime(p.signedAt)}` : ''}
                   </span>
                 </div>
                 {p.signatureStatus !== 'signed' && d.status !== 'archived' && (
@@ -174,6 +191,47 @@ export const DocumentDetail = () => {
             ))}
           </div>
 
+          <div className="vera-detail__card" data-testid="detail-related">
+            <h2 className="vera-review__title">Relacionado con</h2>
+            <button
+              type="button"
+              className="vera-related__row"
+              disabled={!property}
+              onClick={() => property && navigate(`/propiedades/${property.id}`)}
+              data-testid="related-property"
+            >
+              <Home size={16} className="vera-related__ic" />
+              <div className="vera-related__main">
+                <span className="vera-related__label">Propiedad</span>
+                <span className="vera-related__value">
+                  {property ? (property.title || property.address || 'Propiedad') : 'Sin vincular'}
+                </span>
+              </div>
+            </button>
+            {participants.filter((p) => p.personId).map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className="vera-related__row"
+                onClick={() => navigate(`/personas/${p.personId}`)}
+                data-testid={`related-person-${p.personId}`}
+              >
+                <User size={16} className="vera-related__ic" />
+                <div className="vera-related__main">
+                  <span className="vera-related__label">{roleLabel(p.role) || 'Persona'}</span>
+                  <span className="vera-related__value">{p.personName ?? 'Persona'}</span>
+                </div>
+              </button>
+            ))}
+            <div className="vera-related__row is-static" data-testid="related-operation">
+              <Briefcase size={16} className="vera-related__ic" />
+              <div className="vera-related__main">
+                <span className="vera-related__label">Operación</span>
+                <span className="vera-related__value">{opportunityRel ? 'Vinculada' : 'Sin vincular'}</span>
+              </div>
+            </div>
+          </div>
+
           <div className="vera-detail__card" data-testid="detail-actions">
             <h2 className="vera-review__title">Acciones</h2>
             <div className="vera-detail__action-row">
@@ -185,8 +243,21 @@ export const DocumentDetail = () => {
           </div>
         </div>
 
-        {/* Columna derecha: timeline */}
+        {/* Columna derecha: documento + timeline */}
         <div className="vera-detail__col">
+          {blocks.length > 0 && (
+            <div className="vera-detail__card" data-testid="detail-document-preview">
+              <h2 className="vera-review__title"><FileText size={16} /> Documento</h2>
+              <div className="vera-doc-preview">
+                {blocks.map((b, i) =>
+                  b.type === 'heading'
+                    ? <h3 key={i} className="vera-doc-preview__h">{b.value}</h3>
+                    : <p key={i} className="vera-doc-preview__p">{b.value}</p>,
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="vera-detail__card" data-testid="detail-timeline">
             <h2 className="vera-review__title"><History size={16} /> Historial</h2>
             {history.isLoading && <p className="vera-detail__muted">Cargando historial…</p>}
