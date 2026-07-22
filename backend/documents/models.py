@@ -124,6 +124,7 @@ class DocumentModel(CamelModel):
     template_id: str
     template_key: str
     template_version: int
+    template_snapshot: Optional[dict] = None
     category: str
     title: str = ""
     status: str = "draft"
@@ -160,3 +161,20 @@ class TransitionRequest(CamelModel):
     """Transición del ciclo de vida único (draft→generated→shared→signed→archived)."""
     status: str
     actor: Optional[str] = None
+
+
+# --- Serialización a camelCase (contrato de VERA en el borde de la API) ----- #
+def to_api_template(row: dict) -> dict:
+    return DocumentTemplate(**row).model_dump(by_alias=True)
+
+
+def to_api_document(row: dict) -> dict:
+    return DocumentModel(**row).model_dump(by_alias=True)
+
+
+def to_api_relationship(row: dict) -> dict:
+    return DocumentRelationship(**row).model_dump(by_alias=True)
+
+
+def to_api_signature(row: dict) -> dict:
+    return DocumentSignature(**row).model_dump(by_alias=True)
