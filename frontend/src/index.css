@@ -7040,6 +7040,13 @@ p {
     position: absolute; top: 0; left: 0; width: 100%;
     margin: 0; padding: 24px; border-radius: 0; box-shadow: none;
   }
+  /* En pantalla el documento tiene scroll (max-height); al imprimir debe fluir
+     completo, si no el certificado se monta sobre el texto recortado. */
+  .vera-sign__printable .vera-sign__doc {
+    max-height: none !important; overflow: visible !important; padding: 0 !important;
+  }
+  .vera-signed__cert { break-inside: avoid; page-break-inside: avoid; margin-top: 12px; }
+  .vera-signed__cert-sign img { break-inside: avoid; }
   .vera-sign__actions--noprint { display: none !important; }
 }
 

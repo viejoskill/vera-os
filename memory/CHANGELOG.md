@@ -74,3 +74,8 @@ Verificado 100% (iteration_40): backend 7/7 pytest (`test_documents_sprint4_5.py
 ## 2026-06 · Fix suite de tests + verificación formato PDF
 - **Fix pytest** (`tests/test_documents_sprint4_5.py`): `REACT_APP_BACKEND_URL` sólo vive en `/app/frontend/.env`, no en el backend → el test rompía con `AttributeError: 'NoneType'.rstrip`. Ahora el test hace `load_dotenv("/app/frontend/.env")` y usa fallback `http://localhost:8001`. Suite verde 7/7.
 - **Verificación formato PDF "Autorización de Venta"** (`documents/pdf.py`): confirmado vía API real (precio 129000) → encabezado "VARELA PROPIEDADES", `USD 129.000` (separador de miles argentino), negritas en DNI/nombres y rótulos de cláusula, bloque de certificación digital. OK.
+
+## 2026-07-22 · Fix impresión de firma + copiar enlace
+- **PDF/impresión montada** (`index.css` @media print): `.vera-sign__doc` tenía `max-height:260px; overflow:auto`; al imprimir recortaba el texto y el "Certificado de firma" se montaba encima. Ahora en print el documento fluye completo (`max-height:none; overflow:visible`) y el certificado usa `break-inside:avoid`. Verificado con emulación print → sin solapamiento.
+- **Copiar enlace de firma** (`DocumentDetail.tsx`): `navigator.clipboard.writeText` fallaba en silencio (contexto iframe/no-seguro) y el flash igual decía "copiado" → el usuario pegaba la URL del sistema. Ahora `copyLink()` intenta clipboard API, cae a `execCommand('copy')`, y si falla muestra la URL real en el flash (12s) para copiar a mano.
+- Nota data: hay personas de prueba con emoji en el nombre ("Cata 💗") → en el PDF reportlab se ve como ■ (glyph no soportado por Helvetica). Pendiente sanitizar glyphs si molesta.

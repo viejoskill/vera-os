@@ -87,9 +87,34 @@ export const DocumentDetail = () => {
   const blocks = renderBlocks(d.templateSnapshot?.body, d.resolvedVariables ?? {});
   const isSigned = d.signatureState === 'signed' || d.status === 'signed';
 
-  const notify = (msg: string) => {
+  const notify = (msg: string, ms = 2500) => {
     setFlash(msg);
-    setTimeout(() => setFlash(''), 2500);
+    setTimeout(() => setFlash(''), ms);
+  };
+
+  const copyLink = async (url: string): Promise<boolean> => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url);
+        return true;
+      }
+    } catch {
+      /* cae al fallback */
+    }
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch {
+      return false;
+    }
   };
 
   const handleSend = async (p: DocumentParticipant, channel: 'whatsapp' | 'email' | 'link') => {
@@ -97,10 +122,11 @@ export const DocumentDetail = () => {
     if (channel === 'whatsapp' && res.whatsappUrl) window.open(res.whatsappUrl, '_blank');
     else if (channel === 'email' && res.mailtoUrl) window.open(res.mailtoUrl, '_blank');
     else if (channel === 'link') {
-      await navigator.clipboard.writeText(res.url).catch(() => undefined);
-      notify('Enlace de firma copiado');
+      const ok = await copyLink(res.url);
+      notify(ok ? 'Enlace de firma copiado al portapapeles' : `Copiá este enlace de firma: ${res.url}`, ok ? 2500 : 12000);
+      return;
     }
-    if (channel !== 'link') notify('Enlace listo para enviar');
+    notify('Enlace listo para enviar');
   };
 
   return (
