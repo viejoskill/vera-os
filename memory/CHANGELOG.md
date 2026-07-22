@@ -55,3 +55,9 @@ Primer template REAL del motor documental (NO mock) + motor de variables con def
 - **Sprint 5 — WhatsApp**: enviar → cliente → firma → **notificación automática** al asesor.
 - **Sprint 6 — Automatizaciones**: al firmarse una Autorización → Propiedad a estado "Captada" → Knowledge Engine actualiza propietario + oportunidad + crea tarea.
 - **Post-template (pedido del usuario)**: dentro de la Propiedad, checklist **"Documentación"** (Autorización/Reserva/Recibo/Escritura) que se tilda cuando se firma + "Ver Documento". Ya viable ahora que existe el template.
+
+## Fix · Foco en campos de la Revisión (2026-06)
+Bug reportado: al tipear un número/letra en los campos de la Revisión, "se auto-guardaba y no dejaba terminar" (se perdía el foco). Causa: el wizard re-resolvía (fetch) en cada cambio de `inputs`, lo que re-renderizaba y, peor, movía un campo override (ej. DNI) de "✏️" a "✅" apenas se escribía, robando el foco.
+- Ahora el resolve solo corre ante cambios ESTRUCTURALES (template/propiedad/personas), no al tipear.
+- La validación "listo para crear" se calcula localmente (`canCreate`) contra los inputs actuales + defaults; el backend sigue validando (422) al crear.
+- Verificado por navegador: tipeo lento en `precio` y `propietario_dni` sin pérdida de foco; el campo override permanece editable en "Requiere tu intervención".

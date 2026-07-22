@@ -82,15 +82,14 @@ export const DocumentWizard = () => {
     [personByRole],
   );
 
-  // Revalida en vivo al entrar a Revisión y al editar datos faltantes.
+  // Resolvemos SOLO ante cambios estructurales (template/propiedad/personas).
+  // NO al tipear: eso re-renderiza y roba el foco del campo. La validación de
+  // "listo para crear" se calcula localmente contra los inputs actuales.
   useEffect(() => {
     if (step !== 'review' || !templateId) return;
-    const t = setTimeout(() => {
-      resolve.mutate({ templateId, propertyId: propertyId || null, persons, inputs });
-    }, 300);
-    return () => clearTimeout(t);
+    resolve.mutate({ templateId, propertyId: propertyId || null, persons, inputs });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, templateId, propertyId, persons, inputs]);
+  }, [step, templateId, propertyId, persons]);
 
   const result: ResolveResult | undefined = resolve.data;
 
@@ -137,6 +136,15 @@ export const DocumentWizard = () => {
 
   const fieldValue = (f: { key: string; value: unknown }) =>
     inputs[f.key] ?? (f.value === null || f.value === undefined ? '' : String(f.value));
+
+  // Un obligatorio está satisfecho si el usuario lo tipeó o si VERA ya lo resolvió (dato/default).
+  const isFilled = (f: { key: string; value: unknown }) => {
+    const iv = inputs[f.key];
+    if (iv !== undefined && String(iv).trim() !== '') return true;
+    return f.value !== null && f.value !== undefined && String(f.value).trim() !== '';
+  };
+  const canCreate =
+    !!result && result.fields.filter((f) => f.required).every((f) => isFilled(f));
 
   return (
     <div className="vera-screen" data-testid="document-wizard">
@@ -406,7 +414,7 @@ export const DocumentWizard = () => {
         {step === 'review' ? (
           <Button
             onClick={handleCreate}
-            disabled={!result?.ready || create.isPending}
+            disabled={!canCreate || create.isPending}
             data-testid="wizard-create"
           >
             {create.isPending ? <Loader2 size={16} className="vera-spin" /> : <Check size={16} />} Crear documento
