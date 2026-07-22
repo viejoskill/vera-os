@@ -7,6 +7,15 @@
 > representación. El documento vive dentro de VERA, relacionado con Personas, Propiedades y
 > Operaciones durante todo su ciclo de vida. Son **ciudadanos de primera clase**.
 
+## Ajustes aprobados (incorporados en la implementación)
+- `Document` suma: **`category`** (denormalizada del template), **`origin`** (`manual|system|import|arturito`),
+  **`locked_at`** (inmutable al firmar), **`document_hash`** (integridad: sha256 de snapshot+resueltas),
+  **`pdf_status`** (`none|pending|generated|failed`, **separado** del `status` del documento) y
+  **`resolved_variables`** (variables resueltas por documento). `template_version` ya estaba.
+- `DocumentRelationship` mantiene **`role`**. Ver DDL final en `backend/documents/schema.sql`.
+- Estructura backend implementada como módulo cohesivo `backend/documents/`
+  (`models.py`, `repository.py`, `service.py`, `events.py`, `api.py`, `schema.sql`).
+
 ---
 
 ## 1) Modelo de entidades

@@ -782,3 +782,15 @@ Corrige el 404 del sprint anterior (`/propiedad/{code}` no existe en el sitio p�
 - **Frontend**: "Compartir" ya consumía `property.publicUrl` (sin cambios); ahora copia la URL correcta (`?propiedad=<id>`).
 - **Deuda menor futura**: `serializers._property_code` cae a `VAR-000000` en uuid inválido (log/raise defensivo).
 
+
+
+## Implemented (Sprint "Documentos v1 — Arquitectura Fundacional" — 2026-07)
+Motor documental de VERA (los documentos son entidades del negocio, no PDFs). Objetivo del sprint: modelo de datos + relaciones + scaffolding. NO se implementó: generación de PDF, migración de pantallas, lógica de firma, automatizaciones, integración Knowledge (solo preparada). Doc oficial: `/app/docs/architecture/documents-module.md`.
+- **4 entidades** (Supabase/Postgres): `document_templates` (versionado inmutable por `template_key`+`version`), `documents` (instancia atada a una versión + `template_snapshot` congelado), `document_relationships` (polimórfica: property|person|opportunity|task + `role`), `document_signatures` (múltiples firmantes, cada uno = Persona). DDL: `backend/documents/schema.sql`.
+- **Campos aprobados**: Document con `category`, `origin`, `locked_at`, `document_hash` (sha256 snapshot+resueltas), `pdf_status` (separado del `status`), `resolved_variables`, `template_version`.
+- **Ciclo de vida único**: draft→generated→shared→signed→archived (transiciones validadas). **Historial como eventos** en el ledger MongoDB existente (`documents/events.py` → `events.pipeline.emit`, tipos `document.created/edited/generated/shared/signed/archived`). `events.store.list_by_document` para el timeline. Integración Knowledge preparada (un `document.signed` ya es evento).
+- **Backend módulo independiente** `backend/documents/`: `models.py`, `repository.py`, `service.py`, `events.py`, `api.py`. Router montado en `/api/documents` (templates + documents + relationships + signatures, CRUD básico + versionado + transiciones). Validación: un documento nunca queda aislado (≥1 relación); bloqueo de edición si `locked_at`.
+- **Frontend scaffolding**: feature flag `documentos`, item de nav "Documentos", ruta `/documentos`, pantalla `DocumentsScreen` con tabs Documents/Templates (`useDocuments.ts`, `TemplatesList`, `DocumentsList`). Solo navegación/listado (sin formularios/PDF).
+- **PENDIENTE (bloqueante para CRUD)**: crear las tablas en Supabase. No hay acceso DDL desde el código (`DATABASE_URL` vacío; solo PostgREST). El usuario debe ejecutar `backend/documents/schema.sql` una vez en el SQL editor de Supabase. Tras eso, testear CRUD E2E con testing_agent.
+- **Próximo sprint (no ahora)**: resolución de variables desde Personas/Propiedades + generación de PDF + firmas + projection handler de Knowledge para `document.signed`.
+

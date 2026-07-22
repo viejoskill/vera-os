@@ -92,6 +92,15 @@ async def list_events(
     return [_shape(d) async for d in cur]
 
 
+async def list_by_document(document_id: str, limit: int = 200) -> list[dict]:
+    """Historial de un documento (subject.document_id), más recientes primero."""
+    await _ensure_indexes()
+    cur = (_db()["events"].find({"subject.document_id": document_id})
+           .sort("occurred_at", DESCENDING).limit(min(limit, 500)))
+    return [_shape(d) async for d in cur]
+
+
+
 async def list_ascending() -> list[dict]:
     """Todos los eventos en orden cronológico ascendente (para reconstruir
     proyecciones reproduciendo el stream). Incluye el `_id` crudo por evento."""

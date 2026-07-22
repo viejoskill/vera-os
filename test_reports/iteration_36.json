@@ -1,0 +1,57 @@
+{
+  "summary": "Sprint 'Documentos v1' probado end-to-end. Backend: 17/17 tests pytest OK (templates + versionado + snapshot congelado + ciclo de vida + hash + locked_at + historial por eventos + relationships + signatures). Frontend: /documentos renderiza correctamente, tabs y sidebar funcionan, listas hidratan. UN bug de contrato API↔UI detectado: los endpoints devuelven snake_case (template_key, template_version, created_at, pdf_status) pero el frontend consume camelCase (templateKey, templateVersion, createdAt, pdfStatus), lo que hace que aparezcan valores 'undefined' visibles en las filas (ej. 'contrato · v' en documentos, 'autorizacion ·' en templates).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "/api/documents/templates y /api/documents",
+        "issue": "Los endpoints devuelven las filas crudas de Supabase (snake_case: template_key, template_version, pdf_status, created_at, updated_at, template_snapshot, document_hash, locked_at, signer_person_id, signed_at, shared_at, sign_order, entity_type, entity_id). El proyecto declara CamelModel para la API — el resto de VERA usa camelCase — pero estos routers hacen return await repository. Contradice el contrato camelCase y rompe la UI (ver frontend_issues)."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "TemplatesList / DocumentsList",
+        "issue": "Los campos templateKey, templateVersion, pdfStatus, createdAt aparecen como undefined en el DOM porque el backend responde en snake_case. Visible como 'autorizacion ·' (queda cortado tras el separador) en Templates y 'contrato · v' (versión vacía) en Documentos. La categoría/status/name/version se muestran bien porque coinciden en ambas convenciones.",
+        "selector": "[data-testid^='template-'] .vera-docs__meta y [data-testid^='document-'] .vera-docs__meta",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "GET /api/documents/templates → TemplatesList render",
+        "issue": "Contrato API (snake_case) ≠ contrato UI (camelCase). Fix opciones: (a) que los endpoints devuelvan modelos Pydantic CamelModel con by_alias=True, o (b) cambiar el frontend a snake_case, o (c) que el repositorio mapee a camelCase antes de devolver.",
+        "affected_selectors": ["[data-testid='templates-list']", "[data-testid='documents-list']"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_documents_sprint.py",
+    "/app/test_reports/pytest/documents_sprint.xml"
+  ],
+  "action_items": [
+    "Unificar convención de serialización a camelCase en las respuestas de /api/documents/* (recomendado: envolver el retorno del repositorio en modelos Pydantic con alias_generator=to_camel y usar response_model=... o convertir manualmente, tal como hacen otros routers /api/people, /api/properties que devuelven camelCase correctamente).",
+    "Verificar además que template_snapshot se serialice como templateSnapshot y que su contenido interno (name/version/variables/body/templateId) también respete la convención (el snapshot ya usa camelCase interno — bien — pero el wrapper del documento no)."
+  ],
+  "critical_code_review_comments": [
+    "Contrato de serialización inconsistente entre módulos: /api/people y /api/properties devuelven camelCase; /api/documents devuelve snake_case (rompe la UI). El módulo declara CamelModel en models.py pero nunca lo usa como response_model ni con .model_dump(by_alias=True) en el service/api.",
+    "documents/service.py::_hash_document: el hash se calcula ANTES de aplicar el patch de status='generated', o sea sobre document (pre-update). Está bien conceptualmente (hash sobre el snapshot+resolved_variables, no sobre metadata), pero conviene documentarlo — hoy el hash NO incluye el propio status ni el timestamp, lo cual es lo correcto para integridad.",
+    "documents/service.py::remove_relationship: valida len<=1 leyendo la lista actual — expuesto a race condition si dos DELETE concurren. Aceptable para v1 pero anotar.",
+    "documents/api.py: los routers usan return await service/repo directamente. Ninguno usa response_model, por lo que Pydantic CamelModel de models.py no se aplica en runtime. Esta es la causa raíz del bug de contrato.",
+    "documents/repository.py: OK, uso correcto de asyncio.to_thread para el cliente supabase sync. Bien.",
+    "documents/events.py: emit correctamente escribe con subject.document_id; list_by_document consulta el mismo campo. Bien alineado."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_documents_sprint.py (nuevo)",
+    "/app/test_reports/pytest/documents_sprint.xml (nuevo)"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "80%"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (Supabase Auth, ya existente en /app/memory/test_credentials.md).",
+  "seed_data_creation": "Se crearon templates y documentos con prefijo TEST_ (14 templates + 9 documentos). No hay endpoint DELETE para templates/documentos (por diseño), quedaron como datos de prueba identificables en Supabase.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend 100% verde. La causa raíz del gap frontend está aislada: routers de /api/documents devuelven dicts crudos de Supabase (snake_case). El resto de VERA sí usa camelCase. Al probar el fix: 1) GET /api/documents/templates debe devolver templateKey, createdAt, updatedAt; 2) GET /api/documents debe devolver templateKey, templateVersion, pdfStatus, createdAt, templateSnapshot, documentHash, lockedAt; 3) GET /api/documents/{id} debe devolver relationships con entityType/entityId y signatures con signerPersonId/signerRole/signedAt/sharedAt/signOrder; 4) POST/PATCH deben aceptar camelCase (ya lo hacen via CamelModel). Reejecutar pytest tests/test_documents_sprint.py (los asserts ya toleran ambas convenciones para no bloquear el flujo, pero conviene endurecerlos a camelCase una vez fixed). Reejecutar Playwright /documentos y verificar que el meta line muestre 'reserva · TEST_reserva_xxx v1' completo.",
+  "rca of the issue": "Root cause del bug de UI: los handlers en /app/backend/documents/api.py hacen `return await service.xxx()` donde xxx devuelve el dict directamente desde el repositorio Supabase (snake_case columnas Postgres). No hay `response_model=DocumentModel` ni conversión a CamelModel, por lo que FastAPI serializa el dict tal cual. Mitigación mínima: agregar response_model o serializar manualmente con `DocumentModel(**row).model_dump(by_alias=True)` en cada endpoint, o convertir en el repository."
+}

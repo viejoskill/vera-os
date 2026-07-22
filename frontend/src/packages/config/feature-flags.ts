@@ -9,6 +9,7 @@ export interface FeatureFlags {
   propiedades: boolean;
   personas: boolean;
   operaciones: boolean;
+  documentos: boolean;
   studio: boolean;
   integraciones: boolean;
   eventLog: boolean;
@@ -20,6 +21,7 @@ export const featureFlags: FeatureFlags = {
   propiedades: true,
   personas: true,
   operaciones: true, // "Operaciones" — tablero operativo (Leads/Oportunidades/Tareas/Actividad)
+  documentos: true, // "Documentos" — motor documental (Templates + Documents). Sprint fundacional.
   studio: false,
   integraciones: true, // "Integraciones" — Centro de Integraciones (Sprint 05)
   eventLog: true, // "Event Log" — vista técnica del Conversation Event Pipeline (dev/debug)

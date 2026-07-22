@@ -1,0 +1,152 @@
+"""API REST del módulo Documentos (`/api/documents`).
+
+Contrato definido; CRUD básico. NO genera PDFs ni integra firmas (solo modelo).
+"""
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException
+
+import config
+from documents import service
+from documents.models import (
+    CreateDocumentRequest,
+    CreateTemplateRequest,
+    NewTemplateVersionRequest,
+    RelationshipInput,
+    SignatureInput,
+    TransitionRequest,
+    UpdateDocumentRequest,
+    UpdateSignatureRequest,
+    UpdateTemplateRequest,
+)
+
+router = APIRouter(prefix="/documents", tags=["documents"])
+
+
+def _ensure() -> None:
+    if not config.supabase_configured():
+        raise HTTPException(503, "Supabase no está configurado.")
+
+
+# ------------------------------- Templates -------------------------------- #
+@router.get("/templates")
+async def list_templates(category: Optional[str] = None, status: Optional[str] = None,
+                         templateKey: Optional[str] = None):
+    _ensure()
+    from documents.repository import template_repository
+    return await template_repository.list(category=category, status=status, template_key=templateKey)
+
+
+@router.post("/templates", status_code=201)
+async def create_template(body: CreateTemplateRequest):
+    _ensure()
+    return await service.create_template(body.model_dump())
+
+
+@router.get("/templates/{template_id}")
+async def get_template(template_id: str):
+    _ensure()
+    from documents.repository import template_repository
+    tpl = await template_repository.get(template_id)
+    if tpl is None:
+        raise HTTPException(404, "Template no encontrado")
+    return tpl
+
+
+@router.get("/templates/key/{template_key}/versions")
+async def template_versions(template_key: str):
+    _ensure()
+    from documents.repository import template_repository
+    return await template_repository.versions(template_key)
+
+
+@router.post("/templates/{template_id}/versions", status_code=201)
+async def create_version(template_id: str, body: NewTemplateVersionRequest):
+    _ensure()
+    return await service.new_template_version(template_id, body.model_dump(exclude_none=True))
+
+
+@router.patch("/templates/{template_id}")
+async def update_template(template_id: str, body: UpdateTemplateRequest):
+    _ensure()
+    return await service.update_template(template_id, body.model_dump(exclude_none=True))
+
+
+# ------------------------------- Documents -------------------------------- #
+@router.get("")
+async def list_documents(status: Optional[str] = None, templateKey: Optional[str] = None,
+                         entityType: Optional[str] = None, entityId: Optional[str] = None):
+    _ensure()
+    return await service.list_documents(
+        status=status, template_key=templateKey, entity_type=entityType, entity_id=entityId,
+    )
+
+
+@router.post("", status_code=201)
+async def create_document(body: CreateDocumentRequest):
+    _ensure()
+    return await service.create_document(body.model_dump())
+
+
+@router.get("/{document_id}")
+async def get_document(document_id: str):
+    _ensure()
+    return await service.get_document(document_id)
+
+
+@router.patch("/{document_id}")
+async def update_document(document_id: str, body: UpdateDocumentRequest):
+    _ensure()
+    return await service.update_document(document_id, body.model_dump(exclude_none=True))
+
+
+@router.post("/{document_id}/transition")
+async def transition_document(document_id: str, body: TransitionRequest):
+    _ensure()
+    return await service.transition_document(document_id, body.status, actor=body.actor)
+
+
+@router.get("/{document_id}/history")
+async def document_history(document_id: str):
+    _ensure()
+    return await service.document_history(document_id)
+
+
+# ----------------------------- Relationships ------------------------------ #
+@router.get("/{document_id}/relationships")
+async def list_relationships(document_id: str):
+    _ensure()
+    from documents.repository import relationship_repository
+    return await relationship_repository.list(document_id)
+
+
+@router.post("/{document_id}/relationships", status_code=201)
+async def add_relationship(document_id: str, body: RelationshipInput):
+    _ensure()
+    return await service.add_relationship(document_id, body.model_dump())
+
+
+@router.delete("/{document_id}/relationships/{rel_id}", status_code=204)
+async def remove_relationship(document_id: str, rel_id: str):
+    _ensure()
+    await service.remove_relationship(document_id, rel_id)
+
+
+# ------------------------------- Signatures ------------------------------- #
+@router.get("/{document_id}/signatures")
+async def list_signatures(document_id: str):
+    _ensure()
+    from documents.repository import signature_repository
+    return await signature_repository.list(document_id)
+
+
+@router.post("/{document_id}/signatures", status_code=201)
+async def add_signature(document_id: str, body: SignatureInput):
+    _ensure()
+    return await service.add_signature(document_id, body.model_dump())
+
+
+@router.patch("/{document_id}/signatures/{sig_id}")
+async def update_signature(document_id: str, sig_id: str, body: UpdateSignatureRequest):
+    _ensure()
+    return await service.update_signature(document_id, sig_id, body.status)

@@ -6684,3 +6684,58 @@ p {
 .vera-knowledge__fact-conf { font-size: 10px; color: var(--vera-color-text-secondary); font-style: normal; }
 .vera-knowledge__fact--review { border-color: rgba(255,170,0,.5); background: rgba(255,170,0,.08); }
 .vera-knowledge__review .vera-person__card-title { color: #d98200; }
+
+/* ---- App Documentos (scaffolding) ---- */
+.vera-docs__tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  margin-bottom: var(--vera-space-lg);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-pill);
+  background: var(--vera-color-surface);
+}
+.vera-docs__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: none;
+  color: var(--vera-color-text-secondary);
+  font-family: var(--vera-font-family);
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-medium);
+  padding: 8px 18px;
+  border-radius: var(--vera-radius-pill);
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+.vera-docs__tab:hover { color: var(--vera-color-text); }
+.vera-docs__tab.is-active { background: var(--vera-color-primary); color: var(--vera-color-primary-foreground); }
+.vera-docs__list { display: flex; flex-direction: column; gap: var(--vera-space-xs); }
+.vera-docs__row {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  padding: var(--vera-space-md);
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-card);
+}
+.vera-docs__icon { color: var(--vera-color-primary); display: inline-flex; }
+.vera-docs__main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.vera-docs__name { font-weight: var(--vera-font-weight-semibold); color: var(--vera-color-text); }
+.vera-docs__meta { font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); }
+.vera-docs__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  padding: var(--vera-space-2xl);
+  text-align: center;
+  color: var(--vera-color-text-secondary);
+  border: 1px dashed var(--vera-color-border);
+  border-radius: var(--vera-radius-lg);
+}
+.vera-docs__empty code { color: var(--vera-color-primary); font-size: var(--vera-font-size-xs); }
+
