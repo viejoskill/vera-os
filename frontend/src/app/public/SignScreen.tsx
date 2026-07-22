@@ -22,6 +22,7 @@ export const SignScreen = () => {
   const [typedName, setTypedName] = useState('');
   const [mode, setMode] = useState<'drawn' | 'typed' | 'paper'>('typed');
   const [submitting, setSubmitting] = useState(false);
+  const [hasStroke, setHasStroke] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const hasDrawn = useRef(false);
@@ -62,12 +63,14 @@ export const SignScreen = () => {
     ctx.lineTo(x, y);
     ctx.stroke();
     hasDrawn.current = true;
+    if (!hasStroke) setHasStroke(true);
   };
   const end = () => { drawing.current = false; };
   const clearCanvas = () => {
     const c = canvasRef.current;
     if (c) c.getContext('2d')!.clearRect(0, 0, c.width, c.height);
     hasDrawn.current = false;
+    setHasStroke(false);
   };
 
   const submit = async (action: 'sign' | 'reject') => {
@@ -75,7 +78,7 @@ export const SignScreen = () => {
     const payload: Record<string, unknown> = { action };
     if (action === 'sign') {
       payload.typedName = typedName;
-      payload.mode = isDigital ? 'digital' : mode;
+      if (!isDigital) payload.mode = mode;
       if (mode === 'drawn' && hasDrawn.current && canvasRef.current) {
         payload.signatureImage = canvasRef.current.toDataURL('image/png');
       }
@@ -97,7 +100,7 @@ export const SignScreen = () => {
 
   const canSign = isDigital
     ? typedName.trim().length > 1
-    : mode === 'paper' || (mode === 'typed' && typedName.trim().length > 1) || (mode === 'drawn');
+    : mode === 'paper' || (mode === 'typed' && typedName.trim().length > 1) || (mode === 'drawn' && hasStroke);
 
   return (
     <div className="vera-sign">

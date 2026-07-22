@@ -21,3 +21,16 @@ Flujo end-to-end para instanciar un documento donde VERA autocompleta las variab
 - P0: Primer template REAL "Autorización de Venta" (con body/variables definitivos).
 - P1: Generación de PDF; Editor visual de documentos; Firma electrónica.
 - P2: Automatizaciones sobre eventos de documento; migrar formularios legacy; promover "Operaciones" a "Hoy"; módulo "Audiencias".
+
+## Sprint 3 — Motor de firmas (2026-06)
+Motor de firmas transversal a TODO el módulo documental (reutilizable por cualquier documento futuro). Verificado 100% por testing agent (iteration_38): backend 10/10 pytest, frontend E2E verde, tsc limpio, sin bugs. Migración SQL corrida por el usuario (`document_participants` + `signature_methods` en templates + `signature_method` en documents).
+
+- **Principio de producto**: se firma un **Documento, no un PDF**. El motor no conoce el formato de salida; deja un *contrato de render* (`SignatureRenderStrategy`: presencial → línea/imagen manuscrita; digital → bloque de certificación) para cuando se genere PDF/DOCX/HTML.
+- **Template declara métodos** (`signatureMethods: ["presencial","digital"]`); **Documento guarda el elegido** (`signatureMethod`).
+- **DocumentParticipant** (entidad explícita, tabla propia): estado individual `pending→sent→viewed→signed` + `rejected/expired`, `order`, `signature_required`, `signature_method`, token de firma, `signature_data`. Soporta N firmantes, secuencial o paralelo. Estado AGREGADO del documento (`signature_state`: none/pending/in_progress/signed/rejected) derivado de los participantes.
+- **SignatureProvider (adapter)** `documents/signatures.py`: `VeraNativeSignatureProvider` (certificación propia con hash de integridad). DocuSign/Adobe se suman implementando la misma interfaz — la app solo habla con `SignatureProvider`. Punto único de acoplamiento `active_signature_provider`.
+- **Enlaces seguros** `/firma/{token}`: token `secrets.token_urlsafe(32)`, vence a 7 días, se invalida al firmar/rechazar, identifica exactamente al participante. Endpoints públicos `GET/POST /api/sign/{token}` (sin auth, `routes_sign.py`).
+- **Canales** (`whatsapp/email/link`): todos usan EL MISMO token. VERA no envía sola — devuelve enlace + mensaje sugerido (wa.me / mailto / copiar), coherente con el resto del producto.
+- **Máquina de estados** con eventos inmutables en el ledger (MongoDB): `document.signature.method_set`, `.participant.sent/viewed/signed/rejected`, `.shared`, `.signed`. Al firmar todos los obligatorios → documento `signed` + `locked_at` (inmutable).
+- **Frontend**: paso **"Firma"** en el wizard (elige método + firmantes); **pantalla de detalle** `/documentos/:id` (estado, firma, método, firmantes con estado, timeline de eventos, acciones; "Generar PDF" deshabilitado "Próximamente"); **pantalla pública de firma** `/firma/:token` (digital con certificación; presencial: papel / dibujada en canvas / tipeada; rechazar; estados éxito/error).
+- Nota: "Generar PDF" quedó deshabilitado a propósito (la generación es el próximo sprint). El botón PATCH de template ahora también actualiza `signatureMethods`.
