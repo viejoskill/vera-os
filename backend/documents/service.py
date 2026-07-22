@@ -90,16 +90,44 @@ async def _hydrate(document: dict) -> dict:
     return document
 
 
+async def resolve_document(data: dict) -> dict:
+    """Previsualiza qué completa VERA y qué datos obligatorios faltan (sin crear)."""
+    template = await template_repository.get(data["template_id"])
+    if template is None:
+        raise HTTPException(404, "Template no encontrado")
+    return await resolver.resolve(
+        template, data.get("property_id"), data.get("persons") or [], data.get("inputs") or {},
+    )
+
+
 async def create_document(data: dict) -> dict:
     template = await template_repository.get(data["template_id"])
     if template is None:
         raise HTTPException(404, "Template no encontrado")
-    rels = data.get("relationships") or []
+
+    # Relaciones desde el wizard (property + persons con rol) y/o explícitas.
+    rels: list[dict] = []
+    if data.get("property_id"):
+        rels.append({"entity_type": "property", "entity_id": data["property_id"], "role": None})
+    for p in data.get("persons") or []:
+        rels.append({"entity_type": "person", "entity_id": p["person_id"], "role": p.get("role")})
+    for r in data.get("relationships") or []:
+        rels.append(r)
     if not rels:
         raise HTTPException(422, "Un documento nunca existe aislado: requiere al menos una relación.")
     for r in rels:
         if r["entity_type"] not in ENTITY_TYPES:
             raise HTTPException(422, f"entity_type inválido: {r['entity_type']}")
+
+    # VERA completa automáticamente; si falta un dato obligatorio, no se crea.
+    resolution = await resolver.resolve(
+        template, data.get("property_id"), data.get("persons") or [], data.get("inputs") or {},
+    )
+    if resolution["missing"]:
+        raise HTTPException(422, {
+            "message": "Faltan datos obligatorios para crear el documento.",
+            "missing": resolution["missing"],
+        })
 
     # Snapshot CONGELADO de la versión del template (trazabilidad/auditoría).
     snapshot = {
@@ -119,18 +147,16 @@ async def create_document(data: dict) -> dict:
         "status": "draft",
         "pdf_status": "none",
         "origin": data.get("origin", "manual"),
+        "resolved_variables": resolution["resolved"],
         "created_by": data.get("created_by"),
         "last_modified_by": data.get("created_by"),
     }
     document = await document_repository.insert(row)
 
-    rel_rows = [{
-        "document_id": document["id"],
-        "entity_type": r["entity_type"],
-        "entity_id": r["entity_id"],
-        "role": r.get("role"),
-    } for r in rels]
-    await relationship_repository.insert_many(rel_rows)
+    await relationship_repository.insert_many([{
+        "document_id": document["id"], "entity_type": r["entity_type"],
+        "entity_id": r["entity_id"], "role": r.get("role"),
+    } for r in rels])
 
     sig_rows = [{
         "document_id": document["id"],

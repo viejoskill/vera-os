@@ -134,6 +134,7 @@ class DocumentModel(CamelModel):
     generated_pdf: Optional[dict] = None
     document_hash: Optional[str] = None
     locked_at: Optional[str] = None
+    locked_by: Optional[str] = None
     created_by: Optional[str] = None
     last_modified_by: Optional[str] = None
     created_at: Optional[str] = None
@@ -142,14 +143,29 @@ class DocumentModel(CamelModel):
     signatures: list[DocumentSignature] = []
 
 
+class PersonLink(CamelModel):
+    person_id: str
+    role: str
+
+
 class CreateDocumentRequest(CamelModel):
     template_id: str
     title: str = ""
-    origin: str = "manual"
+    origin: str = "manual"          # manual | automation | api | migration
     created_by: Optional[str] = None
-    # Un documento nunca existe aislado: ≥1 relación.
+    property_id: Optional[str] = None
+    persons: list[PersonLink] = []  # personas relacionadas con su rol
+    inputs: dict = {}               # valores para variables source=input
+    # Compat: relaciones explícitas (además de property/persons del wizard).
     relationships: list[RelationshipInput] = []
     signatures: list[SignatureInput] = []
+
+
+class ResolveRequest(CamelModel):
+    template_id: str
+    property_id: Optional[str] = None
+    persons: list[PersonLink] = []
+    inputs: dict = {}
 
 
 class UpdateDocumentRequest(CamelModel):
