@@ -6,21 +6,25 @@ import { navRoutes } from '@app/navigation';
 import { UserMenu } from './UserMenu';
 import { NotificationBell } from './NotificationBell';
 import { useAuthUser } from '@app/auth/useAuthUser';
+import { useAuth } from '@app/auth/AuthProvider';
 
 export const AppLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { displayName } = useAuthUser();
+  const { approval } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const active = navRoutes.find((r) => location.pathname.startsWith(r.path)) ?? navRoutes[1];
 
-  const items: SidebarItem[] = navRoutes.map((r) => ({
-    id: r.id,
-    label: r.label,
-    icon: r.icon,
-    enabled: r.enabled,
-  }));
+  const items: SidebarItem[] = navRoutes
+    .filter((r) => r.id !== 'equipo' || approval?.isAdmin)
+    .map((r) => ({
+      id: r.id,
+      label: r.label,
+      icon: r.icon,
+      enabled: r.enabled,
+    }));
 
   const handleNavigate = (id: string) => {
     const route = navRoutes.find((r) => r.id === id);

@@ -2209,6 +2209,78 @@ p {
   text-transform: uppercase;
   color: var(--vera-color-text-secondary);
 }
+.vera-login__notice {
+  color: var(--vera-color-primary);
+  font-size: var(--vera-font-size-sm);
+  line-height: 1.5;
+}
+.vera-login__google {
+  width: 100%;
+  justify-content: center;
+  gap: 10px;
+}
+.vera-login__google img { display: block; }
+.vera-login__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0;
+  color: var(--vera-color-text-secondary);
+  font-size: var(--vera-font-size-xs);
+}
+.vera-login__divider::before,
+.vera-login__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--vera-color-border);
+}
+.vera-login__switch {
+  background: none;
+  border: 0;
+  color: var(--vera-color-primary);
+  font-size: var(--vera-font-size-sm);
+  cursor: pointer;
+  text-align: center;
+  margin-top: var(--vera-space-sm);
+  transition: opacity 200ms ease;
+}
+.vera-login__switch:hover { opacity: 0.75; }
+.vera-pending__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--vera-color-primary) 15%, transparent);
+  color: var(--vera-color-primary);
+/* ============================= Equipo / accesos ============================= */
+.vera-team__head { margin-bottom: var(--vera-space-lg); }
+.vera-team__title { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; }
+.vera-team__sub { color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-sm); max-width: 60ch; }
+.vera-team__section { margin-top: var(--vera-space-xl); }
+.vera-team__section-title {
+  font-size: var(--vera-font-size-xs); text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--vera-color-text-secondary); margin: 0 0 10px;
+}
+.vera-team__row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 16px; border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md); background: var(--vera-color-surface); margin-bottom: 8px;
+}
+.vera-team__email { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; }
+.vera-team__badge {
+  display: inline-flex; align-items: center; gap: 4px; font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-primary); border: 1px solid var(--vera-color-border);
+  border-radius: 999px; padding: 2px 8px;
+}
+.vera-team__actions { display: flex; gap: 8px; }
+.vera-team__empty { color: var(--vera-color-text-secondary); }
+
+  margin-bottom: var(--vera-space-md);
+}
+
 
 /* ============================= User menu ============================= */
 .vera-usermenu {

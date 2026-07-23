@@ -95,3 +95,15 @@ Verificado 100% (iteration_40): backend 7/7 pytest (`test_documents_sprint4_5.py
   - `veraos-worker.js`: Worker v2 — valida X-Vera-Code, proxy a OpenAI (guardas gpt-4o-mini / gpt-image-1 n=1), registra cada generación en D1 (`usage` por code/kind/ym) y sirve panel `/admin?key=ADMIN_KEY` (HTML) + `/admin/usage` (JSON) con consumo por código (mes actual + histórico).
   - `schema.sql`: tabla `usage`. `README.md`: setup paso a paso en el dashboard de Cloudflare (D1 + binding DB + ADMIN_KEY).
   - Requiere que el usuario cree D1, la vincule (`DB`), agregue `ADMIN_KEY` y redeploye el Worker. No testeable desde acá (Cloudflare externo); JS validado con `node --check`.
+
+## 2026-07-23 · Auto-registro + Google + control de acceso por equipo
+- **Registro (email+contraseña) y login con Google** vía Supabase Auth (`LoginScreen.tsx`: toggle ingresar/crear, botón Google `signInWithOAuth`, `signUp` con emailRedirectTo). Cliente Supabase ahora con `detectSessionInUrl:true` + `flowType:'pkce'` para manejar el callback OAuth.
+- **Gate de acceso por equipo** (workspace único → no debe entrar cualquiera). Backend `routes_auth.py` + Mongo `app_access`:
+  - `POST /api/auth/approval` {email} → {approved,isAdmin}. Bootstrap: si la colección está vacía, backfill de usuarios existentes de Supabase (aprobados; el más antiguo = admin). Emails nuevos → pendientes.
+  - `GET /api/auth/team`, `POST /api/auth/team/{approve|revoke|make-admin}` (requieren actor admin).
+  - `AuthProvider` consulta approval; `RequireAuth` bloquea no-aprobados con `PendingApproval.tsx`.
+  - Pantalla admin **`/equipo`** (`TeamScreen.tsx`, ítem de nav solo para admin) para aprobar/quitar/hacer-admin.
+  - Admin detectado: `varelavendecde@gmail.com`. qa_varela quedó aprobado (no admin).
+- Verificado por API: bootstrap, aprobación, pendiente, 403 para no-admin, revoke. UI: login con Google+registro, qa_varela entra sin bloqueo.
+- ⚠️ El gate es a nivel app (API backend sigue abierta). Endurecer con verificación de JWT de Supabase en rutas = backlog.
+- PENDIENTE usuario (Supabase/Google): habilitar proveedor Google + redirect URLs + confirmación email. Ver mensaje.
