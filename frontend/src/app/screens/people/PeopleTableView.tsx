@@ -78,8 +78,8 @@ export const PeopleTableView = ({ query }: PeopleTableViewProps) => {
   const [budgetMax, setBudgetMax] = useState('');
   const [confidenceMin, setConfidenceMin] = useState('');
   const [contactedWithin, setContactedWithin] = useState('');
-  const [sortBy, setSortBy] = useState('fullName');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [visibleCols, setVisibleCols] = useState<string[] | null>(() => {

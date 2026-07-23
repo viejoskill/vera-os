@@ -72,6 +72,7 @@ async def build_rows(
         enrich = await service.enrich_list_item(r, counts)
         result.append({
             "id": r["id"],
+            "createdAt": r.get("created_at"),
             "fullName": r.get("full_name", "") or "",
             "primaryPhone": r.get("primary_phone") or r.get("phone", "") or "",
             "primaryEmail": r.get("primary_email") or r.get("email", "") or "",

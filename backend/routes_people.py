@@ -83,7 +83,7 @@ async def people_table(
     facts: Optional[list[str]] = Query(default=None),
     budgetMin: Optional[float] = None, budgetMax: Optional[float] = None,
     confidenceMin: Optional[float] = None, contactedWithin: Optional[int] = None,
-    sortBy: str = "fullName", sortDir: str = "asc",
+    sortBy: str = "createdAt", sortDir: str = "desc",
     page: int = 1, pageSize: int = 25,
 ):
     """Vista tabla enriquecida con conocimiento + filtros de negocio (AND) + orden + paginación.
@@ -114,7 +114,7 @@ async def people_export(
     facts: Optional[list[str]] = Query(default=None),
     budgetMin: Optional[float] = None, budgetMax: Optional[float] = None,
     confidenceMin: Optional[float] = None, contactedWithin: Optional[int] = None,
-    sortBy: str = "fullName", sortDir: str = "asc",
+    sortBy: str = "createdAt", sortDir: str = "desc",
 ):
     """Exporta CSV o Excel (.xlsx) respetando filtros y la selección (ids)."""
     _ensure()
