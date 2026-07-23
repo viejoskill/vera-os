@@ -88,3 +88,10 @@ Verificado 100% (iteration_40): backend 7/7 pytest (`test_documents_sprint4_5.py
 - **Verificado E2E**: login qa_varela → /studio renderiza embebido → editar identidad (código VARELA-CDE-2026, tel) → persiste en backend para ese uid. Las llamadas de IA siguen yendo al Worker de Cloudflare con `X-Vera-Code` (intactas).
 - ⚠️ PENDIENTE (usuario): el Worker de Cloudflare debe permitir CORS desde el dominio del OS (antes se abría como file:// → origin null). Si "Generar ideas con IA" da "Failed to fetch", agregar el origen del OS al Worker.
 - Comercialización: misma URL de Worker + un código por cliente NO cruza datos (código = licencia, no contenedor). Backlog: contador de consumo por código (Cloudflare D1).
+
+## 2026-07-23 · PDF nombres limpios + contador de consumo Studio (Worker/D1)
+- **Sanitización de emojis en PDF** (`documents/pdf.py`): `_clean()` quita emojis/glyphs no soportados por Helvetica (rangos emoji, banderas, símbolos, VS/ZWJ). Aplicado en `_interpolate` (valores de variables) y en el nombre del firmante/certificación. Verificado E2E: "Cata 💗" → "Cata", sin ■.
+- **Contador de consumo por código de Studio** (opción B: el usuario distribuye el HTML suelto). No va en VERA sino en el Worker de Cloudflare (único chokepoint de todas las llamadas). Entregado en `/app/studio-worker/`:
+  - `veraos-worker.js`: Worker v2 — valida X-Vera-Code, proxy a OpenAI (guardas gpt-4o-mini / gpt-image-1 n=1), registra cada generación en D1 (`usage` por code/kind/ym) y sirve panel `/admin?key=ADMIN_KEY` (HTML) + `/admin/usage` (JSON) con consumo por código (mes actual + histórico).
+  - `schema.sql`: tabla `usage`. `README.md`: setup paso a paso en el dashboard de Cloudflare (D1 + binding DB + ADMIN_KEY).
+  - Requiere que el usuario cree D1, la vincule (`DB`), agregue `ADMIN_KEY` y redeploye el Worker. No testeable desde acá (Cloudflare externo); JS validado con `node --check`.
