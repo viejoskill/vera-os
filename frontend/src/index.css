@@ -7142,3 +7142,24 @@ p {
 .vera-doclist__add { color: var(--vera-color-text-secondary); }
 .vera-doclist__link:hover, .vera-doclist__add:hover { text-decoration: underline; }
 
+
+/* ===== VERA Studio (embebido) ===== */
+.vera-studio { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.vera-studio__bar {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--vera-space-md);
+  padding: 12px 20px; border-bottom: 1px solid var(--vera-color-border);
+  background: var(--vera-color-surface); flex-shrink: 0;
+}
+.vera-studio__title {
+  display: inline-flex; align-items: center; gap: 8px; color: var(--vera-color-text);
+  font-weight: var(--vera-font-weight-semibold);
+}
+.vera-studio__sub { color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-xs); font-weight: 400; margin-left: 6px; }
+.vera-studio__open {
+  display: inline-flex; align-items: center; gap: 6px; font-size: var(--vera-font-size-sm);
+  color: var(--vera-color-primary); text-decoration: none; padding: 8px 12px;
+  border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-md);
+  transition: border-color 200ms ease;
+}
+.vera-studio__open:hover { border-color: var(--vera-color-primary); }
+.vera-studio__frame { flex: 1; width: 100%; border: 0; background: #0e0e0e; min-height: 0; }

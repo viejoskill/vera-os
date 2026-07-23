@@ -22,7 +22,7 @@ export const featureFlags: FeatureFlags = {
   personas: true,
   operaciones: true, // "Operaciones" — tablero operativo (Leads/Oportunidades/Tareas/Actividad)
   documentos: true, // "Documentos" — motor documental (Templates + Documents). Sprint fundacional.
-  studio: false,
+  studio: true, // "Studio" — herramienta de contenido de redes, embebida (public/vera-studio.html)
   integraciones: true, // "Integraciones" — Centro de Integraciones (Sprint 05)
   eventLog: true, // "Event Log" — vista técnica del Conversation Event Pipeline (dev/debug)
 };

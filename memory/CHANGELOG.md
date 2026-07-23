@@ -79,3 +79,12 @@ Verificado 100% (iteration_40): backend 7/7 pytest (`test_documents_sprint4_5.py
 - **PDF/impresión montada** (`index.css` @media print): `.vera-sign__doc` tenía `max-height:260px; overflow:auto`; al imprimir recortaba el texto y el "Certificado de firma" se montaba encima. Ahora en print el documento fluye completo (`max-height:none; overflow:visible`) y el certificado usa `break-inside:avoid`. Verificado con emulación print → sin solapamiento.
 - **Copiar enlace de firma** (`DocumentDetail.tsx`): `navigator.clipboard.writeText` fallaba en silencio (contexto iframe/no-seguro) y el flash igual decía "copiado" → el usuario pegaba la URL del sistema. Ahora `copyLink()` intenta clipboard API, cae a `execCommand('copy')`, y si falla muestra la URL real en el flash (12s) para copiar a mano.
 - Nota data: hay personas de prueba con emoji en el nombre ("Cata 💗") → en el PDF reportlab se ve como ■ (glyph no soportado por Helvetica). Pendiente sanitizar glyphs si molesta.
+
+## 2026-07-23 · VERA Studio embebido + sincronización por usuario
+- **Integración de VERA Studio** (herramienta de contenido de redes, HTML autocontenido) dentro del OS. Solapa "Studio" activada (`feature-flags.ts studio:true`).
+- **Frontend** (`StudioScreen.tsx`): iframe a `public/vera-studio.html?u=<userId>` (id del usuario Supabase logueado) + barra con "Abrir en pestaña". Estilos `.vera-studio*` en index.css.
+- **Puente de persistencia**: el HTML ya soportaba un adaptador `window.storage` (fallback a localStorage). Inyectamos (`/tmp/inject_studio.py`) un `window.storage` que lee `?u=` y guarda/lee del backend. Sin tocar la lógica del tool. Claves: `ev_identidad`, `ev_logo`, `ev_plan`.
+- **Backend** (`routes_studio.py`, Mongo `studio_kv`): `GET/PUT /api/studio/kv/{key}?u=` y `GET /api/studio/state?u=`. Estado atado al usuario → sincroniza entre PCs. Aislamiento por usuario verificado (otro uid → null).
+- **Verificado E2E**: login qa_varela → /studio renderiza embebido → editar identidad (código VARELA-CDE-2026, tel) → persiste en backend para ese uid. Las llamadas de IA siguen yendo al Worker de Cloudflare con `X-Vera-Code` (intactas).
+- ⚠️ PENDIENTE (usuario): el Worker de Cloudflare debe permitir CORS desde el dominio del OS (antes se abría como file:// → origin null). Si "Generar ideas con IA" da "Failed to fetch", agregar el origen del OS al Worker.
+- Comercialización: misma URL de Worker + un código por cliente NO cruza datos (código = licencia, no contenedor). Backlog: contador de consumo por código (Cloudflare D1).

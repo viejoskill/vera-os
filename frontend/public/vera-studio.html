@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VERA OS STUDIO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --ink:#efece4; --paper:#141414; --card:#1d1d1d; --line:#3a3a36;
+    --oro:#f2e23c; --oro-osc:#d6c72c; --gris:#9a978e; --error:#e07a63; --ok:#8fc98f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Inter,system-ui,sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;padding:24px 16px 64px}
+  .wrap{max-width:1100px;margin:0 auto}
+  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:2px solid var(--oro);padding-bottom:14px;margin-bottom:20px}
+  header h1{font-family:Oswald;font-size:1.5rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+  header .sub{color:var(--gris);font-size:.86rem}
+  .grid{display:grid;grid-template-columns:1.15fr .85fr;gap:20px;align-items:start}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px}
+  .panel h2{font-size:.76rem;text-transform:uppercase;letter-spacing:.12em;color:var(--oro);margin-bottom:12px;font-weight:700}
+  label{display:block;font-size:.8rem;font-weight:600;margin:10px 0 4px}
+  label .opt{font-weight:400;color:var(--gris)}
+  input[type=text],input[type=password],textarea,select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;font-size:.88rem;font-family:inherit;background:#111;color:var(--ink)}
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--oro);outline-offset:1px}
+  textarea{resize:vertical;line-height:1.4}
+  .hint{font-size:.74rem;color:var(--gris);margin-top:3px;line-height:1.35}
+  details{border:1px solid var(--line);border-radius:8px;background:#191919;margin-bottom:14px}
+  details summary{cursor:pointer;padding:10px 14px;font-weight:600;font-size:.86rem;color:var(--oro);list-style:none;display:flex;justify-content:space-between}
+  details summary::after{content:"+";color:var(--oro)}
+  details[open] summary::after{content:"\2013"}
+  details .inner{padding:0 14px 14px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--oro);color:#141414;border:none;border-radius:8px;padding:11px 18px;font-size:.9rem;font-weight:800;cursor:pointer;font-family:inherit;transition:background .15s}
+  .btn:hover{background:var(--oro-osc)}
+  .btn:disabled{background:#6b6552;color:#2a2a2a;cursor:wait}
+  .btn.sec{background:transparent;color:var(--oro);border:1.5px solid var(--oro);font-weight:700;padding:8px 14px;font-size:.82rem;text-decoration:none}
+  .btn.sec:hover{background:#26231a}
+  .btn.mini{padding:6px 10px;font-size:.76rem}
+  .btn.full{width:100%;margin-top:12px}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+  .tab{border:1.5px solid var(--line);background:#111;color:var(--ink);border-radius:7px;padding:7px 13px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit}
+  .tab.sel{border-color:var(--oro);background:#26231a;color:var(--oro)}
+  .modes{display:flex;gap:8px;margin-bottom:16px}
+  .mode{flex:1;border:1.5px solid var(--line);background:#191919;color:var(--ink);border-radius:9px;padding:12px;font-size:.9rem;font-weight:800;cursor:pointer;font-family:inherit}
+  .mode.sel{border-color:var(--oro);background:#26231a;color:var(--oro)}
+  .slidebox{border:1px solid var(--line);border-radius:8px;padding:12px;background:#191919;margin-top:8px}
+  .bgopts{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+  canvas{width:100%;height:auto;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.55);background:#111}
+  .status{font-size:.83rem;margin-top:10px;line-height:1.45}
+  .status.err{color:var(--error);font-weight:600}
+  .status.ok{color:var(--ok)}
+  .filelbl{display:inline-block}
+  .filelbl input{display:none}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .chk{display:flex;align-items:center;gap:8px;font-size:.8rem;font-weight:600;margin-top:8px;cursor:pointer}
+  .chk input{accent-color:var(--oro)}
+  .fieldchk{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center}
+  .fieldchk input[type=checkbox]{accent-color:var(--oro);width:18px;height:18px}
+</style>
+
+<script>
+/* === VERA OS · puente de persistencia ==========================================
+ * Studio ya soporta un adaptador `window.storage`. Al embeberlo dentro del OS le
+ * inyectamos uno que guarda el estado (identidad, logo, plan) en el backend de
+ * VERA, atado al usuario logueado (?u=<userId>). Así sincroniza entre PCs.
+ * Si no hay usuario (uso standalone del archivo), cae solo a localStorage.
+ * ============================================================================== */
+(function () {
+  var uid = null;
+  try { uid = new URLSearchParams(location.search).get('u'); } catch (e) {}
+  if (!uid) return; // sin usuario -> el tool usa localStorage como siempre
+
+  function kvUrl(key) {
+    return '/api/studio/kv/' + encodeURIComponent(key) + '?u=' + encodeURIComponent(uid);
+  }
+
+  window.storage = {
+    async get(key) {
+      try {
+        var r = await fetch(kvUrl(key), { headers: { 'Accept': 'application/json' } });
+        if (!r.ok) return null;
+        var j = await r.json();
+        return (j && j.value != null) ? { value: j.value } : null;
+      } catch (e) { return null; }
+    },
+    async set(key, value) {
+      try {
+        await fetch(kvUrl(key), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: value })
+        });
+      } catch (e) {
+        try { localStorage.setItem(key, value); } catch (e2) {}
+      }
+    }
+  };
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <svg width="34" height="30" viewBox="0 0 100 100" style="align-self:center" aria-hidden="true"><path d="M0 0 H30 L50 52 L70 0 H100 L62 100 L50 78 L38 100 Z" fill="#f2e23c"/></svg>
+    <h1><span style="color:#f5f1e6">VERA</span> <span style="color:var(--oro)">OS</span> <span style="color:var(--gris);font-weight:500">STUDIO</span></h1>
+    <span class="sub">texto perfecto &middot; IA solo para ideas y fondos &middot; feed + historia</span>
+  </header>
+
+  <details id="cfg">
+    <summary>Identidad fija (se guarda sola en este navegador)</summary>
+    <div class="inner">
+      <div class="row">
+        <div>
+          <label>C&oacute;digo de acceso VERA</label>
+          <input type="text" id="acceso" placeholder="Ej: VARELA-CDE-2026">
+          <div class="hint">Es tu licencia: activa las funciones de IA. Si no ten&eacute;s uno, ped&iacute;selo a Varela Inmobiliaria.</div>
+        </div>
+        <div>
+          <label>Logo <span class="opt">(queda guardado; se unifica al amarillo VERA)</span></label>
+          <label class="btn sec filelbl">Subir logo<input type="file" id="logoFile" accept="image/*"></label>
+          <span class="hint" id="logoState">Sin logo cargado</span>
+          <label class="chk"><input type="checkbox" id="logoTrans" checked> Quitar fondo blanco del logo</label>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Posici&oacute;n del logo</label>
+          <select id="logoPos"><option value="l" selected>Izquierda arriba (alineado al texto)</option><option value="c">Centro arriba</option><option value="r">Derecha arriba</option></select>
+        </div>
+        <div><label>&nbsp;</label></div>
+      </div>
+      <label style="margin-top:14px">Elementos visibles <span class="opt">(tild&aacute; lo que quer&eacute;s que aparezca)</span></label>
+      <div class="fieldchk"><input type="checkbox" id="chkLogo" checked><span class="hint" style="margin:0">Logo</span></div>
+      <div class="fieldchk" style="margin-top:6px"><input type="checkbox" id="chkBajada" checked><input type="text" id="logoSub" value="INMOBILIARIA" placeholder="Bajada del logo"></div>
+      <div class="fieldchk" style="margin-top:6px"><input type="checkbox" id="chkTel" checked><input type="text" id="tel" value="2246 58 6030" placeholder="Tel&eacute;fono / WhatsApp"></div>
+      <div class="fieldchk" style="margin-top:6px"><input type="checkbox" id="chkDir" checked><input type="text" id="dir" value="Av. Interbalnearia 162, Costa del Este" placeholder="Direcci&oacute;n"></div>
+      <div class="fieldchk" style="margin-top:6px"><input type="checkbox" id="chkWeb" checked><input type="text" id="web" value="varelapropiedadescde.com.ar" placeholder="Web"></div>
+      <div class="status" id="stCfg"></div>
+    </div>
+  </details>
+
+  <div class="modes">
+    <button class="mode sel" id="modeCont" type="button">Carrusel de contenido</button>
+    <button class="mode" id="modeProp" type="button">Post de propiedad</button>
+    <button class="mode" id="modeCal" type="button">Calendario mensual</button>
+    <button class="mode" id="modeVid" type="button">Video</button>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="panel" id="panelCont">
+        <h2>1 &middot; Contenido</h2>
+        <label>Tema del post o carrusel</label>
+        <input type="text" id="tema" placeholder="Ej: costos reales al vender una propiedad">
+        <div class="row3">
+          <div>
+            <label>Placas</label>
+            <select id="nplacas"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option></select>
+          </div>
+          <div>
+            <label>Enfoque</label>
+            <select id="enfoque">
+              <option value="educativo">Educativo</option>
+              <option value="captacion">Captaci&oacute;n / Tasaci&oacute;n</option>
+              <option value="vendida">Vendida / Caso cerrado</option>
+              <option value="personal">Marca personal</option>
+            </select>
+          </div>
+          <div>
+            <label>Tono</label>
+            <select id="tono">
+              <option value="profesional">Profesional</option>
+              <option value="picante">Picante / pol&eacute;mico</option>
+              <option value="cercano">Cercano / de barrio</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn full" id="ideas">Generar ideas con IA (gancho &rarr; contenido &rarr; remate)</button>
+        <div class="status" id="stIdeas"></div>
+        <div class="tabs" id="tabs"></div>
+        <div id="slideEditor"></div>
+      </div>
+
+      <div class="panel" id="panelProp" style="display:none">
+        <h2>1 &middot; Propiedad</h2>
+        <div class="row">
+          <div>
+            <label>Operaci&oacute;n</label>
+            <select id="pOp">
+              <option>VENTA</option><option>ALQUILER</option><option>ALQUILER TEMPORAL</option>
+              <option>OPORTUNIDAD</option><option>EMPRENDIMIENTO</option><option>RESERVADA</option><option>VENDIDA</option>
+            </select>
+          </div>
+          <div>
+            <label>Precio <span class="opt">(opcional)</span></label>
+            <input type="text" id="pPrecio" placeholder="Ej: USD 120.000">
+          </div>
+        </div>
+        <label>T&iacute;tulo corto</label>
+        <input type="text" id="pTitulo" placeholder="Ej: Casa 3 ambientes con parque">
+        <label>Ubicaci&oacute;n</label>
+        <input type="text" id="pUbi" placeholder="Ej: Zona bosque &middot; Costa del Este">
+        <label class="chk"><input type="checkbox" id="pTextosTodas"> Repetir los textos en todas las fotos (si no, solo en la primera)</label>
+        <label class="chk"><input type="checkbox" id="pContacto" checked> Datos de la inmobiliaria en la &uacute;ltima foto</label>
+
+        <label style="margin-top:14px">Fotos de la propiedad <span class="opt">(pod&eacute;s subir varias juntas; cada una es una placa)</span></label>
+        <label class="btn sec filelbl">Agregar fotos<input type="file" id="pFotos" accept="image/*" multiple></label>
+        <div class="tabs" id="pTabs"></div>
+        <div id="pEditor"></div>
+        <div class="hint">Preset Exterior: contraste y cielo m&aacute;s vivos, luz dorada. Preset Interior: levanta sombras y calidez de ambientes. As&iacute; todas las propiedades mantienen el mismo estilo.</div>
+      </div>
+
+      <div class="panel" id="panelCal" style="display:none">
+        <h2>1 &middot; Plan del mes</h2>
+        <div class="row3">
+          <div>
+            <label>Cantidad de posteos</label>
+            <select id="calN"><option>8</option><option selected>12</option><option>16</option><option>20</option><option>30</option></select>
+          </div>
+          <div>
+            <label>Tono general</label>
+            <select id="calTono">
+              <option value="mixto" selected>Mixto (rota los tres)</option>
+              <option value="profesional">Profesional</option>
+              <option value="picante">Picante / pol&eacute;mico</option>
+              <option value="cercano">Cercano / de barrio</option>
+            </select>
+          </div>
+          <div>
+            <label>Foco del mes <span class="opt">(opcional)</span></label>
+            <input type="text" id="calFoco" placeholder="Ej: captar propiedades para tasar">
+          </div>
+        </div>
+        <button class="btn full" id="calGen">Generar plan del mes</button>
+        <div class="status" id="stCal"></div>
+        <div id="calLista" style="margin-top:14px"></div>
+      </div>
+
+      <div class="panel" id="panelVid" style="display:none">
+        <h2>1 &middot; Video de fotos (paneo y zoom cinematogr&aacute;fico)</h2>
+        <div class="row">
+          <div>
+            <label>T&iacute;tulo inicial <span class="opt">(*palabra* = dorado)</span></label>
+            <input type="text" id="vTitulo" placeholder="Ej: NUEVO *INGRESO*">
+          </div>
+          <div>
+            <label>Subt&iacute;tulo <span class="opt">(opcional: direcci&oacute;n, estado, zona)</span></label>
+            <input type="text" id="vSub" placeholder="Ej: Los Cedros 1015 &middot; A estrenar">
+          </div>
+        </div>
+        <div class="row">
+          <div id="vDurBox">
+            <label>Segundos por foto</label>
+            <select id="vDur"><option>3</option><option selected>4</option><option>5</option></select>
+          </div>
+          <div>
+            <label>Filtro de imagen</label>
+            <select id="vFiltro">
+              <option value="no">Sin filtro</option>
+              <option value="calido" selected>C&aacute;lido (marca)</option>
+              <option value="cine">Cine (contraste y vi&ntilde;eta)</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Transici&oacute;n entre fotos</label>
+            <select id="vTrans">
+              <option value="mix" selected>Mix (rota estilos)</option>
+              <option value="fundido">Fundido cruzado</option>
+              <option value="negro">Fundido a negro</option>
+              <option value="deslizar">Deslizamiento</option>
+              <option value="dorado">Barrido dorado (firma)</option>
+            </select>
+          </div>
+          <div><label>&nbsp;</label></div>
+        </div>
+        <label class="chk"><input type="checkbox" id="vOutro" checked> Placa final con logo y datos de la inmobiliaria</label>
+        <label style="margin-top:12px">Fotos <span class="opt">(pod&eacute;s subir varias; se reproducen en orden)</span></label>
+        <label class="btn sec filelbl">Agregar fotos<input type="file" id="vArchivos" accept="image/*" multiple></label>
+        <div class="tabs" id="vTabs"></div>
+        <div id="vEditor"></div>
+        <button class="btn full" id="vGen">Generar video</button>
+        <div class="status" id="stVid"></div>
+        <div class="actions" id="vDescarga"></div>
+        <div class="hint">El video se graba en tiempo real sobre la vista previa: no cambies de pesta&ntilde;a mientras se genera. Sale en MP4 (o WebM si tu navegador no soporta MP4; en ese caso convertilo con CapCut). Para videos filmados con el celular, edit&aacute; y estabiliz&aacute; en CapCut directamente.</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>2 &middot; Vista previa</h2>
+      <div class="tabs" style="margin:0 0 10px">
+        <button class="tab sel" id="fmtFeed" type="button">Feed 4:5</button>
+        <button class="tab" id="fmtStory" type="button">Historia 9:16</button>
+      </div>
+      <canvas id="cv" width="1080" height="1350"></canvas>
+      <div class="actions">
+        <a class="btn sec" id="dl1" download>Descargar esta placa</a>
+        <button class="btn sec" id="dlAll" type="button">Descargar todas</button>
+      </div>
+      <div class="status" id="stCv"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const ORO = "#f2e23c", BLANCO = "#f5f1e6", GRISC = "#b9b5aa";
+const PALETA = [
+  {n:"Carb\u00f3n",        a:"#17181c", b:"#0b0c0e"},
+  {n:"Grafito",            a:"#26262a", b:"#101012"},
+  {n:"Humo c\u00e1lido",   a:"#211e18", b:"#0f0e0b"},
+  {n:"Oro viejo",          a:"#2c2410", b:"#121014"},
+  {n:"\u00c1mbar profundo",a:"#38290f", b:"#151009"},
+  {n:"Dorado quemado",     a:"#453310", b:"#1a1408"},
+];
+let logoRaw = null, logoImg = null, logoDataUrl = null;
+let slides = [], cur = 0;
+let mode = "cont";
+let prop = { fotos: [], curF: 0 };
+
+/* ---------- PERSISTENCIA ---------- */
+async function stSet(k,v){
+  try{ if(window.storage){ await window.storage.set(k, v); return; } }catch(e){}
+  try{ localStorage.setItem(k, v); }catch(e){}
+}
+async function stGet(k){
+  try{ if(window.storage){ const r = await window.storage.get(k); if(r && r.value!=null) return r.value; } }catch(e){}
+  try{ return localStorage.getItem(k); }catch(e){}
+  return null;
+}
+const CAMPOS = ["logoPos","logoSub","tel","dir","web","acceso"];
+const CHECKS = ["logoTrans","chkLogo","chkBajada","chkTel","chkDir","chkWeb"];
+let cargando = true;
+async function guardarIdentidad(){
+  if(cargando) return;
+  const data = {};
+  CAMPOS.forEach(id=> data[id] = $(id).value);
+  CHECKS.forEach(id=> data[id] = $(id).checked);
+  await stSet("ev_identidad", JSON.stringify(data));
+  if(logoDataUrl) await stSet("ev_logo", logoDataUrl);
+  $("stCfg").textContent = "Identidad guardada."; $("stCfg").className = "status ok";
+  setTimeout(()=>{ $("stCfg").textContent=""; }, 1800);
+}
+async function cargarIdentidad(){
+  try{
+    const raw = await stGet("ev_identidad");
+    if(raw){
+      const data = JSON.parse(raw);
+      CAMPOS.forEach(id=>{ if(data[id]!==undefined) $(id).value = data[id]; });
+      CHECKS.forEach(id=>{ if(data[id]!==undefined) $(id).checked = data[id]; });
+    }
+    const lg = await stGet("ev_logo");
+    if(lg){
+      logoDataUrl = lg;
+      const img = new Image();
+      await new Promise(res=>{ img.onload=res; img.src=lg; });
+      logoRaw = img; $("logoState").textContent = "Logo cargado (guardado)";
+      procesarLogo();
+    }
+    if(!raw && !lg) $("cfg").open = true;
+  }catch(e){ $("cfg").open = true; }
+  cargando = false;
+  render();
+}
+
+/* ---------- LOGO ---------- */
+function procesarLogo(){
+  if(!logoRaw){ logoImg = null; render(); return; }
+  const c0 = document.createElement("canvas");
+  c0.width = logoRaw.width; c0.height = logoRaw.height;
+  const x0 = c0.getContext("2d");
+  x0.drawImage(logoRaw,0,0);
+  if($("logoTrans").checked){
+    try{
+      const d = x0.getImageData(0,0,c0.width,c0.height);
+      for(let i=0;i<d.data.length;i+=4){
+        const r=d.data[i], g=d.data[i+1], b=d.data[i+2];
+        if(r>228 && g>228 && b>228) d.data[i+3]=0;
+      }
+      x0.putImageData(d,0,0);
+    }catch(e){}
+  }
+  recortarYUsar(c0);
+}
+function recortarYUsar(c){
+  try{
+    const x = c.getContext("2d");
+    const d = x.getImageData(0,0,c.width,c.height);
+    for(let i=0;i<d.data.length;i+=4){
+      if(d.data[i+3] > 0){
+        const lum = .3*d.data[i] + .6*d.data[i+1] + .1*d.data[i+2];
+        if(lum > 110){ d.data[i]=242; d.data[i+1]=226; d.data[i+2]=60; }
+      }
+    }
+    x.putImageData(d,0,0);
+    let minX=c.width, minY=c.height, maxX=0, maxY=0;
+    for(let j=0;j<c.height;j++) for(let i=0;i<c.width;i++){
+      if(d.data[(j*c.width+i)*4+3] > 10){
+        if(i<minX)minX=i; if(i>maxX)maxX=i;
+        if(j<minY)minY=j; if(j>maxY)maxY=j;
+      }
+    }
+    if(maxX>minX && maxY>minY){
+      const c2 = document.createElement("canvas");
+      c2.width = maxX-minX+1; c2.height = maxY-minY+1;
+      c2.getContext("2d").drawImage(c, -minX, -minY);
+      c = c2;
+    }
+  }catch(e){}
+  const img = new Image();
+  img.onload = ()=>{ logoImg = img; render(); };
+  img.src = c.toDataURL();
+}
+$("logoFile").addEventListener("change", e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    logoDataUrl = reader.result;
+    const img = new Image();
+    img.onload = ()=>{ logoRaw = img; $("logoState").textContent = "Logo cargado"; procesarLogo(); guardarIdentidad(); };
+    img.src = logoDataUrl;
+  };
+  reader.readAsDataURL(f);
+});
+
+/* ---------- CONEXION AL SERVIDOR VERA ---------- */
+const SERVIDOR_VERA = "https://veraos.varelavendecde.workers.dev";
+function conexionVera(){
+  const acceso = ($("acceso").value||"").trim();
+  if(!acceso) return null;
+  return { srv: SERVIDOR_VERA, acceso };
+}
+async function llamarVera(ruta, body){
+  const cx = conexionVera();
+  const r = await fetch(cx.srv+ruta, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json", "X-Vera-Code": cx.acceso },
+    body: JSON.stringify(body)
+  });
+  const data = await r.json();
+  if(!r.ok) throw new Error(data?.error?.message || ("Error "+r.status));
+  return data;
+}
+
+/* ---------- MODOS ---------- */
+function setMode(m){
+  mode = m;
+  [["modeCont","cont","panelCont"],["modeProp","prop","panelProp"],["modeCal","cal","panelCal"],["modeVid","vid","panelVid"]].forEach(([btn,val,panel])=>{
+    $(btn).classList.toggle("sel", m===val);
+    $(panel).style.display = (m===val) ? "" : "none";
+  });
+  if(m!=="cal") render();
+}
+$("modeCont").onclick = ()=> setMode("cont");
+$("modeProp").onclick = ()=> setMode("prop");
+$("modeCal").onclick = ()=> setMode("cal");
+$("modeVid").onclick = ()=> setMode("vid");
+
+/* ---------- CARRUSEL DE CONTENIDO ---------- */
+function nuevoSlide(esUltima){ return { titulo:"TU *GANCHO* AC\u00c1", sec:"", cta:"", estilo:"estudio", textoPos:"izq", altura:"centro", fotoOff:0, zoom:0, bgType:"flat", bgColor:0, bgImg:null, bgDesc:"", contacto: !!esUltima }; }
+slides = [nuevoSlide(true)];
+
+function syncPlacas(){
+  const n = parseInt($("nplacas").value);
+  while(slides.length < n) slides.push(nuevoSlide(false));
+  while(slides.length > n) slides.pop();
+  if(cur >= n) cur = n-1;
+  drawTabs(); drawEditor(); render();
+}
+$("nplacas").addEventListener("change", syncPlacas);
+
+function drawTabs(){
+  const t = $("tabs"); t.innerHTML = "";
+  slides.forEach((s,i)=>{
+    const b = document.createElement("button");
+    b.className = "tab"+(i===cur?" sel":"");
+    b.textContent = "Placa "+(i+1);
+    b.onclick = ()=>{ cur=i; drawTabs(); drawEditor(); render(); };
+    t.appendChild(b);
+  });
+}
+function drawEditor(){
+  const s = slides[cur];
+  const palOpts = PALETA.map((p,i)=>`<option value="${i}" ${i===s.bgColor?"selected":""}>${p.n}</option>`).join("");
+  $("slideEditor").innerHTML = `
+    <div class="slidebox">
+      <label>T&iacute;tulo <span class="opt">(*palabra* = dorado; Enter = salto de l&iacute;nea)</span></label>
+      <textarea id="eTitulo" rows="3">${s.titulo}</textarea>
+      <label>Texto secundario <span class="opt">(opcional)</span></label>
+      <textarea id="eSec" rows="2">${s.sec}</textarea>
+      <label>CTA <span class="opt">(opcional; pastilla dorada)</span></label>
+      <input type="text" id="eCta" value="${s.cta.replace(/"/g,'&quot;')}">
+      <label class="chk"><input type="checkbox" id="eContacto" ${s.contacto?"checked":""}> Mostrar datos de la inmobiliaria en esta placa</label>
+      <div class="row">
+        <div>
+          <label>Estilo de placa</label>
+          <select id="eEstilo">
+            <option value="estudio" ${s.estilo==="estudio"?"selected":""}>Estudio (dise\u00f1o de marca)</option>
+            <option value="ugc" ${s.estilo==="ugc"?"selected":""}>UGC (foto casual + texto de historia)</option>
+          </select>
+        </div>
+        <div>
+          <label>Color de fondo</label>
+          <select id="eBgColor">${palOpts}</select>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Fondo</label>
+          <div class="bgopts">
+            <button class="btn sec mini" id="bgFlat" type="button">Color liso</button>
+            <label class="btn sec mini filelbl">Subir foto<input type="file" id="bgFile" accept="image/*"></label>
+            <button class="btn sec mini" id="bgIA" type="button">Generar con IA</button>
+            <button class="btn sec mini" id="bgRnd" type="button">Aleatoria</button>
+          </div>
+        </div>
+        <div><label>&nbsp;</label></div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Lado del texto</label>
+          <select id="eTxtPos">
+            <option value="izq" ${s.textoPos!=="der"?"selected":""}>Izquierda</option>
+            <option value="der" ${s.textoPos==="der"?"selected":""}>Derecha</option>
+          </select>
+        </div>
+        <div>
+          <label>Altura del texto</label>
+          <select id="eAltura">
+            <option value="arriba" ${s.altura==="arriba"?"selected":""}>Arriba</option>
+            <option value="centro" ${s.altura!=="arriba"&&s.altura!=="abajo"?"selected":""}>Centro</option>
+            <option value="abajo" ${s.altura==="abajo"?"selected":""}>Abajo</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Encuadre de la foto <span class="opt">(corr&eacute; el sujeto)</span></label>
+          <input type="range" id="eFotoOff" min="-50" max="50" value="${s.fotoOff||0}" style="width:100%;accent-color:var(--oro)">
+        </div>
+        <div>
+          <label>Zoom de la foto <span class="opt">(da margen para correrla)</span></label>
+          <input type="range" id="eZoom" min="0" max="60" value="${s.zoom||0}" style="width:100%;accent-color:var(--oro)">
+        </div>
+      </div>
+      <input type="text" id="eBgDesc" placeholder="Descripci\u00f3n del fondo IA. Ej: billetes de d\u00f3lares sobre escritorio de madera oscura" value="${s.bgDesc.replace(/"/g,'&quot;')}" style="margin-top:8px">
+      <div class="status" id="stBg"></div>
+    </div>`;
+  $("eTitulo").addEventListener("input", e=>{ s.titulo = e.target.value; render(); });
+  $("eSec").addEventListener("input", e=>{ s.sec = e.target.value; render(); });
+  $("eCta").addEventListener("input", e=>{ s.cta = e.target.value; render(); });
+  $("eContacto").addEventListener("change", e=>{ s.contacto = e.target.checked; render(); });
+  $("eBgDesc").addEventListener("input", e=>{ s.bgDesc = e.target.value; });
+  $("eBgColor").addEventListener("change", e=>{ s.bgColor = parseInt(e.target.value); render(); });
+  $("eEstilo").addEventListener("change", e=>{ s.estilo = e.target.value; render(); });
+  $("eTxtPos").addEventListener("change", e=>{ s.textoPos = e.target.value; render(); });
+  $("eAltura").addEventListener("change", e=>{ s.altura = e.target.value; render(); });
+  $("eFotoOff").addEventListener("input", e=>{ s.fotoOff = parseInt(e.target.value); render(); });
+  $("eZoom").addEventListener("input", e=>{ s.zoom = parseInt(e.target.value); render(); });
+  $("bgRnd").onclick = ()=>{
+    const ESCENAS = [
+      "mate y bizcochitos sobre una mesa de madera en un deck",
+      "llaves de una casa sobre un plano de arquitecto",
+      "fachada de casa costera entre pinos con luz de ma\u00f1ana",
+      "camino de arena entre pinos hacia el mar",
+      "ventana con cortina movida por el viento y luz c\u00e1lida",
+      "cartel de madera de VENDIDO apoyado en un cerco",
+      "taza de caf\u00e9 sobre un escritorio con carpetas y una lapicera",
+      "bicicleta apoyada en la entrada de una casa de bosque",
+      "atardecer sobre m\u00e9danos con pastos movidos por el viento",
+      "porton de madera entreabierto hacia un jard\u00edn costero",
+      "pareja de espaldas tomando mate en el deck de una casa de bosque",
+      "mujer caminando de espaldas hacia el mar por un camino de arena entre pinos",
+      "hombre de perfil abriendo el porton de madera de una casa costera",
+      "familia de espaldas mirando el atardecer desde la galeria de una casa",
+      "persona relajada leyendo en una reposera bajo los pinos"
+    ];
+    s.bgDesc = ESCENAS[Math.floor(Math.random()*ESCENAS.length)];
+    $("eBgDesc").value = s.bgDesc;
+    generarFondo(s);
+  };
+  $("bgFlat").onclick = ()=>{ s.bgType="flat"; s.bgImg=null; render(); };
+  $("bgFile").addEventListener("change", e=>{
+    const f = e.target.files[0]; if(!f) return;
+    const img = new Image();
+    img.onload = ()=>{ s.bgType="img"; s.bgImg=img; render(); };
+    img.src = URL.createObjectURL(f);
+  });
+  $("bgIA").onclick = ()=> generarFondo(s);
+}
+
+async function generarFondo(s){
+  const st = $("stBg");
+  if(!conexionVera()){ st.textContent="Falta el C\u00f3digo de acceso en Identidad fija."; st.className="status err"; $("cfg").open=true; return; }
+  if(!s.bgDesc.trim()){ st.textContent="Escrib\u00ed la descripci\u00f3n del fondo."; st.className="status err"; return; }
+  st.textContent = "Generando fondo... 30-60 seg."; st.className="status";
+  const esUgc = s.estilo==="ugc";
+  const promptFondo = esUgc
+    ? "Foto casera tomada con celular: "+s.bgDesc+". Luz natural, encuadre espontaneo levemente imperfecto, colores reales sin edicion profesional, estilo autentico de contenido casero de redes. Si la escena incluye personas, deben ser modelos publicitarios adultos de aspecto argentino natural, tal como los describa la escena, SIN parecido con personas reales o famosas. SIN texto, SIN logos, SIN marcas de agua."
+    : "Fotografia cinematografica calida y elegante: "+s.bgDesc+". Iluminacion ambar tenue, tonos oscuros, atmosfera premium inmobiliaria, con el sujeto principal hacia la "+(s.textoPos==="der"?"izquierda":"derecha")+" y mucho espacio oscuro y despejado en la mitad "+(s.textoPos==="der"?"derecha":"izquierda")+" para superponer texto. SIN texto, SIN logos, SIN marcas de agua, SIN personas.";
+  try{
+    const data = await llamarVera("/imagen", { model:"gpt-image-1",
+      prompt: promptFondo,
+      size:"1024x1536", quality:"medium", n:1 });
+    const img = new Image();
+    img.onload = ()=>{ s.bgType="img"; s.bgImg=img; st.textContent="Fondo listo."; st.className="status ok"; render(); };
+    img.src = "data:image/png;base64,"+data.data[0].b64_json;
+  }catch(e){ st.textContent = e.message; st.className="status err"; }
+}
+
+const TONOS = {
+  profesional: "Tono profesional y sobrio: autoridad tecnica, datos concretos, sin exclamaciones, transmite anos de experiencia. Rioplatense formal pero natural (vos, tenes).",
+  picante: "Tono picante y polemico: frases que incomodan, desafia mitos y verdades comodas del rubro inmobiliario, provocador pero inteligente, sin insultar ni mentir. Rioplatense filoso.",
+  cercano: "Tono cercano y de barrio: coloquial rioplatense autentico, como charlando con un vecino en la vereda, calido, con algun guino de humor sutil, cero acartonado."
+};
+async function generarIdeas(){
+  const st = $("stIdeas");
+  if(!conexionVera()){ st.textContent="Falta el C\u00f3digo de acceso en Identidad fija."; st.className="status err"; $("cfg").open=true; return; }
+  if(!$("tema").value.trim()){ st.textContent="Escrib\u00ed el tema."; st.className="status err"; return; }
+  const n = parseInt($("nplacas").value);
+  st.textContent = "Generando copys..."; st.className="status";
+  $("ideas").disabled = true;
+  try{
+    const data = await llamarVera("/chat", {
+        model:"gpt-4o-mini",
+        response_format:{type:"json_object"},
+        messages:[
+          {role:"system", content:"Sos un copywriter senior de una inmobiliaria premium de Costa del Este, Argentina. "+TONOS[$("tono").value]+" Estructura de carrusel: placa 1 = GANCHO fuerte que frena el scroll, placas intermedias = CONTENIDO concreto y util, ultima placa = REMATE + llamado a la accion. Titulos: maximo 7 palabras por placa, con saltos de linea usando \\n para ritmo visual (2-3 lineas cortas). OBLIGATORIO en cada titulo: marcar entre asteriscos las 2-4 palabras del nucleo emocional (ej: \"\u00bfSab\u00edas que tu casa *no vale* lo que pens\u00e1s?\"), NUNCA entregar un titulo sin palabras marcadas. Secundario: 1 frase corta opcional con valor real, marcando entre asteriscos 1 o 2 palabras clave. CTA: solo en la ultima placa, imperativo corto. No inventes cifras, porcentajes ni datos legales: si el tema los requiere, usa marcadores como [X%] para que el usuario los complete. Ortografia y tildes perfectas. Responde SOLO JSON valido: {\"slides\":[{\"titulo\":\"...\",\"sec\":\"...\",\"cta\":\"...\"}]} con exactamente "+n+" slides. CTA vacio \"\" salvo en la ultima."},
+          {role:"user", content:"Tema: "+$("tema").value.trim()+". Enfoque: "+$("enfoque").value+". Genera el carrusel de "+n+" placas."}
+        ]
+    });
+    const out = JSON.parse(data.choices[0].message.content);
+    (out.slides||[]).slice(0,n).forEach((o,i)=>{
+      if(!slides[i]) slides[i] = nuevoSlide(false);
+      slides[i].titulo = (o.titulo||"").replace(/\\n/g,"\n");
+      slides[i].sec = o.sec||"";
+      slides[i].cta = o.cta||"";
+      slides[i].contacto = (i===n-1);
+    });
+    st.textContent = "Ideas cargadas. Edit\u00e1 lo que quieras en cada placa."; st.className="status ok";
+    drawTabs(); drawEditor(); render();
+  }catch(e){ st.textContent = e.message; st.className="status err"; }
+  finally{ $("ideas").disabled = false; }
+}
+$("ideas").addEventListener("click", generarIdeas);
+
+/* ---------- POST DE PROPIEDAD ---------- */
+const PRESETS = {
+  ext: { n:"Exterior", filtro:"brightness(1.04) contrast(1.12) saturate(1.16)", calidez:.055 },
+  int: { n:"Interior", filtro:"brightness(1.09) contrast(1.05) saturate(1.07)", calidez:.045 },
+  no:  { n:"Sin editar", filtro:"none", calidez:0 }
+};
+$("pFotos").addEventListener("change", e=>{
+  const files = [...e.target.files];
+  let pend = files.length;
+  files.forEach(f=>{
+    const img = new Image();
+    img.onload = ()=>{ prop.fotos.push({img, preset:"ext"}); if(--pend===0){ prop.curF = prop.fotos.length-1; drawPTabs(); drawPEditor(); render(); } };
+    img.src = URL.createObjectURL(f);
+  });
+  e.target.value = "";
+});
+function drawPTabs(){
+  const t = $("pTabs"); t.innerHTML = "";
+  prop.fotos.forEach((f,i)=>{
+    const b = document.createElement("button");
+    b.className = "tab"+(i===prop.curF?" sel":"");
+    b.textContent = "Foto "+(i+1);
+    b.onclick = ()=>{ prop.curF=i; drawPTabs(); drawPEditor(); render(); };
+    t.appendChild(b);
+  });
+}
+function drawPEditor(){
+  const box = $("pEditor");
+  if(!prop.fotos.length){ box.innerHTML = ""; return; }
+  const f = prop.fotos[prop.curF];
+  const opts = Object.keys(PRESETS).map(k=>`<option value="${k}" ${f.preset===k?"selected":""}>${PRESETS[k].n}</option>`).join("");
+  box.innerHTML = `
+    <div class="slidebox">
+      <div class="row">
+        <div>
+          <label>Preset de edici&oacute;n</label>
+          <select id="pPreset">${opts}</select>
+        </div>
+        <div>
+          <label>Orden</label>
+          <div class="bgopts">
+            <button class="btn sec mini" id="pIzq" type="button">&larr; Mover</button>
+            <button class="btn sec mini" id="pDer" type="button">Mover &rarr;</button>
+            <button class="btn sec mini" id="pDel" type="button">Quitar</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  $("pPreset").addEventListener("change", e=>{ f.preset = e.target.value; render(); });
+  $("pIzq").onclick = ()=>{ const i=prop.curF; if(i>0){ [prop.fotos[i-1],prop.fotos[i]]=[prop.fotos[i],prop.fotos[i-1]]; prop.curF=i-1; drawPTabs(); render(); } };
+  $("pDer").onclick = ()=>{ const i=prop.curF; if(i<prop.fotos.length-1){ [prop.fotos[i+1],prop.fotos[i]]=[prop.fotos[i],prop.fotos[i+1]]; prop.curF=i+1; drawPTabs(); render(); } };
+  $("pDel").onclick = ()=>{ prop.fotos.splice(prop.curF,1); prop.curF=Math.max(0,prop.curF-1); drawPTabs(); drawPEditor(); render(); };
+}
+["pOp","pPrecio","pTitulo","pUbi"].forEach(id=> $(id).addEventListener("input", render));
+["pTextosTodas","pContacto"].forEach(id=> $(id).addEventListener("change", render));
+
+/* ---------- CALENDARIO MENSUAL ---------- */
+let plan = [];
+async function guardarPlan(){ await stSet("ev_plan", JSON.stringify(plan)); }
+async function cargarPlan(){
+  try{ const raw = await stGet("ev_plan"); if(raw){ plan = JSON.parse(raw)||[]; renderPlan(); } }catch(e){}
+}
+async function generarPlan(){
+  const st = $("stCal");
+  if(!conexionVera()){ st.textContent="Falta el C\u00f3digo de acceso en Identidad fija."; st.className="status err"; $("cfg").open=true; return; }
+  const n = parseInt($("calN").value);
+  const tono = $("calTono").value;
+  const foco = $("calFoco").value.trim();
+  st.textContent = "Armando el plan del mes..."; st.className="status";
+  $("calGen").disabled = true;
+  try{
+    const tonoTxt = tono==="mixto" ? "Rota los tonos entre profesional, picante/polemico y cercano/de barrio, indicando en cada item cual usa." : TONOS[tono];
+    const data = await llamarVera("/chat", {
+        model:"gpt-4o-mini",
+        response_format:{type:"json_object"},
+        messages:[
+          {role:"system", content:"Sos el director de contenido de una inmobiliaria premium de Costa del Este, Argentina. Armas el plan mensual de redes. "+tonoTxt+" Espanol rioplatense, ortografia y tildes perfectas. MIX OBLIGATORIO aproximado: 35% carruseles educativos (3-4 placas, estilo estudio), 20% posts simples UGC aspiracionales (1 placa, foto casual), 20% posts de propiedad (slot para cargar fotos reales de una propiedad activa), 15% marca personal, 10% prueba social (vendida/caso cerrado). Distribui los dias del 1 al 30 de forma pareja (si son pocos posteos, dias tipo lunes-miercoles-viernes). Titulos: max 7 palabras, con 2-4 palabras clave entre asteriscos para dorado y saltos de linea con \\n. No inventes cifras ni datos legales: usa [X%] o [dato] como marcador. Para tipo propiedad: titulo y sec son sugerencia de enfoque y en nota indica que propiedad conviene elegir (ej: 'eleg\u00ed una casa con parque destacable'). Campo fondo: descripcion de imagen para generar con IA acorde al tipo (escena UGC casual, o atmosfera premium para estudio); vacio para tipo propiedad. Responde SOLO JSON valido: {\"items\":[{\"dia\":1,\"tipo\":\"carrusel|ugc|propiedad|personal|vendida\",\"tono\":\"profesional|picante|cercano\",\"placas\":4,\"titulo\":\"...\",\"sec\":\"...\",\"cta\":\"...\",\"fondo\":\"...\",\"nota\":\"...\"}]} con exactamente "+n+" items ordenados por dia. CTA solo donde corresponde (ultima placa de carrusel o post simple)."},
+          {role:"user", content:"Genera el plan de "+n+" posteos del mes."+(foco? " Foco comercial del mes: "+foco+".":"")}
+        ]
+    });
+    const out = JSON.parse(data.choices[0].message.content);
+    plan = (out.items||[]).map(it=> ({...it, hecho:false}));
+    await guardarPlan();
+    renderPlan();
+    st.textContent = "Plan listo y guardado. Marc\u00e1 cada posteo cuando lo publiques."; st.className="status ok";
+  }catch(e){ st.textContent = e.message; st.className="status err"; }
+  finally{ $("calGen").disabled = false; }
+}
+$("calGen").addEventListener("click", generarPlan);
+
+const TIPO_LABEL = { carrusel:"Carrusel", ugc:"UGC", propiedad:"Propiedad", personal:"Marca personal", vendida:"Vendida" };
+function renderPlan(){
+  const box = $("calLista");
+  if(!plan.length){ box.innerHTML = ""; return; }
+  const hechos = plan.filter(p=>p.hecho).length;
+  box.innerHTML = `<div class="hint" style="margin-bottom:10px">Avance del mes: <b style="color:var(--oro)">${hechos}/${plan.length}</b> publicados</div>` + plan.map((it,i)=>`
+    <div class="slidebox" style="opacity:${it.hecho?".5":"1"}">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <span style="font-family:Oswald;font-weight:700;font-size:1.1rem;color:var(--oro)">D\u00cdA ${it.dia}</span>
+        <span class="hint" style="margin:0;border:1px solid var(--line);border-radius:6px;padding:2px 8px">${TIPO_LABEL[it.tipo]||it.tipo}${it.placas>1?" \u00b7 "+it.placas+" placas":""}</span>
+        ${it.tono?`<span class="hint" style="margin:0">${it.tono}</span>`:""}
+        <label class="chk" style="margin:0 0 0 auto"><input type="checkbox" data-hecho="${i}" ${it.hecho?"checked":""}> Publicado</label>
+      </div>
+      <div style="margin-top:8px;font-weight:700">${(it.titulo||"").replace(/\\n/g," / ")}</div>
+      ${it.sec?`<div class="hint" style="margin-top:4px">${it.sec}</div>`:""}
+      ${it.cta?`<div class="hint" style="margin-top:4px">CTA: <b>${it.cta}</b></div>`:""}
+      ${it.fondo?`<div class="hint" style="margin-top:4px">Fondo IA: ${it.fondo}</div>`:""}
+      ${it.nota?`<div class="hint" style="margin-top:4px;color:var(--oro)">${it.nota}</div>`:""}
+      <div class="actions" style="margin-top:10px"><button class="btn sec mini" data-usar="${i}" type="button">Usar en el editor</button></div>
+    </div>`).join("");
+  box.querySelectorAll("[data-hecho]").forEach(el=> el.addEventListener("change", async e=>{
+    plan[parseInt(e.target.dataset.hecho)].hecho = e.target.checked;
+    await guardarPlan(); renderPlan();
+  }));
+  box.querySelectorAll("[data-usar]").forEach(el=> el.addEventListener("click", ()=> usarItem(parseInt(el.dataset.usar))));
+}
+function usarItem(i){
+  const it = plan[i];
+  const tituloPlano = (it.titulo||"").replace(/\*/g,"").replace(/\\n/g," ");
+  if(it.tipo==="propiedad"){
+    setMode("prop");
+    $("pTitulo").value = tituloPlano;
+    $("stCv").textContent = it.nota || "Carg\u00e1 las fotos de la propiedad elegida.";
+    $("stCv").className = "status";
+    render();
+    return;
+  }
+  setMode("cont");
+  const esCarrusel = it.tipo==="carrusel" && (it.placas||1)>1;
+  $("tema").value = tituloPlano;
+  if(it.tono && TONOS[it.tono]) $("tono").value = it.tono;
+  $("nplacas").value = esCarrusel ? String(it.placas) : "1";
+  syncPlacas();
+  cur = 0;
+  const s = slides[0];
+  s.titulo = (it.titulo||"").replace(/\\n/g,"\n");
+  s.sec = it.sec||"";
+  s.cta = esCarrusel ? "" : (it.cta||"");
+  s.estilo = (it.tipo==="ugc") ? "ugc" : "estudio";
+  s.bgDesc = it.fondo||"";
+  s.contacto = !esCarrusel;
+  drawTabs(); drawEditor(); render();
+  $("stIdeas").textContent = esCarrusel ? "Placa 1 cargada del plan. Toc\u00e1 Generar ideas para desplegar las "+it.placas+" placas completas." : "Post cargado del plan. Gener\u00e1 el fondo y descarg\u00e1.";
+  $("stIdeas").className = "status ok";
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+/* ---------- RENDER ---------- */
+const cv = $("cv"), ctx = cv.getContext("2d");
+const W=1080, PAD=84;
+let H=1350;
+let fmt = "feed";
+const FMT = {
+  feed:  { h:1350, logoY:56,  tituloY:320, lineOff:118, rowOff:84,  dotTop:30,  dotBotOff:30,  deslizar:true  },
+  story: { h:1920, logoY:250, tituloY:600, lineOff:330, rowOff:296, dotTop:230, dotBotOff:242, deslizar:false }
+};
+$("fmtFeed").onclick = ()=>{ fmt="feed"; $("fmtFeed").classList.add("sel"); $("fmtStory").classList.remove("sel"); render(); };
+$("fmtStory").onclick = ()=>{ fmt="story"; $("fmtStory").classList.add("sel"); $("fmtFeed").classList.remove("sel"); render(); };
+
+function hexRgb(h){ return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)]; }
+function rgba(h,a){ const [r,g,b]=hexRgb(h); return `rgba(${r},${g},${b},${a})`; }
+function drawDots(x0,y0,cols,rows){
+  ctx.save(); ctx.fillStyle = ORO; ctx.globalAlpha = .32;
+  for(let i=0;i<cols;i++) for(let j=0;j<rows;j++){
+    ctx.beginPath(); ctx.arc(x0+i*17, y0+j*17, 2.3, 0, 7); ctx.fill();
+  }
+  ctx.restore();
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function slugTexto(t){
+  return (t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,32) || "post";
+}
+function nombreBase(){
+  const f = new Date();
+  const mes = f.getFullYear()+"-"+String(f.getMonth()+1).padStart(2,"0");
+  const fmtTag = fmt==="story" ? "historia" : "feed";
+  if(mode==="prop") return mes+"_propiedad_"+slugTexto($("pTitulo").value)+"_"+fmtTag;
+  const tipo = slides.length>1 ? "carrusel" : (slides[0]&&slides[0].estilo==="ugc" ? "ugc" : "post");
+  const src = $("tema").value.trim() || (slides[0]? slides[0].titulo.replace(/\*/g,"") : "");
+  return mes+"_"+tipo+"_"+slugTexto(src)+"_"+fmtTag;
+}
+function drawCover(img, off, zoom){
+  let sc = Math.max(W/img.width, H/img.height);
+  sc *= 1 + (zoom||0)/100;
+  const iw = img.width*sc, ih = img.height*sc;
+  let dx = (W-iw)/2, dy = (H-ih)/2;
+  const exH = iw-W, exV = ih-H;
+  if(exH > 4) dx += ((off||0)/100)*(exH/2);
+  else if(exV > 4) dy += ((off||0)/100)*(exV/2);
+  ctx.drawImage(img,dx,dy,iw,ih);
+}
+function parseSpans(line){
+  const spans=[]; let rest=line;
+  while(rest.length){
+    const m = rest.match(/\*([^*]+)\*/);
+    if(!m){ spans.push({t:rest,g:false}); break; }
+    if(m.index>0) spans.push({t:rest.slice(0,m.index),g:false});
+    spans.push({t:m[1],g:true});
+    rest = rest.slice(m.index+m[0].length);
+  }
+  return spans;
+}
+function wrapSpans(spans,font,maxW){
+  ctx.font = font;
+  const lines=[]; let line=[]; let w=0;
+  spans.forEach(sp=>{
+    sp.t.split(/(\s+)/).forEach(tok=>{
+      if(!tok) return;
+      const tw = ctx.measureText(tok).width;
+      if(w+tw>maxW && line.length && tok.trim()){ lines.push(line); line=[]; w=0; }
+      if(!(tok.trim()==="" && line.length===0)){ line.push({t:tok,g:sp.g}); w+=tw; }
+    });
+  });
+  if(line.length) lines.push(line);
+  return lines;
+}
+function drawLogo(P){
+  if(!$("chkLogo").checked) return;
+  const lg = $("chkBajada").checked ? $("logoSub").value.trim() : "";
+  const logoY = P.logoY;
+  if(logoImg){
+    const lw = 180, lh = lw*logoImg.height/logoImg.width;
+    let lx = (W-lw)/2;
+    if($("logoPos").value==="l") lx = PAD;
+    if($("logoPos").value==="r") lx = W-PAD-lw-72;
+    ctx.drawImage(logoImg, lx, logoY, lw, lh);
+    if(lg){
+      ctx.save();
+      ctx.font = "600 19px Inter"; ctx.fillStyle = ORO; ctx.textBaseline="top";
+      ctx.letterSpacing = "6px";
+      const lgw = ctx.measureText(lg).width;
+      let bx = lx + lw/2 - lgw/2;
+      if($("logoPos").value==="l") bx = lx;
+      if($("logoPos").value==="r") bx = lx + lw - lgw;
+      ctx.fillText(lg, bx, logoY+lh+8);
+      ctx.restore();
+    }
+  }else{
+    ctx.save(); ctx.font="700 52px Oswald"; ctx.fillStyle=ORO; ctx.textBaseline="top";
+    const nm="VARELA"; let lx=(W-ctx.measureText(nm).width)/2;
+    if($("logoPos").value==="l") lx=PAD;
+    if($("logoPos").value==="r") lx=W-PAD-ctx.measureText(nm).width-72;
+    ctx.fillText(nm,lx,logoY);
+    if(lg){ ctx.font="600 22px Inter"; ctx.letterSpacing="7px"; ctx.fillText(lg, lx, logoY+60); }
+    ctx.restore();
+  }
+}
+function drawPie(P, conContacto, total, idx, conDeslizar){
+  ctx.strokeStyle = rgba(ORO,.55); ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(PAD, H-P.lineOff); ctx.lineTo(W-PAD, H-P.lineOff); ctx.stroke();
+  const rowY = H-P.rowOff;
+  let xCursor = PAD;
+  if(total>1){
+    ctx.font = "700 34px Inter";
+    const a = String(idx+1).padStart(2,"0"), b = String(total).padStart(2,"0");
+    ctx.fillStyle = ORO; ctx.fillText(a, xCursor, rowY);
+    xCursor += ctx.measureText(a).width;
+    ctx.fillStyle = GRISC; ctx.fillText("/"+b, xCursor, rowY);
+    xCursor += ctx.measureText("/"+b).width + 44;
+  }
+  if(conContacto){
+    const partes = [];
+    if($("chkTel").checked && $("tel").value.trim()) partes.push($("tel").value.trim());
+    if($("chkDir").checked && $("dir").value.trim()) partes.push($("dir").value.trim());
+    if($("chkWeb").checked && $("web").value.trim()) partes.push($("web").value.trim());
+    if(partes.length){
+      ctx.font = "600 29px Inter";
+      const maxW = W-PAD-xCursor - (idx===0 && total>1 && conDeslizar ? 220 : 0);
+      const l1 = [], l2 = [];
+      partes.forEach(p=>{
+        const test = [...l1, p].join("  \u00b7  ");
+        if(!l2.length && ctx.measureText(test).width <= maxW) l1.push(p);
+        else l2.push(p);
+      });
+      ctx.fillStyle = "#ece8dd";
+      if(l1.length) ctx.fillText(l1.join("  \u00b7  "), xCursor, rowY+3);
+      if(l2.length){
+        ctx.fillStyle = GRISC;
+        let t2 = l2.join("  \u00b7  ");
+        while(ctx.measureText(t2).width > maxW && t2.length>4) t2 = t2.slice(0,-2);
+        ctx.fillText(t2, xCursor, rowY+43);
+      }
+    }
+  }
+  if(total>1 && idx===0 && conDeslizar){
+    ctx.font="600 32px Inter"; ctx.fillStyle=ORO;
+    const dz="Desliz\u00e1  \u2192";
+    ctx.fillText(dz, W-PAD-ctx.measureText(dz).width, rowY);
+  }
+}
+
+function render(){
+  const P = FMT[fmt];
+  H = P.h;
+  if(cv.height !== H){ cv.height = H; }
+  if(mode==="prop"){ renderProp(P); }
+  else if(mode==="vid"){ renderVidPreview(P); }
+  else { renderCont(P); }
+}
+
+function renderUgc(P, s){
+  const pal = PALETA[s.bgColor];
+  const der = s.textoPos==="der";
+  ctx.clearRect(0,0,W,H);
+  // fondo: foto protagonista
+  if(s.bgImg){
+    drawCover(s.bgImg, s.fotoOff, s.zoom);
+  }else{
+    let dg = ctx.createLinearGradient(0,0,W*.6,H);
+    dg.addColorStop(0, pal.a); dg.addColorStop(1, pal.b);
+    ctx.fillStyle = dg; ctx.fillRect(0,0,W,H);
+  }
+  // degrades minimos para logo y pie
+  let g = ctx.createLinearGradient(0,0,0,P.logoY+180);
+  g.addColorStop(0,"rgba(0,0,0,.42)"); g.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,P.logoY+180);
+  g = ctx.createLinearGradient(0,H-P.lineOff-140,0,H);
+  g.addColorStop(0,"rgba(0,0,0,0)"); g.addColorStop(1,"rgba(0,0,0,.62)");
+  ctx.fillStyle = g; ctx.fillRect(0,H-P.lineOff-140,W,P.lineOff+140);
+
+  drawLogo(P);
+
+  // titulo en chips estilo historia de Instagram
+  ctx.textBaseline = "top";
+  const chipFont = "700 58px Inter";
+  const secFont = "600 38px Inter";
+  // medir alto total del bloque para poder anclarlo arriba/centro/abajo
+  let n1 = 0;
+  s.titulo.split("\n").forEach(mline=>{ n1 += wrapSpans(parseSpans(mline), chipFont, W-2*PAD-72).length; });
+  let n2 = 0;
+  if(s.sec.trim()) n2 = wrapSpans(parseSpans(s.sec), secFont, W-2*PAD-64).length;
+  let totalH = n1*96 + 14 + (n2? n2*70+18 : 0) + (s.cta.trim()? 86 : 0);
+  let y;
+  if(s.altura==="arriba") y = P.logoY + 170;
+  else if(s.altura==="abajo") y = H - P.lineOff - 46 - totalH;
+  else y = P.tituloY + 30;
+  // refuerzo de legibilidad cuando el texto va abajo
+  if(s.altura==="abajo" && s.bgImg){
+    g = ctx.createLinearGradient(0,y-90,0,H);
+    g.addColorStop(0,"rgba(0,0,0,0)"); g.addColorStop(.5,"rgba(0,0,0,.35)"); g.addColorStop(1,"rgba(0,0,0,.6)");
+    ctx.fillStyle = g; ctx.fillRect(0,y-90,W,H-(y-90));
+  }
+  s.titulo.split("\n").forEach(mline=>{
+    const lines = wrapSpans(parseSpans(mline), chipFont, W-2*PAD-72);
+    lines.forEach(line=>{
+      ctx.font = chipFont;
+      const lw = line.reduce((a,t)=> a+ctx.measureText(t.t).width, 0);
+      const x0 = der ? W-PAD-(lw+56) : PAD;
+      roundRect(x0, y, lw+56, 84, 16);
+      ctx.fillStyle = "rgba(0,0,0,.58)"; ctx.fill();
+      let x = x0+28;
+      line.forEach(tok=>{
+        ctx.fillStyle = tok.g ? ORO : "#ffffff";
+        ctx.fillText(tok.t, x, y+13);
+        x += ctx.measureText(tok.t).width;
+      });
+      y += 96;
+    });
+  });
+  y += 14;
+  if(s.sec.trim()){
+    const lines = wrapSpans(parseSpans(s.sec), secFont, W-2*PAD-64);
+    lines.forEach(line=>{
+      ctx.font = secFont;
+      const lw = line.reduce((a,t)=> a+ctx.measureText(t.t).width, 0);
+      const x0 = der ? W-PAD-(lw+44) : PAD;
+      roundRect(x0, y, lw+44, 60, 13);
+      ctx.fillStyle = "rgba(0,0,0,.46)"; ctx.fill();
+      let x = x0+22;
+      line.forEach(tok=>{ ctx.fillStyle = tok.g?ORO:"#f3f0e8"; ctx.fillText(tok.t, x, y+10); x+=ctx.measureText(tok.t).width; });
+      y += 70;
+    });
+    y += 18;
+  }
+  if(s.cta.trim()){
+    ctx.font = "700 38px Inter";
+    const t = s.cta.trim().toUpperCase();
+    const tw = ctx.measureText(t).width;
+    const x0 = der ? W-PAD-(tw+68) : PAD;
+    roundRect(x0, y, tw+68, 86, 18);
+    ctx.fillStyle = ORO; ctx.fill();
+    ctx.fillStyle = "#141414";
+    ctx.fillText(t, x0+34, y+24);
+  }
+
+  drawPie(P, s.contacto, slides.length, cur, P.deslizar);
+  $("dl1").href = cv.toDataURL("image/jpeg", .92);
+  $("dl1").download = nombreBase()+"_"+String(cur+1).padStart(2,"0")+".jpg";
+}
+
+function renderCont(P){
+  if(!slides.length) return;
+  const s = slides[cur];
+  if(s.estilo==="ugc"){ renderUgc(P, s); return; }
+  const pal = PALETA[s.bgColor];
+  ctx.clearRect(0,0,W,H);
+  let dg = ctx.createLinearGradient(0,0,W*.6,H);
+  dg.addColorStop(0, pal.a); dg.addColorStop(1, pal.b);
+  ctx.fillStyle = dg; ctx.fillRect(0,0,W,H);
+  const der = s.textoPos==="der";
+  if(s.bgType==="flat"){
+    const cx = der ? W*.2 : W*.8;
+    const rg = ctx.createRadialGradient(cx, H*.28, 60, cx, H*.28, 950);
+    rg.addColorStop(0, rgba(ORO,.07)); rg.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = rg; ctx.fillRect(0,0,W,H);
+  }
+  if(s.bgType==="img" && s.bgImg){
+    drawCover(s.bgImg, s.fotoOff, s.zoom);
+    let g = ctx.createLinearGradient(0,0,W,0);
+    if(der){ g.addColorStop(0,rgba(pal.b,.25)); g.addColorStop(.45,rgba(pal.b,.7)); g.addColorStop(1,rgba(pal.b,.97)); }
+    else{ g.addColorStop(0,rgba(pal.b,.97)); g.addColorStop(.55,rgba(pal.b,.7)); g.addColorStop(1,rgba(pal.b,.25)); }
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+    g = ctx.createLinearGradient(0,H-380,0,H);
+    g.addColorStop(0,rgba(pal.b,0)); g.addColorStop(1,rgba(pal.b,.97));
+    ctx.fillStyle = g; ctx.fillRect(0,H-380,W,380);
+    g = ctx.createLinearGradient(0,0,0,280);
+    g.addColorStop(0,rgba(pal.b,.9)); g.addColorStop(1,rgba(pal.b,0));
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,280);
+  }
+  drawDots(W-30-3*17, P.dotTop, 4, 7);
+  drawDots(24, H-P.dotBotOff-6*17, 3, 7);
+  drawLogo(P);
+
+  const titleFont = "700 112px Oswald";
+  let y = P.tituloY;
+  ctx.textBaseline = "top";
+  s.titulo.split("\n").forEach(mline=>{
+    const lines = wrapSpans(parseSpans(mline.toUpperCase()), titleFont, W-2*PAD);
+    lines.forEach(line=>{
+      ctx.font = titleFont;
+      let lw = 0; line.forEach(tok=> lw += ctx.measureText(tok.t).width);
+      let x = der ? W-PAD-lw : PAD;
+      line.forEach(tok=>{
+        ctx.fillStyle = tok.g ? ORO : BLANCO;
+        ctx.fillText(tok.t, x, y);
+        x += ctx.measureText(tok.t).width;
+      });
+      y += 122;
+    });
+  });
+  y += 30;
+  if(s.sec.trim()){
+    const secFont = "400 44px Inter";
+    const lines = wrapSpans(parseSpans(s.sec), secFont, 640);
+    ctx.font = secFont;
+    lines.forEach(line=>{
+      let lw = 0; line.forEach(tok=> lw += ctx.measureText(tok.t).width);
+      let x = der ? W-PAD-lw : PAD;
+      line.forEach(tok=>{ ctx.fillStyle = tok.g?ORO:"#e8e4d9"; ctx.fillText(tok.t,x,y); x+=ctx.measureText(tok.t).width; });
+      y += 60;
+    });
+    y += 34;
+  }
+  if(s.cta.trim()){
+    ctx.font = "700 40px Inter";
+    const t = s.cta.trim().toUpperCase();
+    const tw = ctx.measureText(t).width;
+    const x0 = der ? W-PAD-(tw+72) : PAD;
+    roundRect(x0, y, tw+72, 92, 18);
+    ctx.fillStyle = ORO; ctx.fill();
+    ctx.fillStyle = "#141414";
+    ctx.fillText(t, x0+36, y+26);
+  }
+  drawPie(P, s.contacto, slides.length, cur, P.deslizar);
+  $("dl1").href = cv.toDataURL("image/jpeg", .92);
+  $("dl1").download = nombreBase()+"_"+String(cur+1).padStart(2,"0")+".jpg";
+}
+
+function formatearPrecio(raw){
+  const t = raw.trim();
+  if(!t) return "";
+  // si es solo numero (con o sin puntos/comas/espacios), lo formatea como USD con miles
+  const soloNum = t.replace(/[.,\s]/g,"");
+  if(/^\d+$/.test(soloNum)){
+    return "USD "+soloNum.replace(/\B(?=(\d{3})+(?!\d))/g,".");
+  }
+  return t; // ya trae moneda o texto (ej: "Consultar", "U$S 95.000")
+}
+
+function renderProp(P){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = "#0c0d0f"; ctx.fillRect(0,0,W,H);
+  const total = prop.fotos.length;
+  if(!total){
+    ctx.fillStyle = GRISC; ctx.font = "400 40px Inter"; ctx.textBaseline="top";
+    ctx.fillText("Agreg\u00e1 fotos de la propiedad", PAD, H/2-20);
+    $("dl1").removeAttribute("href");
+    return;
+  }
+  const idx = Math.min(prop.curF, total-1);
+  const f = prop.fotos[idx];
+  const pr = PRESETS[f.preset];
+
+  // foto con preset
+  ctx.save();
+  ctx.filter = pr.filtro;
+  const img = f.img;
+  const sc = Math.max(W/img.width, H/img.height);
+  const iw = img.width*sc, ih = img.height*sc;
+  ctx.drawImage(img,(W-iw)/2,(H-ih)/2,iw,ih);
+  ctx.restore();
+  // capa de calidez de marca
+  if(pr.calidez>0){
+    ctx.fillStyle = `rgba(242,180,60,${pr.calidez})`;
+    ctx.fillRect(0,0,W,H);
+  }
+  // vineta suave
+  const vg = ctx.createRadialGradient(W/2,H/2,H*.35, W/2,H/2,H*.75);
+  vg.addColorStop(0,"rgba(0,0,0,0)"); vg.addColorStop(1,"rgba(0,0,0,.30)");
+  ctx.fillStyle = vg; ctx.fillRect(0,0,W,H);
+  // degrades para legibilidad
+  let g = ctx.createLinearGradient(0,0,0,P.logoY+220);
+  g.addColorStop(0,"rgba(8,9,11,.72)"); g.addColorStop(1,"rgba(8,9,11,0)");
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,P.logoY+220);
+  const conTextos = $("pTextosTodas").checked || idx===0;
+  const bottomH = conTextos ? (fmt==="story"? 760 : 620) : (fmt==="story"? 460 : 340);
+  g = ctx.createLinearGradient(0,H-bottomH,0,H);
+  g.addColorStop(0,"rgba(8,9,11,0)"); g.addColorStop(1,"rgba(8,9,11,.94)");
+  ctx.fillStyle = g; ctx.fillRect(0,H-bottomH,W,bottomH);
+
+  drawDots(W-30-3*17, P.dotTop, 4, 7);
+  drawLogo(P);
+
+  // bloque de textos (anclado abajo)
+  if(conTextos){
+    ctx.textBaseline = "top";
+    const op = $("pOp").value.trim();
+    const tit = $("pTitulo").value.trim();
+    const ubi = $("pUbi").value.trim();
+    const precio = formatearPrecio($("pPrecio").value);
+
+    // medir alturas
+    const titFont = "700 78px Oswald";
+    const titLines = tit ? wrapSpans(parseSpans(tit.toUpperCase()), titFont, W-2*PAD) : [];
+    let bloque = 0;
+    if(op) bloque += 66;
+    bloque += titLines.length * 88;
+    if(ubi || precio) bloque += 66;
+    let y = H - P.lineOff - 46 - bloque;
+
+    if(op){
+      ctx.font = "700 30px Inter";
+      ctx.save(); ctx.letterSpacing = "4px";
+      const tw = ctx.measureText(op.toUpperCase()).width;
+      roundRect(PAD, y, tw+48, 52, 12);
+      ctx.fillStyle = ORO; ctx.fill();
+      ctx.fillStyle = "#141414";
+      ctx.fillText(op.toUpperCase(), PAD+24, y+12);
+      ctx.restore();
+      y += 66;
+    }
+    ctx.font = titFont;
+    titLines.forEach(line=>{
+      let x = PAD;
+      line.forEach(tok=>{ ctx.fillStyle = tok.g?ORO:BLANCO; ctx.font = titFont; ctx.fillText(tok.t,x,y); x+=ctx.measureText(tok.t).width; });
+      y += 88;
+    });
+    if(ubi || precio){
+      y += 6;
+      if(ubi){
+        ctx.font = "400 38px Inter"; ctx.fillStyle = "#ddd9cf";
+        ctx.fillText(ubi, PAD, y+8);
+      }
+      if(precio){
+        ctx.font = "700 54px Oswald"; ctx.fillStyle = ORO;
+        const pw = ctx.measureText(precio).width;
+        ctx.fillText(precio, W-PAD-pw, y-4);
+      }
+    }
+  }
+
+  const conContacto = $("pContacto").checked && idx===total-1;
+  drawPie(P, conContacto, total, idx, P.deslizar);
+  $("dl1").href = cv.toDataURL("image/jpeg", .92);
+  $("dl1").download = nombreBase()+"_"+String(idx+1).padStart(2,"0")+".jpg";
+}
+
+/* ---------- MODULO DE VIDEO ---------- */
+const vid = { items:[], curI:0, grabando:false };
+$("vArchivos").addEventListener("change", e=>{
+  const files = [...e.target.files];
+  let pend = files.length;
+  files.forEach(f=>{
+    const img = new Image();
+    img.onload = ()=>{ vid.items.push({img}); if(--pend===0){ vid.curI = vid.items.length-1; vidTabs(); vidEditor(); render(); } };
+    img.src = URL.createObjectURL(f);
+  });
+  e.target.value = "";
+});
+function vidTabs(){
+  const t = $("vTabs"); t.innerHTML = "";
+  vid.items.forEach((it,i)=>{
+    const b = document.createElement("button");
+    b.className = "tab"+(i===vid.curI?" sel":"");
+    b.textContent = "Foto "+(i+1);
+    b.onclick = ()=>{ vid.curI=i; vidTabs(); vidEditor(); render(); };
+    t.appendChild(b);
+  });
+}
+function vidEditor(){
+  const box = $("vEditor");
+  if(!vid.items.length){ box.innerHTML=""; return; }
+  box.innerHTML = `
+    <div class="slidebox">
+      <div class="bgopts">
+        <button class="btn sec mini" id="vIzq" type="button">&larr; Mover</button>
+        <button class="btn sec mini" id="vDer" type="button">Mover &rarr;</button>
+        <button class="btn sec mini" id="vDel" type="button">Quitar</button>
+      </div>
+    </div>`;
+  $("vIzq").onclick = ()=>{ const i=vid.curI; if(i>0){ [vid.items[i-1],vid.items[i]]=[vid.items[i],vid.items[i-1]]; vid.curI=i-1; vidTabs(); render(); } };
+  $("vDer").onclick = ()=>{ const i=vid.curI; if(i<vid.items.length-1){ [vid.items[i+1],vid.items[i]]=[vid.items[i],vid.items[i+1]]; vid.curI=i+1; vidTabs(); render(); } };
+  $("vDel").onclick = ()=>{ vid.items.splice(vid.curI,1); vid.curI=Math.max(0,vid.curI-1); vidTabs(); vidEditor(); render(); };
+}
+const FILTROSV = {
+  no:    { f:"none", calidez:0, vineta:0 },
+  calido:{ f:"brightness(1.05) contrast(1.08) saturate(1.12)", calidez:.05, vineta:.16 },
+  cine:  { f:"brightness(1.02) contrast(1.16) saturate(.92)",  calidez:.02, vineta:.34 }
+};
+function filtroActual(){ return FILTROSV[$("vFiltro") ? $("vFiltro").value : "no"] || FILTROSV.no; }
+function drawCoverKB(img, escala, offX, offY){
+  const base = Math.max(W/img.width, H/img.height) * escala;
+  const iw = img.width*base, ih = img.height*base;
+  const dx = (W-iw)/2 + offX*(iw-W)/2;
+  const dy = (H-ih)/2 + offY*(ih-H)/2;
+  ctx.save(); ctx.filter = filtroActual().f;
+  ctx.drawImage(img, dx, dy, iw, ih);
+  ctx.restore();
+}
+function drawCoverVideo(v){
+  if(!v.videoWidth) return;
+  const sc = Math.max(W/v.videoWidth, H/v.videoHeight);
+  const iw = v.videoWidth*sc, ih = v.videoHeight*sc;
+  ctx.save(); ctx.filter = filtroActual().f;
+  ctx.drawImage(v, (W-iw)/2, (H-ih)/2, iw, ih);
+  ctx.restore();
+}
+function capasFiltro(){
+  const fl = filtroActual();
+  if(fl.calidez>0){
+    ctx.fillStyle = `rgba(242,180,60,${fl.calidez})`;
+    ctx.fillRect(0,0,W,H);
+  }
+  if(fl.vineta>0){
+    const vg = ctx.createRadialGradient(W/2,H/2,H*.35, W/2,H/2,H*.78);
+    vg.addColorStop(0,"rgba(0,0,0,0)"); vg.addColorStop(1,`rgba(0,0,0,${fl.vineta})`);
+    ctx.fillStyle = vg; ctx.fillRect(0,0,W,H);
+  }
+}
+function drawTituloVideo(P, alpha){
+  const t = $("vTitulo").value.trim();
+  const sub = $("vSub").value.trim();
+  if((!t && !sub) || alpha<=0) return;
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, alpha);
+  ctx.textBaseline = "top";
+  ctx.shadowColor = "rgba(0,0,0,.8)"; ctx.shadowBlur = 24; ctx.shadowOffsetY = 3;
+  const titFont = "700 96px Oswald";
+  const subFont = "600 42px Inter";
+  const lines = t ? [].concat(...t.split("\n").map(m=> wrapSpans(parseSpans(m.toUpperCase()), titFont, W-2*PAD))) : [];
+  const subLines = sub ? wrapSpans(parseSpans(sub), subFont, W-2*PAD) : [];
+  const totalH = lines.length*104 + (subLines.length ? subLines.length*56 + 18 : 0);
+  let y = H - FMT[fmt].lineOff - 56 - totalH;
+  lines.forEach(line=>{
+    ctx.font = titFont;
+    let x = PAD;
+    line.forEach(tok=>{ ctx.fillStyle = tok.g?ORO:BLANCO; ctx.fillText(tok.t, x, y); x += ctx.measureText(tok.t).width; });
+    y += 104;
+  });
+  if(subLines.length){
+    y += 18;
+    ctx.font = subFont;
+    subLines.forEach(line=>{
+      let x = PAD;
+      line.forEach(tok=>{ ctx.fillStyle = tok.g?ORO:"#e8e4d9"; ctx.fillText(tok.t, x, y); x += ctx.measureText(tok.t).width; });
+      y += 56;
+    });
+  }
+  ctx.restore();
+}
+function drawOutro(P){
+  const pal = PALETA[0];
+  let dg = ctx.createLinearGradient(0,0,W*.6,H);
+  dg.addColorStop(0, pal.a); dg.addColorStop(1, pal.b);
+  ctx.fillStyle = dg; ctx.fillRect(0,0,W,H);
+  const rg = ctx.createRadialGradient(W/2, H*.4, 60, W/2, H*.4, 900);
+  rg.addColorStop(0, rgba(ORO,.08)); rg.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = rg; ctx.fillRect(0,0,W,H);
+  drawDots(W-30-3*17, 40, 4, 7);
+  drawDots(24, H-70-6*17, 3, 7);
+  ctx.textBaseline = "top";
+  let y = H*.34;
+  if(logoImg){
+    const lw = 340, lh = lw*logoImg.height/logoImg.width;
+    ctx.drawImage(logoImg, (W-lw)/2, y-lh, lw, lh);
+    y += 26;
+  }
+  if($("chkBajada").checked && $("logoSub").value.trim()){
+    ctx.save(); ctx.font = "600 26px Inter"; ctx.fillStyle = ORO; ctx.letterSpacing = "8px";
+    const t = $("logoSub").value.trim();
+    ctx.fillText(t, (W-ctx.measureText(t).width)/2, y);
+    ctx.restore(); y += 70;
+  }
+  ctx.strokeStyle = rgba(ORO,.55); ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(W*.3, y); ctx.lineTo(W*.7, y); ctx.stroke();
+  y += 40;
+  const filas = [];
+  if($("chkTel").checked && $("tel").value.trim()) filas.push($("tel").value.trim());
+  if($("chkDir").checked && $("dir").value.trim()) filas.push($("dir").value.trim());
+  if($("chkWeb").checked && $("web").value.trim()) filas.push($("web").value.trim());
+  ctx.font = "600 36px Inter"; ctx.fillStyle = "#ece8dd";
+  filas.forEach(f=>{
+    ctx.fillText(f, (W-ctx.measureText(f).width)/2, y);
+    y += 58;
+  });
+}
+function renderVidPreview(P){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = "#0c0d0f"; ctx.fillRect(0,0,W,H);
+  const it = vid.items[vid.curI];
+  if(it && it.img){ drawCoverKB(it.img, 1.06, 0, 0); capasFiltro(); }
+  else{
+    ctx.fillStyle = GRISC; ctx.font = "400 40px Inter"; ctx.textBaseline="top";
+    ctx.fillText("Agreg\u00e1 fotos para el video", PAD, H/2-20);
+  }
+  drawLogo(P);
+  drawTituloVideo(P, 1);
+  $("dl1").removeAttribute("href");
+  $("dl1").removeAttribute("download");
+}
+async function generarVideo(){
+  const st = $("stVid");
+  if(!vid.items.length){ st.textContent = "Agreg\u00e1 archivos primero."; st.className="status err"; return; }
+  if(vid.grabando) return;
+  vid.grabando = true;
+  $("vGen").disabled = true;
+  $("vDescarga").innerHTML = "";
+  const P = FMT[fmt];
+  H = P.h; if(cv.height!==H) cv.height = H;
+
+  // recorder
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  const stream = cv.captureStream(0);
+  const track = stream.getVideoTracks()[0];
+  const capturar = ()=>{ if(track.requestFrame) track.requestFrame(); };
+  let mime = "";
+  ["video/mp4;codecs=avc1","video/mp4","video/webm;codecs=vp9","video/webm"].some(m=>{
+    if(window.MediaRecorder && MediaRecorder.isTypeSupported(m)){ mime = m; return true; }
+    return false;
+  });
+  if(!mime){ st.textContent = "Tu navegador no soporta grabaci\u00f3n de video."; st.className="status err"; vid.grabando=false; $("vGen").disabled=false; return; }
+  const esMp4 = mime.includes("mp4");
+  const chunks = [];
+  // bitrate adaptativo: apunta a un archivo final < 90 MB (limite de Instagram/Metricool: 100 MB)
+  const durEstSeg = vid.items.length * parseInt($("vDur").value) * 1.45 + ($("vOutro").checked? 2.6:0) + 0.7;
+  let bps = Math.floor((88 * 8 * 1024 * 1024) / Math.max(durEstSeg, 1));
+  bps = Math.max(6000000, Math.min(12000000, bps));
+  const rec = new MediaRecorder(stream, {mimeType:mime, videoBitsPerSecond: bps});
+  rec.ondataavailable = e=>{ if(e.data.size) chunks.push(e.data); };
+  const fin = new Promise(res=> rec.onstop = res);
+  rec.start();
+
+  const FADE = 700;
+  const tituloHasta = 3200;
+  const progreso = (p)=>{ st.textContent = "Grabando video... "+Math.round(p*100)+"%"; st.className="status"; };
+
+  try{
+    {
+      const dur = parseInt($("vDur").value)*1000;
+      const fotos = vid.items.filter(it=>it.img);
+      await Promise.all(fotos.map(f=> f.img.decode ? f.img.decode().catch(()=>{}) : 0));
+      // motor de movimientos: paneos laterales en camara lenta (duran mas), sin repetir el anterior
+      const MOVS = [
+        { mk:()=>({z0:1.02,z1:1.16,x0:0,x1:0,y0:0,y1:0}),        mul:1.0 },
+        { mk:()=>({z0:1.16,z1:1.02,x0:0,x1:0,y0:0,y1:0}),        mul:1.0 },
+        { mk:()=>({z0:1.10,z1:1.14,x0:-.55,x1:.55,y0:0,y1:0}),   mul:1.45 },
+        { mk:()=>({z0:1.14,z1:1.10,x0:.55,x1:-.55,y0:0,y1:0}),   mul:1.45 },
+        { mk:()=>({z0:1.06,z1:1.16,x0:-.4,x1:.35,y0:-.35,y1:.3}),mul:1.2 },
+        { mk:()=>({z0:1.12,z1:1.08,x0:0,x1:0,y0:.5,y1:-.45}),    mul:1.2 },
+      ];
+      let prevMov = -1;
+      const kb = fotos.map(()=>{
+        let m; do{ m = Math.floor(Math.random()*MOVS.length); }while(m===prevMov);
+        prevMov = m;
+        const k = MOVS[m].mk();
+        const j = ()=> (Math.random()*.06 - .03);
+        k.z0 += j(); k.z1 += j();
+        k.dur = dur * MOVS[m].mul;
+        return k;
+      });
+      // transiciones por corte: fija o mix rotando sin repetir
+      const selT = $("vTrans").value;
+      const TIPOS_T = ["fundido","negro","deslizar","dorado"];
+      let prevT = -1;
+      const trans = fotos.map((_,i)=>{
+        if(i===fotos.length-1) return null;
+        if(selT!=="mix") return selT;
+        let t; do{ t = Math.floor(Math.random()*TIPOS_T.length); }while(t===prevT);
+        prevT = t; return TIPOS_T[t];
+      });
+      const suave = p => .5 - .5*Math.cos(Math.PI*p);
+      const drawFoto = (i,p)=>{
+        const k = kb[i];
+        drawCoverKB(fotos[i].img, k.z0+(k.z1-k.z0)*p, k.x0+(k.x1-k.x0)*p, k.y0+(k.y1-k.y0)*p);
+      };
+      // pre-roll: primer cuadro quieto mientras el codificador entra en calor
+      {
+        const ini2 = performance.now();
+        await new Promise(res=>{
+          const paso = ()=>{
+            ctx.clearRect(0,0,W,H);
+            drawFoto(0,0);
+            capasFiltro(); drawLogo(P); drawTituloVideo(P, 1);
+            capturar();
+            if(performance.now()-ini2 < 700) requestAnimationFrame(paso); else res();
+          };
+          requestAnimationFrame(paso);
+        });
+      }
+      const totalMs = kb.reduce((a,k)=> a+k.dur, 0) + ($("vOutro").checked? 2600:0);
+      let t0 = performance.now(), tGlobal = 0;
+      for(let i=0;i<fotos.length;i++){
+        const D = kb[i].dur;
+        const tIn = i>0 ? trans[i-1] : null;
+        const tOut = trans[i];
+        const ini2 = performance.now();
+        await new Promise(res=>{
+          const paso = ()=>{
+            const t = performance.now()-ini2;
+            const p = suave(Math.min(1, t/D));
+            const enSalida = tOut && t > D-FADE;
+            const q = enSalida ? suave((t-(D-FADE))/FADE) : 0;
+            ctx.clearRect(0,0,W,H);
+            ctx.fillStyle = "#000"; ctx.fillRect(0,0,W,H);
+            if(enSalida && tOut==="deslizar"){
+              ctx.save(); ctx.translate(-W*q, 0); drawFoto(i, p); ctx.restore();
+              ctx.save(); ctx.translate(W*(1-q), 0); drawFoto(i+1, 0); ctx.restore();
+            }else if(enSalida && tOut==="dorado"){
+              drawFoto(i, p);
+              ctx.save(); ctx.beginPath(); ctx.rect(0,0,W*q,H); ctx.clip(); drawFoto(i+1, 0); ctx.restore();
+              ctx.save(); ctx.globalAlpha = .95; ctx.fillStyle = ORO;
+              ctx.fillRect(W*q-3, 0, 6, H);
+              ctx.globalAlpha = .25; ctx.fillRect(W*q-26, 0, 22, H);
+              ctx.restore();
+            }else{
+              drawFoto(i, p);
+              if(enSalida && tOut==="fundido"){ ctx.save(); ctx.globalAlpha = q; drawFoto(i+1, 0); ctx.restore(); }
+              if(enSalida && tOut==="negro"){ ctx.fillStyle = `rgba(0,0,0,${q})`; ctx.fillRect(0,0,W,H); }
+            }
+            // entrada desde negro (si el corte anterior fue fundido a negro)
+            if(tIn==="negro" && t < FADE*.6){
+              ctx.fillStyle = `rgba(0,0,0,${1 - t/(FADE*.6)})`; ctx.fillRect(0,0,W,H);
+            }
+            capasFiltro();
+            drawLogo(P);
+            tGlobal = performance.now()-t0;
+            if(tGlobal < tituloHasta) drawTituloVideo(P, tGlobal>tituloHasta-600 ? (tituloHasta-tGlobal)/600 : 1);
+            capturar();
+            progreso(Math.min(1, tGlobal/totalMs));
+            if(t<D) requestAnimationFrame(paso); else res();
+          };
+          requestAnimationFrame(paso);
+        });
+      }
+      if($("vOutro").checked){
+        const ini2 = performance.now();
+        await new Promise(res=>{
+          const paso = ()=>{
+            const t = performance.now()-ini2;
+            drawOutro(P);
+            if(t < 500){ ctx.fillStyle = `rgba(0,0,0,${1-t/500})`; ctx.fillRect(0,0,W,H); }
+            capturar();
+            progreso(Math.min(1,(performance.now()-t0)/totalMs));
+            if(t<2600) requestAnimationFrame(paso); else res();
+          };
+          requestAnimationFrame(paso);
+        });
+      }
+    }
+  }catch(err){
+    st.textContent = "Error durante la grabaci\u00f3n: "+err.message; st.className="status err";
+  }
+  rec.stop();
+  await fin;
+  const blob = new Blob(chunks, {type: esMp4?"video/mp4":"video/webm"});
+  const f = new Date();
+  const mes = f.getFullYear()+"-"+String(f.getMonth()+1).padStart(2,"0");
+  const nombre = mes+"_video_"+slugTexto($("vTitulo").value || "propiedad")+"_"+(fmt==="story"?"historia":"feed")+"."+(esMp4?"mp4":"webm");
+  const url = URL.createObjectURL(blob);
+  $("vDescarga").innerHTML = `<a class="btn sec" href="${url}" download="${nombre}">Descargar ${esMp4?"MP4":"WebM"} (${(blob.size/1048576).toFixed(1)} MB)</a>`;
+  const mb = blob.size/1048576;
+  if(mb > 100){
+    st.textContent = "Video listo pero pesa "+mb.toFixed(0)+" MB (Instagram acepta hasta 100). Bajale segundos por foto o us\u00e1 menos fotos y regener\u00e1.";
+    st.className = "status err";
+  }else{
+    st.textContent = esMp4
+      ? "Video listo: "+nombre+" ("+mb.toFixed(1)+" MB, dentro del l\u00edmite de Instagram)."
+      : "Video listo en WebM (tu navegador no graba MP4): convertilo con CapCut antes de subirlo a Instagram.";
+    st.className = "status ok";
+  }
+  vid.grabando = false;
+  $("vGen").disabled = false;
+}
+$("vGen").addEventListener("click", generarVideo);
+$("vFiltro").addEventListener("change", ()=>{ if(mode==="vid") render(); });
+
+CAMPOS.forEach(id=> $(id).addEventListener("input", ()=>{ render(); guardarIdentidad(); }));
+CHECKS.forEach(id=> $(id).addEventListener("change", ()=>{ if(id==="logoTrans") procesarLogo(); render(); guardarIdentidad(); }));
+
+$("dlAll").onclick = async ()=>{
+  const esProp = mode==="prop";
+  const total = esProp ? prop.fotos.length : slides.length;
+  if(!total) return;
+  const prev = esProp ? prop.curF : cur;
+  const base = nombreBase();
+  const usarZip = total > 1 && typeof JSZip !== "undefined";
+  const zip = usarZip ? new JSZip() : null;
+  for(let i=0;i<total;i++){
+    if(esProp) prop.curF = i; else cur = i;
+    render();
+    await new Promise(res=>setTimeout(res,120));
+    const dataUrl = cv.toDataURL("image/jpeg", .92);
+    const nombre = base+"_"+String(i+1).padStart(2,"0")+".jpg";
+    if(usarZip){
+      zip.file(nombre, dataUrl.split(",")[1], {base64:true});
+    }else{
+      const a = document.createElement("a");
+      a.href = dataUrl; a.download = nombre; a.click();
+      await new Promise(res=>setTimeout(res,350));
+    }
+  }
+  if(usarZip){
+    const blob = await zip.generateAsync({type:"blob"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = base+".zip";
+    a.click();
+    setTimeout(()=> URL.revokeObjectURL(a.href), 5000);
+  }
+  if(esProp) prop.curF = prev; else cur = prev;
+  render();
+  $("stCv").textContent = usarZip
+    ? "ZIP descargado: "+base+".zip ("+total+" placas en orden)."
+    : "Descargadas "+total+" placas.";
+  $("stCv").className = "status ok";
+};
+
+document.fonts.ready.then(async ()=>{ drawTabs(); drawEditor(); await cargarIdentidad(); await cargarPlan(); });
+</script>
+</body>
+</html>
