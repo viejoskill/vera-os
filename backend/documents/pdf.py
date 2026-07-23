@@ -24,6 +24,20 @@ from documents import signatures
 
 _VAR_RE = re.compile(r"\{\{\s*([\w.]+)\s*\}\}")
 
+# Glyphs que Helvetica (reportlab) no puede dibujar → salen como ■. Emojis,
+# símbolos, banderas, selectores de variación y ZWJ. Se limpian en el PDF.
+_EMOJI_RE = re.compile(
+    "[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U0001F1E6-\U0001F1FF"
+    "\U00002B00-\U00002BFF\U00002190-\U000021FF\uFE00-\uFE0F\u200D\u20E3]"
+)
+
+
+def _clean(text):
+    """Quita emojis/glyphs no soportados por Helvetica. No-strings se devuelven igual."""
+    if not isinstance(text, str):
+        return text
+    return re.sub(r"\s{2,}", " ", _EMOJI_RE.sub("", text)).strip()
+
 # Logo real de Varela (opcional): si existe este archivo, se usa en el encabezado.
 _LOGO_PATH = os.path.join(os.path.dirname(__file__), "assets", "varela_logo.png")
 _MONEDAS = {
@@ -61,7 +75,7 @@ def _display_vars(resolved: dict) -> dict:
 def _interpolate(text: str, vars: dict) -> str:
     """Interpola {{var}} en <b>negrita</b> (los datos importantes resaltan)."""
     def repl(m):
-        v = vars.get(m.group(1))
+        v = _clean(vars.get(m.group(1)))
         return "" if v in (None, "") else f"<b>{v}</b>"
     return _VAR_RE.sub(repl, text)
 
@@ -146,11 +160,11 @@ def _signature_flowables(document: dict, participants: list[dict], st: dict) -> 
     for p in participants:
         strategy = signatures.render_strategy(p.get("signature_method") or method)
         block = strategy.block(p) if strategy else {}
-        name = p.get("person_name") or "________________________"
+        name = _clean(p.get("person_name")) or "________________________"
         role = (p.get("role") or "").capitalize()
 
         if block.get("kind") == "certification":
-            rows = [["Firmante", block.get("name") or name]]
+            rows = [["Firmante", _clean(block.get("name")) or name]]
             if role:
                 rows.append(["Rol", role])
             rows.append(["Método", "Firma electrónica (VERA)"])
