@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calculator, Download, UserPlus, Sparkles } from 'lucide-react';
+import { Calculator, Download, UserPlus, Sparkles, Share2, Check } from 'lucide-react';
 import { Input, Button } from '@vera/ui';
 import { env } from '@vera/config';
 import { useAuthUser } from '@app/auth/useAuthUser';
@@ -52,7 +52,19 @@ export const TasacionesScreen = () => {
   const [result, setResult] = useState<Result | null>(null);
   const [loading, setLoading] = useState(false);
   const [flash, setFlash] = useState('');
+  const [copied, setCopied] = useState(false);
   const set = (k: string, val: string | boolean) => setF((s) => ({ ...s, [k]: val }));
+
+  const publicUrl = `${window.location.origin}/tasar`;
+  const copyPublic = async () => {
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      window.open(publicUrl, '_blank');
+    }
+  };
 
   const payload = () => ({
     ...f,
@@ -103,6 +115,15 @@ export const TasacionesScreen = () => {
       <header className="tas__head">
         <h2 className="tas__title"><Calculator size={18} /> Tasador manual</h2>
         <p className="tas__sub">Modelo Varela · Costa del Este / Mar del Tuyú. Cargá los datos y generá la tasación para WhatsApp.</p>
+        <div className="tas__public" data-testid="tas-public-share">
+          <div>
+            <strong>Tasador online público</strong>
+            <span>Compartí este link: el visitante estima su propiedad (Varela + comparables en vivo de Mercado Libre) y queda como lead en Personas.</span>
+          </div>
+          <Button variant="secondary" size="sm" onClick={copyPublic} data-testid="tas-copy-public">
+            {copied ? <><Check size={15} /> Link copiado</> : <><Share2 size={15} /> Copiar link público</>}
+          </Button>
+        </div>
       </header>
 
       <div className="tas__grid">

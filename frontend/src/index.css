@@ -4970,6 +4970,17 @@ p {
 .tas__head { margin-bottom: var(--vera-space-lg); }
 .tas__title { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; }
 .tas__sub { color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-sm); max-width: 70ch; }
+.tas__public {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  margin-top: 16px; padding: 14px 16px;
+  background: var(--vera-color-surface); border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+}
+.tas__public > div { display: flex; flex-direction: column; gap: 3px; }
+.tas__public strong { font-size: var(--vera-font-size-sm); color: var(--vera-color-text); }
+.tas__public span { font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); max-width: 70ch; }
+@media (max-width: 640px) { .tas__public { flex-direction: column; align-items: flex-start; } }
+
 .tas__grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start; }
 .tas__col { display: flex; flex-direction: column; gap: 14px; }
 .tas__section { font-size: var(--vera-font-size-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--vera-color-primary); margin: 12px 0 2px; }
@@ -7488,3 +7499,82 @@ p {
 }
 .vera-studio__open:hover { border-color: var(--vera-color-primary); }
 .vera-studio__frame { flex: 1; width: 100%; border: 0; background: #0e0e0e; min-height: 0; }
+
+/* --- Tasador Online público (/tasar) --- */
+.tasp__hero { padding-bottom: 12px; }
+.tasp__form-wrap, .tasp__result-wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+.tasp__form {
+  background: #16171c; border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px; padding: 28px; margin-top: 8px;
+}
+.tasp__section {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: #fbe000; margin: 26px 0 14px; padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.tasp__section:first-child { margin-top: 0; }
+.tasp__hint { color: #a1a1aa; font-size: 13px; margin: -6px 0 14px; }
+.tasp__row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+@media (max-width: 560px) { .tasp__row2 { grid-template-columns: 1fr; } }
+.tasp-field { display: flex; flex-direction: column; gap: 6px; }
+.tasp-field > span { font-size: 13px; color: #d4d4d8; }
+.tasp-field input, .tasp-field select {
+  background: #0e0f13; border: 1px solid rgba(255, 255, 255, 0.12); color: #f4f4f5;
+  border-radius: 10px; padding: 11px 12px; font-size: 14px; font-family: inherit;
+  transition: border-color 180ms ease;
+}
+.tasp-field input:focus, .tasp-field select:focus { outline: none; border-color: #fbe000; }
+.tasp__chks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+@media (max-width: 560px) { .tasp__chks { grid-template-columns: 1fr 1fr; } }
+.tasp__chk {
+  display: flex; align-items: center; gap: 9px; font-size: 13px; color: #d4d4d8;
+  background: #0e0f13; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px;
+  padding: 10px 12px; cursor: pointer; transition: border-color 160ms ease;
+}
+.tasp__chk:hover { border-color: rgba(251, 224, 0, 0.5); }
+.tasp__chk input { accent-color: #fbe000; width: 16px; height: 16px; }
+.tasp__error { color: #f87171; font-size: 13px; margin: 16px 0 0; }
+.tasp__submit {
+  width: 100%; margin-top: 22px; display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  background: #fbe000; color: #12131a; font-weight: 700; font-size: 15px; font-family: inherit;
+  border: 0; border-radius: 12px; padding: 15px; cursor: pointer;
+  transition: filter 180ms ease, transform 120ms ease;
+}
+.tasp__submit:hover:not(:disabled) { filter: brightness(1.06); }
+.tasp__submit:active:not(:disabled) { transform: translateY(1px); }
+.tasp__submit:disabled { opacity: 0.7; cursor: default; }
+.tasp__spin { animation: tasp-spin 900ms linear infinite; }
+@keyframes tasp-spin { to { transform: rotate(360deg); } }
+.tasp__legal { text-align: center; color: #71717a; font-size: 11px; margin: 12px 0 0; }
+/* resultado */
+.tasp__result-wrap { padding-top: 40px; }
+.tasp__result-card {
+  background: linear-gradient(160deg, #1b1c22 0%, #141519 100%);
+  border: 1px solid rgba(251, 224, 0, 0.35); border-radius: 22px; padding: 34px 30px;
+  text-align: center; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+.tasp__result-tag {
+  display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase; color: #fbe000;
+}
+.tasp__result-range {
+  display: block; font-size: clamp(30px, 6vw, 46px); font-weight: 800; color: #fff;
+  margin: 16px 0 6px; letter-spacing: -0.01em;
+}
+.tasp__result-meta { color: #d4d4d8; font-size: 15px; margin: 0 0 18px; }
+.tasp__result-note { color: #a1a1aa; font-size: 13.5px; line-height: 1.6; margin: 0 auto; max-width: 520px; }
+.tasp__result-note b { color: #f4f4f5; }
+.tasp__result-cta {
+  display: flex; align-items: center; gap: 10px; justify-content: center; text-align: left;
+  background: rgba(251, 224, 0, 0.08); border: 1px solid rgba(251, 224, 0, 0.2);
+  border-radius: 12px; padding: 14px 16px; margin: 22px auto 0; max-width: 520px;
+  color: #f4f4f5; font-size: 13.5px;
+}
+.tasp__result-cta svg { color: #fbe000; flex-shrink: 0; }
+.tasp__again {
+  margin-top: 22px; background: transparent; color: #fbe000; border: 1px solid rgba(251, 224, 0, 0.4);
+  border-radius: 10px; padding: 11px 20px; font-size: 14px; font-weight: 600; cursor: pointer;
+  font-family: inherit; transition: background 160ms ease;
+}
+.tasp__again:hover { background: rgba(251, 224, 0, 0.1); }
+.tasp__disclaimer { color: #71717a; font-size: 11.5px; line-height: 1.6; text-align: center; margin: 20px auto 0; max-width: 560px; }
