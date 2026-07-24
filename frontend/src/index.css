@@ -4967,6 +4967,151 @@ p {
 }
 @media (prefers-reduced-motion: reduce) { .vera-spot__typing span { animation: none; } }
 
+/* ===================== VERA Chat embebido (pantalla "Hoy") ===================== */
+.vera-home--focus {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: calc(100vh - 190px);
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
+}
+.vera-chat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-lg);
+  background: var(--vera-color-surface);
+  overflow: hidden;
+}
+.vera-chat__thread {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--vera-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.vera-chat__welcome {
+  margin: auto 0;
+  text-align: center;
+  padding: var(--vera-space-lg) var(--vera-space-md);
+  animation: vera-fade-in 0.5s ease both;
+}
+.vera-chat__orb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  color: #0e0e10;
+  background: var(--vera-color-primary);
+  box-shadow: 0 0 32px color-mix(in srgb, var(--vera-color-primary) 45%, transparent);
+  margin-bottom: var(--vera-space-md);
+}
+.vera-chat__greeting { font-size: clamp(1.6rem, 3vw, 2.1rem); margin: 0 0 6px; }
+.vera-chat__lead {
+  color: var(--vera-color-text-secondary);
+  max-width: 46ch;
+  margin: 0 auto var(--vera-space-lg);
+}
+.vera-chat__suggest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.vera-chat__chip {
+  border: 1px solid var(--vera-color-border);
+  background: transparent;
+  color: var(--vera-color-text);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: var(--vera-font-size-sm);
+  cursor: pointer;
+  transition: border-color 200ms ease, background-color 200ms ease;
+}
+.vera-chat__chip:hover {
+  border-color: var(--vera-color-primary);
+  background: color-mix(in srgb, var(--vera-color-primary) 8%, transparent);
+}
+.vera-chat__msg { max-width: 82%; display: flex; flex-direction: column; gap: 6px; animation: vera-fade-in 0.35s ease both; }
+.vera-chat__msg p { margin: 0; white-space: pre-wrap; line-height: 1.55; }
+.vera-chat__msg--user { align-self: flex-end; }
+.vera-chat__msg--user p {
+  background: var(--vera-color-primary);
+  color: #0e0e10;
+  padding: 10px 14px;
+  border-radius: 16px 16px 4px 16px;
+}
+.vera-chat__msg--vera { align-self: flex-start; }
+.vera-chat__msg--vera p {
+  background: color-mix(in srgb, var(--vera-color-text) 6%, transparent);
+  padding: 10px 14px;
+  border-radius: 16px 16px 16px 4px;
+}
+.vera-chat__msg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--vera-font-size-xs);
+  color: var(--vera-color-primary);
+  font-weight: 600;
+}
+.vera-chat__typing { display: inline-flex !important; gap: 5px; align-items: center; }
+.vera-chat__typing span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--vera-color-text-secondary);
+  animation: vera-typing 1.2s ease-in-out infinite;
+}
+.vera-chat__typing span:nth-child(2) { animation-delay: 0.15s; }
+.vera-chat__typing span:nth-child(3) { animation-delay: 0.3s; }
+.vera-chat__field {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--vera-color-border);
+  background: var(--vera-color-bg);
+}
+.vera-chat__input {
+  flex: 1;
+  resize: none;
+  max-height: 140px;
+  border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-surface);
+  color: var(--vera-color-text);
+  padding: 12px 14px;
+  font: inherit;
+  line-height: 1.5;
+  outline: none;
+  transition: border-color 200ms ease;
+}
+.vera-chat__input:focus { border-color: var(--vera-color-primary); }
+.vera-chat__send {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--vera-radius-md);
+  background: var(--vera-color-primary);
+  color: #0e0e10;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 200ms ease, transform 150ms ease;
+}
+.vera-chat__send:hover:not(:disabled) { transform: translateY(-1px); }
+.vera-chat__send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+
 /* --------------------------- Oportunidades sugeridas --------------------- */
 .vera-opps {
   position: relative;

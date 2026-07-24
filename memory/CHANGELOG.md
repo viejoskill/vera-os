@@ -107,3 +107,10 @@ Verificado 100% (iteration_40): backend 7/7 pytest (`test_documents_sprint4_5.py
 - Verificado por API: bootstrap, aprobación, pendiente, 403 para no-admin, revoke. UI: login con Google+registro, qa_varela entra sin bloqueo.
 - ⚠️ El gate es a nivel app (API backend sigue abierta). Endurecer con verificación de JWT de Supabase en rutas = backlog.
 - PENDIENTE usuario (Supabase/Google): habilitar proveedor Google + redirect URLs + confirmación email. Ver mensaje.
+
+## 2026-07-24 · "Hoy" simplificado — una sola ventana de VERA (Claude)
+- Rediseño de `WorkspaceHome.tsx`: ahora es SOLO un chat de VERA embebido (`VeraChat.tsx`), conectado a Claude vía `veraBrain.ask`. El usuario pregunta cualquier cosa del sistema y de la inmobiliaria.
+- Removidos de Hoy: VERA Insights (`InsightsSection`), Objetivo Activo (`GoalBar`), QuickActions, grilla de widgets ("Tu escritorio"), Dock, CustomizePanel y el SpotlightModal (chat ahora es inline, no modal). Los componentes siguen en el repo por si se reincorporan.
+- Chat inline: estado vacío con saludo + 4 sugerencias, thread con burbujas, textarea (Enter envía, Shift+Enter salto), sesión persistente por visita. Estilos `.vera-chat*` en index.css.
+- Verificado E2E: login → /hoy → pregunta "¿cuántas propiedades tengo?" → VERA responde con datos reales (29 propiedades, 24 activas). TS limpio.
+- ⚠️ Observación: el conocimiento de VERA sobre el SISTEMA está desactualizado (dijo que "Documentos no está construido" cuando sí lo está). Mejora futura: actualizar el contexto/knowledge del brain con los módulos actuales.
