@@ -114,3 +114,9 @@ Verificado 100% (iteration_40): backend 7/7 pytest (`test_documents_sprint4_5.py
 - Chat inline: estado vacío con saludo + 4 sugerencias, thread con burbujas, textarea (Enter envía, Shift+Enter salto), sesión persistente por visita. Estilos `.vera-chat*` en index.css.
 - Verificado E2E: login → /hoy → pregunta "¿cuántas propiedades tengo?" → VERA responde con datos reales (29 propiedades, 24 activas). TS limpio.
 - ⚠️ Observación: el conocimiento de VERA sobre el SISTEMA está desactualizado (dijo que "Documentos no está construido" cuando sí lo está). Mejora futura: actualizar el contexto/knowledge del brain con los módulos actuales.
+
+## 2026-07-24 · "Hoy" v2 — chat + radio/calendario + dock (feedback usuario)
+- Ajuste tras feedback: el chat quedaba solo con scrollbar fea y faltaban herramientas útiles.
+- `WorkspaceHome.tsx`: layout de 2 columnas → izquierda VeraChat (protagonista), derecha aside con **Radio** (AudioWidget) y **Calendario** (CalendarWidget) envueltos en `.vera-widget`. Restaurado el **Dock** (accesos personales) abajo (sticky).
+- CSS: `.vera-home__grid` (grid 1fr/330px), altura calc(100vh-140px), scrollbars sutiles (thin, color tenue), responsive <1024px apila. Se eliminó la barra de scroll molesta del estado vacío.
+- Sigue SIN insights ni objetivo activo. Verificado por screenshot: chat + radio + calendario + dock OK, TS limpio.

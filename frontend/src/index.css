@@ -4972,16 +4972,40 @@ p {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  height: calc(100vh - 190px);
-  max-width: 860px;
+  height: calc(100vh - 140px);
+  max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+}
+.vera-home__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 20px;
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
+}
+.vera-home__side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.vera-home__side .vera-widget { flex-shrink: 0; }
+@media (max-width: 1024px) {
+  .vera-home--focus { height: auto; min-height: calc(100vh - 140px); }
+  .vera-home__grid { grid-template-columns: 1fr; }
+  .vera-home__side { overflow: visible; flex-direction: row; flex-wrap: wrap; }
+  .vera-home__side .vera-widget { flex: 1 1 260px; }
+  .vera-chat { min-height: 60vh; }
 }
 .vera-chat {
   display: flex;
   flex-direction: column;
-  flex: 1;
   min-height: 0;
+  height: 100%;
   border: 1px solid var(--vera-color-border);
   border-radius: var(--vera-radius-lg);
   background: var(--vera-color-surface);
@@ -4996,6 +5020,17 @@ p {
   flex-direction: column;
   gap: 14px;
 }
+/* Scrollbars sutiles (no la "barra fea") */
+.vera-chat__thread::-webkit-scrollbar,
+.vera-home__side::-webkit-scrollbar { width: 8px; }
+.vera-chat__thread::-webkit-scrollbar-thumb,
+.vera-home__side::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--vera-color-text) 12%, transparent);
+  border-radius: 8px;
+}
+.vera-chat__thread::-webkit-scrollbar-track,
+.vera-home__side::-webkit-scrollbar-track { background: transparent; }
+.vera-chat__thread, .vera-home__side { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--vera-color-text) 14%, transparent) transparent; }
 .vera-chat__welcome {
   margin: auto 0;
   text-align: center;
