@@ -4979,6 +4979,45 @@ p {
 .tas__public > div { display: flex; flex-direction: column; gap: 3px; }
 .tas__public strong { font-size: var(--vera-font-size-sm); color: var(--vera-color-text); }
 .tas__public span { font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); max-width: 70ch; }
+/* Tasador · panel de variables editables */
+.tascfg { margin-bottom: var(--vera-space-lg); }
+.tascfg__toggle {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  background: var(--vera-color-surface); border: 1px solid var(--vera-color-border);
+  border-radius: var(--vera-radius-md); padding: 13px 16px; cursor: pointer;
+  color: var(--vera-color-text); font-family: inherit; font-size: var(--vera-font-size-sm);
+  transition: border-color 160ms ease;
+}
+.tascfg__toggle:hover { border-color: var(--vera-color-primary); }
+.tascfg__toggle svg { color: var(--vera-color-primary); }
+.tascfg__toggle em { margin-left: auto; font-style: normal; color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-xs); }
+.tascfg__panel {
+  margin-top: 12px; background: var(--vera-color-surface);
+  border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-md); padding: 20px;
+}
+.tascfg__loading { color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-sm); margin: 8px 0; }
+.tascfg__groups { display: flex; flex-direction: column; gap: 22px; }
+.tascfg__group h4 {
+  margin: 0 0 4px; font-size: var(--vera-font-size-sm); color: var(--vera-color-text);
+  font-weight: 700; letter-spacing: 0.02em;
+}
+.tascfg__hint { margin: 0 0 12px; color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-xs); }
+.tascfg__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media (max-width: 900px) { .tascfg__grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .tascfg__grid { grid-template-columns: 1fr; } }
+.tascfg__field { display: flex; flex-direction: column; gap: 5px; }
+.tascfg__field > span { font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); }
+.tascfg__field input {
+  background: var(--vera-color-bg); border: 1px solid var(--vera-color-border); color: var(--vera-color-text);
+  border-radius: var(--vera-radius-sm); padding: 9px 11px; font-size: var(--vera-font-size-sm); font-family: inherit;
+  transition: border-color 160ms ease;
+}
+.tascfg__field input:focus { outline: none; border-color: var(--vera-color-primary); }
+.tascfg__actions {
+  display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px;
+  padding-top: 18px; border-top: 1px solid var(--vera-color-border);
+}
+
 @media (max-width: 640px) { .tas__public { flex-direction: column; align-items: flex-start; } }
 
 .tas__grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start; }

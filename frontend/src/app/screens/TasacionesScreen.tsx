@@ -3,6 +3,7 @@ import { Calculator, Download, UserPlus, Sparkles, Share2, Check } from 'lucide-
 import { Input, Button } from '@vera/ui';
 import { env } from '@vera/config';
 import { useAuthUser } from '@app/auth/useAuthUser';
+import { TasadorConfig } from '@app/screens/TasadorConfig';
 
 const API = `${env.backendUrl}/api/tasacion`;
 
@@ -125,6 +126,8 @@ export const TasacionesScreen = () => {
           </Button>
         </div>
       </header>
+
+      <TasadorConfig />
 
       <div className="tas__grid">
         <section className="tas__col">

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import base64
 import io
+import os
 from datetime import datetime
 
 from fastapi import APIRouter
@@ -13,8 +14,11 @@ import tasacion
 
 router = APIRouter(prefix="/tasacion", tags=["tasacion"])
 
-_FONT = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
-_FONT_B = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+# Fuentes incluidas en el repo → viajan al deploy (el contenedor de producción no
+# garantiza tener Liberation en /usr/share, lo que rompía acentos/²/– en el JPG).
+_FONT_DIR = os.path.join(os.path.dirname(__file__), "assets", "fonts")
+_FONT = os.path.join(_FONT_DIR, "LiberationSans-Regular.ttf")
+_FONT_B = os.path.join(_FONT_DIR, "LiberationSans-Bold.ttf")
 BG = (14, 14, 16)
 GOLD = (242, 226, 60)
 WHITE = (245, 241, 230)
