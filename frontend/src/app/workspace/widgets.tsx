@@ -29,6 +29,7 @@ import { useInsights } from '@app/insights';
 import { useAuthUser } from '@app/auth/useAuthUser';
 import { useWeather } from '@app/hooks/useWeather';
 import { useDolar } from '@app/hooks/useDolar';
+import { useAudioPlayer, STATIONS } from '@app/workspace/AudioPlayerContext';
 
 /* --------------------------- Saludo / Fecha / Hora ---------------------- */
 const greetingText = (h: number) => (h < 12 ? 'Buen día' : h < 20 ? 'Buenas tardes' : 'Buenas noches');
@@ -114,88 +115,12 @@ export const PrioridadesWidget = () => {
 };
 
 /* --------------------------------- Audio -------------------------------- */
-const STATIONS = [
-  { id: 'aspen', name: 'Aspen 102.3', stream: 'https://playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3' },
-  { id: 'rockpop', name: 'Rock & Pop 95.9', stream: 'https://ipanel.instream.audio:7002/stream' },
-  { id: 'la100', name: 'La 100 · 99.9', stream: 'https://playerservices.streamtheworld.com/api/livestream-redirect/FM999_56AAC.aac' },
-  { id: 'metro', name: 'Metro 95.1', stream: 'https://playerservices.streamtheworld.com/api/livestream-redirect/METRO.mp3' },
-  { id: 'vorterix', name: 'Vorterix 92.1', stream: 'https://ice2.edge-apps.net/radio1_high-20057.audio' },
-];
-
 export const AudioWidget = () => {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [station, setStation] = useState(STATIONS[0]);
-  const [playing, setPlaying] = useState(false);
-  const [volume, setVolume] = useState(0.7);
-  const [error, setError] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (audioRef.current) audioRef.current.volume = volume;
-  }, [volume, station]);
-
-  const toggle = async () => {
-    const el = audioRef.current;
-    if (!el) return;
-    if (playing) {
-      el.pause();
-      setPlaying(false);
-      return;
-    }
-    setError(false);
-    setLoading(true);
-    el.volume = volume;
-    try {
-      await el.play();
-      setPlaying(true);
-    } catch {
-      setPlaying(false);
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const pick = (s: typeof STATIONS[number]) => {
-    const wasPlaying = playing;
-    setStation(s);
-    setPlaying(false);
-    setError(false);
-    window.setTimeout(async () => {
-      const el = audioRef.current;
-      if (!el) return;
-      el.load();
-      el.volume = volume;
-      if (wasPlaying) {
-        try {
-          await el.play();
-          setPlaying(true);
-        } catch {
-          setError(true);
-        }
-      }
-    }, 0);
-  };
-
+  const { station, playing, loading, error, volume, toggle, pick, setVolume } = useAudioPlayer();
   const label = error ? 'No disponible' : loading ? 'Conectando…' : playing ? 'En vivo' : 'En pausa';
 
   return (
     <div className="vera-w-audio" data-testid="widget-body-audio">
-      <audio
-        ref={audioRef}
-        src={station.stream}
-        preload="none"
-        onEnded={() => setPlaying(false)}
-        onError={() => {
-          setPlaying(false);
-          setError(true);
-          setLoading(false);
-        }}
-        onPlaying={() => {
-          setLoading(false);
-          setPlaying(true);
-        }}
-      />
       <div className="vera-w-audio__now">
         <span className={`vera-w-audio__eq ${playing ? 'is-on' : ''}`.trim()} aria-hidden="true">
           <i /><i /><i /><i />
@@ -230,11 +155,7 @@ export const AudioWidget = () => {
           step={0.05}
           value={volume}
           data-testid="audio-volume"
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            setVolume(v);
-            if (audioRef.current) audioRef.current.volume = v;
-          }}
+          onChange={(e) => setVolume(Number(e.target.value))}
         />
       </div>
     </div>

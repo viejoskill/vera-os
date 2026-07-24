@@ -7,6 +7,7 @@ import { UserMenu } from './UserMenu';
 import { NotificationBell } from './NotificationBell';
 import { useAuthUser } from '@app/auth/useAuthUser';
 import { useAuth } from '@app/auth/AuthProvider';
+import { AudioPlayerProvider } from '@app/workspace/AudioPlayerContext';
 
 export const AppLayout = () => {
   const navigate = useNavigate();
@@ -34,6 +35,7 @@ export const AppLayout = () => {
 
   return (
     <div className="vera-shell">
+      <AudioPlayerProvider>
       {mobileOpen && (
         <div className="vera-overlay" onClick={() => setMobileOpen(false)} aria-hidden="true" />
       )}
@@ -62,6 +64,7 @@ export const AppLayout = () => {
           <Outlet />
         </main>
       </div>
+      </AudioPlayerProvider>
     </div>
   );
 };
