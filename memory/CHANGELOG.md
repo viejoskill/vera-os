@@ -120,3 +120,9 @@ Verificado 100% (iteration_40): backend 7/7 pytest (`test_documents_sprint4_5.py
 - `WorkspaceHome.tsx`: layout de 2 columnas → izquierda VeraChat (protagonista), derecha aside con **Radio** (AudioWidget) y **Calendario** (CalendarWidget) envueltos en `.vera-widget`. Restaurado el **Dock** (accesos personales) abajo (sticky).
 - CSS: `.vera-home__grid` (grid 1fr/330px), altura calc(100vh-140px), scrollbars sutiles (thin, color tenue), responsive <1024px apila. Se eliminó la barra de scroll molesta del estado vacío.
 - Sigue SIN insights ni objetivo activo. Verificado por screenshot: chat + radio + calendario + dock OK, TS limpio.
+
+## 2026-07-24 · VERA: conocimiento actualizado + memoria/historial + dock
+- **(1) Conocimiento del sistema**: nuevo doc `/app/docs/ESTADO_ACTUAL.md` (prepend en `knowledge.py` DOC_ORDER, prioridad sobre roadmap) con los módulos EN PRODUCCIÓN. VERA ahora responde correctamente que Documentos/Studio/firmas ESTÁN construidos (verificado).
+- **(2) Memoria + historial de chat**: antes VERA no tenía memoria (cada pregunta aislada). Nuevo `vera_brain/conversations.py` (Mongo `vera_conversations`, por email+sessionId). `routes_brain.py`: `/ask` ahora arma prompt con historial reciente (continuidad multi-turno) y persiste; nuevos endpoints `GET/DELETE /brain/conversations[/{sid}]`. Verificado: recordó dato de turno anterior.
+  - Frontend: `brain-gateway.ts` ask envía email + endpoints de conversaciones. `VeraChat.tsx` con barra Historial/Nueva, panel de conversaciones (retomar/eliminar). Estilos `.vera-chat__bar/__history`.
+- **(3) Dock**: default más inmobiliario en `useDock.ts` → arturito, whatsapp, gmail, mercadolibre, canva, drive. Sigue 100% personalizable por usuario (botón +, localStorage). Nota: usuarios existentes conservan sus pins guardados.

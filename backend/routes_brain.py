@@ -10,6 +10,7 @@ from vera_brain.brain import brain
 from vera_brain.goals import Goal, goals
 from vera_brain.knowledge import hub
 from vera_brain.memory import MemoryEntry, memory
+from vera_brain import conversations
 
 router = APIRouter(prefix="/brain", tags=["brain"])
 logger = logging.getLogger("vera")
@@ -18,6 +19,7 @@ logger = logging.getLogger("vera")
 class AskRequest(BaseModel):
     question: str
     session_id: str | None = None
+    email: str | None = None
 
 
 class GoalRequest(BaseModel):
@@ -52,12 +54,36 @@ async def ask(payload: AskRequest):
     question = (payload.question or "").strip()
     if not question:
         raise HTTPException(422, "Escribí una pregunta para VERA.")
+    email = payload.email or "anon"
+    session_id = payload.session_id or "default"
     try:
-        answer = await brain.ask(question, payload.session_id)
+        # Continuidad: incluimos el historial reciente de esta conversación.
+        augmented = await conversations.history_prompt(email, session_id, question)
+        answer = await brain.ask(augmented, session_id)
     except Exception as exc:  # noqa: BLE001
         logger.exception("VERA Brain ask failed")
         raise HTTPException(502, "VERA no pudo responder ahora.") from exc
+    try:
+        await conversations.append(email, session_id, question, answer)
+    except Exception:  # noqa: BLE001
+        logger.exception("No se pudo guardar la conversación")
     return {"answer": answer}
+
+
+@router.get("/conversations")
+async def list_conversations(email: str):
+    return {"conversations": await conversations.list_conversations(email)}
+
+
+@router.get("/conversations/{session_id}")
+async def get_conversation(session_id: str, email: str):
+    return {"messages": await conversations.get_messages(email, session_id)}
+
+
+@router.delete("/conversations/{session_id}")
+async def delete_conversation(session_id: str, email: str):
+    await conversations.delete(email, session_id)
+    return {"ok": True}
 
 
 @router.get("/today")

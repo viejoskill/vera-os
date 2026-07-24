@@ -5011,6 +5011,44 @@ p {
   background: var(--vera-color-surface);
   overflow: hidden;
 }
+.vera-chat__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--vera-color-border);
+  background: var(--vera-color-bg);
+  flex-shrink: 0;
+}
+.vera-chat__bar-title {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-weight: 600; color: var(--vera-color-primary); font-size: var(--vera-font-size-sm);
+}
+.vera-chat__bar-actions { display: flex; gap: 6px; }
+.vera-chat__bar-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid var(--vera-color-border); background: transparent;
+  color: var(--vera-color-text-secondary); border-radius: 999px;
+  padding: 6px 12px; font-size: var(--vera-font-size-xs); cursor: pointer;
+  transition: border-color 200ms ease, color 200ms ease;
+}
+.vera-chat__bar-btn:hover { border-color: var(--vera-color-primary); color: var(--vera-color-text); }
+.vera-chat__history {
+  max-height: 240px; overflow-y: auto; flex-shrink: 0;
+  border-bottom: 1px solid var(--vera-color-border); background: var(--vera-color-bg);
+  padding: 8px;
+}
+.vera-chat__history-empty { color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-sm); padding: 8px; }
+.vera-chat__history-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; text-align: left; border: 0; background: transparent;
+  color: var(--vera-color-text); padding: 9px 10px; border-radius: var(--vera-radius-md);
+  cursor: pointer; font-size: var(--vera-font-size-sm); transition: background-color 150ms ease;
+}
+.vera-chat__history-item:hover { background: color-mix(in srgb, var(--vera-color-text) 6%, transparent); }
+.vera-chat__history-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vera-chat__history-del { color: var(--vera-color-text-secondary); padding: 4px; border-radius: 6px; }
+.vera-chat__history-del:hover { color: #e5484d; }
 .vera-chat__thread {
   flex: 1;
   min-height: 0;

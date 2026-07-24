@@ -50,15 +50,55 @@ export interface GoalInput {
   scope_id?: string;
 }
 
+export interface ConversationSummary {
+  sessionId: string;
+  title: string;
+  updatedAt: string;
+}
+
+export interface ConversationMessage {
+  role: 'user' | 'vera';
+  text: string;
+  at?: string;
+}
+
 export const veraBrain = {
-  ask: async (question: string, sessionId?: string): Promise<string> => {
+  ask: async (question: string, sessionId?: string, email?: string): Promise<string> => {
     const res = await fetch(`${base}/ask`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, session_id: sessionId }),
+      body: JSON.stringify({ question, session_id: sessionId, email }),
     });
     if (!res.ok) throw new Error('brain-ask-failed');
     return ((await res.json()) as { answer: string }).answer;
+  },
+  /** Lista las conversaciones previas del usuario (para retomar). */
+  conversations: async (email: string): Promise<ConversationSummary[]> => {
+    try {
+      const res = await fetch(`${base}/conversations?email=${encodeURIComponent(email)}`);
+      if (!res.ok) return [];
+      return ((await res.json()) as { conversations: ConversationSummary[] }).conversations ?? [];
+    } catch {
+      return [];
+    }
+  },
+  /** Trae los mensajes de una conversación para retomarla. */
+  conversation: async (sessionId: string, email: string): Promise<ConversationMessage[]> => {
+    try {
+      const res = await fetch(
+        `${base}/conversations/${encodeURIComponent(sessionId)}?email=${encodeURIComponent(email)}`,
+      );
+      if (!res.ok) return [];
+      return ((await res.json()) as { messages: ConversationMessage[] }).messages ?? [];
+    } catch {
+      return [];
+    }
+  },
+  deleteConversation: async (sessionId: string, email: string): Promise<void> => {
+    await fetch(
+      `${base}/conversations/${encodeURIComponent(sessionId)}?email=${encodeURIComponent(email)}`,
+      { method: 'DELETE' },
+    );
   },
   today: async (): Promise<string> => {
     const res = await fetch(`${base}/today`);
