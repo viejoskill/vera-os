@@ -515,7 +515,7 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
               <div id="ws-section-stats">
                 <Panel title="Estadísticas" description="Métricas del activo. Solo lectura.">
                   <StatsSection propertyId={detail.id} />
-                  <TrackingSection propertyId={detail.id} address={detail.address} />
+                  <TrackingSection propertyId={detail.id} address={detail.address} ownerId={detail.ownerId} />
                 </Panel>
               </div>
             )}

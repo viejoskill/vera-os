@@ -17,6 +17,7 @@ import {
   SlidersHorizontal,
   DownloadCloud,
   Share2,
+  ClipboardCheck,
 } from 'lucide-react';
 import { Card, Input, Button, Toast } from '@vera/ui';
 import { appConfig } from '@vera/config';
@@ -25,6 +26,7 @@ import type { Property, PropertyStatus } from '@vera/types';
 import { useProperties } from '@app/hooks/useProperties';
 import { PropertyFilters, emptyFilters, countActiveFilters, type AdvFilters } from './PropertyFilters';
 import { LegacyImportModal } from './LegacyImportModal';
+import { VisitModal } from './property-workspace/VisitModal';
 
 type StatusFilter = PropertyStatus | 'all' | 'archived';
 
@@ -62,6 +64,7 @@ interface CardActions {
   onRestore: (id: string) => void;
   onDuplicate: (id: string) => void;
   onShare: (property: Property) => void;
+  onVisit: (property: Property) => void;
 }
 
 /** Semáforo de canales: verde = publicado, rojo = error, gris = sin publicar. */
@@ -118,6 +121,17 @@ const PropertyCard = ({ property, actions }: { property: Property; actions: Card
         )}
         <span className={`vera-badge ${meta.className}`}>{meta.label}</span>
 
+        {!property.archived && (
+          <button
+            type="button"
+            className="vera-prop__visit"
+            data-testid={`card-visit-${property.id}`}
+            onClick={runAction(() => actions.onVisit(property))}
+          >
+            <ClipboardCheck size={14} /> Visita
+          </button>
+        )}
+
         <div className="vera-prop__menu">
           <button
             type="button"
@@ -135,6 +149,9 @@ const PropertyCard = ({ property, actions }: { property: Property; actions: Card
             <div className="vera-menu" data-testid={`card-menu-list-${property.id}`}>
               <button type="button" className="vera-menu__item" data-testid={`menu-open-${property.id}`} onClick={runAction(() => actions.onOpen(property.id))}>
                 <FolderOpen size={14} /> Abrir
+              </button>
+              <button type="button" className="vera-menu__item" data-testid={`menu-visit-${property.id}`} onClick={runAction(() => actions.onVisit(property))}>
+                <ClipboardCheck size={14} /> Registrar visita
               </button>
               <button type="button" className="vera-menu__item" data-testid={`menu-duplicate-${property.id}`} onClick={runAction(() => actions.onDuplicate(property.id))}>
                 <Copy size={14} /> Duplicar
@@ -224,6 +241,7 @@ export const PropertiesScreen = () => {
   const [showImport, setShowImport] = useState(false);
   const [filters, setFilters] = useState<AdvFilters>(emptyFilters);
   const [toast, setToast] = useState<string | null>(null);
+  const [visitProperty, setVisitProperty] = useState<Property | null>(null);
 
   // Fetch once per status (cached); text search filters instantly on the client.
   const { data: properties, isLoading } = useProperties({ status });
@@ -284,6 +302,7 @@ export const PropertiesScreen = () => {
       setToast('✅ Propiedad lista para compartir');
       window.setTimeout(() => setToast(null), 2500);
     },
+    onVisit: (property) => setVisitProperty(property),
   };
 
   return (
@@ -369,6 +388,15 @@ export const PropertiesScreen = () => {
       )}
 
       <LegacyImportModal open={showImport} onClose={() => setShowImport(false)} onDone={() => invalidate()} />
+      {visitProperty && (
+        <VisitModal
+          propertyId={visitProperty.id}
+          address={visitProperty.address}
+          ownerId={visitProperty.ownerId}
+          onClose={() => setVisitProperty(null)}
+          onRegistered={() => { setToast('✅ Visita registrada'); window.setTimeout(() => setToast(null), 2500); }}
+        />
+      )}
       {toast && (
         <div className="vera-toast-wrap" data-testid="share-toast">
           <Toast message={toast} tone="success" />
