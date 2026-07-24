@@ -28,21 +28,36 @@ export function buildOwnerMessage(opts: {
   comment?: string;
   ownerName?: string;
   agent?: string;
+  date?: string;
 }): string {
   const first = (opts.ownerName || '').trim().split(/\s+/)[0];
-  const name = first ? ` ${first}` : '';
+  const greeting = first ? `Hola ${first}` : 'Hola';
+  const agentFirst = (opts.agent || '').trim().split(/\s+/)[0];
+  const agentName = agentFirst && !agentFirst.includes('@') ? agentFirst : 'Inmobiliaria Varela';
   const where = opts.address ? ` de ${opts.address}` : '';
   const comment = (opts.comment || '').trim();
   const commentPart = comment ? `\n\nComentario de la visita: ${comment}` : '';
-  const signature = opts.agent ? `${opts.agent.trim()} · Inmobiliaria Varela` : 'Inmobiliaria Varela';
+  const when = visitWhen(opts.date);
   return (
-    `Hola${name}, ¿cómo estás? 👋\n\n` +
-    `Te cuento que hoy tuvimos una visita en tu propiedad${where} 🏡. ` +
+    `${greeting} ¿cómo estás? 👋 Soy Vera, la asistente virtual de ${agentName}\n\n` +
+    `Te cuento que ${when} tuvimos una visita en tu propiedad${where} 🏡. ` +
     `Vino un interesado y la mostramos con toda la dedicación de siempre.${commentPart}\n\n` +
     `Seguimos trabajando para encontrar el comprador ideal y te mantenemos al tanto de cada novedad. ` +
-    `¡Gracias por la confianza! 🤝\n\n` +
-    `${signature}`
+    `¡Gracias por la confianza! 🤝`
   );
+}
+
+/** "hoy" / "ayer" / "el DD/MM/AAAA" según la fecha de la visita. */
+function visitWhen(dateStr?: string): string {
+  if (!dateStr) return 'hoy';
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return 'hoy';
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diff = Math.round((today.getTime() - d.getTime()) / 86_400_000);
+  if (diff <= 0) return 'hoy';
+  if (diff === 1) return 'ayer';
+  return `el ${d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
 }
 
 /** WhatsApp deep link con el mensaje precargado. Limpia el teléfono a solo dígitos. */
