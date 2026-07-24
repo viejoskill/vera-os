@@ -1,5 +1,5 @@
 import { createElement, type ReactNode } from 'react';
-import { Sun, Bot, Building2, Users, GitBranch, FileText, Clapperboard, Blocks, Activity, UserCog } from 'lucide-react';
+import { Sun, Bot, Building2, Users, GitBranch, FileText, Clapperboard, Blocks, Activity, UserCog, Calculator } from 'lucide-react';
 import { featureFlags } from '@vera/config';
 
 export interface NavRoute {
@@ -54,6 +54,13 @@ export const navRoutes: NavRoute[] = [
     path: '/documentos',
     icon: createElement(FileText, { size: 18 }),
     enabled: featureFlags.documentos,
+  },
+  {
+    id: 'tasaciones',
+    label: 'Tasaciones',
+    path: '/tasaciones',
+    icon: createElement(Calculator, { size: 18 }),
+    enabled: true,
   },
   {
     id: 'studio',

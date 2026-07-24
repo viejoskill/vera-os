@@ -17,6 +17,7 @@ import { LoginScreen } from '@app/screens/LoginScreen';
 import { PlaceholderScreen } from '@app/screens/PlaceholderScreen';
 import { StudioScreen } from '@app/screens/StudioScreen';
 import { TeamScreen } from '@app/screens/TeamScreen';
+import { TasacionesScreen } from '@app/screens/TasacionesScreen';
 import { PublicListing } from '@app/public/PublicListing';
 import { PublicPropertyDetail } from '@app/public/PublicPropertyDetail';
 import { SignScreen } from '@app/public/SignScreen';
@@ -57,6 +58,7 @@ export const VeraOS = () => (
               <Route path="studio" element={<StudioScreen />} />
               <Route path="integraciones" element={<IntegrationsScreen />} />
               <Route path="equipo" element={<TeamScreen />} />
+              <Route path="tasaciones" element={<TasacionesScreen />} />
               <Route path="*" element={<Navigate to="/hoy" replace />} />
             </Route>
           </Route>

@@ -4966,6 +4966,41 @@ p {
   30% { opacity: 1; transform: translateY(-3px); }
 }
 @media (prefers-reduced-motion: reduce) { .vera-spot__typing span { animation: none; } }
+/* ============================= Tasador manual ============================= */
+.tas__head { margin-bottom: var(--vera-space-lg); }
+.tas__title { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; }
+.tas__sub { color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-sm); max-width: 70ch; }
+.tas__grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start; }
+.tas__col { display: flex; flex-direction: column; gap: 14px; }
+.tas__section { font-size: var(--vera-font-size-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--vera-color-primary); margin: 12px 0 2px; }
+.tas__row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.tas-field { display: flex; flex-direction: column; gap: 6px; font-size: var(--vera-font-size-sm); }
+.tas-field span { color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-xs); }
+.tas-field select, .tas-field input {
+  background: var(--vera-color-surface); border: 1px solid var(--vera-color-border);
+  color: var(--vera-color-text); border-radius: var(--vera-radius-md); padding: 10px 12px; font: inherit; outline: none;
+}
+.tas-field select:focus, .tas-field input:focus { border-color: var(--vera-color-primary); }
+.tas__chks { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }
+.tas-chk { display: inline-flex; align-items: center; gap: 8px; font-size: var(--vera-font-size-sm); cursor: pointer; padding: 8px 10px; border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-md); }
+.tas-chk input { accent-color: var(--vera-color-primary); }
+.tas__calc { margin-top: 10px; align-self: flex-start; }
+.tas__result { position: sticky; top: 12px; border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-lg); background: var(--vera-color-surface); padding: var(--vera-space-lg); display: flex; flex-direction: column; gap: 16px; }
+.tas__empty { text-align: center; color: var(--vera-color-text-secondary); padding: var(--vera-space-xl) 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.tas__result-head { color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-sm); margin: 0; text-align: center; }
+.tas__price { border-radius: var(--vera-radius-md); padding: 16px; text-align: center; display: flex; flex-direction: column; gap: 6px; }
+.tas__price span { font-size: var(--vera-font-size-xs); letter-spacing: 0.05em; font-weight: 600; }
+.tas__price strong { font-size: 1.5rem; }
+.tas__price em { font-size: var(--vera-font-size-xs); color: var(--vera-color-text-secondary); font-style: normal; }
+.tas__price--varela { border: 1px solid var(--vera-color-primary); background: color-mix(in srgb, var(--vera-color-primary) 8%, transparent); }
+.tas__price--varela span { color: var(--vera-color-primary); }
+.tas__price--ref { border: 1px solid var(--vera-color-border); }
+.tas__price--ref span { color: var(--vera-color-text-secondary); }
+.tas__price--ref strong { font-size: 1.2rem; color: var(--vera-color-text-secondary); }
+.tas__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.tas__flash { font-size: var(--vera-font-size-sm); color: var(--vera-color-primary); text-align: center; margin: 0; }
+@media (max-width: 1024px) { .tas__grid { grid-template-columns: 1fr; } .tas__result { position: static; } }
+
 
 /* ===================== VERA Chat embebido (pantalla "Hoy") ===================== */
 .vera-home--focus {
