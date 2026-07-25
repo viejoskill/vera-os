@@ -124,55 +124,37 @@ async def disconnect() -> None:
 
 
 # --- Publicación ---------------------------------------------------------- #
-# Para PUBLICAR (POST /items) ML exige la categoría HOJA por tipo+operación
-# (MLA1466/MLA1472... son domain_id de búsqueda, NO categorías publicables).
-# La categoría real se resuelve dinámicamente vía domain_discovery; este mapa
-# es solo fallback si la API de discovery no responde.
-_CATEGORY_FALLBACK = {
+# Categorías HOJA reales del árbol de Inmuebles (MLA1459), por tipo + operación.
+# Todas aceptan USD y ARS. NO se usa domain_discovery: para inmuebles devuelve
+# categorías equivocadas que no son propiedades (p.ej. "terreno en venta" →
+# "Escenografía y Terrenos", solo ARS), lo que rompía la publicación.
+_CATEGORY = {
     ("casa", "venta"): "MLA401685",
-    ("casa", "alquiler"): "MLA401684",
-    ("casa", "alquiler_temporario"): "MLA401684",
+    ("casa", "alquiler"): "MLA1467",
+    ("casa", "alquiler_temporario"): "MLA50278",
     ("departamento", "venta"): "MLA401686",
-    ("departamento", "alquiler"): "MLA401687",
-    ("departamento", "alquiler_temporario"): "MLA401687",
-    ("ph", "venta"): "MLA401685",
-    ("terreno", "venta"): "MLA50541",
-    ("local", "venta"): "MLA79242",
-    ("oficina", "venta"): "MLA79243",
+    ("departamento", "alquiler"): "MLA1473",
+    ("departamento", "alquiler_temporario"): "MLA50279",
+    ("ph", "venta"): "MLA105182",
+    ("ph", "alquiler"): "MLA105181",
+    ("ph", "alquiler_temporario"): "MLA105180",
+    ("terreno", "venta"): "MLA401687",
+    ("terreno", "alquiler"): "MLA1494",
+    ("local", "venta"): "MLA79244",
+    ("local", "alquiler"): "MLA79243",
+    ("oficina", "venta"): "MLA401684",
+    ("oficina", "alquiler"): "MLA50539",
 }
-_TYPE_LABEL = {
-    "casa": "casa", "departamento": "departamento", "ph": "ph",
-    "terreno": "terreno", "local": "local comercial", "oficina": "oficina",
-}
-_OP_LABEL = {"venta": "venta", "alquiler": "alquiler", "alquiler_temporario": "alquiler temporal"}
-_OPERATION = {"venta": "Venta", "alquiler": "Alquiler", "alquiler_temporario": "Alquiler temporal"}
 
 
 async def _resolve_listing(access: str, prop: dict) -> tuple[str, list[dict]]:
-    """Resuelve la categoría HOJA y atributos sugeridos (OPERATION_TYPE/PROPERTY_TYPE)
-    con /sites/MLA/domain_discovery/search. Cae al mapa fallback si falla."""
-    q = f"{_TYPE_LABEL.get(prop.get('type'), 'casa')} en {_OP_LABEL.get(prop.get('operation'), 'venta')}"
-    try:
-        async with httpx.AsyncClient(timeout=20) as h:
-            r = await h.get(
-                f"{config.MELI_API}/sites/MLA/domain_discovery/search",
-                params={"q": q, "limit": 1},
-                headers={"Authorization": f"Bearer {access}"},
-            )
-        data = r.json() if r.status_code == 200 else []
-        if data and data[0].get("category_id"):
-            attrs = [
-                {"id": a["id"], "value_id": a["value_id"]}
-                for a in (data[0].get("attributes") or [])
-                if a.get("id") and a.get("value_id")
-            ]
-            return data[0]["category_id"], attrs
-    except Exception:  # noqa: BLE001
-        logger.warning("ML domain_discovery falló; uso categoría fallback")
-    fallback = _CATEGORY_FALLBACK.get(
-        (prop.get("type"), prop.get("operation"))
-    ) or _CATEGORY_FALLBACK.get((prop.get("type"), "venta"), "MLA401685")
-    return fallback, []
+    """Categoría HOJA correcta del árbol de Inmuebles por tipo+operación.
+    Si no hay match exacto, cae a la variante 'venta' del mismo tipo, y en última
+    instancia a Casas · Venta (MLA401685)."""
+    t = prop.get("type")
+    op = prop.get("operation")
+    category = _CATEGORY.get((t, op)) or _CATEGORY.get((t, "venta")) or "MLA401685"
+    return category, []
 
 _AI_IMAGE_DISCLAIMER = (
     "Algunas imágenes de esta publicación pueden haber sido optimizadas digitalmente "
@@ -264,6 +246,12 @@ _ATTR_VALUE = {
     "PARKING_LOTS": lambda p: str(_int(p.get("parking_covered")) + _int(p.get("parking_uncovered"))),
 }
 
+# Defaults para atributos-lista OBLIGATORIOS que ML exige pero que VERA no modela
+# (p.ej. terrenos requieren LAND_ACCESS). Se usan solo si la categoría los pide.
+_ATTR_DEFAULT = {
+    "LAND_ACCESS": {"id": "LAND_ACCESS", "value_id": "245046"},  # Asfalto
+}
+
 
 async def _category_attributes(access: str, category_id: str, prop: dict) -> list[dict]:
     """Consulta el esquema de la categoría y arma SOLO los atributos obligatorios que
@@ -288,10 +276,14 @@ async def _category_attributes(access: str, category_id: str, prop: dict) -> lis
         aid = attr.get("id")
         provider = _ATTR_VALUE.get(aid)
         if not provider:
+            default = _ATTR_DEFAULT.get(aid)
+            if default:
+                out.append(dict(default))
             continue
         value = provider(prop)
         if attr.get("value_type") == "number_unit":
-            unit = ((attr.get("allowed_units") or [{}])[0]).get("id", "m²")
+            units = attr.get("allowed_units") or [{}]
+            unit = next((u.get("id") for u in units if u.get("id") in ("m²", "m2")), None) or units[0].get("id", "m²")
             out.append({"id": aid, "value_name": f"{value} {unit}"})
         else:
             out.append({"id": aid, "value_name": value})

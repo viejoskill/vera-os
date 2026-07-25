@@ -821,3 +821,11 @@ El `<audio>` vivía dentro del `AudioWidget` (solo en "Hoy"), así que al navega
 
 ## Ajuste mensaje al propietario (2026-06)
 `buildOwnerMessage` actualizado al formato pedido: se presenta como "Soy Vera, la asistente virtual de {agente}", usa "hoy/ayer/el DD/MM/AAAA" según la fecha real de la visita (nuevo helper `visitWhen`), sin firma al final. Toma el nombre del agente del campo Agente del formulario.
+
+## Fix (Publicar en ML fallaba — "Currency USD is invalid" en terrenos — 2026-06)
+Causa raíz: la resolución de categoría de ML estaba mal. (1) `domain_discovery` devolvía categorías que NO son inmuebles para queries como "terreno en venta" → "Escenografía y Terrenos" (solo ARS) → error de moneda. (2) El fallback tenía IDs incorrectos (terreno → MLA50541 = Cocheras). (3) Faltaba bajar hasta la categoría HOJA ("Propiedades Individuales").
+Fixes en `mercadolibre/service.py`:
+- Eliminado `domain_discovery`; `_CATEGORY` ahora mapea a las categorías HOJA correctas del árbol Inmuebles (MLA1459), todas aceptan USD+ARS. Terreno venta = MLA401687, casa = MLA401685, depto = MLA401686, etc.
+- `_ATTR_DEFAULT`: agrega atributos obligatorios que VERA no modela. Terrenos requieren LAND_ACCESS → default "Asfalto" (245046).
+- Bug de unidad: `number_unit` tomaba `allowed_units[0]` que para terrenos era "ha" → un lote de 419 m² se publicaba como "419 ha". Ahora prefiere "m²".
+Verificado con `POST /items/validate` de ML (no crea avisos reales): terreno f4678842 → 204 OK (419 m², acceso Asfalto), casa venta → 204 OK. **Requiere REDESPLEGAR para arreglar producción.** Nota: LAND_ACCESS por defecto "Asfalto"; el usuario puede editarlo en ML si el lote es de ripio/arena.
