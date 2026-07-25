@@ -62,7 +62,6 @@
   .fieldchk{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center}
   .fieldchk input[type=checkbox]{accent-color:var(--oro);width:18px;height:18px}
 </style>
-
 <script>
 /* === VERA OS · puente de persistencia ==========================================
  * Studio ya soporta un adaptador `window.storage`. Al embeberlo dentro del OS le
@@ -149,6 +148,7 @@
     <button class="mode" id="modeProp" type="button">Post de propiedad</button>
     <button class="mode" id="modeCal" type="button">Calendario mensual</button>
     <button class="mode" id="modeVid" type="button">Video</button>
+    <button class="mode" id="modeFotos" type="button">Editor de fotos</button>
   </div>
 
   <div class="grid">
@@ -205,14 +205,51 @@
         <input type="text" id="pTitulo" placeholder="Ej: Casa 3 ambientes con parque">
         <label>Ubicaci&oacute;n</label>
         <input type="text" id="pUbi" placeholder="Ej: Zona bosque &middot; Costa del Este">
-        <label class="chk"><input type="checkbox" id="pTextosTodas"> Repetir los textos en todas las fotos (si no, solo en la primera)</label>
         <label class="chk"><input type="checkbox" id="pContacto" checked> Datos de la inmobiliaria en la &uacute;ltima foto</label>
+        <label class="chk"><input type="checkbox" id="pEsLote"> Es un lote (agrega una ficha t&eacute;cnica como primera placa)</label>
 
-        <label style="margin-top:14px">Fotos de la propiedad <span class="opt">(pod&eacute;s subir varias juntas; cada una es una placa)</span></label>
+        <div id="pLoteBox" style="display:none">
+          <div class="slidebox" style="margin-top:10px">
+            <div class="row">
+              <div>
+                <label>Forma del lote</label>
+                <select id="lForma">
+                  <option value="rect">Rectangular</option>
+                  <option value="trapecioAngosto">Frente angosto (se abre atr&aacute;s)</option>
+                  <option value="trapecioAncho">Frente ancho (se achica atr&aacute;s)</option>
+                  <option value="ochava">Irregular con ochava</option>
+                </select>
+              </div>
+              <div>
+                <label>Superficie (m&sup2;)</label>
+                <input type="text" id="lSuperficie" placeholder="Ej: 419">
+              </div>
+            </div>
+            <label class="chk"><input type="checkbox" id="lMirror"> Espejar plano (si la ochava/forma va del otro lado)</label>
+            <label style="margin-top:8px">Medidas de cada lado <span class="opt">(en metros)</span></label>
+            <div class="row" id="lMedidas" style="row-gap:8px"></div>
+            <label style="margin-top:10px">Servicios disponibles</label>
+            <div class="row3">
+              <label class="chk"><input type="checkbox" id="lServAgua"> Agua</label>
+              <label class="chk"><input type="checkbox" id="lServLuz"> Luz</label>
+              <label class="chk"><input type="checkbox" id="lServGas"> Gas</label>
+            </div>
+            <div class="row3" style="margin-top:6px">
+              <label class="chk"><input type="checkbox" id="lServCloaca"> Cloacas</label>
+              <label class="chk"><input type="checkbox" id="lServPavimento"> Pavimento</label>
+              <div></div>
+            </div>
+            <label style="margin-top:10px">Nomenclatura catastral <span class="opt">(peg&aacute; el dato tal cual de ARBA u otra fuente)</span></label>
+            <input type="text" id="lCatastro" placeholder="Ej: Partido 123 &middot; Circ. 4 &middot; Secc. CC &middot; Mz 98 &middot; Parc. 10">
+          </div>
+        </div>
+
+        <label style="margin-top:14px">Fotos de la propiedad <span class="opt">(pod&eacute;s subir varias juntas; cada una es una placa editable, como en el carrusel)</span></label>
         <label class="btn sec filelbl">Agregar fotos<input type="file" id="pFotos" accept="image/*" multiple></label>
         <div class="tabs" id="pTabs"></div>
         <div id="pEditor"></div>
-        <div class="hint">Preset Exterior: contraste y cielo m&aacute;s vivos, luz dorada. Preset Interior: levanta sombras y calidez de ambientes. As&iacute; todas las propiedades mantienen el mismo estilo.</div>
+        <div class="hint">Exterior: contraste y saturaci&oacute;n marcados, cielos vivos. Interior: levanta bastante las sombras, contraste suave. Blanco y Negro: editorial, alto contraste. As&iacute; todas las propiedades mantienen el mismo estilo.</div>
+        <div class="hint" style="margin-top:6px"><b>Atardecer</b> ambienta la foto real (luz, cielo, luces prendidas) sin agregar nada. <b>Potencial</b> muestra el ambiente con elementos que hoy no est&aacute;n (muebles, deck, jard&iacute;n) &mdash; siempre se exporta en formato antes/despu&eacute;s, etiquetado como recreaci&oacute;n ilustrativa. Us&aacute; Potencial con criterio: es para inspirar, no para prometer algo que no se entrega.</div>
       </div>
 
       <div class="panel" id="panelCal" style="display:none">
@@ -290,9 +327,41 @@
         <div class="actions" id="vDescarga"></div>
         <div class="hint">El video se graba en tiempo real sobre la vista previa: no cambies de pesta&ntilde;a mientras se genera. Sale en MP4 (o WebM si tu navegador no soporta MP4; en ese caso convertilo con CapCut). Para videos filmados con el celular, edit&aacute; y estabiliz&aacute; en CapCut directamente.</div>
       </div>
+
+      <div class="panel" id="panelFotos" style="display:none">
+        <h2>1 &middot; Editor de fotos <span class="opt">(para web / CRM, sin marca)</span></h2>
+        <div class="row">
+          <div>
+            <label>Formato de salida</label>
+            <select id="fRatio">
+              <option value="169" selected>16:9 (horizontal)</option>
+              <option value="43">4:3</option>
+              <option value="11">1:1 (cuadrado)</option>
+              <option value="orig">Original (sin recortar)</option>
+            </select>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <label class="btn sec filelbl">Agregar fotos<input type="file" id="fArchivos" accept="image/*" multiple></label>
+            <button type="button" class="btn sec" id="fAddFicha" style="margin-top:8px;width:100%">+ Ficha de lote</button>
+          </div>
+        </div>
+        <label class="chk"><input type="checkbox" id="fAviso" checked> Incluir aviso de edici&oacute;n con IA en la esquina (obligatorio en Potencial)</label>
+        <div class="tabs" id="fTabs"></div>
+        <div id="fEditor"></div>
+
+        <label style="margin-top:16px">Vista previa</label>
+        <canvas id="cvEdit" width="1920" height="1080" style="width:100%;height:auto;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.55);background:#111"></canvas>
+        <div class="actions">
+          <a class="btn sec" id="fDl1" download>Descargar esta foto</a>
+          <button class="btn sec" id="fDlAll" type="button">Descargar todas</button>
+        </div>
+        <div class="status" id="fStatus"></div>
+        <div class="hint">Fotos limpias, sin logo ni textos de marca &mdash; listas para tu web o CRM. Atardecer / D&iacute;a despejado / Despejar llevan un aviso chico opcional. Potencial siempre lleva el aviso, no se puede quitar.</div>
+      </div>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="panelPreview">
       <h2>2 &middot; Vista previa</h2>
       <div class="tabs" style="margin:0 0 10px">
         <button class="tab sel" id="fmtFeed" type="button">Feed 4:5</button>
@@ -447,20 +516,42 @@ async function llamarVera(ruta, body){
   if(!r.ok) throw new Error(data?.error?.message || ("Error "+r.status));
   return data;
 }
+async function llamarVeraForm(ruta, formData){
+  const cx = conexionVera();
+  const r = await fetch(cx.srv+ruta, {
+    method:"POST",
+    headers:{ "X-Vera-Code": cx.acceso },
+    body: formData
+  });
+  const data = await r.json();
+  if(!r.ok) throw new Error(data?.error?.message || ("Error "+r.status));
+  return data;
+}
+function imagenABlob(img){
+  return new Promise(res=>{
+    const c = document.createElement("canvas");
+    c.width = img.naturalWidth||img.width; c.height = img.naturalHeight||img.height;
+    c.getContext("2d").drawImage(img,0,0);
+    c.toBlob(res, "image/jpeg", 0.92);
+  });
+}
 
 /* ---------- MODOS ---------- */
 function setMode(m){
   mode = m;
-  [["modeCont","cont","panelCont"],["modeProp","prop","panelProp"],["modeCal","cal","panelCal"],["modeVid","vid","panelVid"]].forEach(([btn,val,panel])=>{
+  [["modeCont","cont","panelCont"],["modeProp","prop","panelProp"],["modeCal","cal","panelCal"],["modeVid","vid","panelVid"],["modeFotos","fotos","panelFotos"]].forEach(([btn,val,panel])=>{
     $(btn).classList.toggle("sel", m===val);
     $(panel).style.display = (m===val) ? "" : "none";
   });
-  if(m!=="cal") render();
+  $("panelPreview").style.display = (m==="fotos") ? "none" : "";
+  if(m==="fotos"){ fRender(); }
+  else if(m!=="cal"){ render(); }
 }
 $("modeCont").onclick = ()=> setMode("cont");
 $("modeProp").onclick = ()=> setMode("prop");
 $("modeCal").onclick = ()=> setMode("cal");
 $("modeVid").onclick = ()=> setMode("vid");
+$("modeFotos").onclick = ()=> setMode("fotos");
 
 /* ---------- CARRUSEL DE CONTENIDO ---------- */
 function nuevoSlide(esUltima){ return { titulo:"TU *GANCHO* AC\u00c1", sec:"", cta:"", estilo:"estudio", textoPos:"izq", altura:"centro", fotoOff:0, zoom:0, bgType:"flat", bgColor:0, bgImg:null, bgDesc:"", contacto: !!esUltima }; }
@@ -605,7 +696,7 @@ async function generarFondo(s){
     ? "Foto casera tomada con celular: "+s.bgDesc+". Luz natural, encuadre espontaneo levemente imperfecto, colores reales sin edicion profesional, estilo autentico de contenido casero de redes. Si la escena incluye personas, deben ser modelos publicitarios adultos de aspecto argentino natural, tal como los describa la escena, SIN parecido con personas reales o famosas. SIN texto, SIN logos, SIN marcas de agua."
     : "Fotografia cinematografica calida y elegante: "+s.bgDesc+". Iluminacion ambar tenue, tonos oscuros, atmosfera premium inmobiliaria, con el sujeto principal hacia la "+(s.textoPos==="der"?"izquierda":"derecha")+" y mucho espacio oscuro y despejado en la mitad "+(s.textoPos==="der"?"derecha":"izquierda")+" para superponer texto. SIN texto, SIN logos, SIN marcas de agua, SIN personas.";
   try{
-    const data = await llamarVera("/imagen", { model:"gpt-image-1",
+    const data = await llamarVera("/imagen", { model:"gpt-image-2",
       prompt: promptFondo,
       size:"1024x1536", quality:"medium", n:1 });
     const img = new Image();
@@ -631,7 +722,7 @@ async function generarIdeas(){
         model:"gpt-4o-mini",
         response_format:{type:"json_object"},
         messages:[
-          {role:"system", content:"Sos un asesor inmobiliario senior con 15 anos de trayectoria en Costa del Este, Argentina, escribiendo el copy de un carrusel educativo. "+TONOS[$("tono").value]+" Estructura: placa 1 = GANCHO (pregunta o afirmacion que frena el scroll, sin dar el dato todavia), placas intermedias = CADA UNA debe entregar UN dato, regla practica, umbral, checklist o paso concreto que el lector pueda usar ya mismo, ultima placa = REMATE + llamado a la accion. PROHIBIDO usar frases vacias que no ensenan nada nuevo, tipo 'consulta a un profesional', 'evalua tus opciones', 'define tus prioridades', 'analiza el mercado', 'informate bien' -- si una placa dice eso y nada mas, esta MAL, hay que reemplazarla por el dato concreto que hay detras (ej en vez de 'evalua opciones de financiamiento' -> 'la cuota no deberia superar el 25-30% de tu ingreso mensual; muchos bancos piden ademas un 20% de la propiedad como ahorro previo'). Podes usar reglas practicas y umbrales de conocimiento general del rubro (proporciones tipicas de cuota/ingreso, gastos de escritura como % aproximado del valor, documentacion habitual que piden los bancos, errores comunes de primeros compradores, senales de alerta al visitar una propiedad, etc). Si el dato es una cifra oficial, tasa vigente o cupo regulatorio que cambia con el tiempo y no la sabes con certeza, no la inventes: usa [X%] o [dato] como marcador, pero el resto de la placa igual debe tener contenido especifico, no relleno. Titulos: maximo 7 palabras por placa, con saltos de linea usando \\n para ritmo visual (2-3 lineas cortas). OBLIGATORIO en cada titulo: marcar entre asteriscos las 2-4 palabras del nucleo emocional (ej: \"\u00bfSab\u00edas que tu casa *no vale* lo que pens\u00e1s?\"), NUNCA entregar un titulo sin palabras marcadas. Secundario: 1 frase con el dato o regla concreta en si (no una promesa vaga de que hay un dato), marcando entre asteriscos 1 o 2 palabras clave. CTA: solo en la ultima placa, imperativo corto. Ortografia y tildes perfectas. Responde SOLO JSON valido: {\"slides\":[{\"titulo\":\"...\",\"sec\":\"...\",\"cta\":\"...\"}]} con exactamente "+n+" slides. CTA vacio \"\" salvo en la ultima."},
+          {role:"system", content:"Sos un copywriter senior de una inmobiliaria premium de Costa del Este, Argentina. "+TONOS[$("tono").value]+" Estructura de carrusel: placa 1 = GANCHO fuerte que frena el scroll, placas intermedias = CONTENIDO concreto y util, ultima placa = REMATE + llamado a la accion. Titulos: maximo 7 palabras por placa, con saltos de linea usando \\n para ritmo visual (2-3 lineas cortas). OBLIGATORIO en cada titulo: marcar entre asteriscos las 2-4 palabras del nucleo emocional (ej: \"\u00bfSab\u00edas que tu casa *no vale* lo que pens\u00e1s?\"), NUNCA entregar un titulo sin palabras marcadas. Secundario: 1 frase corta opcional con valor real, marcando entre asteriscos 1 o 2 palabras clave. CTA: solo en la ultima placa, imperativo corto. No inventes cifras, porcentajes ni datos legales: si el tema los requiere, usa marcadores como [X%] para que el usuario los complete. Ortografia y tildes perfectas. Responde SOLO JSON valido: {\"slides\":[{\"titulo\":\"...\",\"sec\":\"...\",\"cta\":\"...\"}]} con exactamente "+n+" slides. CTA vacio \"\" salvo en la ultima."},
           {role:"user", content:"Tema: "+$("tema").value.trim()+". Enfoque: "+$("enfoque").value+". Genera el carrusel de "+n+" placas."}
         ]
     });
@@ -651,23 +742,180 @@ async function generarIdeas(){
 $("ideas").addEventListener("click", generarIdeas);
 
 /* ---------- POST DE PROPIEDAD ---------- */
+const MODOS_IA = {
+  atardecer: {
+    label:"Atardecer", etiqueta:"Ambientaci\u00f3n con IA",
+    prompt:"Convertir esta fotografia arquitectonica diurna en una imagen premium de real estate capturada en HORA DORADA. Mantener la casa completamente igual en forma, materiales, texturas y perspectiva. Simular la luz calida de la tarde, poco antes del atardecer, con iluminacion dorada suave rozando la fachada y sombras largas y sutiles que resaltan la profundidad y los detalles arquitectonicos. Encender todas las luces interiores y exteriores de forma natural, creando un brillo acogedor visible en las ventanas sin sobreexponer. El cielo debe ser calido con degrades sutiles de naranja, durazno y celeste claro, mientras que la escena general se mantiene LUMINOSA, no de noche ni de hora azul. Aumentar la riqueza visual con contraste equilibrado, reflejos realistas, vegetacion vibrante pero natural, y un acabado pulido de fotografia arquitectonica premium. Mantener el fotorrealismo, evitar elementos alucinados. EVITAR ESTRICTAMENTE: cambiar la arquitectura, el techo, las ventanas, las puertas, las texturas, el paisajismo o el angulo de camara; agregar personas, vehiculos, muebles, decoraciones, piletas, plantas, montañas, nubes extra, destellos de lente, niebla, lluvia, pajaros o edificios adicionales; iluminacion nocturna, de hora azul, excesivamente naranja; HDR excesivo; sobresaturacion; reflejos irreales; artefactos generados por IA. Mantener un aspecto natural y fotorrealista."
+  },
+  despejado: {
+    label:"D\u00eda despejado", etiqueta:"Ambientaci\u00f3n con IA",
+    prompt:"Transformar esta fotografia inmobiliaria de un dia nublado a un dia soleado y luminoso, preservando exactamente la arquitectura, el angulo de camara, la composicion, el paisajismo y todos los detalles estructurales. Reemplazar el cielo gris y opaco por un cielo azul despejado con algunas nubes blancas suaves y naturales. Simular luz solar limpia y natural, con sombras realistas y luces equilibradas, como si la foto hubiera sido tomada en una hermosa tarde de primavera o principios de verano. Realzar los colores de forma natural: cesped mas verde, arboles mas vibrantes, materiales de la fachada frescos y bien iluminados, sin que se vea sobresaturado. Mejorar la nitidez, el contraste y el brillo general manteniendo un estilo fotorrealista de fotografia arquitectonica premium. El resultado debe sentirse acogedor, nitido y naturalmente soleado, adecuado para una publicacion inmobiliaria premium. EVITAR: cambiar la arquitectura, el angulo de camara, la composicion o el paisajismo; agregar o quitar elementos; sobresaturacion; artefactos generados por IA."
+  },
+  ordenado: {
+    label:"Despejar", etiqueta:"Foto optimizada con IA",
+    prompt:"Editar esta fotografia de una propiedad quitando unicamente objetos sueltos, desorden, cables visibles, ropa colgada, basura, cajas, herramientas o elementos personales dispersos que no formen parte de la arquitectura fija de la propiedad. Mantener exactamente iguales la arquitectura, los muebles fijos, los materiales, las proporciones, el cesped, la vegetacion y el resto de la escena. No agregar ningun elemento nuevo, unicamente remover objetos sueltos y desorden temporal. Resultado fotorrealista, prolijo y natural, como si la foto se hubiera tomado con el lugar ya ordenado."
+  }
+};
+const FORMAS_LOTE = {
+  rect: { n:"Rectangular", lados:["Frente","Lateral derecho","Fondo","Lateral izquierdo"],
+    poly:[[0.12,0.08],[0.88,0.08],[0.88,0.92],[0.12,0.92]] },
+  trapecioAngosto: { n:"Frente angosto (se abre hacia el fondo)", lados:["Frente","Lateral derecho","Fondo","Lateral izquierdo"],
+    poly:[[0.32,0.08],[0.68,0.08],[0.9,0.92],[0.1,0.92]] },
+  trapecioAncho: { n:"Frente ancho (se achica hacia el fondo)", lados:["Frente","Lateral derecho","Fondo","Lateral izquierdo"],
+    poly:[[0.1,0.08],[0.9,0.08],[0.68,0.92],[0.32,0.92]] },
+  ochava: { n:"Irregular con ochava", lados:["Frente","Ochava","Lateral derecho","Fondo","Lateral izquierdo"],
+    poly:[[0.12,0.08],[0.72,0.08],[0.88,0.24],[0.88,0.92],[0.12,0.92]] }
+};
+
+function proporcionLote(forma, medidas){
+  const num = s => { const n = parseFloat((s||"").replace(",",".")); return (isFinite(n)&&n>0)?n:null; };
+  const frente = num(medidas["Frente"]), fondoV = num(medidas["Fondo"]);
+  const latA = num(medidas["Lateral derecho"]), latB = num(medidas["Lateral izquierdo"]);
+  const ancho = frente || fondoV || null;
+  const profundo = (latA&&latB) ? (latA+latB)/2 : (latA||latB||null);
+  if(ancho && profundo) return ancho/profundo;
+  return null;
+}
+function dibujarPoligonoLote(ctxL, forma, mirror, medidas, bx,by,bw,bh){
+  const F = FORMAS_LOTE[forma] || FORMAS_LOTE.rect;
+  const aspecto = proporcionLote(forma, medidas);
+  if(aspecto){
+    const availW = bw*0.88, availH = bh*0.88;
+    let w2,h2;
+    if(availW/availH > aspecto){ h2=availH; w2=h2*aspecto; } else { w2=availW; h2=w2/aspecto; }
+    bx = bx + (bw-w2)/2; by = by + (bh-h2)/2; bw = w2; bh = h2;
+  }
+  const rawPts = F.poly.map(([px,py])=> mirror ? [1-px, py] : [px,py]);
+  const pts = rawPts.map(([px,py])=> [bx+px*bw, by+py*bh]);
+  const cx = pts.reduce((a,p)=>a+p[0],0)/pts.length;
+  const cy = pts.reduce((a,p)=>a+p[1],0)/pts.length;
+
+  ctxL.save();
+  ctxL.beginPath();
+  pts.forEach((p,i)=> i===0?ctxL.moveTo(p[0],p[1]):ctxL.lineTo(p[0],p[1]));
+  ctxL.closePath();
+  ctxL.fillStyle = "rgba(242,226,60,.07)"; ctxL.fill();
+  ctxL.strokeStyle = ORO; ctxL.lineWidth = Math.max(2, bw*0.004); ctxL.stroke();
+  pts.forEach(p=>{ ctxL.beginPath(); ctxL.arc(p[0],p[1],Math.max(2.5,bw*0.006),0,7); ctxL.fillStyle=ORO; ctxL.fill(); });
+  ctxL.restore();
+
+  ctxL.save();
+  const fs = Math.max(13, Math.round(bw*0.032));
+  ctxL.font = "500 "+fs+"px Inter";
+  ctxL.textBaseline="middle"; ctxL.textAlign="center";
+  pts.forEach((p,i)=>{
+    const q = pts[(i+1)%pts.length];
+    const mx=(p[0]+q[0])/2, my=(p[1]+q[1])/2;
+    let nx = mx-cx, ny = my-cy;
+    const len = Math.hypot(nx,ny)||1; nx/=len; ny/=len;
+    const label = (F.lados[i]||"");
+    const valor = (medidas[label]||"").trim();
+    const texto = valor ? valor+" m" : label;
+    const off = Math.max(20, bw*0.045);
+    const lx = mx + nx*off, ly = my + ny*off;
+    const tw = ctxL.measureText(texto).width;
+    ctxL.fillStyle = "rgba(0,0,0,.55)";
+    roundRect(lx-tw/2-9, ly-fs*0.75, tw+18, fs*1.5, 7); ctxL.fill();
+    ctxL.fillStyle = "#f5f1e6";
+    ctxL.fillText(texto, lx, ly+1);
+  });
+  ctxL.restore();
+}
+
+function dibujarDatosLote(ctxL, x, y, w, datos){
+  ctxL.save();
+  ctxL.textBaseline="top"; ctxL.textAlign="left";
+  let cy = y;
+  ctxL.font = "600 "+Math.max(14,Math.round(w*0.05))+"px Inter"; ctxL.fillStyle="rgba(255,255,255,.55)";
+  ctxL.fillText("SUPERFICIE", x, cy); cy += Math.round(w*0.065);
+  if((datos.superficie||"").trim()){
+    ctxL.font = "700 "+Math.max(30,Math.round(w*0.14))+"px Oswald"; ctxL.fillStyle=ORO;
+    ctxL.fillText(datos.superficie.trim()+" m\u00b2", x, cy);
+    cy += Math.round(w*0.16);
+  }
+  const SERV = [["agua","Agua"],["luz","Luz"],["gas","Gas"],["cloaca","Cloacas"],["pavimento","Pavimento"]];
+  ctxL.font = "500 "+Math.max(13,Math.round(w*0.04))+"px Inter";
+  SERV.forEach(([k,label])=>{
+    const on = !!(datos.servicios && datos.servicios[k]);
+    ctxL.beginPath(); ctxL.arc(x+7, cy+9, 6, 0, 7);
+    ctxL.fillStyle = on ? ORO : "rgba(255,255,255,.25)"; ctxL.fill();
+    ctxL.fillStyle = on ? "#f5f1e6" : "rgba(255,255,255,.45)";
+    ctxL.fillText(label, x+24, cy);
+    cy += Math.round(w*0.062);
+  });
+  if((datos.catastro||"").trim()){
+    cy += Math.round(w*0.03);
+    const fsz = Math.max(10,Math.round(w*0.028));
+    ctxL.font = "400 "+fsz+"px Inter";
+    const lines = wrapSpans(parseSpans(datos.catastro.trim()), ctxL.font, w*0.94);
+    lines.forEach(line=>{
+      let lx=x; line.forEach(tok=>{ ctxL.fillStyle="rgba(255,255,255,.42)"; ctxL.fillText(tok.t,lx,cy); lx+=ctxL.measureText(tok.t).width; });
+      cy += Math.round(fsz*1.5);
+    });
+  }
+  ctxL.restore();
+  return cy - y;
+}
+
 const PRESETS = {
-  ext: { n:"Exterior", filtro:"brightness(1.04) contrast(1.12) saturate(1.16)", calidez:.055 },
-  int: { n:"Interior", filtro:"brightness(1.09) contrast(1.05) saturate(1.07)", calidez:.045 },
-  no:  { n:"Sin editar", filtro:"none", calidez:0 }
+  ext: { n:"Exterior",        filtro:"brightness(1.03) contrast(1.24) saturate(1.32)", calidez:.065 },
+  int: { n:"Interior",        filtro:"brightness(1.17) contrast(0.96) saturate(1.02)", calidez:.05  },
+  bn:  { n:"Blanco y Negro",  filtro:"grayscale(1) contrast(1.18) brightness(1.03)",    calidez:0    },
+  no:  { n:"Sin editar",      filtro:"none", calidez:0 }
 };
 $("pFotos").addEventListener("change", e=>{
   const files = [...e.target.files];
   let pend = files.length;
   files.forEach(f=>{
     const img = new Image();
-    img.onload = ()=>{ prop.fotos.push({img, preset:"ext"}); if(--pend===0){ prop.curF = prop.fotos.length-1; drawPTabs(); drawPEditor(); render(); } };
+    const esPrimera = prop.fotos.length===0 && files.indexOf(f)===0;
+    img.onload = ()=>{ prop.fotos.push({img, preset:"ext", caption:"", showInfo: esPrimera, vista:"original", ia:{atardecer:null, despejado:null, ordenado:null}, iaPotencial:null, iaPotencialPrompt:""}); if(--pend===0){ prop.curF = prop.fotos.length-1; drawPTabs(); drawPEditor(); render(); } };
     img.src = URL.createObjectURL(f);
   });
   e.target.value = "";
 });
+prop.esLote = false;
+prop.lote = { forma:"rect", medidas:{}, superficie:"", catastro:"", mirror:false,
+  servicios:{agua:false,luz:false,gas:false,cloaca:false,pavimento:false} };
+
+function lRedibujarCamposMedidas(){
+  const box = $("lMedidas");
+  const F = FORMAS_LOTE[prop.lote.forma] || FORMAS_LOTE.rect;
+  box.innerHTML = F.lados.map(lado=>`
+    <div style="flex:1;min-width:120px">
+      <label style="font-weight:400;font-size:.76rem;color:var(--gris);margin:0 0 3px">${lado}</label>
+      <input type="text" class="lLado" data-lado="${lado}" value="${(prop.lote.medidas[lado]||"").replace(/"/g,'&quot;')}" placeholder="metros">
+    </div>`).join("");
+  box.querySelectorAll(".lLado").forEach(inp=>{
+    inp.addEventListener("input", e=>{ prop.lote.medidas[e.target.dataset.lado] = e.target.value; render(); });
+  });
+}
+$("pEsLote").addEventListener("change", e=>{
+  prop.esLote = e.target.checked;
+  $("pLoteBox").style.display = prop.esLote ? "" : "none";
+  if(prop.esLote) prop.curF = -1;
+  else if(prop.curF===-1) prop.curF = prop.fotos.length ? 0 : -1;
+  lRedibujarCamposMedidas();
+  drawPTabs(); render();
+});
+$("lForma").addEventListener("change", e=>{ prop.lote.forma = e.target.value; lRedibujarCamposMedidas(); render(); });
+$("lSuperficie").addEventListener("input", e=>{ prop.lote.superficie = e.target.value; render(); });
+$("lCatastro").addEventListener("input", e=>{ prop.lote.catastro = e.target.value; render(); });
+$("lMirror").addEventListener("change", e=>{ prop.lote.mirror = e.target.checked; render(); });
+[["lServAgua","agua"],["lServLuz","luz"],["lServGas","gas"],["lServCloaca","cloaca"],["lServPavimento","pavimento"]].forEach(([id,key])=>{
+  $(id).addEventListener("change", e=>{ prop.lote.servicios[key] = e.target.checked; render(); });
+});
+lRedibujarCamposMedidas();
+
 function drawPTabs(){
   const t = $("pTabs"); t.innerHTML = "";
+  if(prop.esLote){
+    const bF = document.createElement("button");
+    bF.className = "tab"+(prop.curF===-1?" sel":"");
+    bF.textContent = "Ficha";
+    bF.onclick = ()=>{ prop.curF=-1; drawPTabs(); drawPEditor(); render(); };
+    t.appendChild(bF);
+  }
   prop.fotos.forEach((f,i)=>{
     const b = document.createElement("button");
     b.className = "tab"+(i===prop.curF?" sel":"");
@@ -678,6 +926,7 @@ function drawPTabs(){
 }
 function drawPEditor(){
   const box = $("pEditor");
+  if(prop.curF===-1){ box.innerHTML = '<div class="hint">Complet\u00e1 los datos de la ficha arriba. Us\u00e1 "Agregar fotos" para sumar fotos del entorno debajo de la ficha.</div>'; return; }
   if(!prop.fotos.length){ box.innerHTML = ""; return; }
   const f = prop.fotos[prop.curF];
   const opts = Object.keys(PRESETS).map(k=>`<option value="${k}" ${f.preset===k?"selected":""}>${PRESETS[k].n}</option>`).join("");
@@ -697,14 +946,103 @@ function drawPEditor(){
           </div>
         </div>
       </div>
+      <label>Texto de esta foto <span class="opt">(*palabra* = dorado; opcional)</span></label>
+      <input type="text" id="pCaption" placeholder='Ej: Living con hoga a le\u00f1a' value="${(f.caption||"").replace(/"/g,'&quot;')}">
+      <label class="chk"><input type="checkbox" id="pShowInfo" ${f.showInfo?"checked":""}> Mostrar bloque completo (operaci&oacute;n, t&iacute;tulo, direcci&oacute;n, precio) en esta foto</label>
+
+      <label style="margin-top:14px">Editar con IA <span class="opt">(opcional)</span></label>
+      <div class="tabs" id="pVista">
+        <button type="button" class="tab ${f.vista==="original"?"sel":""}" data-vista="original">Foto original</button>
+        ${Object.keys(MODOS_IA).map(k=>`
+        <button type="button" class="tab ${f.vista===k?"sel":""}" data-vista="${k}">${MODOS_IA[k].label}${f.ia[k]?"":" ✨"}</button>
+        ${f.ia[k]?`<button type="button" class="btn sec mini" data-regen="${k}" title="Regenerar">↻</button>`:""}
+        `).join("")}
+        <button type="button" class="tab ${f.vista==="potencial"?"sel":""}" data-vista="potencial">Potencial${f.iaPotencial?"":" ✨"}</button>
+      </div>
+      <div id="pPotBox" style="display:${f.vista==="potencial"?"":"none"};margin-top:8px">
+        <label>Qu&eacute; agregar <span class="opt">(ej: living amoblado moderno, deck de madera, jard&iacute;n prolijo)</span></label>
+        <input type="text" id="pPotPrompt" value="${(f.iaPotencialPrompt||"").replace(/"/g,'&quot;')}" placeholder="Describ\u00ed qu\u00e9 quer\u00e9s mostrar">
+        <button class="btn sec mini" id="pPotGen" type="button" style="margin-top:8px">${f.iaPotencial?"Regenerar potencial":"Generar potencial"}</button>
+      </div>
+      <div class="status" id="pIaStatus"></div>
     </div>`;
   $("pPreset").addEventListener("change", e=>{ f.preset = e.target.value; render(); });
+  $("pCaption").addEventListener("input", e=>{ f.caption = e.target.value; render(); });
+  $("pShowInfo").addEventListener("change", e=>{ f.showInfo = e.target.checked; render(); });
   $("pIzq").onclick = ()=>{ const i=prop.curF; if(i>0){ [prop.fotos[i-1],prop.fotos[i]]=[prop.fotos[i],prop.fotos[i-1]]; prop.curF=i-1; drawPTabs(); render(); } };
   $("pDer").onclick = ()=>{ const i=prop.curF; if(i<prop.fotos.length-1){ [prop.fotos[i+1],prop.fotos[i]]=[prop.fotos[i],prop.fotos[i+1]]; prop.curF=i+1; drawPTabs(); render(); } };
   $("pDel").onclick = ()=>{ prop.fotos.splice(prop.curF,1); prop.curF=Math.max(0,prop.curF-1); drawPTabs(); drawPEditor(); render(); };
+
+  $("pVista").querySelectorAll("[data-vista]").forEach(b=>{
+    b.onclick = async ()=>{
+      const v = b.dataset.vista;
+      if(v==="potencial"){ f.vista="potencial"; drawPEditor(); render(); return; }
+      if(v==="original"){ f.vista="original"; drawPEditor(); render(); return; }
+      if(!f.ia[v]){ await generarEdicionIA(f, v); }
+      else{ f.vista = v; }
+      drawPEditor(); render();
+    };
+  });
+  $("pVista").querySelectorAll("[data-regen]").forEach(b=>{
+    b.onclick = async (e)=>{
+      e.stopPropagation();
+      const v = b.dataset.regen;
+      f.ia[v] = null;
+      await generarEdicionIA(f, v);
+      drawPEditor(); render();
+    };
+  });
+  const btnPot = $("pPotGen");
+  if(btnPot) btnPot.onclick = async ()=>{
+    f.iaPotencialPrompt = $("pPotPrompt").value.trim();
+    await generarPotencial(f);
+    drawPEditor(); render();
+  };
+}
+
+async function generarEdicionIA(f, modo, statusId){
+  const st = $(statusId || "pIaStatus");
+  const cfg = MODOS_IA[modo];
+  if(!conexionVera()){ st.textContent="Falta el C\u00f3digo de acceso en Identidad fija."; st.className="status err"; $("cfg").open=true; return; }
+  st.textContent = "Generando "+cfg.label.toLowerCase()+"... 30-60 seg."; st.className="status";
+  try{
+    const blob = await imagenABlob(f.img);
+    const fd = new FormData();
+    fd.append("model","gpt-image-2");
+    fd.append("prompt", cfg.prompt);
+    fd.append("size","1536x1024");
+    fd.append("quality","high");
+    fd.append("image[]", blob, "foto.jpg");
+    const data = await llamarVeraForm("/editar", fd);
+    const img = new Image();
+    await new Promise(res=>{ img.onload=res; img.src = "data:image/png;base64,"+data.data[0].b64_json; });
+    f.ia[modo] = img; f.vista = modo;
+    st.textContent = cfg.label+" listo."; st.className="status ok";
+  }catch(e){ st.textContent = e.message; st.className="status err"; }
+}
+
+async function generarPotencial(f, statusId){
+  const st = $(statusId || "pIaStatus");
+  if(!conexionVera()){ st.textContent="Falta el C\u00f3digo de acceso en Identidad fija."; st.className="status err"; $("cfg").open=true; return; }
+  if(!f.iaPotencialPrompt.trim()){ st.textContent="Describ\u00ed qu\u00e9 quer\u00e9s agregar."; st.className="status err"; return; }
+  st.textContent = "Generando potencial... 30-60 seg."; st.className="status";
+  try{
+    const blob = await imagenABlob(f.img);
+    const fd = new FormData();
+    fd.append("model","gpt-image-2");
+    fd.append("prompt","Editar esta fotografia de una propiedad agregando lo siguiente, de forma fotorrealista e integrada con la iluminacion y perspectiva original: "+f.iaPotencialPrompt+". Mantener la arquitectura, la estructura, los materiales y las proporciones originales exactamente iguales, sin alterarlos.");
+    fd.append("size","1536x1024");
+    fd.append("quality","medium");
+    fd.append("image[]", blob, "foto.jpg");
+    const data = await llamarVeraForm("/editar", fd);
+    const img = new Image();
+    await new Promise(res=>{ img.onload=res; img.src = "data:image/png;base64,"+data.data[0].b64_json; });
+    f.iaPotencial = img; f.vista = "potencial";
+    st.textContent = "Potencial listo. Se exporta en formato antes/despu\u00e9s."; st.className="status ok";
+  }catch(e){ st.textContent = e.message; st.className="status err"; }
 }
 ["pOp","pPrecio","pTitulo","pUbi"].forEach(id=> $(id).addEventListener("input", render));
-["pTextosTodas","pContacto"].forEach(id=> $(id).addEventListener("change", render));
+["pContacto"].forEach(id=> $(id).addEventListener("change", render));
 
 /* ---------- CALENDARIO MENSUAL ---------- */
 let plan = [];
@@ -726,7 +1064,7 @@ async function generarPlan(){
         model:"gpt-4o-mini",
         response_format:{type:"json_object"},
         messages:[
-          {role:"system", content:"Sos el director de contenido de una inmobiliaria premium de Costa del Este, Argentina. Armas el plan mensual de redes. "+tonoTxt+" Espanol rioplatense, ortografia y tildes perfectas. MIX OBLIGATORIO aproximado: 35% carruseles educativos (3-4 placas, estilo estudio), 20% posts simples UGC aspiracionales (1 placa, foto casual), 20% posts de propiedad (slot para cargar fotos reales de una propiedad activa), 15% marca personal, 10% prueba social (vendida/caso cerrado). Distribui los dias del 1 al 30 de forma pareja (si son pocos posteos, dias tipo lunes-miercoles-viernes). Titulos: max 7 palabras, con 2-4 palabras clave entre asteriscos para dorado y saltos de linea con \\n. Para carruseles educativos, cada uno debe girar en torno a UN dato, regla practica o error comun real del rubro (no un titulo generico tipo 'evalua tus opciones'). Si el dato es una cifra oficial o tasa vigente que no sabes con certeza, usa [X%] o [dato] como marcador, pero el titulo igual debe nombrar la regla o el error concreto, no quedarse en una frase vacia. Para tipo propiedad: titulo y sec son sugerencia de enfoque y en nota indica que propiedad conviene elegir (ej: 'eleg\u00ed una casa con parque destacable'). Campo fondo: descripcion de imagen para generar con IA acorde al tipo (escena UGC casual, o atmosfera premium para estudio); vacio para tipo propiedad. Responde SOLO JSON valido: {\"items\":[{\"dia\":1,\"tipo\":\"carrusel|ugc|propiedad|personal|vendida\",\"tono\":\"profesional|picante|cercano\",\"placas\":4,\"titulo\":\"...\",\"sec\":\"...\",\"cta\":\"...\",\"fondo\":\"...\",\"nota\":\"...\"}]} con exactamente "+n+" items ordenados por dia. CTA solo donde corresponde (ultima placa de carrusel o post simple)."},
+          {role:"system", content:"Sos el director de contenido de una inmobiliaria premium de Costa del Este, Argentina. Armas el plan mensual de redes. "+tonoTxt+" Espanol rioplatense, ortografia y tildes perfectas. MIX OBLIGATORIO aproximado: 35% carruseles educativos (3-4 placas, estilo estudio), 20% posts simples UGC aspiracionales (1 placa, foto casual), 20% posts de propiedad (slot para cargar fotos reales de una propiedad activa), 15% marca personal, 10% prueba social (vendida/caso cerrado). Distribui los dias del 1 al 30 de forma pareja (si son pocos posteos, dias tipo lunes-miercoles-viernes). Titulos: max 7 palabras, con 2-4 palabras clave entre asteriscos para dorado y saltos de linea con \\n. No inventes cifras ni datos legales: usa [X%] o [dato] como marcador. Para tipo propiedad: titulo y sec son sugerencia de enfoque y en nota indica que propiedad conviene elegir (ej: 'eleg\u00ed una casa con parque destacable'). Campo fondo: descripcion de imagen para generar con IA acorde al tipo (escena UGC casual, o atmosfera premium para estudio); vacio para tipo propiedad. Responde SOLO JSON valido: {\"items\":[{\"dia\":1,\"tipo\":\"carrusel|ugc|propiedad|personal|vendida\",\"tono\":\"profesional|picante|cercano\",\"placas\":4,\"titulo\":\"...\",\"sec\":\"...\",\"cta\":\"...\",\"fondo\":\"...\",\"nota\":\"...\"}]} con exactamente "+n+" items ordenados por dia. CTA solo donde corresponde (ultima placa de carrusel o post simple)."},
           {role:"user", content:"Genera el plan de "+n+" posteos del mes."+(foco? " Foco comercial del mes: "+foco+".":"")}
         ]
     });
@@ -1134,43 +1472,54 @@ function formatearPrecio(raw){
   return t; // ya trae moneda o texto (ej: "Consultar", "U$S 95.000")
 }
 
+function drawImageCover(img, x, y, w, h){
+  const sc = Math.max(w/img.width, h/img.height);
+  const iw = img.width*sc, ih = img.height*sc;
+  ctx.drawImage(img, x+(w-iw)/2, y+(h-ih)/2, iw, ih);
+}
+
 function renderProp(P){
   ctx.clearRect(0,0,W,H);
   ctx.fillStyle = "#0c0d0f"; ctx.fillRect(0,0,W,H);
+  if(prop.esLote && prop.curF===-1){ renderFichaLotePortada(P); return; }
   const total = prop.fotos.length;
   if(!total){
     ctx.fillStyle = GRISC; ctx.font = "400 40px Inter"; ctx.textBaseline="top";
-    ctx.fillText("Agreg\u00e1 fotos de la propiedad", PAD, H/2-20);
+    ctx.fillText(prop.esLote ? "Complet\u00e1 la ficha o agreg\u00e1 fotos del entorno" : "Agreg\u00e1 fotos de la propiedad", PAD, H/2-20);
     $("dl1").removeAttribute("href");
     return;
   }
   const idx = Math.min(prop.curF, total-1);
   const f = prop.fotos[idx];
-  const pr = PRESETS[f.preset];
 
-  // foto con preset
+  if(f.vista==="potencial" && f.iaPotencial){ renderPropPotencial(P, f, idx, total); return; }
+
+  const pr = PRESETS[f.preset];
+  const modoActivo = (f.vista!=="original" && f.vista!=="potencial" && f.ia[f.vista]) ? f.vista : null;
+  const esIA = !!modoActivo;
+  const srcImg = esIA ? f.ia[modoActivo] : f.img;
+
+  // foto con preset (la version IA ya viene estilizada, no se le aplica preset de revelado)
   ctx.save();
-  ctx.filter = pr.filtro;
-  const img = f.img;
-  const sc = Math.max(W/img.width, H/img.height);
-  const iw = img.width*sc, ih = img.height*sc;
-  ctx.drawImage(img,(W-iw)/2,(H-ih)/2,iw,ih);
+  ctx.filter = esIA ? "none" : pr.filtro;
+  drawImageCover(srcImg, 0, 0, W, H);
   ctx.restore();
-  // capa de calidez de marca
-  if(pr.calidez>0){
+  if(!esIA && pr.calidez>0){
     ctx.fillStyle = `rgba(242,180,60,${pr.calidez})`;
     ctx.fillRect(0,0,W,H);
   }
-  // vineta suave
+  // vineta suave (mas leve si ya es una foto de IA con su propio clima)
+  const vAlpha = esIA ? 0.06 : 0.30;
   const vg = ctx.createRadialGradient(W/2,H/2,H*.35, W/2,H/2,H*.75);
-  vg.addColorStop(0,"rgba(0,0,0,0)"); vg.addColorStop(1,"rgba(0,0,0,.30)");
+  vg.addColorStop(0,"rgba(0,0,0,0)"); vg.addColorStop(1,`rgba(0,0,0,${vAlpha})`);
   ctx.fillStyle = vg; ctx.fillRect(0,0,W,H);
   // degrades para legibilidad
   let g = ctx.createLinearGradient(0,0,0,P.logoY+220);
-  g.addColorStop(0,"rgba(8,9,11,.72)"); g.addColorStop(1,"rgba(8,9,11,0)");
+  g.addColorStop(0, esIA ? "rgba(8,9,11,.42)" : "rgba(8,9,11,.72)"); g.addColorStop(1,"rgba(8,9,11,0)");
   ctx.fillStyle = g; ctx.fillRect(0,0,W,P.logoY+220);
-  const conTextos = $("pTextosTodas").checked || idx===0;
-  const bottomH = conTextos ? (fmt==="story"? 760 : 620) : (fmt==="story"? 460 : 340);
+  const conInfo = !!f.showInfo;
+  const caption = (f.caption||"").trim();
+  const bottomH = conInfo ? (fmt==="story"? 760:620) : caption ? (fmt==="story"? 420:320) : (fmt==="story"? 240:190);
   g = ctx.createLinearGradient(0,H-bottomH,0,H);
   g.addColorStop(0,"rgba(8,9,11,0)"); g.addColorStop(1,"rgba(8,9,11,.94)");
   ctx.fillStyle = g; ctx.fillRect(0,H-bottomH,W,bottomH);
@@ -1178,15 +1527,25 @@ function renderProp(P){
   drawDots(W-30-3*17, P.dotTop, 4, 7);
   drawLogo(P);
 
+  // etiqueta discreta de edicion IA
+  if(esIA){
+    ctx.save();
+    ctx.textBaseline="top"; ctx.font="600 24px Inter";
+    ctx.shadowColor="rgba(0,0,0,.7)"; ctx.shadowBlur=8;
+    const t = MODOS_IA[modoActivo].etiqueta;
+    ctx.fillStyle="rgba(255,255,255,.8)";
+    ctx.fillText(t, W-PAD-ctx.measureText(t).width, P.logoY+6);
+    ctx.restore();
+  }
+
   // bloque de textos (anclado abajo)
-  if(conTextos){
+  if(conInfo){
     ctx.textBaseline = "top";
     const op = $("pOp").value.trim();
     const tit = $("pTitulo").value.trim();
     const ubi = $("pUbi").value.trim();
     const precio = formatearPrecio($("pPrecio").value);
 
-    // medir alturas
     const titFont = "700 78px Oswald";
     const titLines = tit ? wrapSpans(parseSpans(tit.toUpperCase()), titFont, W-2*PAD) : [];
     let bloque = 0;
@@ -1224,12 +1583,133 @@ function renderProp(P){
         ctx.fillText(precio, W-PAD-pw, y-4);
       }
     }
+  }else if(caption){
+    ctx.textBaseline = "top";
+    const capFont = "700 46px Inter";
+    const lines = wrapSpans(parseSpans(caption), capFont, W-2*PAD-56);
+    let y = H - P.lineOff - 46 - lines.length*58;
+    lines.forEach(line=>{
+      ctx.font = capFont;
+      const lw = line.reduce((a,t)=> a+ctx.measureText(t.t).width, 0);
+      roundRect(PAD, y, lw+48, 66, 14);
+      ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fill();
+      let x = PAD+24;
+      line.forEach(tok=>{ ctx.fillStyle = tok.g?ORO:"#ffffff"; ctx.fillText(tok.t, x, y+12); x += ctx.measureText(tok.t).width; });
+      y += 58;
+    });
   }
 
   const conContacto = $("pContacto").checked && idx===total-1;
   drawPie(P, conContacto, total, idx, P.deslizar);
   $("dl1").href = cv.toDataURL("image/jpeg", .92);
   $("dl1").download = nombreBase()+"_"+String(idx+1).padStart(2,"0")+".jpg";
+}
+
+function renderFichaLotePortada(P){
+  const pal = PALETA[0];
+  let dg = ctx.createLinearGradient(0,0,W*.6,H);
+  dg.addColorStop(0, pal.a); dg.addColorStop(1, pal.b);
+  ctx.fillStyle = dg; ctx.fillRect(0,0,W,H);
+  const rg = ctx.createRadialGradient(W*.8,H*.25,60,W*.8,H*.25,900);
+  rg.addColorStop(0, rgba(ORO,.06)); rg.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle = rg; ctx.fillRect(0,0,W,H);
+
+  drawDots(W-30-3*17, P.dotTop, 4, 7);
+  drawDots(24, H-P.dotBotOff-6*17, 3, 7);
+  drawLogo(P);
+
+  ctx.textBaseline = "top";
+  let y = P.logoY + 110;
+  const op = $("pOp").value.trim();
+  if(op){
+    ctx.font = "700 28px Inter"; ctx.save(); ctx.letterSpacing = "4px";
+    const tw = ctx.measureText(op.toUpperCase()).width;
+    roundRect(PAD, y, tw+44, 48, 11); ctx.fillStyle = ORO; ctx.fill();
+    ctx.fillStyle = "#141414"; ctx.fillText(op.toUpperCase(), PAD+22, y+11);
+    ctx.restore(); y += 62;
+  }
+  const tit = $("pTitulo").value.trim();
+  if(tit){
+    const titFont = "700 58px Oswald";
+    const lineas = wrapSpans(parseSpans(tit.toUpperCase()), titFont, W-2*PAD);
+    lineas.forEach(line=>{
+      ctx.font = titFont; let x = PAD;
+      line.forEach(tok=>{ ctx.fillStyle = tok.g?ORO:BLANCO; ctx.fillText(tok.t,x,y); x += ctx.measureText(tok.t).width; });
+      y += 66;
+    });
+  }
+  const ubi = $("pUbi").value.trim();
+  if(ubi){ ctx.font = "400 30px Inter"; ctx.fillStyle = "#ddd9cf"; ctx.fillText(ubi, PAD, y+4); y += 46; }
+  y += 24;
+
+  const areaH = H - P.lineOff - 70 - y;
+  const planH = Math.max(220, Math.round(areaH*0.52));
+  dibujarPoligonoLote(ctx, prop.lote.forma, prop.lote.mirror, prop.lote.medidas, PAD, y, W-2*PAD, planH);
+  dibujarDatosLote(ctx, PAD, y+planH+30, W-2*PAD, prop.lote);
+
+  const precio = formatearPrecio($("pPrecio").value);
+  if(precio){
+    ctx.font = "700 44px Oswald"; ctx.fillStyle = ORO; ctx.textBaseline="top";
+    ctx.fillText(precio, PAD, H-P.lineOff-58);
+  }
+
+  drawPie(P, (prop.fotos.length===0 && $("pContacto").checked), 1, 0, false);
+
+  $("dl1").href = cv.toDataURL("image/jpeg", .92);
+  $("dl1").download = nombreBase()+"_00-ficha.jpg";
+}
+
+function renderPropPotencial(P, f, idx, total){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = "#0c0d0f"; ctx.fillRect(0,0,W,H);
+  const gap = 6;
+  const midY = H*0.5;
+  const pr = PRESETS[f.preset];
+
+  ctx.save();
+  ctx.filter = pr.filtro;
+  drawImageCover(f.img, 0, 0, W, midY-gap/2);
+  ctx.restore();
+  if(pr.calidez>0){ ctx.fillStyle = `rgba(242,180,60,${pr.calidez})`; ctx.fillRect(0,0,W,midY-gap/2); }
+
+  drawImageCover(f.iaPotencial, 0, midY+gap/2, W, H-(midY+gap/2));
+
+  ctx.fillStyle = ORO; ctx.fillRect(0, midY-gap/2, W, gap);
+
+  let g = ctx.createLinearGradient(0,0,0,110);
+  g.addColorStop(0,"rgba(0,0,0,.4)"); g.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,110);
+  g = ctx.createLinearGradient(0,midY+gap/2,0,midY+gap/2+110);
+  g.addColorStop(0,"rgba(0,0,0,.4)"); g.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle = g; ctx.fillRect(0,midY+gap/2,W,110);
+  g = ctx.createLinearGradient(0,H-240,0,H);
+  g.addColorStop(0,"rgba(0,0,0,0)"); g.addColorStop(1,"rgba(0,0,0,.8)");
+  ctx.fillStyle = g; ctx.fillRect(0,H-240,W,240);
+
+  drawLogo(P);
+  drawDots(W-30-3*17, 26, 4, 5);
+
+  // etiquetas sutiles: solo texto con sombra, sin cajas grandes
+  ctx.textBaseline = "top";
+  ctx.save();
+  ctx.font = "700 26px Inter"; ctx.shadowColor="rgba(0,0,0,.75)"; ctx.shadowBlur=8;
+  ctx.fillStyle = "rgba(255,255,255,.92)";
+  ctx.fillText("HOY", PAD, 30);
+  ctx.restore();
+
+  const yPot = midY+gap/2+26;
+  ctx.save();
+  ctx.font = "700 26px Inter"; ctx.shadowColor="rgba(0,0,0,.75)"; ctx.shadowBlur=8;
+  ctx.fillStyle = ORO;
+  ctx.fillText("POTENCIAL", PAD, yPot);
+  ctx.font = "500 21px Inter"; ctx.fillStyle = "rgba(255,255,255,.85)";
+  ctx.fillText("Recreaci\u00f3n ilustrativa \u00b7 no representa el estado actual", PAD, yPot+34);
+  ctx.restore();
+
+  const conContacto = $("pContacto").checked && idx===total-1;
+  drawPie(P, conContacto, total, idx, P.deslizar);
+  $("dl1").href = cv.toDataURL("image/jpeg", .92);
+  $("dl1").download = nombreBase()+"_"+String(idx+1).padStart(2,"0")+"_potencial.jpg";
 }
 
 /* ---------- MODULO DE VIDEO ---------- */
@@ -1562,23 +2042,384 @@ async function generarVideo(){
 $("vGen").addEventListener("click", generarVideo);
 $("vFiltro").addEventListener("change", ()=>{ if(mode==="vid") render(); });
 
+/* ---------- MODULO: EDITOR DE FOTOS (para web / CRM, sin marca) ---------- */
+let editorFotos = [];
+let fCur = 0;
+const cvEdit = $("cvEdit"), ctxE = cvEdit.getContext("2d");
+
+$("fArchivos").addEventListener("change", e=>{
+  const files = [...e.target.files];
+  let pend = files.length;
+  files.forEach(f=>{
+    const img = new Image();
+    img.onload = ()=>{
+      editorFotos.push({img, preset:"ext", vista:"original", ia:{atardecer:null,despejado:null,ordenado:null}, iaPotencial:null, iaPotencialPrompt:""});
+      if(--pend===0){ fCur = editorFotos.length-1; fDrawTabs(); fDrawEditor(); fRender(); }
+    };
+    img.src = URL.createObjectURL(f);
+  });
+  e.target.value = "";
+});
+$("fRatio").addEventListener("change", fRender);
+$("fAviso").addEventListener("change", fRender);
+$("fAddFicha").addEventListener("click", ()=>{
+  editorFotos.push({
+    tipo:"ficha",
+    lote:{ forma:"rect", medidas:{}, superficie:"", catastro:"", mirror:false,
+      servicios:{agua:false,luz:false,gas:false,cloaca:false,pavimento:false} },
+    op:"", titulo:"", ubicacion:"", precio:"", incluirLogo:true, fondo:"pizarra"
+  });
+  fCur = editorFotos.length-1;
+  fDrawTabs(); fDrawEditor(); fRender();
+});
+
+function wRedibujarMedidas(f){
+  const box = $("wMedidas");
+  const F = FORMAS_LOTE[f.lote.forma] || FORMAS_LOTE.rect;
+  box.innerHTML = F.lados.map(lado=>`
+    <div style="flex:1;min-width:120px">
+      <label style="font-weight:400;font-size:.76rem;color:var(--gris);margin:0 0 3px">${lado}</label>
+      <input type="text" class="wLado" data-lado="${lado}" value="${(f.lote.medidas[lado]||"").replace(/"/g,'&quot;')}" placeholder="metros">
+    </div>`).join("");
+  box.querySelectorAll(".wLado").forEach(inp=>{
+    inp.addEventListener("input", e=>{ f.lote.medidas[e.target.dataset.lado] = e.target.value; fRender(); });
+  });
+}
+
+function fDrawTabs(){
+  const t = $("fTabs"); t.innerHTML = "";
+  editorFotos.forEach((f,i)=>{
+    const b = document.createElement("button");
+    b.className = "tab"+(i===fCur?" sel":"");
+    b.textContent = f.tipo==="ficha" ? "Ficha" : "Foto "+(i+1);
+    b.onclick = ()=>{ fCur=i; fDrawTabs(); fDrawEditor(); fRender(); };
+    t.appendChild(b);
+  });
+}
+
+function fDrawEditor(){
+  const box = $("fEditor");
+  if(!editorFotos.length){ box.innerHTML = ""; return; }
+  const f = editorFotos[fCur];
+
+  if(f.tipo==="ficha"){
+    const opts = Object.keys(FORMAS_LOTE).map(k=>`<option value="${k}" ${f.lote.forma===k?"selected":""}>${FORMAS_LOTE[k].n}</option>`).join("");
+    box.innerHTML = `
+      <div class="slidebox">
+        <div class="row">
+          <div><label>Operaci&oacute;n</label><input type="text" id="wOp" value="${f.op.replace(/"/g,'&quot;')}" placeholder="Ej: VENTA"></div>
+          <div><label>Precio</label><input type="text" id="wPrecio" value="${f.precio.replace(/"/g,'&quot;')}" placeholder="Ej: USD 45.000"></div>
+        </div>
+        <label>T&iacute;tulo corto</label>
+        <input type="text" id="wTitulo" value="${f.titulo.replace(/"/g,'&quot;')}" placeholder="Ej: Lote 419m&sup2; en Costa del Este">
+        <label>Ubicaci&oacute;n</label>
+        <input type="text" id="wUbi" value="${f.ubicacion.replace(/"/g,'&quot;')}" placeholder="Ej: Las Margaritas 708, Costa del Este">
+        <div class="row" style="margin-top:8px">
+          <div><label>Forma del lote</label><select id="wForma">${opts}</select></div>
+          <div><label>Superficie (m&sup2;)</label><input type="text" id="wSuperficie" value="${(f.lote.superficie||"").replace(/"/g,'&quot;')}"></div>
+        </div>
+        <label>Fondo de la pieza</label>
+        <select id="wFondo">
+          <option value="pizarra" ${f.fondo==="pizarra"||!f.fondo?"selected":""}>Gris pizarra (suave, recomendado para web)</option>
+          <option value="bruma" ${f.fondo==="bruma"?"selected":""}>Bruma (a&uacute;n m&aacute;s claro)</option>
+          <option value="oscuro" ${f.fondo==="oscuro"?"selected":""}>Oscuro (estilo marca / redes)</option>
+        </select>
+        <label class="chk"><input type="checkbox" id="wMirror" ${f.lote.mirror?"checked":""}> Espejar plano</label>
+        <label class="chk"><input type="checkbox" id="wLogo" ${f.incluirLogo?"checked":""}> Incluir logo</label>
+        <label style="margin-top:8px">Medidas de cada lado</label>
+        <div class="row" id="wMedidas" style="row-gap:8px"></div>
+        <label style="margin-top:10px">Servicios disponibles</label>
+        <div class="row3">
+          <label class="chk"><input type="checkbox" id="wServAgua" ${f.lote.servicios.agua?"checked":""}> Agua</label>
+          <label class="chk"><input type="checkbox" id="wServLuz" ${f.lote.servicios.luz?"checked":""}> Luz</label>
+          <label class="chk"><input type="checkbox" id="wServGas" ${f.lote.servicios.gas?"checked":""}> Gas</label>
+        </div>
+        <div class="row3" style="margin-top:6px">
+          <label class="chk"><input type="checkbox" id="wServCloaca" ${f.lote.servicios.cloaca?"checked":""}> Cloacas</label>
+          <label class="chk"><input type="checkbox" id="wServPavimento" ${f.lote.servicios.pavimento?"checked":""}> Pavimento</label>
+          <div></div>
+        </div>
+        <label style="margin-top:10px">Nomenclatura catastral</label>
+        <input type="text" id="wCatastro" value="${(f.lote.catastro||"").replace(/"/g,'&quot;')}" placeholder="Ej: Partido 123 &middot; Circ. 4 &middot; Secc. CC &middot; Mz 98 &middot; Parc. 10">
+        <div class="bgopts" style="margin-top:10px">
+          <button class="btn sec mini" id="fIzq" type="button">&larr; Mover</button>
+          <button class="btn sec mini" id="fDer" type="button">Mover &rarr;</button>
+          <button class="btn sec mini" id="fDel" type="button">Quitar</button>
+        </div>
+      </div>`;
+    ["wOp","wTitulo","wUbi","wPrecio"].forEach(id=>{
+      const campo = {wOp:"op",wTitulo:"titulo",wUbi:"ubicacion",wPrecio:"precio"}[id];
+      $(id).addEventListener("input", e=>{ f[campo] = e.target.value; fRender(); });
+    });
+    $("wForma").addEventListener("change", e=>{ f.lote.forma = e.target.value; wRedibujarMedidas(f); fRender(); });
+    $("wFondo").addEventListener("change", e=>{ f.fondo = e.target.value; fRender(); });
+    $("wSuperficie").addEventListener("input", e=>{ f.lote.superficie = e.target.value; fRender(); });
+    $("wCatastro").addEventListener("input", e=>{ f.lote.catastro = e.target.value; fRender(); });
+    $("wMirror").addEventListener("change", e=>{ f.lote.mirror = e.target.checked; fRender(); });
+    $("wLogo").addEventListener("change", e=>{ f.incluirLogo = e.target.checked; fRender(); });
+    [["wServAgua","agua"],["wServLuz","luz"],["wServGas","gas"],["wServCloaca","cloaca"],["wServPavimento","pavimento"]].forEach(([id,key])=>{
+      $(id).addEventListener("change", e=>{ f.lote.servicios[key] = e.target.checked; fRender(); });
+    });
+    wRedibujarMedidas(f);
+    $("fIzq").onclick = ()=>{ const i=fCur; if(i>0){ [editorFotos[i-1],editorFotos[i]]=[editorFotos[i],editorFotos[i-1]]; fCur=i-1; fDrawTabs(); fRender(); } };
+    $("fDer").onclick = ()=>{ const i=fCur; if(i<editorFotos.length-1){ [editorFotos[i+1],editorFotos[i]]=[editorFotos[i],editorFotos[i+1]]; fCur=i+1; fDrawTabs(); fRender(); } };
+    $("fDel").onclick = ()=>{ editorFotos.splice(fCur,1); fCur=Math.max(0,fCur-1); fDrawTabs(); fDrawEditor(); fRender(); };
+    return;
+  }
+  const presetOpts = Object.keys(PRESETS).map(k=>`<option value="${k}" ${f.preset===k?"selected":""}>${PRESETS[k].n}</option>`).join("");
+  box.innerHTML = `
+    <div class="slidebox">
+      <div class="row">
+        <div>
+          <label>Preset de edici&oacute;n</label>
+          <select id="fPreset">${presetOpts}</select>
+        </div>
+        <div>
+          <label>Orden</label>
+          <div class="bgopts">
+            <button class="btn sec mini" id="fIzq" type="button">&larr; Mover</button>
+            <button class="btn sec mini" id="fDer" type="button">Mover &rarr;</button>
+            <button class="btn sec mini" id="fDel" type="button">Quitar</button>
+          </div>
+        </div>
+      </div>
+      <label style="margin-top:10px">Editar con IA <span class="opt">(opcional)</span></label>
+      <div class="tabs" id="fVista">
+        <button type="button" class="tab ${f.vista==="original"?"sel":""}" data-vista="original">Foto original</button>
+        ${Object.keys(MODOS_IA).map(k=>`
+        <button type="button" class="tab ${f.vista===k?"sel":""}" data-vista="${k}">${MODOS_IA[k].label}${f.ia[k]?"":" \u2728"}</button>
+        ${f.ia[k]?`<button type="button" class="btn sec mini" data-regen="${k}" title="Regenerar">\u21bb</button>`:""}
+        `).join("")}
+        <button type="button" class="tab ${f.vista==="potencial"?"sel":""}" data-vista="potencial">Potencial${f.iaPotencial?"":" \u2728"}</button>
+      </div>
+      <div id="fPotBox" style="display:${f.vista==="potencial"?"":"none"};margin-top:8px">
+        <label>Qu&eacute; agregar <span class="opt">(ej: living amoblado moderno, deck de madera)</span></label>
+        <input type="text" id="fPotPrompt" value="${(f.iaPotencialPrompt||"").replace(/"/g,'&quot;')}">
+        <button class="btn sec mini" id="fPotGen" type="button" style="margin-top:8px">${f.iaPotencial?"Regenerar potencial":"Generar potencial"}</button>
+      </div>
+    </div>`;
+  $("fPreset").addEventListener("change", e=>{ f.preset = e.target.value; fRender(); });
+  $("fIzq").onclick = ()=>{ const i=fCur; if(i>0){ [editorFotos[i-1],editorFotos[i]]=[editorFotos[i],editorFotos[i-1]]; fCur=i-1; fDrawTabs(); fRender(); } };
+  $("fDer").onclick = ()=>{ const i=fCur; if(i<editorFotos.length-1){ [editorFotos[i+1],editorFotos[i]]=[editorFotos[i],editorFotos[i+1]]; fCur=i+1; fDrawTabs(); fRender(); } };
+  $("fDel").onclick = ()=>{ editorFotos.splice(fCur,1); fCur=Math.max(0,fCur-1); fDrawTabs(); fDrawEditor(); fRender(); };
+
+  $("fVista").querySelectorAll("[data-vista]").forEach(b=>{
+    b.onclick = async ()=>{
+      const v = b.dataset.vista;
+      if(v==="potencial"){ f.vista="potencial"; fDrawEditor(); fRender(); return; }
+      if(v==="original"){ f.vista="original"; fDrawEditor(); fRender(); return; }
+      if(!f.ia[v]){ await generarEdicionIA(f, v, "fStatus"); } else { f.vista = v; }
+      fDrawEditor(); fRender();
+    };
+  });
+  $("fVista").querySelectorAll("[data-regen]").forEach(b=>{
+    b.onclick = async (e)=>{
+      e.stopPropagation();
+      const v = b.dataset.regen;
+      f.ia[v] = null;
+      await generarEdicionIA(f, v, "fStatus");
+      fDrawEditor(); fRender();
+    };
+  });
+  const btnPot = $("fPotGen");
+  if(btnPot) btnPot.onclick = async ()=>{
+    f.iaPotencialPrompt = $("fPotPrompt").value.trim();
+    await generarPotencial(f, "fStatus");
+    fDrawEditor(); fRender();
+  };
+}
+
+function fNombreArchivo(i){
+  const fecha = new Date();
+  const mes = fecha.getFullYear()+"-"+String(fecha.getMonth()+1).padStart(2,"0");
+  const item = editorFotos[i];
+  if(item && item.tipo==="ficha") return mes+"_web-ficha-lote.jpg";
+  return mes+"_web-foto_"+String(i+1).padStart(2,"0")+".jpg";
+}
+
+function renderFichaLoteWeb(f, cw, ch){
+  ctxE.clearRect(0,0,cw,ch);
+  const TONOS_FONDO = {
+    oscuro:  { a:"#17181c", b:"#0b0c0e", brillo:.07 },
+    pizarra: { a:"#514f49", b:"#3a3833", brillo:.10 },
+    bruma:   { a:"#6c6961", b:"#524f48", brillo:.10 }
+  };
+  const tono = TONOS_FONDO[f.fondo] || TONOS_FONDO.pizarra;
+  let dg = ctxE.createLinearGradient(0,0,cw*.65,ch);
+  dg.addColorStop(0, tono.a); dg.addColorStop(1, tono.b);
+  ctxE.fillStyle = dg; ctxE.fillRect(0,0,cw,ch);
+  const rg = ctxE.createRadialGradient(cw*.82,ch*.22,40,cw*.82,ch*.22,Math.max(cw,ch)*.7);
+  rg.addColorStop(0, `rgba(242,226,60,${tono.brillo})`); rg.addColorStop(1,"rgba(0,0,0,0)");
+  ctxE.fillStyle = rg; ctxE.fillRect(0,0,cw,ch);
+  const pad = Math.round(Math.min(cw,ch)*0.06);
+  const horizontal = cw >= ch;
+
+  if(f.incluirLogo && logoImg){
+    const lw = Math.round(Math.min(cw,ch)*0.16), lh = lw*logoImg.height/logoImg.width;
+    ctxE.drawImage(logoImg, pad, pad*0.6, lw, lh);
+  }
+
+  ctxE.textBaseline = "top";
+  let headY = f.incluirLogo && logoImg ? pad*0.6 + Math.round(Math.min(cw,ch)*0.16)*(logoImg?logoImg.height/logoImg.width:0) + pad*0.5 : pad;
+  if(f.op.trim()){
+    ctxE.font = "700 "+Math.round(ch*0.032)+"px Inter"; ctxE.save(); ctxE.letterSpacing="3px";
+    const tw = ctxE.measureText(f.op.trim().toUpperCase()).width;
+    roundRect(pad, headY, tw+Math.round(ch*0.05), Math.round(ch*0.055), 10);
+    ctxE.fillStyle = ORO; ctxE.fill();
+    ctxE.fillStyle = "#141414"; ctxE.fillText(f.op.trim().toUpperCase(), pad+Math.round(ch*0.025), headY+Math.round(ch*0.014));
+    ctxE.restore(); headY += Math.round(ch*0.075);
+  }
+  if(f.titulo.trim()){
+    const tf = "700 "+Math.round(ch*0.055)+"px Oswald";
+    const lineas = wrapSpans(parseSpans(f.titulo.trim().toUpperCase()), tf, (horizontal? cw*0.46 : cw*0.9));
+    lineas.forEach(line=>{
+      ctxE.font = tf; let x=pad;
+      line.forEach(tok=>{ ctxE.fillStyle = tok.g?ORO:BLANCO; ctxE.fillText(tok.t,x,headY); x+=ctxE.measureText(tok.t).width; });
+      headY += Math.round(ch*0.062);
+    });
+  }
+  if(f.ubicacion.trim()){ ctxE.font="400 "+Math.round(ch*0.03)+"px Inter"; ctxE.fillStyle="#ddd9cf"; ctxE.fillText(f.ubicacion.trim(), pad, headY+4); headY += Math.round(ch*0.05); }
+
+  const contentY = headY + Math.round(ch*0.03);
+  if(horizontal){
+    const colW = (cw - pad*3)/2;
+    const planoH = ch - contentY - pad;
+    dibujarPoligonoLote(ctxE, f.lote.forma, f.lote.mirror, f.lote.medidas, pad, contentY, colW, planoH);
+    dibujarDatosLote(ctxE, pad*2+colW, contentY, colW, f.lote);
+    if(f.precio.trim()){
+      ctxE.font = "700 "+Math.round(ch*0.045)+"px Oswald"; ctxE.fillStyle = ORO;
+      ctxE.fillText(formatearPrecio(f.precio), pad*2+colW, ch-pad-Math.round(ch*0.06));
+    }
+  }else{
+    const planoH = Math.round((ch-contentY-pad)*0.5);
+    dibujarPoligonoLote(ctxE, f.lote.forma, f.lote.mirror, f.lote.medidas, pad, contentY, cw-2*pad, planoH);
+    dibujarDatosLote(ctxE, pad, contentY+planoH+Math.round(ch*0.03), cw-2*pad, f.lote);
+    if(f.precio.trim()){
+      ctxE.font = "700 "+Math.round(ch*0.04)+"px Oswald"; ctxE.fillStyle = ORO;
+      ctxE.fillText(formatearPrecio(f.precio), pad, ch-pad-Math.round(ch*0.05));
+    }
+  }
+
+  $("fDl1").href = cvEdit.toDataURL("image/jpeg", .95);
+  $("fDl1").download = fNombreArchivo(fCur);
+}
+
+function fRender(){
+  if(!editorFotos.length){
+    ctxE.clearRect(0,0,cvEdit.width,cvEdit.height);
+    ctxE.fillStyle = "#111"; ctxE.fillRect(0,0,cvEdit.width,cvEdit.height);
+    ctxE.fillStyle = GRISC; ctxE.font = "400 32px Inter"; ctxE.textBaseline="top";
+    ctxE.fillText("Agreg\u00e1 una foto para editar", 30, cvEdit.height/2-16);
+    $("fDl1").removeAttribute("href");
+    return;
+  }
+  const f = editorFotos[fCur];
+
+  if(f.tipo==="ficha"){
+    const ratio = $("fRatio").value;
+    let cw, ch;
+    if(ratio==="orig"){ cw=1920; ch=1080; }
+    else{ const mapa={ "169":[1920,1080], "43":[1600,1200], "11":[1440,1440] }; [cw,ch]=mapa[ratio]; }
+    if(cvEdit.width!==cw || cvEdit.height!==ch){ cvEdit.width=cw; cvEdit.height=ch; }
+    renderFichaLoteWeb(f, cw, ch);
+    return;
+  }
+
+  const pr = PRESETS[f.preset];
+  const modoActivo = (f.vista!=="original" && f.vista!=="potencial" && f.ia[f.vista]) ? f.vista
+                    : (f.vista==="potencial" && f.iaPotencial ? "potencial" : null);
+  const esIA = !!modoActivo;
+  const srcImg = modoActivo==="potencial" ? f.iaPotencial : (esIA ? f.ia[modoActivo] : f.img);
+
+  // tamano de canvas segun el formato elegido
+  const ratio = $("fRatio").value;
+  let cw, ch;
+  if(ratio==="orig"){
+    const maxLado = 2200;
+    if(srcImg.width >= srcImg.height){ cw = Math.min(maxLado, srcImg.width); ch = Math.round(cw*srcImg.height/srcImg.width); }
+    else{ ch = Math.min(maxLado, srcImg.height); cw = Math.round(ch*srcImg.width/srcImg.height); }
+  }else{
+    const mapa = { "169":[1920,1080], "43":[1600,1200], "11":[1440,1440] };
+    [cw,ch] = mapa[ratio];
+  }
+  if(cvEdit.width!==cw || cvEdit.height!==ch){ cvEdit.width=cw; cvEdit.height=ch; }
+
+  ctxE.clearRect(0,0,cw,ch);
+  ctxE.save();
+  ctxE.filter = esIA ? "none" : pr.filtro;
+  const sc = Math.max(cw/srcImg.width, ch/srcImg.height);
+  const iw = srcImg.width*sc, ih = srcImg.height*sc;
+  ctxE.drawImage(srcImg, (cw-iw)/2, (ch-ih)/2, iw, ih);
+  ctxE.restore();
+  if(!esIA && pr.calidez>0){ ctxE.fillStyle = `rgba(242,180,60,${pr.calidez})`; ctxE.fillRect(0,0,cw,ch); }
+
+  // aviso de edicion IA: obligatorio y bloqueado si es Potencial
+  const chkAviso = $("fAviso");
+  const forzado = modoActivo==="potencial";
+  chkAviso.disabled = forzado;
+  if(forzado) chkAviso.checked = true;
+  if(esIA && chkAviso.checked){
+    const etiqueta = forzado ? "Recreaci\u00f3n ilustrativa con IA \u00b7 no representa el estado actual" : MODOS_IA[modoActivo].etiqueta;
+    ctxE.save();
+    const fs = Math.max(20, Math.round(ch*0.026));
+    ctxE.font = "600 "+fs+"px Inter"; ctxE.textBaseline="top";
+    ctxE.shadowColor="rgba(0,0,0,.75)"; ctxE.shadowBlur=8;
+    ctxE.fillStyle = forzado ? "#f2e23c" : "rgba(255,255,255,.88)";
+    ctxE.fillText(etiqueta, ch*0.035, ch*0.035);
+    ctxE.restore();
+  }
+
+  $("fDl1").href = cvEdit.toDataURL("image/jpeg", .95);
+  $("fDl1").download = fNombreArchivo(fCur);
+}
+
+$("fDlAll").onclick = async ()=>{
+  if(!editorFotos.length) return;
+  const prev = fCur;
+  const usarZip = editorFotos.length > 1 && typeof JSZip !== "undefined";
+  const zip = usarZip ? new JSZip() : null;
+  for(let i=0;i<editorFotos.length;i++){
+    fCur = i; fRender();
+    await new Promise(res=>setTimeout(res,80));
+    const dataUrl = cvEdit.toDataURL("image/jpeg", .95);
+    const nombre = fNombreArchivo(i);
+    if(usarZip){ zip.file(nombre, dataUrl.split(",")[1], {base64:true}); }
+    else{ const a=document.createElement("a"); a.href=dataUrl; a.download=nombre; a.click(); await new Promise(res=>setTimeout(res,300)); }
+  }
+  if(usarZip){
+    const blob = await zip.generateAsync({type:"blob"});
+    const fecha = new Date();
+    const mes = fecha.getFullYear()+"-"+String(fecha.getMonth()+1).padStart(2,"0");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = mes+"_web-fotos.zip";
+    a.click();
+    setTimeout(()=> URL.revokeObjectURL(a.href), 5000);
+  }
+  fCur = prev; fRender();
+  $("fStatus").textContent = "Listo: "+editorFotos.length+" foto(s) descargadas.";
+  $("fStatus").className = "status ok";
+};
+
 CAMPOS.forEach(id=> $(id).addEventListener("input", ()=>{ render(); guardarIdentidad(); }));
 CHECKS.forEach(id=> $(id).addEventListener("change", ()=>{ if(id==="logoTrans") procesarLogo(); render(); guardarIdentidad(); }));
 
 $("dlAll").onclick = async ()=>{
   const esProp = mode==="prop";
-  const total = esProp ? prop.fotos.length : slides.length;
+  const secuenciaProp = esProp ? (prop.esLote ? [-1, ...prop.fotos.map((_,i)=>i)] : prop.fotos.map((_,i)=>i)) : null;
+  const total = esProp ? secuenciaProp.length : slides.length;
   if(!total) return;
   const prev = esProp ? prop.curF : cur;
   const base = nombreBase();
   const usarZip = total > 1 && typeof JSZip !== "undefined";
   const zip = usarZip ? new JSZip() : null;
   for(let i=0;i<total;i++){
-    if(esProp) prop.curF = i; else cur = i;
+    if(esProp) prop.curF = secuenciaProp[i]; else cur = i;
     render();
     await new Promise(res=>setTimeout(res,120));
     const dataUrl = cv.toDataURL("image/jpeg", .92);
-    const nombre = base+"_"+String(i+1).padStart(2,"0")+".jpg";
+    const esFicha = esProp && secuenciaProp[i]===-1;
+    const nombre = esFicha ? base+"_00-ficha.jpg" : base+"_"+String(i+1).padStart(2,"0")+".jpg";
     if(usarZip){
       zip.file(nombre, dataUrl.split(",")[1], {base64:true});
     }else{
