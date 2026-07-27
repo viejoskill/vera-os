@@ -201,11 +201,14 @@
             <input type="text" id="pPrecio" placeholder="Ej: USD 120.000">
           </div>
         </div>
+        <label>Precio anterior <span class="opt">(opcional; se muestra tachado arriba del precio actual, para mostrar rebaja)</span></label>
+        <input type="text" id="pPrecioAntes" placeholder="Ej: USD 145.000">
         <label>T&iacute;tulo corto</label>
         <input type="text" id="pTitulo" placeholder="Ej: Casa 3 ambientes con parque">
         <label>Ubicaci&oacute;n</label>
         <input type="text" id="pUbi" placeholder="Ej: Zona bosque &middot; Costa del Este">
         <label class="chk"><input type="checkbox" id="pContacto" checked> Datos de la inmobiliaria en la &uacute;ltima foto</label>
+        <label class="chk"><input type="checkbox" id="pAvisoIA" checked> Mostrar aviso "Ambientaci&oacute;n con IA" en Atardecer / D&iacute;a despejado / Despejar</label>
         <label class="chk"><input type="checkbox" id="pEsLote"> Es un lote (agrega una ficha t&eacute;cnica como primera placa)</label>
 
         <div id="pLoteBox" style="display:none">
@@ -1041,7 +1044,8 @@ async function generarPotencial(f, statusId){
     st.textContent = "Potencial listo. Se exporta en formato antes/despu\u00e9s."; st.className="status ok";
   }catch(e){ st.textContent = e.message; st.className="status err"; }
 }
-["pOp","pPrecio","pTitulo","pUbi"].forEach(id=> $(id).addEventListener("input", render));
+["pOp","pPrecio","pPrecioAntes","pTitulo","pUbi"].forEach(id=> $(id).addEventListener("input", render));
+$("pAvisoIA").addEventListener("change", render);
 ["pContacto"].forEach(id=> $(id).addEventListener("change", render));
 
 /* ---------- CALENDARIO MENSUAL ---------- */
@@ -1527,8 +1531,8 @@ function renderProp(P){
   drawDots(W-30-3*17, P.dotTop, 4, 7);
   drawLogo(P);
 
-  // etiqueta discreta de edicion IA
-  if(esIA){
+  // etiqueta discreta de edicion IA (tildable; Atardecer/Dia despejado/Despejar son ambientacion, no invencion)
+  if(esIA && $("pAvisoIA").checked){
     ctx.save();
     ctx.textBaseline="top"; ctx.font="600 24px Inter";
     ctx.shadowColor="rgba(0,0,0,.7)"; ctx.shadowBlur=8;
@@ -1545,6 +1549,7 @@ function renderProp(P){
     const tit = $("pTitulo").value.trim();
     const ubi = $("pUbi").value.trim();
     const precio = formatearPrecio($("pPrecio").value);
+    const precioAntes = formatearPrecio($("pPrecioAntes").value);
 
     const titFont = "700 78px Oswald";
     const titLines = tit ? wrapSpans(parseSpans(tit.toUpperCase()), titFont, W-2*PAD) : [];
@@ -1552,6 +1557,7 @@ function renderProp(P){
     if(op) bloque += 66;
     bloque += titLines.length * 88;
     if(ubi || precio) bloque += 66;
+    if(precioAntes) bloque += 40;
     let y = H - P.lineOff - 46 - bloque;
 
     if(op){
@@ -1578,9 +1584,18 @@ function renderProp(P){
         ctx.fillText(ubi, PAD, y+8);
       }
       if(precio){
+        let py = y-4;
+        if(precioAntes){
+          ctx.font = "500 30px Inter"; ctx.fillStyle = "rgba(255,255,255,.55)";
+          const paw = ctx.measureText(precioAntes).width;
+          const antesY = py - 38;
+          ctx.fillText(precioAntes, W-PAD-paw, antesY);
+          ctx.strokeStyle = "rgba(255,255,255,.6)"; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(W-PAD-paw, antesY+16); ctx.lineTo(W-PAD, antesY+16); ctx.stroke();
+        }
         ctx.font = "700 54px Oswald"; ctx.fillStyle = ORO;
         const pw = ctx.measureText(precio).width;
-        ctx.fillText(precio, W-PAD-pw, y-4);
+        ctx.fillText(precio, W-PAD-pw, py);
       }
     }
   }else if(caption){
@@ -1648,9 +1663,20 @@ function renderFichaLotePortada(P){
   dibujarDatosLote(ctx, PAD, y+planH+30, W-2*PAD, prop.lote);
 
   const precio = formatearPrecio($("pPrecio").value);
+  const precioAntesLote = formatearPrecio($("pPrecioAntes").value);
   if(precio){
-    ctx.font = "700 44px Oswald"; ctx.fillStyle = ORO; ctx.textBaseline="top";
-    ctx.fillText(precio, PAD, H-P.lineOff-58);
+    ctx.textBaseline="top";
+    let py = H-P.lineOff-58;
+    if(precioAntesLote){
+      ctx.font = "500 28px Inter"; ctx.fillStyle = "rgba(255,255,255,.55)";
+      const paw = ctx.measureText(precioAntesLote).width;
+      const antesY = py - 36;
+      ctx.fillText(precioAntesLote, PAD, antesY);
+      ctx.strokeStyle = "rgba(255,255,255,.6)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(PAD, antesY+15); ctx.lineTo(PAD+paw, antesY+15); ctx.stroke();
+    }
+    ctx.font = "700 44px Oswald"; ctx.fillStyle = ORO;
+    ctx.fillText(precio, PAD, py);
   }
 
   drawPie(P, (prop.fotos.length===0 && $("pContacto").checked), 1, 0, false);
@@ -1719,7 +1745,7 @@ $("vArchivos").addEventListener("change", e=>{
   let pend = files.length;
   files.forEach(f=>{
     const img = new Image();
-    img.onload = ()=>{ vid.items.push({img}); if(--pend===0){ vid.curI = vid.items.length-1; vidTabs(); vidEditor(); render(); } };
+    img.onload = ()=>{ vid.items.push({img, vista:"original", iaPotencial:null, iaPotencialPrompt:""}); if(--pend===0){ vid.curI = vid.items.length-1; vidTabs(); vidEditor(); render(); } };
     img.src = URL.createObjectURL(f);
   });
   e.target.value = "";
@@ -1729,7 +1755,7 @@ function vidTabs(){
   vid.items.forEach((it,i)=>{
     const b = document.createElement("button");
     b.className = "tab"+(i===vid.curI?" sel":"");
-    b.textContent = "Foto "+(i+1);
+    b.textContent = "Foto "+(i+1)+(it.iaPotencial?" \u2728":"");
     b.onclick = ()=>{ vid.curI=i; vidTabs(); vidEditor(); render(); };
     t.appendChild(b);
   });
@@ -1737,6 +1763,7 @@ function vidTabs(){
 function vidEditor(){
   const box = $("vEditor");
   if(!vid.items.length){ box.innerHTML=""; return; }
+  const it = vid.items[vid.curI];
   box.innerHTML = `
     <div class="slidebox">
       <div class="bgopts">
@@ -1744,10 +1771,35 @@ function vidEditor(){
         <button class="btn sec mini" id="vDer" type="button">Mover &rarr;</button>
         <button class="btn sec mini" id="vDel" type="button">Quitar</button>
       </div>
+      <label style="margin-top:10px">Esta foto en el video</label>
+      <div class="tabs" id="vVista">
+        <button type="button" class="tab ${it.vista==="original"?"sel":""}" data-vista="original">Real</button>
+        <button type="button" class="tab ${it.vista==="potencial"?"sel":""}" data-vista="potencial">Potencial${it.iaPotencial?"":" \u2728"}</button>
+      </div>
+      <div id="vPotBox" style="display:${it.vista==="potencial"?"":"none"};margin-top:8px">
+        <label>Qu&eacute; mostrar <span class="opt">(ej: living amoblado moderno, casa refaccionada, jard&iacute;n prolijo)</span></label>
+        <input type="text" id="vPotPrompt" value="${(it.iaPotencialPrompt||"").replace(/"/g,'&quot;')}">
+        <button class="btn sec mini" id="vPotGen" type="button" style="margin-top:8px">${it.iaPotencial?"Regenerar potencial":"Generar potencial"}</button>
+      </div>
+      <div class="status" id="vIaStatus"></div>
+      <div class="hint" style="margin-top:8px">Las fotos marcadas Potencial se agrupan al final del video autom&aacute;ticamente, con un barrido dorado en el corte y el aviso de recreaci&oacute;n visible todo el tiempo que dura esa parte.</div>
     </div>`;
   $("vIzq").onclick = ()=>{ const i=vid.curI; if(i>0){ [vid.items[i-1],vid.items[i]]=[vid.items[i],vid.items[i-1]]; vid.curI=i-1; vidTabs(); render(); } };
   $("vDer").onclick = ()=>{ const i=vid.curI; if(i<vid.items.length-1){ [vid.items[i+1],vid.items[i]]=[vid.items[i],vid.items[i+1]]; vid.curI=i+1; vidTabs(); render(); } };
   $("vDel").onclick = ()=>{ vid.items.splice(vid.curI,1); vid.curI=Math.max(0,vid.curI-1); vidTabs(); vidEditor(); render(); };
+  $("vVista").querySelectorAll("[data-vista]").forEach(b=>{
+    b.onclick = async ()=>{
+      const v = b.dataset.vista;
+      if(v==="potencial"){ it.vista="potencial"; vidEditor(); render(); return; }
+      it.vista = "original"; vidEditor(); render();
+    };
+  });
+  const btnPot = $("vPotGen");
+  if(btnPot) btnPot.onclick = async ()=>{
+    it.iaPotencialPrompt = $("vPotPrompt").value.trim();
+    await generarPotencial(it, "vIaStatus");
+    vidEditor(); render();
+  };
 }
 const FILTROSV = {
   no:    { f:"none", calidez:0, vineta:0 },
@@ -1855,15 +1907,28 @@ function renderVidPreview(P){
   ctx.clearRect(0,0,W,H);
   ctx.fillStyle = "#0c0d0f"; ctx.fillRect(0,0,W,H);
   const it = vid.items[vid.curI];
-  if(it && it.img){ drawCoverKB(it.img, 1.06, 0, 0); capasFiltro(); }
+  const esPot = it && it.vista==="potencial" && it.iaPotencial;
+  const srcImg = it ? (esPot ? it.iaPotencial : it.img) : null;
+  if(srcImg){ drawCoverKB(srcImg, 1.06, 0, 0); capasFiltro(); }
   else{
     ctx.fillStyle = GRISC; ctx.font = "400 40px Inter"; ctx.textBaseline="top";
     ctx.fillText("Agreg\u00e1 fotos para el video", PAD, H/2-20);
   }
   drawLogo(P);
   drawTituloVideo(P, 1);
+  if(esPot) dibujarAvisoRecreacionVideo(P, 1);
   $("dl1").removeAttribute("href");
   $("dl1").removeAttribute("download");
+}
+function dibujarAvisoRecreacionVideo(P, alpha){
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, alpha);
+  ctx.textBaseline = "top"; ctx.font = "600 27px Inter";
+  ctx.shadowColor = "rgba(0,0,0,.8)"; ctx.shadowBlur = 10;
+  const t = "Recreaci\u00f3n ilustrativa \u00b7 no representa el estado actual";
+  ctx.fillStyle = ORO;
+  ctx.fillText(t, PAD, P.logoY + 130);
+  ctx.restore();
 }
 async function generarVideo(){
   const st = $("stVid");
@@ -1905,8 +1970,11 @@ async function generarVideo(){
   try{
     {
       const dur = parseInt($("vDur").value)*1000;
-      const fotos = vid.items.filter(it=>it.img);
-      await Promise.all(fotos.map(f=> f.img.decode ? f.img.decode().catch(()=>{}) : 0));
+      const esPot = it => it.vista==="potencial" && !!it.iaPotencial;
+      const srcDe = it => esPot(it) ? it.iaPotencial : it.img;
+      const todas = vid.items.filter(it=>it.img);
+      const fotos = [...todas.filter(it=>!esPot(it)), ...todas.filter(it=>esPot(it))];
+      await Promise.all(fotos.map(f=>{ const img=srcDe(f); return img.decode ? img.decode().catch(()=>{}) : 0; }));
       // motor de movimientos: paneos laterales en camara lenta (duran mas), sin repetir el anterior
       const MOVS = [
         { mk:()=>({z0:1.02,z1:1.16,x0:0,x1:0,y0:0,y1:0}),        mul:1.0 },
@@ -1932,6 +2000,7 @@ async function generarVideo(){
       let prevT = -1;
       const trans = fotos.map((_,i)=>{
         if(i===fotos.length-1) return null;
+        if(esPot(fotos[i]) !== esPot(fotos[i+1])) return "dorado";
         if(selT!=="mix") return selT;
         let t; do{ t = Math.floor(Math.random()*TIPOS_T.length); }while(t===prevT);
         prevT = t; return TIPOS_T[t];
@@ -1939,7 +2008,7 @@ async function generarVideo(){
       const suave = p => .5 - .5*Math.cos(Math.PI*p);
       const drawFoto = (i,p)=>{
         const k = kb[i];
-        drawCoverKB(fotos[i].img, k.z0+(k.z1-k.z0)*p, k.x0+(k.x1-k.x0)*p, k.y0+(k.y1-k.y0)*p);
+        drawCoverKB(srcDe(fotos[i]), k.z0+(k.z1-k.z0)*p, k.x0+(k.x1-k.x0)*p, k.y0+(k.y1-k.y0)*p);
       };
       // pre-roll: primer cuadro quieto mientras el codificador entra en calor
       {
@@ -1949,6 +2018,7 @@ async function generarVideo(){
             ctx.clearRect(0,0,W,H);
             drawFoto(0,0);
             capasFiltro(); drawLogo(P); drawTituloVideo(P, 1);
+            if(esPot(fotos[0])) dibujarAvisoRecreacionVideo(P, 1);
             capturar();
             if(performance.now()-ini2 < 700) requestAnimationFrame(paso); else res();
           };
@@ -1993,6 +2063,7 @@ async function generarVideo(){
             drawLogo(P);
             tGlobal = performance.now()-t0;
             if(tGlobal < tituloHasta) drawTituloVideo(P, tGlobal>tituloHasta-600 ? (tituloHasta-tGlobal)/600 : 1);
+            if(esPot(fotos[i]) || (enSalida && esPot(fotos[i+1]))) dibujarAvisoRecreacionVideo(P, 1);
             capturar();
             progreso(Math.min(1, tGlobal/totalMs));
             if(t<D) requestAnimationFrame(paso); else res();
@@ -2067,7 +2138,7 @@ $("fAddFicha").addEventListener("click", ()=>{
     tipo:"ficha",
     lote:{ forma:"rect", medidas:{}, superficie:"", catastro:"", mirror:false,
       servicios:{agua:false,luz:false,gas:false,cloaca:false,pavimento:false} },
-    op:"", titulo:"", ubicacion:"", precio:"", incluirLogo:true, fondo:"pizarra"
+    op:"", titulo:"", ubicacion:"", precio:"", precioAntes:"", incluirLogo:true, fondo:"pizarra"
   });
   fCur = editorFotos.length-1;
   fDrawTabs(); fDrawEditor(); fRender();
@@ -2110,6 +2181,8 @@ function fDrawEditor(){
           <div><label>Operaci&oacute;n</label><input type="text" id="wOp" value="${f.op.replace(/"/g,'&quot;')}" placeholder="Ej: VENTA"></div>
           <div><label>Precio</label><input type="text" id="wPrecio" value="${f.precio.replace(/"/g,'&quot;')}" placeholder="Ej: USD 45.000"></div>
         </div>
+        <label>Precio anterior <span class="opt">(opcional, se muestra tachado)</span></label>
+        <input type="text" id="wPrecioAntes" value="${(f.precioAntes||"").replace(/"/g,'&quot;')}" placeholder="Ej: USD 55.000">
         <label>T&iacute;tulo corto</label>
         <input type="text" id="wTitulo" value="${f.titulo.replace(/"/g,'&quot;')}" placeholder="Ej: Lote 419m&sup2; en Costa del Este">
         <label>Ubicaci&oacute;n</label>
@@ -2147,8 +2220,8 @@ function fDrawEditor(){
           <button class="btn sec mini" id="fDel" type="button">Quitar</button>
         </div>
       </div>`;
-    ["wOp","wTitulo","wUbi","wPrecio"].forEach(id=>{
-      const campo = {wOp:"op",wTitulo:"titulo",wUbi:"ubicacion",wPrecio:"precio"}[id];
+    ["wOp","wTitulo","wUbi","wPrecio","wPrecioAntes"].forEach(id=>{
+      const campo = {wOp:"op",wTitulo:"titulo",wUbi:"ubicacion",wPrecio:"precio",wPrecioAntes:"precioAntes"}[id];
       $(id).addEventListener("input", e=>{ f[campo] = e.target.value; fRender(); });
     });
     $("wForma").addEventListener("change", e=>{ f.lote.forma = e.target.value; wRedibujarMedidas(f); fRender(); });
@@ -2287,16 +2360,36 @@ function renderFichaLoteWeb(f, cw, ch){
     dibujarPoligonoLote(ctxE, f.lote.forma, f.lote.mirror, f.lote.medidas, pad, contentY, colW, planoH);
     dibujarDatosLote(ctxE, pad*2+colW, contentY, colW, f.lote);
     if(f.precio.trim()){
+      let py = ch-pad-Math.round(ch*0.06);
+      if((f.precioAntes||"").trim()){
+        ctxE.font = "500 "+Math.round(ch*0.025)+"px Inter"; ctxE.fillStyle = "rgba(255,255,255,.55)";
+        const antes = formatearPrecio(f.precioAntes);
+        const aw = ctxE.measureText(antes).width;
+        const ay = py - Math.round(ch*0.045);
+        ctxE.fillText(antes, pad*2+colW, ay);
+        ctxE.strokeStyle="rgba(255,255,255,.6)"; ctxE.lineWidth=2;
+        ctxE.beginPath(); ctxE.moveTo(pad*2+colW, ay+Math.round(ch*0.015)); ctxE.lineTo(pad*2+colW+aw, ay+Math.round(ch*0.015)); ctxE.stroke();
+      }
       ctxE.font = "700 "+Math.round(ch*0.045)+"px Oswald"; ctxE.fillStyle = ORO;
-      ctxE.fillText(formatearPrecio(f.precio), pad*2+colW, ch-pad-Math.round(ch*0.06));
+      ctxE.fillText(formatearPrecio(f.precio), pad*2+colW, py);
     }
   }else{
     const planoH = Math.round((ch-contentY-pad)*0.5);
     dibujarPoligonoLote(ctxE, f.lote.forma, f.lote.mirror, f.lote.medidas, pad, contentY, cw-2*pad, planoH);
     dibujarDatosLote(ctxE, pad, contentY+planoH+Math.round(ch*0.03), cw-2*pad, f.lote);
     if(f.precio.trim()){
+      let py = ch-pad-Math.round(ch*0.05);
+      if((f.precioAntes||"").trim()){
+        ctxE.font = "500 "+Math.round(ch*0.022)+"px Inter"; ctxE.fillStyle = "rgba(255,255,255,.55)";
+        const antes = formatearPrecio(f.precioAntes);
+        const aw = ctxE.measureText(antes).width;
+        const ay = py - Math.round(ch*0.04);
+        ctxE.fillText(antes, pad, ay);
+        ctxE.strokeStyle="rgba(255,255,255,.6)"; ctxE.lineWidth=2;
+        ctxE.beginPath(); ctxE.moveTo(pad, ay+Math.round(ch*0.013)); ctxE.lineTo(pad+aw, ay+Math.round(ch*0.013)); ctxE.stroke();
+      }
       ctxE.font = "700 "+Math.round(ch*0.04)+"px Oswald"; ctxE.fillStyle = ORO;
-      ctxE.fillText(formatearPrecio(f.precio), pad, ch-pad-Math.round(ch*0.05));
+      ctxE.fillText(formatearPrecio(f.precio), pad, py);
     }
   }
 
