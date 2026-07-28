@@ -208,7 +208,7 @@
         <label>Ubicaci&oacute;n</label>
         <input type="text" id="pUbi" placeholder="Ej: Zona bosque &middot; Costa del Este">
         <label class="chk"><input type="checkbox" id="pContacto" checked> Datos de la inmobiliaria en la &uacute;ltima foto</label>
-        <label class="chk"><input type="checkbox" id="pAvisoIA" checked> Mostrar aviso "Ambientaci&oacute;n con IA" en Atardecer / D&iacute;a despejado / Despejar</label>
+        <label class="chk"><input type="checkbox" id="pAvisoIA" checked> Mostrar aviso de edici&oacute;n con IA (Atardecer, D&iacute;a despejado, Despejar y Potencial)</label>
         <label class="chk"><input type="checkbox" id="pEsLote"> Es un lote (agrega una ficha t&eacute;cnica como primera placa)</label>
 
         <div id="pLoteBox" style="display:none">
@@ -247,12 +247,26 @@
           </div>
         </div>
 
+        <label class="chk"><input type="checkbox" id="pPortada"> Agregar placa de portada / invitaci&oacute;n (t&iacute;tulo + subt&iacute;tulo + CTA, sin numeraci&oacute;n, ideal para Historia)</label>
+        <div id="pPortadaBox" style="display:none">
+          <div class="slidebox" style="margin-top:10px">
+            <label>T&iacute;tulo <span class="opt">(*palabra* = dorado)</span></label>
+            <input type="text" id="portTitulo" placeholder="Ej: NUEVO *INGRESO*">
+            <label>Subt&iacute;tulo <span class="opt">(opcional)</span></label>
+            <input type="text" id="portSub" placeholder="Ej: Mir&aacute; el posteo completo">
+            <label>CTA <span class="opt">(opcional; pastilla dorada)</span></label>
+            <input type="text" id="portCta" placeholder="Ej: DESLIZ&Aacute; PARA VER M&Aacute;S">
+            <label>Color de fondo</label>
+            <select id="portColor"></select>
+          </div>
+        </div>
+
         <label style="margin-top:14px">Fotos de la propiedad <span class="opt">(pod&eacute;s subir varias juntas; cada una es una placa editable, como en el carrusel)</span></label>
         <label class="btn sec filelbl">Agregar fotos<input type="file" id="pFotos" accept="image/*" multiple></label>
         <div class="tabs" id="pTabs"></div>
         <div id="pEditor"></div>
         <div class="hint">Exterior: contraste y saturaci&oacute;n marcados, cielos vivos. Interior: levanta bastante las sombras, contraste suave. Blanco y Negro: editorial, alto contraste. As&iacute; todas las propiedades mantienen el mismo estilo.</div>
-        <div class="hint" style="margin-top:6px"><b>Atardecer</b> ambienta la foto real (luz, cielo, luces prendidas) sin agregar nada. <b>Potencial</b> muestra el ambiente con elementos que hoy no est&aacute;n (muebles, deck, jard&iacute;n) &mdash; siempre se exporta en formato antes/despu&eacute;s, etiquetado como recreaci&oacute;n ilustrativa. Us&aacute; Potencial con criterio: es para inspirar, no para prometer algo que no se entrega.</div>
+        <div class="hint" style="margin-top:6px"><b>Atardecer</b> ambienta la foto real (luz, cielo, luces prendidas) sin agregar nada. <b>Potencial</b> muestra el ambiente con elementos que hoy no est&aacute;n (muebles, deck, jard&iacute;n) &mdash; eleg&iacute; formato comparativa o foto completa. Us&aacute; Potencial con criterio: es para inspirar, no para prometer algo que no se entrega.</div>
       </div>
 
       <div class="panel" id="panelCal" style="display:none">
@@ -349,7 +363,7 @@
             <button type="button" class="btn sec" id="fAddFicha" style="margin-top:8px;width:100%">+ Ficha de lote</button>
           </div>
         </div>
-        <label class="chk"><input type="checkbox" id="fAviso" checked> Incluir aviso de edici&oacute;n con IA en la esquina (obligatorio en Potencial)</label>
+        <label class="chk"><input type="checkbox" id="fAviso" checked> Incluir aviso de edici&oacute;n con IA en la esquina (Atardecer, D&iacute;a despejado, Despejar y Potencial)</label>
         <div class="tabs" id="fTabs"></div>
         <div id="fEditor"></div>
 
@@ -360,7 +374,7 @@
           <button class="btn sec" id="fDlAll" type="button">Descargar todas</button>
         </div>
         <div class="status" id="fStatus"></div>
-        <div class="hint">Fotos limpias, sin logo ni textos de marca &mdash; listas para tu web o CRM. Atardecer / D&iacute;a despejado / Despejar llevan un aviso chico opcional. Potencial siempre lleva el aviso, no se puede quitar.</div>
+        <div class="hint">Fotos limpias, sin logo ni textos de marca &mdash; listas para tu web o CRM. El aviso de edici&oacute;n con IA es opcional en los 4 modos. Us&aacute; Potencial con criterio.</div>
       </div>
     </div>
 
@@ -872,7 +886,7 @@ $("pFotos").addEventListener("change", e=>{
   files.forEach(f=>{
     const img = new Image();
     const esPrimera = prop.fotos.length===0 && files.indexOf(f)===0;
-    img.onload = ()=>{ prop.fotos.push({img, preset:"ext", caption:"", showInfo: esPrimera, vista:"original", ia:{atardecer:null, despejado:null, ordenado:null}, iaPotencial:null, iaPotencialPrompt:""}); if(--pend===0){ prop.curF = prop.fotos.length-1; drawPTabs(); drawPEditor(); render(); } };
+    img.onload = ()=>{ prop.fotos.push({img, preset:"ext", caption:"", showInfo: esPrimera, vista:"original", ia:{atardecer:null, despejado:null, ordenado:null}, iaPotencial:null, iaPotencialPrompt:"", potencialFormato:"comparativa", potTitulo:"", potSub:"", potCta:""}); if(--pend===0){ prop.curF = prop.fotos.length-1; drawPTabs(); drawPEditor(); render(); } };
     img.src = URL.createObjectURL(f);
   });
   e.target.value = "";
@@ -910,8 +924,30 @@ $("lMirror").addEventListener("change", e=>{ prop.lote.mirror = e.target.checked
 });
 lRedibujarCamposMedidas();
 
+prop.mostrarPortada = false;
+prop.portada = { titulo:"", subtitulo:"", cta:"", bgColor:0 };
+$("portColor").innerHTML = PALETA.map((p,i)=>`<option value="${i}">${p.n}</option>`).join("");
+$("pPortada").addEventListener("change", e=>{
+  prop.mostrarPortada = e.target.checked;
+  $("pPortadaBox").style.display = prop.mostrarPortada ? "" : "none";
+  if(prop.mostrarPortada) prop.curF = -2;
+  else if(prop.curF===-2) prop.curF = prop.esLote ? -1 : (prop.fotos.length ? 0 : -1);
+  drawPTabs(); render();
+});
+$("portTitulo").addEventListener("input", e=>{ prop.portada.titulo = e.target.value; render(); });
+$("portSub").addEventListener("input", e=>{ prop.portada.subtitulo = e.target.value; render(); });
+$("portCta").addEventListener("input", e=>{ prop.portada.cta = e.target.value; render(); });
+$("portColor").addEventListener("change", e=>{ prop.portada.bgColor = parseInt(e.target.value); render(); });
+
 function drawPTabs(){
   const t = $("pTabs"); t.innerHTML = "";
+  if(prop.mostrarPortada){
+    const bP = document.createElement("button");
+    bP.className = "tab"+(prop.curF===-2?" sel":"");
+    bP.textContent = "Portada";
+    bP.onclick = ()=>{ prop.curF=-2; drawPTabs(); drawPEditor(); render(); };
+    t.appendChild(bP);
+  }
   if(prop.esLote){
     const bF = document.createElement("button");
     bF.className = "tab"+(prop.curF===-1?" sel":"");
@@ -929,6 +965,7 @@ function drawPTabs(){
 }
 function drawPEditor(){
   const box = $("pEditor");
+  if(prop.curF===-2){ box.innerHTML = '<div class="hint">Complet\u00e1 el t\u00edtulo, subt\u00edtulo, CTA y color arriba. Esta placa no lleva foto ni numeraci\u00f3n.</div>'; return; }
   if(prop.curF===-1){ box.innerHTML = '<div class="hint">Complet\u00e1 los datos de la ficha arriba. Us\u00e1 "Agregar fotos" para sumar fotos del entorno debajo de la ficha.</div>'; return; }
   if(!prop.fotos.length){ box.innerHTML = ""; return; }
   const f = prop.fotos[prop.curF];
@@ -965,6 +1002,17 @@ function drawPEditor(){
       <div id="pPotBox" style="display:${f.vista==="potencial"?"":"none"};margin-top:8px">
         <label>Qu&eacute; agregar <span class="opt">(ej: living amoblado moderno, deck de madera, jard&iacute;n prolijo)</span></label>
         <input type="text" id="pPotPrompt" value="${(f.iaPotencialPrompt||"").replace(/"/g,'&quot;')}" placeholder="Describ\u00ed qu\u00e9 quer\u00e9s mostrar">
+        <label style="margin-top:8px">Formato de salida</label>
+        <div class="tabs" id="pPotFormato" style="margin-top:0">
+          <button type="button" class="tab ${(f.potencialFormato||"comparativa")==="comparativa"?"sel":""}" data-formato="comparativa">Comparativa antes/despu&eacute;s</button>
+          <button type="button" class="tab ${f.potencialFormato==="completa"?"sel":""}" data-formato="completa">Foto completa</button>
+        </div>
+        <label style="margin-top:10px">T&iacute;tulo de esta placa <span class="opt">(*palabra* = dorado; opcional)</span></label>
+        <input type="text" id="pPotTitulo" value="${(f.potTitulo||"").replace(/"/g,'&quot;')}" placeholder="Ej: SI TUVIERAS ESTE *LOCAL*&hellip;">
+        <label>Subt&iacute;tulo <span class="opt">(opcional)</span></label>
+        <input type="text" id="pPotSub" value="${(f.potSub||"").replace(/"/g,'&quot;')}" placeholder="Ej: &iquest;Qu&eacute; abrir&iacute;as?">
+        <label>CTA <span class="opt">(opcional; pastilla dorada)</span></label>
+        <input type="text" id="pPotCta" value="${(f.potCta||"").replace(/"/g,'&quot;')}" placeholder="Ej: CONSULTANOS">
         <button class="btn sec mini" id="pPotGen" type="button" style="margin-top:8px">${f.iaPotencial?"Regenerar potencial":"Generar potencial"}</button>
       </div>
       <div class="status" id="pIaStatus"></div>
@@ -1001,6 +1049,14 @@ function drawPEditor(){
     await generarPotencial(f);
     drawPEditor(); render();
   };
+  const cajaFormato = $("pPotFormato");
+  if(cajaFormato) cajaFormato.querySelectorAll("[data-formato]").forEach(b=>{
+    b.onclick = ()=>{ f.potencialFormato = b.dataset.formato; drawPEditor(); render(); };
+  });
+  const pPotTitulo = $("pPotTitulo"), pPotSub = $("pPotSub"), pPotCta = $("pPotCta");
+  if(pPotTitulo) pPotTitulo.addEventListener("input", e=>{ f.potTitulo = e.target.value; render(); });
+  if(pPotSub) pPotSub.addEventListener("input", e=>{ f.potSub = e.target.value; render(); });
+  if(pPotCta) pPotCta.addEventListener("input", e=>{ f.potCta = e.target.value; render(); });
 }
 
 async function generarEdicionIA(f, modo, statusId){
@@ -1212,6 +1268,12 @@ function wrapSpans(spans,font,maxW){
   });
   if(line.length) lines.push(line);
   return lines;
+}
+function ladoEtiqueta(){
+  const lp = $("logoPos").value;
+  if(lp==="l") return "der";
+  if(lp==="r") return "izq";
+  return "izq";
 }
 function drawLogo(P){
   if(!$("chkLogo").checked) return;
@@ -1485,6 +1547,7 @@ function drawImageCover(img, x, y, w, h){
 function renderProp(P){
   ctx.clearRect(0,0,W,H);
   ctx.fillStyle = "#0c0d0f"; ctx.fillRect(0,0,W,H);
+  if(prop.mostrarPortada && prop.curF===-2){ renderPortadaInvitacion(P); return; }
   if(prop.esLote && prop.curF===-1){ renderFichaLotePortada(P); return; }
   const total = prop.fotos.length;
   if(!total){
@@ -1496,12 +1559,14 @@ function renderProp(P){
   const idx = Math.min(prop.curF, total-1);
   const f = prop.fotos[idx];
 
-  if(f.vista==="potencial" && f.iaPotencial){ renderPropPotencial(P, f, idx, total); return; }
+  const esPotencialComparativa = f.vista==="potencial" && f.iaPotencial && (f.potencialFormato||"comparativa")==="comparativa";
+  if(esPotencialComparativa){ renderPropPotencial(P, f, idx, total); return; }
 
   const pr = PRESETS[f.preset];
-  const modoActivo = (f.vista!=="original" && f.vista!=="potencial" && f.ia[f.vista]) ? f.vista : null;
+  const esPotencialCompleta = f.vista==="potencial" && f.iaPotencial && f.potencialFormato==="completa";
+  const modoActivo = esPotencialCompleta ? "potencial" : ((f.vista!=="original" && f.vista!=="potencial" && f.ia[f.vista]) ? f.vista : null);
   const esIA = !!modoActivo;
-  const srcImg = esIA ? f.ia[modoActivo] : f.img;
+  const srcImg = modoActivo==="potencial" ? f.iaPotencial : (esIA ? f.ia[modoActivo] : f.img);
 
   // foto con preset (la version IA ya viene estilizada, no se le aplica preset de revelado)
   ctx.save();
@@ -1523,7 +1588,13 @@ function renderProp(P){
   ctx.fillStyle = g; ctx.fillRect(0,0,W,P.logoY+220);
   const conInfo = !!f.showInfo;
   const caption = (f.caption||"").trim();
-  const bottomH = conInfo ? (fmt==="story"? 760:620) : caption ? (fmt==="story"? 420:320) : (fmt==="story"? 240:190);
+  const esPotModo = modoActivo==="potencial";
+  const potTit = esPotModo ? (f.potTitulo||"").trim() : "";
+  const potSub = esPotModo ? (f.potSub||"").trim() : "";
+  const potCta = esPotModo ? (f.potCta||"").trim() : "";
+  const hayTextoPot = !!(potTit||potSub||potCta);
+  const bottomH = esPotModo ? (hayTextoPot ? (fmt==="story"? 560:440) : (fmt==="story"? 240:190))
+    : conInfo ? (fmt==="story"? 760:620) : caption ? (fmt==="story"? 420:320) : (fmt==="story"? 240:190);
   g = ctx.createLinearGradient(0,H-bottomH,0,H);
   g.addColorStop(0,"rgba(8,9,11,0)"); g.addColorStop(1,"rgba(8,9,11,.94)");
   ctx.fillStyle = g; ctx.fillRect(0,H-bottomH,W,bottomH);
@@ -1531,19 +1602,50 @@ function renderProp(P){
   drawDots(W-30-3*17, P.dotTop, 4, 7);
   drawLogo(P);
 
-  // etiqueta discreta de edicion IA (tildable; Atardecer/Dia despejado/Despejar son ambientacion, no invencion)
+  // etiqueta discreta de edicion IA: posicion del lado libre del logo; los 4 modos, incluido Potencial, respetan el tilde
   if(esIA && $("pAvisoIA").checked){
     ctx.save();
     ctx.textBaseline="top"; ctx.font="600 24px Inter";
     ctx.shadowColor="rgba(0,0,0,.7)"; ctx.shadowBlur=8;
-    const t = MODOS_IA[modoActivo].etiqueta;
-    ctx.fillStyle="rgba(255,255,255,.8)";
-    ctx.fillText(t, W-PAD-ctx.measureText(t).width, P.logoY+6);
+    const t = modoActivo==="potencial" ? "Recreaci\u00f3n con IA" : MODOS_IA[modoActivo].etiqueta;
+    ctx.fillStyle = modoActivo==="potencial" ? ORO : "rgba(255,255,255,.8)";
+    const tx = ladoEtiqueta()==="izq" ? PAD : W-PAD-ctx.measureText(t).width;
+    ctx.fillText(t, tx, P.logoY+6);
     ctx.restore();
   }
 
   // bloque de textos (anclado abajo)
-  if(conInfo){
+  if(esPotModo){
+    // Potencial tiene su propio titulo/subtitulo/cta: no tiene sentido mostrar operacion/ubicacion/precio de una escena imaginada
+    ctx.textBaseline = "top";
+    const titFont = "700 78px Oswald";
+    const titLines = potTit ? wrapSpans(parseSpans(potTit.toUpperCase()), titFont, W-2*PAD) : [];
+    let bloque = titLines.length * 88;
+    if(potSub) bloque += 52;
+    if(potCta) bloque += 90;
+    let y = H - P.lineOff - 46 - bloque;
+    ctx.font = titFont;
+    titLines.forEach(line=>{
+      let x = PAD;
+      line.forEach(tok=>{ ctx.fillStyle = tok.g?ORO:BLANCO; ctx.font = titFont; ctx.fillText(tok.t,x,y); x+=ctx.measureText(tok.t).width; });
+      y += 88;
+    });
+    if(potSub){
+      ctx.font = "400 36px Inter"; ctx.fillStyle = "#ddd9cf";
+      ctx.fillText(potSub, PAD, y+6);
+      y += 52;
+    }
+    if(potCta){
+      y += 14;
+      ctx.font = "700 38px Inter";
+      const t = potCta.toUpperCase();
+      const tw = ctx.measureText(t).width;
+      roundRect(PAD, y, tw+64, 84, 16);
+      ctx.fillStyle = ORO; ctx.fill();
+      ctx.fillStyle = "#141414";
+      ctx.fillText(t, PAD+32, y+23);
+    }
+  }else if(conInfo){
     ctx.textBaseline = "top";
     const op = $("pOp").value.trim();
     const tit = $("pTitulo").value.trim();
@@ -1685,6 +1787,63 @@ function renderFichaLotePortada(P){
   $("dl1").download = nombreBase()+"_00-ficha.jpg";
 }
 
+function renderPortadaInvitacion(P){
+  const pal = PALETA[prop.portada.bgColor||0];
+  let dg = ctx.createLinearGradient(0,0,W*.6,H);
+  dg.addColorStop(0, pal.a); dg.addColorStop(1, pal.b);
+  ctx.fillStyle = dg; ctx.fillRect(0,0,W,H);
+  const rg = ctx.createRadialGradient(W*.8,H*.25,60,W*.8,H*.25,900);
+  rg.addColorStop(0, rgba(ORO,.07)); rg.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle = rg; ctx.fillRect(0,0,W,H);
+
+  drawDots(W-30-3*17, P.dotTop, 4, 7);
+  drawDots(24, H-P.dotBotOff-6*17, 3, 7);
+  drawLogo(P);
+
+  ctx.textBaseline = "top";
+  const titFont = "700 100px Oswald";
+  const tit = (prop.portada.titulo||"").trim().toUpperCase();
+  const lineas = tit ? wrapSpans(parseSpans(tit), titFont, W-2*PAD) : [];
+  const sub = (prop.portada.subtitulo||"").trim();
+  const subFont = "400 40px Inter";
+  const subLineas = sub ? wrapSpans(parseSpans(sub), subFont, W-2*PAD) : [];
+  const cta = (prop.portada.cta||"").trim();
+
+  let bloque = lineas.length*112;
+  if(subLineas.length) bloque += subLineas.length*52 + 20;
+  if(cta) bloque += 110;
+  let y = Math.round((H - bloque)/2);
+
+  lineas.forEach(line=>{
+    ctx.font = titFont; let x = PAD;
+    line.forEach(tok=>{ ctx.fillStyle = tok.g?ORO:BLANCO; ctx.fillText(tok.t,x,y); x += ctx.measureText(tok.t).width; });
+    y += 112;
+  });
+  if(subLineas.length){
+    subLineas.forEach(line=>{
+      ctx.font = subFont; let x = PAD;
+      line.forEach(tok=>{ ctx.fillStyle = tok.g?ORO:"#ddd9cf"; ctx.fillText(tok.t,x,y); x += ctx.measureText(tok.t).width; });
+      y += 52;
+    });
+    y += 20;
+  }
+  if(cta){
+    ctx.font = "700 42px Inter";
+    const t = cta.toUpperCase();
+    const tw = ctx.measureText(t).width;
+    roundRect(PAD, y, tw+72, 92, 18);
+    ctx.fillStyle = ORO; ctx.fill();
+    ctx.fillStyle = "#141414";
+    ctx.fillText(t, PAD+36, y+26);
+  }
+
+  const conContacto = $("pContacto").checked && prop.fotos.length===0 && !prop.esLote;
+  drawPie(P, conContacto, 1, 0, false);
+
+  $("dl1").href = cv.toDataURL("image/jpeg", .92);
+  $("dl1").download = nombreBase()+"_00-portada.jpg";
+}
+
 function renderPropPotencial(P, f, idx, total){
   ctx.clearRect(0,0,W,H);
   ctx.fillStyle = "#0c0d0f"; ctx.fillRect(0,0,W,H);
@@ -1715,22 +1874,59 @@ function renderPropPotencial(P, f, idx, total){
   drawLogo(P);
   drawDots(W-30-3*17, 26, 4, 5);
 
-  // etiquetas sutiles: solo texto con sombra, sin cajas grandes
+  // etiquetas sutiles: solo texto con sombra, sin cajas grandes; se ubican del lado libre del logo
   ctx.textBaseline = "top";
+  const lado = ladoEtiqueta();
+  const xHoy = lado==="izq" ? PAD : (()=>{ ctx.font="700 26px Inter"; return W-PAD-ctx.measureText("HOY").width; })();
   ctx.save();
   ctx.font = "700 26px Inter"; ctx.shadowColor="rgba(0,0,0,.75)"; ctx.shadowBlur=8;
   ctx.fillStyle = "rgba(255,255,255,.92)";
-  ctx.fillText("HOY", PAD, 30);
+  ctx.fillText("HOY", xHoy, 30);
   ctx.restore();
 
   const yPot = midY+gap/2+26;
   ctx.save();
   ctx.font = "700 26px Inter"; ctx.shadowColor="rgba(0,0,0,.75)"; ctx.shadowBlur=8;
   ctx.fillStyle = ORO;
-  ctx.fillText("POTENCIAL", PAD, yPot);
-  ctx.font = "500 21px Inter"; ctx.fillStyle = "rgba(255,255,255,.85)";
-  ctx.fillText("Recreaci\u00f3n ilustrativa \u00b7 no representa el estado actual", PAD, yPot+34);
+  const xPot = lado==="izq" ? PAD : W-PAD-ctx.measureText("POTENCIAL").width;
+  ctx.fillText("POTENCIAL", xPot, yPot);
+  if($("pAvisoIA").checked){
+    ctx.font = "500 21px Inter"; ctx.fillStyle = "rgba(255,255,255,.85)";
+    const xSub = lado==="izq" ? PAD : W-PAD-ctx.measureText("Recreaci\u00f3n con IA").width;
+    ctx.fillText("Recreaci\u00f3n con IA", xSub, yPot+34);
+  }
   ctx.restore();
+
+  // titulo/subtitulo/cta propios de esta placa Potencial (mitad inferior, siempre a la izquierda: el logo esta arriba, no hay colision)
+  const potTit = (f.potTitulo||"").trim();
+  const potSub = (f.potSub||"").trim();
+  const potCta = (f.potCta||"").trim();
+  if(potTit||potSub||potCta){
+    ctx.textBaseline = "top";
+    let y2 = yPot + 34 + ($("pAvisoIA").checked ? 34 : 0) + 22;
+    const titFont2 = "700 58px Oswald";
+    const lineas2 = potTit ? wrapSpans(parseSpans(potTit.toUpperCase()), titFont2, W-2*PAD) : [];
+    lineas2.forEach(line=>{
+      ctx.font = titFont2; let x = PAD;
+      line.forEach(tok=>{ ctx.fillStyle = tok.g?ORO:BLANCO; ctx.fillText(tok.t,x,y2); x += ctx.measureText(tok.t).width; });
+      y2 += 66;
+    });
+    if(potSub){
+      ctx.font = "400 30px Inter"; ctx.fillStyle = "#ddd9cf";
+      ctx.fillText(potSub, PAD, y2+4);
+      y2 += 44;
+    }
+    if(potCta){
+      y2 += 10;
+      ctx.font = "700 32px Inter";
+      const t = potCta.toUpperCase();
+      const tw = ctx.measureText(t).width;
+      roundRect(PAD, y2, tw+52, 68, 14);
+      ctx.fillStyle = ORO; ctx.fill();
+      ctx.fillStyle = "#141414";
+      ctx.fillText(t, PAD+26, y2+18);
+    }
+  }
 
   const conContacto = $("pContacto").checked && idx===total-1;
   drawPie(P, conContacto, total, idx, P.deslizar);
@@ -1925,7 +2121,7 @@ function dibujarAvisoRecreacionVideo(P, alpha){
   ctx.globalAlpha = Math.min(1, alpha);
   ctx.textBaseline = "top"; ctx.font = "600 27px Inter";
   ctx.shadowColor = "rgba(0,0,0,.8)"; ctx.shadowBlur = 10;
-  const t = "Recreaci\u00f3n ilustrativa \u00b7 no representa el estado actual";
+  const t = "Recreaci\u00f3n con IA";
   ctx.fillStyle = ORO;
   ctx.fillText(t, PAD, P.logoY + 130);
   ctx.restore();
@@ -2446,13 +2642,11 @@ function fRender(){
   ctxE.restore();
   if(!esIA && pr.calidez>0){ ctxE.fillStyle = `rgba(242,180,60,${pr.calidez})`; ctxE.fillRect(0,0,cw,ch); }
 
-  // aviso de edicion IA: obligatorio y bloqueado si es Potencial
+  // aviso de edicion IA: tildable en los 4 modos, incluido Potencial
   const chkAviso = $("fAviso");
   const forzado = modoActivo==="potencial";
-  chkAviso.disabled = forzado;
-  if(forzado) chkAviso.checked = true;
   if(esIA && chkAviso.checked){
-    const etiqueta = forzado ? "Recreaci\u00f3n ilustrativa con IA \u00b7 no representa el estado actual" : MODOS_IA[modoActivo].etiqueta;
+    const etiqueta = forzado ? "Recreaci\u00f3n con IA" : MODOS_IA[modoActivo].etiqueta;
     ctxE.save();
     const fs = Math.max(20, Math.round(ch*0.026));
     ctxE.font = "600 "+fs+"px Inter"; ctxE.textBaseline="top";
@@ -2499,20 +2693,27 @@ CHECKS.forEach(id=> $(id).addEventListener("change", ()=>{ if(id==="logoTrans") 
 
 $("dlAll").onclick = async ()=>{
   const esProp = mode==="prop";
-  const secuenciaProp = esProp ? (prop.esLote ? [-1, ...prop.fotos.map((_,i)=>i)] : prop.fotos.map((_,i)=>i)) : null;
+  const secuenciaProp = esProp ? [
+    ...(prop.mostrarPortada ? [-2] : []),
+    ...(prop.esLote ? [-1] : []),
+    ...prop.fotos.map((_,i)=>i)
+  ] : null;
   const total = esProp ? secuenciaProp.length : slides.length;
   if(!total) return;
   const prev = esProp ? prop.curF : cur;
   const base = nombreBase();
   const usarZip = total > 1 && typeof JSZip !== "undefined";
   const zip = usarZip ? new JSZip() : null;
+  let nFoto = 0;
   for(let i=0;i<total;i++){
     if(esProp) prop.curF = secuenciaProp[i]; else cur = i;
     render();
     await new Promise(res=>setTimeout(res,120));
     const dataUrl = cv.toDataURL("image/jpeg", .92);
-    const esFicha = esProp && secuenciaProp[i]===-1;
-    const nombre = esFicha ? base+"_00-ficha.jpg" : base+"_"+String(i+1).padStart(2,"0")+".jpg";
+    let nombre;
+    if(esProp && secuenciaProp[i]===-2) nombre = base+"_00-portada.jpg";
+    else if(esProp && secuenciaProp[i]===-1) nombre = base+"_"+String(prop.mostrarPortada?1:0).padStart(2,"0")+"-ficha.jpg";
+    else{ nFoto++; nombre = base+"_"+String(nFoto).padStart(2,"0")+".jpg"; }
     if(usarZip){
       zip.file(nombre, dataUrl.split(",")[1], {base64:true});
     }else{
