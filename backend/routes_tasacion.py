@@ -129,15 +129,15 @@ async def jpg(body: JpgBody):
     _center(d, y, "COSTA DEL ESTE · MAR DEL TUYÚ", _font(22), INK_SOFT)
     d.line([(150, y + 52), (930, y + 52)], fill=HAIR, width=2)
 
-    # --- Tasación + fecha ---
-    _center(d, y + 88, "TASACIÓN", _font(22), INK_SOFT)
-    _center(d, y + 122, datetime.now().strftime("%d/%m/%Y"), _font(30, True), INK)
+    # --- Tasación + fecha (cursor que fluye hacia abajo) ---
+    cur = y + 90
+    _center(d, cur, "TASACIÓN", _font(22), INK_SOFT); cur += 34
+    _center(d, cur, datetime.now().strftime("%d/%m/%Y"), _font(30, True), INK); cur += 70
 
     # --- Inmueble ---
-    yy = y + 190
     if body.direccion:
-        _center(d, yy, body.direccion, _font(34, True), INK); yy += 50
-    _center(d, yy, r["tipoNombre"].upper(), _font(23, True), GOLD_DEEP); yy += 40
+        _center(d, cur, body.direccion, _font(34, True), INK); cur += 50
+    _center(d, cur, r["tipoNombre"].upper(), _font(23, True), GOLD_DEEP); cur += 42
 
     def _i(val) -> int:
         try:
@@ -165,10 +165,10 @@ async def jpg(body: JpgBody):
     if amb:
         lineas.append(" · ".join(amb))
     for ln in lineas:
-        _center(d, yy, ln, _font(24), INK_SOFT); yy += 34
+        _center(d, cur, ln, _font(24), INK_SOFT); cur += 34
 
-    # --- Precio Varela (protagonista) ---
-    box_y = 596
+    # --- Precio Varela (protagonista) · posición dinámica bajo los datos ---
+    box_y = max(580, cur + 24)
     d.rounded_rectangle([(120, box_y), (960, box_y + 210)], radius=24, fill=CARD, outline=GOLD, width=3)
     _center(d, box_y + 34, "VALOR RECOMENDADO VARELA", _font(24, True), GOLD_DEEP)
     _center(d, box_y + 96, f"{_usd(r['cierreMin'])} – {_usd(r['cierreMax'])}", _font(52, True), INK)
@@ -179,12 +179,13 @@ async def jpg(body: JpgBody):
     _center(d, box2 + 32, "PROMEDIO DE PORTALES · REFERENCIA", _font(22, True), INK_SOFT)
     _center(d, box2 + 84, f"{_usd(r['pubMin'])} – {_usd(r['pubMax'])}", _font(38, True), INK_SOFT)
 
-    # --- Nota + footer ---
-    _center(d, 1096, "Valores orientativos sujetos a verificación in situ.", _font(18), INK_SOFT)
-    d.line([(150, 1150), (930, 1150)], fill=HAIR, width=2)
+    # --- Nota + footer (fluyen bajo la referencia) ---
+    nf = box2 + 208
+    _center(d, nf, "Valores orientativos sujetos a verificación in situ.", _font(18), INK_SOFT)
+    d.line([(150, nf + 44), (930, nf + 44)], fill=HAIR, width=2)
     if body.propietario:
-        _center(d, 1182, f"Preparada para {body.propietario}", _font(24, True), INK)
-    _center(d, 1226, body.asesor or "Varela Propiedades", _font(22), INK_SOFT)
+        _center(d, nf + 76, f"Preparada para {body.propietario}", _font(24, True), INK)
+    _center(d, nf + 120, body.asesor or "Varela Propiedades", _font(22), INK_SOFT)
 
     buf = io.BytesIO()
     img.save(buf, format="JPEG", quality=92)

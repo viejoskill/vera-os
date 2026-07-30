@@ -836,3 +836,8 @@ Pedido del usuario: JPG muy básico/feo, fondo negro, sin logo Varela, mostraba 
 - **Logo Varela**: header preparado — si existe `backend/assets/brand/varela-logo.png` lo inserta; si no, cae al wordmark tipográfico "VARELA PROPIEDADES". PENDIENTE: el usuario debe subir su logo PNG (aún no llegó; los adjuntos recientes eran capturas).
 - **Formulario** (`TasacionesScreen.tsx`): nuevos campos Semicubierto (m²), Dormitorios y Baños. Son informativos para la ficha, NO cambian el precio (el usuario ya suma el semicubierto al 50% manualmente en "Construido"). Algoritmo Varela intacto. Cochera se mantiene como estaba (tildes Estac. cubierto/descubierto).
 - Nuevos campos en JpgBody: semicubiertos, dormitorios, banos. Verificado: JPG generado OK + tsc limpio + form renderiza los 3 campos.
+
+## Logo Varela en el JPG (2026-07)
+El usuario subió su logo (JPEG amarillo sobre blanco). Como amarillo sobre crema no se lee, lo procesé a **monocromo oscuro (ink)** recortando el fondo blanco (alpha = 255-min(r,g,b)), guardado en `backend/assets/brand/varela-logo.png` (RGBA, 611×293). El endpoint `/jpg` ya lo detecta y lo inserta en el encabezado (target 400px, centrado); si no existe cae al wordmark.
+También se corrigió el layout del JPG: ahora es DINÁMICO (cursor que fluye) para que el logo más alto no empuje las líneas de terreno/dormitorios/baños detrás del recuadro de precio. Verificado con logo real: se ven todas las líneas, diseño balanceado.
+Nota: el logo se muestra en oscuro (no en su amarillo original) por legibilidad sobre el crema; se puede cambiar el tratamiento si el usuario prefiere otro.
