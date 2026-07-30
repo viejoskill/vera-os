@@ -829,3 +829,10 @@ Fixes en `mercadolibre/service.py`:
 - `_ATTR_DEFAULT`: agrega atributos obligatorios que VERA no modela. Terrenos requieren LAND_ACCESS → default "Asfalto" (245046).
 - Bug de unidad: `number_unit` tomaba `allowed_units[0]` que para terrenos era "ha" → un lote de 419 m² se publicaba como "419 ha". Ahora prefiere "m²".
 Verificado con `POST /items/validate` de ML (no crea avisos reales): terreno f4678842 → 204 OK (419 m², acceso Asfalto), casa venta → 204 OK. **Requiere REDESPLEGAR para arreglar producción.** Nota: LAND_ACCESS por defecto "Asfalto"; el usuario puede editarlo en ML si el lote es de ripio/arena.
+
+## Rediseño Tasador Manual (JPG + formulario — 2026-07)
+Pedido del usuario: JPG muy básico/feo, fondo negro, sin logo Varela, mostraba datos internos.
+- **JPG rediseñado** (`routes_tasacion.py`): paleta clara/crema premium (no más negro), acento amarillo Varela. Quitados datos internos: ya NO muestra la zona ("Zona Fondo") ni el "Coeficiente de cierre 83%". Ahora muestra: dirección, TIPO (Casa), desglose de m² (cubiertos · semicubiertos, terreno) y dormitorios · baños. Card blanca con borde dorado para "VALOR RECOMENDADO VARELA", card de referencia (promedio portales), nota "orientativos sujetos a verificación", firma del asesor.
+- **Logo Varela**: header preparado — si existe `backend/assets/brand/varela-logo.png` lo inserta; si no, cae al wordmark tipográfico "VARELA PROPIEDADES". PENDIENTE: el usuario debe subir su logo PNG (aún no llegó; los adjuntos recientes eran capturas).
+- **Formulario** (`TasacionesScreen.tsx`): nuevos campos Semicubierto (m²), Dormitorios y Baños. Son informativos para la ficha, NO cambian el precio (el usuario ya suma el semicubierto al 50% manualmente en "Construido"). Algoritmo Varela intacto. Cochera se mantiene como estaba (tildes Estac. cubierto/descubierto).
+- Nuevos campos en JpgBody: semicubiertos, dormitorios, banos. Verificado: JPG generado OK + tsc limpio + form renderiza los 3 campos.

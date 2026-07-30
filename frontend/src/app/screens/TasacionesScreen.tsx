@@ -43,7 +43,8 @@ const Chk = ({ label, checked, onChange, testid }: {
 export const TasacionesScreen = () => {
   const { displayName } = useAuthUser();
   const [f, setF] = useState({
-    tipo: 'casa', zona: 'costanera', cubiertos: '', lote: '',
+    tipo: 'casa', zona: 'costanera', cubiertos: '', semicubiertos: '', lote: '',
+    dormitorios: '', banos: '',
     calidad: 'estandar', estado: 'bueno', antiguedad: 'hasta10',
     ambientes: '2', vista: 'frente', antDepto: 'reciente',
     gas: false, cloacas: false, pileta: false, quincho: false, deck: false,
@@ -70,7 +71,10 @@ export const TasacionesScreen = () => {
   const payload = () => ({
     ...f,
     cubiertos: f.cubiertos ? Number(f.cubiertos) : null,
+    semicubiertos: f.semicubiertos ? Number(f.semicubiertos) : null,
     lote: f.lote ? Number(f.lote) : null,
+    dormitorios: f.dormitorios ? Number(f.dormitorios) : null,
+    banos: f.banos ? Number(f.banos) : null,
     asesor: displayName,
   });
 
@@ -142,6 +146,17 @@ export const TasacionesScreen = () => {
             {f.tipo !== 'lote' && <label className="tas-field"><span>{esDepto ? 'Superficie cubierta (m²)' : 'Construido (m²)'}</span>
               <input type="number" value={f.cubiertos} onChange={(e) => set('cubiertos', e.target.value)} data-testid="tas-cubiertos" /></label>}
           </div>
+
+          {f.tipo !== 'lote' && (
+            <div className="tas__row2">
+              <label className="tas-field"><span>Semicubierto (m²)</span>
+                <input type="number" value={f.semicubiertos} onChange={(e) => set('semicubiertos', e.target.value)} data-testid="tas-semicubiertos" /></label>
+              <label className="tas-field"><span>Dormitorios</span>
+                <input type="number" value={f.dormitorios} onChange={(e) => set('dormitorios', e.target.value)} data-testid="tas-dormitorios" /></label>
+              <label className="tas-field"><span>Baños</span>
+                <input type="number" value={f.banos} onChange={(e) => set('banos', e.target.value)} data-testid="tas-banos" /></label>
+            </div>
+          )}
 
           {esCasa && (
             <div className="tas__row2">

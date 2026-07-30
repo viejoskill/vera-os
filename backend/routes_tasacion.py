@@ -19,11 +19,19 @@ router = APIRouter(prefix="/tasacion", tags=["tasacion"])
 _FONT_DIR = os.path.join(os.path.dirname(__file__), "assets", "fonts")
 _FONT = os.path.join(_FONT_DIR, "LiberationSans-Regular.ttf")
 _FONT_B = os.path.join(_FONT_DIR, "LiberationSans-Bold.ttf")
-BG = (14, 14, 16)
-GOLD = (242, 226, 60)
-WHITE = (245, 241, 230)
-GREY = (150, 150, 156)
-LINE = (42, 43, 48)
+# Logo de Varela (opcional): si el usuario sube su PNG a esta ruta, se usa en el
+# encabezado; si no existe, cae al wordmark tipográfico "VARELA PROPIEDADES".
+_LOGO = os.path.join(os.path.dirname(__file__), "assets", "brand", "varela-logo.png")
+
+# Paleta clara/crema · acento amarillo Varela (ficha de tasación premium).
+CREAM = (250, 248, 242)
+INK = (30, 30, 32)
+INK_SOFT = (122, 118, 110)
+GOLD = (240, 201, 42)       # amarillo de marca (barras/bordes)
+GOLD_DEEP = (166, 128, 12)  # dorado legible para texto sobre crema
+HAIR = (223, 220, 210)      # divisores finos
+CARD = (255, 255, 255)
+CARD_REF = (243, 241, 234)
 
 
 class CalcularBody(BaseModel):
@@ -48,6 +56,9 @@ class CalcularBody(BaseModel):
 
 
 class JpgBody(CalcularBody):
+    semicubiertos: float | None = None
+    dormitorios: float | None = None
+    banos: float | None = None
     propietario: str | None = None
     direccion: str | None = None
     asesor: str | None = None
@@ -94,44 +105,86 @@ async def jpg(body: JpgBody):
     cfg = await tasacion.get_config()
     r = tasacion.tasar(body.model_dump(), cfg)
 
-    img = Image.new("RGB", (1080, 1350), BG)
+    img = Image.new("RGB", (1080, 1350), CREAM)
     d = ImageDraw.Draw(img)
 
-    # Marca
-    _center(d, 90, "VARELA PROPIEDADES", _font(52, True), GOLD)
-    _center(d, 158, "COSTA DEL ESTE · MAR DEL TUYÚ", _font(24), GREY)
-    d.line([(140, 230), (940, 230)], fill=LINE, width=2)
+    # --- Encabezado: logo de Varela si existe, si no wordmark tipográfico ---
+    if os.path.exists(_LOGO):
+        try:
+            logo = Image.open(_LOGO).convert("RGBA")
+            target_w = 400
+            ratio = target_w / logo.width
+            logo = logo.resize((target_w, int(logo.height * ratio)))
+            img.paste(logo, ((1080 - target_w) // 2, 74), logo)
+            y = 74 + logo.height + 14
+        except Exception:
+            _center(d, 96, "VARELA PROPIEDADES", _font(50, True), INK)
+            d.rounded_rectangle([(490, 158), (590, 164)], radius=3, fill=GOLD)
+            y = 190
+    else:
+        _center(d, 96, "VARELA PROPIEDADES", _font(50, True), INK)
+        d.rounded_rectangle([(490, 158), (590, 164)], radius=3, fill=GOLD)
+        y = 190
 
-    _center(d, 268, "TASACIÓN", _font(26), GREY)
-    _center(d, 306, datetime.now().strftime("%d/%m/%Y"), _font(30, True), WHITE)
+    _center(d, y, "COSTA DEL ESTE · MAR DEL TUYÚ", _font(22), INK_SOFT)
+    d.line([(150, y + 52), (930, y + 52)], fill=HAIR, width=2)
 
-    # Inmueble
-    y = 380
+    # --- Tasación + fecha ---
+    _center(d, y + 88, "TASACIÓN", _font(22), INK_SOFT)
+    _center(d, y + 122, datetime.now().strftime("%d/%m/%Y"), _font(30, True), INK)
+
+    # --- Inmueble ---
+    yy = y + 190
     if body.direccion:
-        _center(d, y, body.direccion, _font(34, True), WHITE); y += 48
-    _center(d, y, f"{r['tipoNombre']} · {r['zonaNombre']}", _font(26), GREY); y += 40
-    metros = body.cubiertos if body.tipo == "depto" else (body.lote or body.cubiertos)
-    if metros:
-        _center(d, y, f"{int(metros)} m²", _font(24), GREY)
+        _center(d, yy, body.direccion, _font(34, True), INK); yy += 50
+    _center(d, yy, r["tipoNombre"].upper(), _font(23, True), GOLD_DEEP); yy += 40
 
-    # Precio Varela (protagonista)
-    box_y = 560
-    d.rounded_rectangle([(120, box_y), (960, box_y + 250)], radius=24, fill=(24, 24, 28), outline=GOLD, width=2)
-    _center(d, box_y + 36, "PRECIO VARELA · VALOR RECOMENDADO", _font(24, True), GOLD)
-    _center(d, box_y + 96, f"{_usd(r['cierreMin'])} – {_usd(r['cierreMax'])}", _font(50, True), WHITE)
-    _center(d, box_y + 180, f"Coeficiente de cierre: {int(r['coef'] * 100)}%", _font(22), GREY)
+    def _i(val) -> int:
+        try:
+            return int(float(val))
+        except (TypeError, ValueError):
+            return 0
 
-    # Promedio portales (referencia)
-    box2 = box_y + 300
-    d.rounded_rectangle([(120, box2), (960, box2 + 190)], radius=24, fill=(20, 20, 24), outline=LINE, width=2)
-    _center(d, box2 + 34, "PROMEDIO DE PORTALES · REFERENCIA", _font(22, True), GREY)
-    _center(d, box2 + 86, f"{_usd(r['pubMin'])} – {_usd(r['pubMax'])}", _font(38, True), GREY)
+    cub, semi, lote = _i(body.cubiertos), _i(body.semicubiertos), _i(body.lote)
+    dorm, ban = _i(body.dormitorios), _i(body.banos)
+    lineas: list[str] = []
+    sup = []
+    if body.tipo != "lote" and cub:
+        sup.append(f"{cub} m² cubiertos")
+    if semi:
+        sup.append(f"{semi} m² semicubiertos")
+    if sup:
+        lineas.append(" · ".join(sup))
+    if body.tipo != "depto" and lote:
+        lineas.append(f"{lote} m² de terreno")
+    amb = []
+    if dorm:
+        amb.append(f"{dorm} dormitorio" + ("s" if dorm != 1 else ""))
+    if ban:
+        amb.append(f"{ban} baño" + ("s" if ban != 1 else ""))
+    if amb:
+        lineas.append(" · ".join(amb))
+    for ln in lineas:
+        _center(d, yy, ln, _font(24), INK_SOFT); yy += 34
 
-    # Footer
-    d.line([(140, 1180), (940, 1180)], fill=LINE, width=2)
+    # --- Precio Varela (protagonista) ---
+    box_y = 596
+    d.rounded_rectangle([(120, box_y), (960, box_y + 210)], radius=24, fill=CARD, outline=GOLD, width=3)
+    _center(d, box_y + 34, "VALOR RECOMENDADO VARELA", _font(24, True), GOLD_DEEP)
+    _center(d, box_y + 96, f"{_usd(r['cierreMin'])} – {_usd(r['cierreMax'])}", _font(52, True), INK)
+
+    # --- Promedio portales (referencia) ---
+    box2 = box_y + 250
+    d.rounded_rectangle([(120, box2), (960, box2 + 160)], radius=24, fill=CARD_REF, outline=HAIR, width=2)
+    _center(d, box2 + 32, "PROMEDIO DE PORTALES · REFERENCIA", _font(22, True), INK_SOFT)
+    _center(d, box2 + 84, f"{_usd(r['pubMin'])} – {_usd(r['pubMax'])}", _font(38, True), INK_SOFT)
+
+    # --- Nota + footer ---
+    _center(d, 1096, "Valores orientativos sujetos a verificación in situ.", _font(18), INK_SOFT)
+    d.line([(150, 1150), (930, 1150)], fill=HAIR, width=2)
     if body.propietario:
-        _center(d, 1210, f"Preparada para {body.propietario}", _font(24), WHITE)
-    _center(d, 1255, body.asesor or "Varela Propiedades", _font(22), GREY)
+        _center(d, 1182, f"Preparada para {body.propietario}", _font(24, True), INK)
+    _center(d, 1226, body.asesor or "Varela Propiedades", _font(22), INK_SOFT)
 
     buf = io.BytesIO()
     img.save(buf, format="JPEG", quality=92)
