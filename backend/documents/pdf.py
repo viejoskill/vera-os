@@ -19,6 +19,7 @@ from reportlab.platypus import (
     HRFlowable, Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle,
 )
 from reportlab.lib import colors
+from PIL import Image as PILImage
 
 from documents import signatures
 
@@ -38,8 +39,29 @@ def _clean(text):
         return text
     return re.sub(r"\s{2,}", " ", _EMOJI_RE.sub("", text)).strip()
 
-# Logo real de Varela (opcional): si existe este archivo, se usa en el encabezado.
-_LOGO_PATH = os.path.join(os.path.dirname(__file__), "assets", "varela_logo.png")
+# Logo oficial de Varela. Se muestra SIEMPRE en negro puro (los documentos casi
+# siempre se imprimen en blanco y negro).
+_LOGO_SRC = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "brand", "varela-logo.png")
+_black_logo_cache: bytes | None = None
+
+
+def _black_logo_bytes() -> bytes | None:
+    """Logo Varela convertido a negro puro (silueta), cacheado en memoria."""
+    global _black_logo_cache
+    if _black_logo_cache is None:
+        if not os.path.exists(_LOGO_SRC):
+            return None
+        try:
+            im = PILImage.open(_LOGO_SRC).convert("RGBA")
+            alpha = im.getchannel("A")
+            black = PILImage.new("RGBA", im.size, (0, 0, 0, 0))
+            black.putalpha(alpha)  # RGB queda en 0 → negro con el alpha original
+            buf = io.BytesIO()
+            black.save(buf, format="PNG")
+            _black_logo_cache = buf.getvalue()
+        except Exception:  # noqa: BLE001
+            return None
+    return _black_logo_cache
 _MONEDAS = {
     "USD": "dólares estadounidenses USD",
     "ARS": "pesos argentinos ARS",
@@ -59,13 +81,21 @@ def _fmt_miles(value) -> str:
     return s
 
 
-def _display_vars(resolved: dict) -> dict:
-    """Valores listos para mostrar: moneda con nombre completo + miles."""
+def _display_vars(resolved: dict, variables: list | None = None) -> dict:
+    """Valores listos para mostrar: moneda con nombre completo + miles.
+
+    Toda variable declarada como `money` en el template se muestra con separador
+    de miles (formato argentino), además de las claves legacy en `_MONEY_KEYS`.
+    """
+    money_keys = set(_MONEY_KEYS)
+    for v in (variables or []):
+        if v.get("type") == "money" and v.get("key"):
+            money_keys.add(v["key"])
     out = {}
     for k, v in (resolved or {}).items():
         if k == "moneda":
             out[k] = _MONEDAS.get(str(v), str(v))
-        elif k in _MONEY_KEYS:
+        elif k in money_keys:
             out[k] = _fmt_miles(v)
         else:
             out[k] = v
@@ -127,11 +157,12 @@ def _styles():
 
 
 def _header_flowables(st: dict) -> list:
-    """Encabezado de marca (logo real si existe; si no, wordmark Varela)."""
+    """Encabezado de marca (logo Varela en negro; si no está, wordmark)."""
     flow = []
-    if os.path.exists(_LOGO_PATH):
+    logo = _black_logo_bytes()
+    if logo:
         try:
-            img = Image(_LOGO_PATH, width=3.4 * cm, height=1.2 * cm, kind="proportional")
+            img = Image(io.BytesIO(logo), width=3.4 * cm, height=1.2 * cm, kind="proportional")
             img.hAlign = "LEFT"
             flow.append(img)
         except Exception:  # noqa: BLE001
@@ -201,11 +232,20 @@ def _signature_flowables(document: dict, participants: list[dict], st: dict) -> 
     return flow
 
 
+def _advisor_signature(st: dict) -> list:
+    """Línea de firma fija del asesor de venta (solo Recibo de Seña)."""
+    return [
+        Spacer(1, 1.0 * cm),
+        Paragraph("____________________________________", st["cert"]),
+        Paragraph("Asesor de venta: Sebastian Varela", st["small"]),
+    ]
+
+
 def build_document_pdf(document: dict, participants: list[dict]) -> bytes:
     st = _styles()
     raw_vars = document.get("resolved_variables") or {}
-    disp_vars = _display_vars(raw_vars)
     snapshot = document.get("template_snapshot") or {}
+    disp_vars = _display_vars(raw_vars, snapshot.get("variables"))
     blocks = (snapshot.get("body") or {}).get("blocks", [])
 
     story = _header_flowables(st)
@@ -218,6 +258,8 @@ def build_document_pdf(document: dict, participants: list[dict]) -> bytes:
             story.append(Paragraph(_emphasize(_interpolate(b.get("value", ""), disp_vars)), st["body"]))
 
     story += _signature_flowables(document, participants, st)
+    if document.get("template_key") == "recibo_sena_reserva":
+        story += _advisor_signature(st)
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=2 * cm, bottomMargin=2 * cm,

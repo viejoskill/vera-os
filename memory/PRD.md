@@ -861,3 +861,10 @@ Pedido pendiente: sumar el modelo de reserva del usuario (PDF) como plantilla co
 - **Alta rápida + multi-selección** en `DocumentWizard.tsx`: `personByRole` → `personsByRole: Record<string,string[]>`. Paso Personas: chips de seleccionados (removibles) + select "Agregar de la base…" + botón "＋ Nuevo" con form inline (nombre*, DNI, teléfono, email) que crea la persona vía `useCreatePerson` (queda como Lead en el CRM con el rol) y la vincula. canAdvance exige ≥1 por rol requerido. Firmantes derivan de todas las personas → multi-firmante.
 - Verificado E2E: PDF con 2 compradores agregados + cláusula jurisdicción editada ("Tribunales de Mar del Plata (EDITADO)"); tsc limpio; screenshot del paso Personas con multi-select + quick-add OK. Datos de prueba limpiados.
 - NOTA: el picker de templates lista cada versión como card (v1 y v2 de Reserva aparecen ambas) — comportamiento preexistente del wizard, no introducido acá. La v2 es la vigente.
+
+## Correcciones "Recibo de Seña" (PDF) — 2026-06
+Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-seed):
+- **Logo Varela en negro** en TODOS los PDF: `_black_logo_bytes()` convierte `assets/brand/varela-logo.png` (RGBA) a silueta negra pura (alpha preservado, cacheada). Ideal para impresión B&N. Reemplaza el path viejo inexistente `documents/assets/varela_logo.png` que caía al wordmark.
+- **Separador de miles por tipo `money`**: `_display_vars(resolved, variables)` ahora formatea toda variable declarada `type: money` en el template (monto_sena, precio_total, honorarios → 150.000 / 1.250.000 / 37.500), además de las claves legacy. Genérico para documentos futuros.
+- **Firma fija del asesor**: bloque "Asesor de venta: Sebastian Varela" SOLO en el template `recibo_sena_reserva` (via `document.template_key`).
+- Verificado por script local: PDF generado OK, texto extraído confirma miles + firma; logo negro puro (0,0,0) 611x293.
