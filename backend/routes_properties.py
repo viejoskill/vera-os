@@ -149,6 +149,7 @@ async def duplicate_property(property_id: str):
     data["status"] = "active"
     data["archived"] = False
     data["publications"] = {}
+    data["radar"] = False
 
     workspace_id = prop.get("workspace_id") or config.DEFAULT_WORKSPACE_ID
     created = await property_repository.create(data, workspace_id)

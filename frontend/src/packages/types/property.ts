@@ -49,6 +49,7 @@ export interface Property {
   condition?: string;
   amenities?: string[];
   publications?: Record<string, { status: string; lastSync?: string | null }>;
+  radar?: boolean;
 }
 
 export interface PropertyImageAsset {

@@ -37,6 +37,8 @@ export const propertyFormSchema = z.object({
   ownerId: z.string(),
   ownerObservations: z.string(),
   videoUrl: z.string(),
+  // Destacada en la web (sección "Radar" del sitio público)
+  radar: z.boolean(),
 });
 
 export type PropertyFormValues = z.infer<typeof propertyFormSchema>;
@@ -76,6 +78,7 @@ export const defaultPropertyForm: PropertyFormValues = {
   ownerId: '',
   ownerObservations: '',
   videoUrl: '',
+  radar: false,
 };
 
 export const PROPERTY_TYPE_OPTIONS = [

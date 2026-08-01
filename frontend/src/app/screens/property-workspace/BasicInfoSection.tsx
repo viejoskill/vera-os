@@ -1,4 +1,5 @@
 import { useFormContext } from 'react-hook-form';
+import { Check } from 'lucide-react';
 import { Input, Select } from '@vera/ui';
 import { PROPERTY_TYPE_OPTIONS, CURRENCY_OPTIONS, type PropertyFormValues } from './form-schema';
 import { LocationSection } from './LocationSection';
@@ -16,6 +17,7 @@ export const BasicInfoSection = () => {
   } = useFormContext<PropertyFormValues>();
   const operation = watch('operation');
   const price = watch('price');
+  const radar = watch('radar');
 
   return (
     <div className="vera-form">
@@ -68,6 +70,20 @@ export const BasicInfoSection = () => {
           />
           <Select label="Moneda" options={CURRENCY_OPTIONS} {...register('currency')} />
         </div>
+      </div>
+
+      <div className="vera-field">
+        <span className="vera-field__label">Radar</span>
+        <button
+          type="button"
+          className={`vera-amenity ${radar ? 'vera-amenity--active' : ''}`.trim()}
+          data-testid="toggle-radar"
+          aria-pressed={radar}
+          onClick={() => setValue('radar', !radar, { shouldDirty: true })}
+        >
+          <span className="vera-amenity__box">{radar && <Check size={13} />}</span>
+          En Radar — destacada en la portada del sitio
+        </button>
       </div>
 
       <LocationSection />

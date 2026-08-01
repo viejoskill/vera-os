@@ -49,6 +49,7 @@ class PropertyCreate(CamelModel):
     orientation: str = ""
     condition: str = ""
     amenities: list[str] = []
+    radar: bool = False
 
 
 class PropertyUpdate(CamelModel):
@@ -87,6 +88,7 @@ class PropertyUpdate(CamelModel):
     orientation: Optional[str] = None
     condition: Optional[str] = None
     amenities: Optional[list[str]] = None
+    radar: Optional[bool] = None
 
 
 class ImageResponse(CamelModel):
@@ -148,6 +150,7 @@ class PropertyResponse(CamelModel):
     condition: str = ""
     amenities: list[str] = []
     publications: dict = {}
+    radar: bool = False
     archived: bool = False
     created_at: datetime
     updated_at: datetime

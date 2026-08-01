@@ -109,3 +109,8 @@ alter table public.properties
 -- Lista de proveedores escalable (definida en código); estados: none/published/pending/error/syncing.
 alter table public.properties
   add column if not exists publications jsonb default '{}'::jsonb;
+
+-- Radar: destacadas en la portada del sitio público (varelapropiedadescde.com.ar).
+-- Reemplaza el campo homónimo de la CRM vieja (Sprint "Migrar Radar a vera-os").
+alter table public.properties
+  add column if not exists radar boolean not null default false;
