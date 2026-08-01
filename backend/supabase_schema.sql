@@ -132,3 +132,7 @@ create table if not exists public.people (
   created_at timestamptz not null default now()
 );
 create index if not exists idx_people_workspace on public.people(workspace_id);
+
+-- Radar: marca la propiedad como "destacada" en la portada del sitio público.
+-- Idempotente; la columna ya existe en producción (migrada por fuera).
+alter table public.properties add column if not exists radar boolean not null default false;

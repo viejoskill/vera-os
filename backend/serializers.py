@@ -107,6 +107,7 @@ async def property_to_response(prop: dict) -> PropertyResponse:
         orientation=prop.get("orientation", "") or "",
         condition=prop.get("condition", "") or "",
         amenities=prop.get("amenities") or [],
+        radar=prop.get("radar", False) or False,
         publications=prop.get("publications") or {},
         public_url=web_publisher.stored_public_url(prop),
         archived=prop.get("archived", False) or False,

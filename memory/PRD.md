@@ -841,3 +841,9 @@ Pedido del usuario: JPG muy básico/feo, fondo negro, sin logo Varela, mostraba 
 El usuario subió su logo (JPEG amarillo sobre blanco). Como amarillo sobre crema no se lee, lo procesé a **monocromo oscuro (ink)** recortando el fondo blanco (alpha = 255-min(r,g,b)), guardado en `backend/assets/brand/varela-logo.png` (RGBA, 611×293). El endpoint `/jpg` ya lo detecta y lo inserta en el encabezado (target 400px, centrado); si no existe cae al wordmark.
 También se corrigió el layout del JPG: ahora es DINÁMICO (cursor que fluye) para que el logo más alto no empuje las líneas de terreno/dormitorios/baños detrás del recuadro de precio. Verificado con logo real: se ven todas las líneas, diseño balanceado.
 Nota: el logo se muestra en oscuro (no en su amarillo original) por legibilidad sobre el crema; se puede cambiar el tratamiento si el usuario prefiere otro.
+
+## Campo "radar" (destacada en portada del sitio público) — 2026-08
+Traído del fork GitHub viejoskill/vera-os@8976683. Aplicado MANUALMENTE (sin git pull, para no chocar con los commits de la plataforma). La columna `radar boolean default false` ya existe en Supabase (migrada por fuera). 8 archivos:
+- Backend: `schemas.py` (radar en PropertyCreate=False / PropertyUpdate=Optional / PropertyResponse=False), `serializers.py` (radar en property_to_response), `routes_properties.py` (data["radar"]=False al duplicar), `supabase_schema.sql` (bloque idempotente doc).
+- Frontend: `property.ts` (radar?: boolean), `form-schema.ts` (z.boolean() + default false), `PropertyWorkspace.tsx` (toForm + buildPayload), `BasicInfoSection.tsx` (toggle "En Radar — destacada en la portada del sitio", estilo vera-amenity, antes de ubicación, data-testid="toggle-radar").
+Verificado: modelos Pydantic OK, tsc limpio, round-trip E2E real (PATCH radar=true → GET=true → revert=false) contra la API → la columna existe en este entorno. Toggle renderiza y alterna en el editor.

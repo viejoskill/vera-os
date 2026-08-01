@@ -48,6 +48,7 @@ export interface Property {
   orientation?: string;
   condition?: string;
   amenities?: string[];
+  radar?: boolean;
   ownerId?: string;
   publications?: Record<string, { status: string; lastSync?: string | null }>;
   /** URL pública CANÓNICA (fuente única). `null` si la propiedad no está publicada. */

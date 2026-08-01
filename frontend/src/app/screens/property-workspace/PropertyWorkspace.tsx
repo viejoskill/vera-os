@@ -89,6 +89,7 @@ const toForm = (d: PropertyDetail): PropertyFormValues => ({
   orientation: d.orientation ?? '',
   condition: d.condition ?? '',
   amenities: d.amenities ?? [],
+  radar: d.radar ?? false,
   description: d.description,
   ownerId: d.ownerId ?? '',
   ownerObservations: d.ownerObservations ?? '',
@@ -200,6 +201,7 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
       orientation: v.orientation,
       condition: v.condition,
       amenities: v.amenities,
+      radar: v.radar,
     } as object),
   });
 
