@@ -847,3 +847,10 @@ Traído del fork GitHub viejoskill/vera-os@8976683. Aplicado MANUALMENTE (sin gi
 - Backend: `schemas.py` (radar en PropertyCreate=False / PropertyUpdate=Optional / PropertyResponse=False), `serializers.py` (radar en property_to_response), `routes_properties.py` (data["radar"]=False al duplicar), `supabase_schema.sql` (bloque idempotente doc).
 - Frontend: `property.ts` (radar?: boolean), `form-schema.ts` (z.boolean() + default false), `PropertyWorkspace.tsx` (toForm + buildPayload), `BasicInfoSection.tsx` (toggle "En Radar — destacada en la portada del sitio", estilo vera-amenity, antes de ubicación, data-testid="toggle-radar").
 Verificado: modelos Pydantic OK, tsc limpio, round-trip E2E real (PATCH radar=true → GET=true → revert=false) contra la API → la columna existe en este entorno. Toggle renderiza y alterna en el editor.
+
+## Template "Recibo de Seña (Reserva)" en Documentos — 2026-08
+Pedido pendiente: sumar el modelo de reserva del usuario (PDF) como plantilla completable.
+- Seed nuevo `scripts/seed_recibo_sena.py` (mismo patrón que `seed_autorizacion_venta.py`). Template `recibo_sena_reserva` v1, categoría `reserva`, status active, firma digital+presencial.
+- 13 variables: fecha (system); ciudad/provincia (input, defaults Costa del Este/Buenos Aires); comprador_nombre/dni/domicilio/telefono (person role=comprador, auto); inmueble_ubicacion (property address, auto); inmueble_descripcion + nomenclatura_catastral (input); monto_sena/precio_total/honorarios (input money). Martillero Jorge Oscar Varela y escribana Nancy Cecilia Moal quedan FIJOS en el body (fiel al PDF).
+- Verificado E2E: motor valida obligatorios (rechazó sin comprador_dni), documento creado con property+comprador+inputs, PDF generado (HTTP 200) y texto extraído = fiel al modelo (comprador, inmueble, montos USD, cláusulas, jurisdicción Dolores). Aparece en la UI de Documentos. Documento de prueba archivado.
+- Para recargar en producción tras deploy: `python -m scripts.seed_recibo_sena` (o correrlo apuntando SEED_API a prod). NOTA: el seed corre contra la API; en este entorno ya quedó cargado en Mongo.
