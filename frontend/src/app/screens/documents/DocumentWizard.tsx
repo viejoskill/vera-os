@@ -37,6 +37,7 @@ export const DocumentWizard = () => {
   const [step, setStep] = useState<Step>('template');
   const [templateId, setTemplateId] = useState<string>('');
   const [propertyId, setPropertyId] = useState<string>('');
+  const [propertyQuery, setPropertyQuery] = useState<string>('');
   const [personsByRole, setPersonsByRole] = useState<Record<string, string[]>>({});
   const [quickAddRole, setQuickAddRole] = useState<string | null>(null);
   const [quickAdd, setQuickAdd] = useState({ fullName: '', document: '', primaryPhone: '', primaryEmail: '' });
@@ -57,11 +58,25 @@ export const DocumentWizard = () => {
     }
     return Array.from(latest.values());
   }, [templates.data]);
+
   const template = useTemplate(templateId || undefined);
   const properties = useProperties();
   const people = usePeople();
   const resolve = useResolveDocument();
   const create = useCreateDocument();
+
+  // Búsqueda de propiedad (client-side, insensible a acentos) para el paso 2.
+  const filteredProperties = useMemo(() => {
+    const rows = properties.data ?? [];
+    const q = propertyQuery.trim().toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (!q) return rows;
+    const norm = (s?: string) =>
+      (s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return rows.filter((p) =>
+      [p.code, p.title, p.address, p.neighborhood, p.city].some((f) => norm(f).includes(q)),
+    );
+  }, [properties.data, propertyQuery]);
 
   const requirements = template.data
     ? {
@@ -226,8 +241,26 @@ export const DocumentWizard = () => {
         <section className="vera-wizard__body" data-testid="step-property">
           <h2 className="vera-wizard__h2"><Home size={16} /> Elegí la propiedad</h2>
           {properties.isLoading && <p className="vera-docs__empty">Cargando propiedades…</p>}
+          {!properties.isLoading && (properties.data?.length ?? 0) > 0 && (
+            <div className="vera-wizard__search">
+              <Input
+                type="search"
+                value={propertyQuery}
+                onChange={(e) => setPropertyQuery(e.target.value)}
+                placeholder="Buscar por dirección, ciudad, barrio, título o código…"
+                data-testid="wizard-property-search"
+              />
+            </div>
+          )}
+          {!properties.isLoading && filteredProperties.length === 0 && (
+            <p className="vera-docs__empty" data-testid="wizard-property-empty">
+              {propertyQuery
+                ? `No hay propiedades que coincidan con “${propertyQuery}”.`
+                : 'Todavía no hay propiedades cargadas.'}
+            </p>
+          )}
           <div className="vera-wizard__cards">
-            {properties.data?.map((p) => (
+            {filteredProperties.map((p) => (
               <button
                 key={p.id}
                 type="button"

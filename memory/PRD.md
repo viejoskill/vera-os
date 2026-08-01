@@ -872,3 +872,7 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 ## Ocultar versiones viejas en "Nuevo documento" — 2026-06
 - `DocumentWizard.tsx`: `availableTemplates` (useMemo) muestra SOLO la última versión por `templateKey` (excluye status deprecated/archived). El selector deja de repetir v1/v2. La solapa Templates (gestión) sigue mostrando todas las versiones.
 - Verificado E2E (screenshot login qa_varela): "Recibo de Seña (Reserva)" ahora muestra solo v2. tsc limpio.
+
+## Buscador de propiedad en "Nuevo documento" — 2026-06
+- `DocumentWizard.tsx`: paso 2 (Propiedad) ahora tiene un `Input` de búsqueda (`wizard-property-search`) que filtra client-side por code/title/address/neighborhood/city, insensible a acentos (`filteredProperties` useMemo). Empty state con el término buscado. CSS `.vera-wizard__search`.
+- Verificado E2E (screenshot): con "costa" filtra 30→29. tsc limpio.

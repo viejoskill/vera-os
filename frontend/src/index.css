@@ -7252,6 +7252,9 @@ p {
 }
 .vera-wizard__hint, .vera-wizard__cards + .vera-wizard__hint { color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-sm); }
 
+.vera-wizard__search { max-width: 480px; }
+.vera-wizard__search input { width: 100%; }
+
 .vera-wizard__cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
