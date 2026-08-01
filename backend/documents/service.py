@@ -260,6 +260,14 @@ async def update_document(document_id: str, patch: dict) -> dict:
     return await _hydrate(document)
 
 
+async def delete_document(document_id: str, actor: str | None = None) -> None:
+    """Elimina el documento (y sus hijos por cascade). Acción irreversible."""
+    document = await document_repository.get(document_id)
+    if document is None:
+        raise HTTPException(404, "Documento no encontrado")
+    await document_repository.delete(document_id)
+
+
 async def transition_document(document_id: str, target: str, actor: str | None = None) -> dict:
     document = await document_repository.get(document_id)
     if document is None:

@@ -43,6 +43,11 @@ async function apiPatch<T>(path: string, body: unknown): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+async function apiDelete(path: string): Promise<void> {
+  const res = await fetch(`${BASE}${path}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`${res.status}`);
+}
+
 export interface TemplateRow {
   id: string;
   templateKey: string;
@@ -214,6 +219,14 @@ export function useCreateDocument() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateDocumentPayload) => apiPost<DocumentRow>('', payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['documents'] }),
+  });
+}
+
+export function useDeleteDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (documentId: string) => apiDelete(`/${documentId}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['documents'] }),
   });
 }

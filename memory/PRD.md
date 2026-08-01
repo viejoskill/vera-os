@@ -876,3 +876,9 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 ## Buscador de propiedad en "Nuevo documento" — 2026-06
 - `DocumentWizard.tsx`: paso 2 (Propiedad) ahora tiene un `Input` de búsqueda (`wizard-property-search`) que filtra client-side por code/title/address/neighborhood/city, insensible a acentos (`filteredProperties` useMemo). Empty state con el término buscado. CSS `.vera-wizard__search`.
 - Verificado E2E (screenshot): con "costa" filtra 30→29. tsc limpio.
+
+## Limpieza de documentos + botón eliminar — 2026-06
+- **Botón eliminar** por fila en la lista de Documentos (`DocumentsList.tsx`): ícono papelera con confirmación (`window.confirm`), estado de carga, y refresco automático (`useDeleteDocument` invalida `["documents"]`). La fila pasó de `<button>` a `<div>` con área clickeable (`vera-docs__rowmain`) + badge + botón borrar (`vera-docs__delete`). CSS agregado.
+- **Backend**: `DELETE /api/documents/{id}` → `service.delete_document` → `document_repository.delete` (los hijos relationships/participants/signatures caen por ON DELETE CASCADE). Verificado por curl (204 → 404).
+- **Limpieza**: eliminados los 52 documentos de prueba restantes; la lista quedó vacía. Verificado E2E (screenshot: crear fila de prueba → botón papelera visible → borrar → estado vacío).
+- NOTA: la limpieza de datos ya impacta en producción (Supabase compartido). El botón eliminar es cambio de código → requiere **redeploy** para verse en producción.

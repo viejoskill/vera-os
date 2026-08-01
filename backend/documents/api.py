@@ -118,6 +118,13 @@ async def update_document(document_id: str, body: UpdateDocumentRequest):
     return to_api_document(await service.update_document(document_id, body.model_dump(exclude_none=True)))
 
 
+@router.delete("/{document_id}", status_code=204)
+async def delete_document(document_id: str):
+    """Elimina un documento de forma permanente (junto a sus firmas/relaciones)."""
+    _ensure()
+    await service.delete_document(document_id)
+
+
 @router.post("/{document_id}/transition")
 async def transition_document(document_id: str, body: TransitionRequest):
     _ensure()

@@ -7361,6 +7361,40 @@ p {
 /* ===== Documentos · Firmantes en wizard ===== */
 .vera-docs__row--btn { width: 100%; text-align: left; cursor: pointer; background: var(--vera-color-cards); font: inherit; }
 .vera-docs__row--btn:hover { border-color: var(--vera-color-primary); }
+.vera-docs__row:hover { border-color: var(--vera-color-primary); }
+.vera-docs__rowmain {
+  display: flex;
+  align-items: center;
+  gap: var(--vera-space-sm);
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+.vera-docs__delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--vera-radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--vera-color-text-secondary);
+  cursor: pointer;
+  transition: color 200ms ease, background-color 200ms ease, border-color 200ms ease;
+}
+.vera-docs__delete:hover {
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.1);
+  border-color: rgba(255, 107, 107, 0.35);
+}
+.vera-docs__delete:disabled { opacity: 0.5; cursor: default; }
 
 .vera-wizard__signers { display: flex; flex-direction: column; gap: var(--vera-space-xs); margin-top: var(--vera-space-md); }
 .vera-wizard__signer {

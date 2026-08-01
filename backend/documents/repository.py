@@ -118,6 +118,13 @@ class DocumentRepository:
         rows = (await asyncio.to_thread(_do)).data or []
         return rows[0] if rows else None
 
+    async def delete(self, document_id: str) -> None:
+        """Borra el documento. Los hijos (relationships/participants/signatures)
+        caen por ON DELETE CASCADE del schema."""
+        def _do():
+            return _c().table(TABLE_DOCUMENTS).delete().eq("id", document_id).execute()
+        await asyncio.to_thread(_do)
+
 
 # --- Relationships ---------------------------------------------------------- #
 class RelationshipRepository:
