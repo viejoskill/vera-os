@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, ArrowRight, Check, CheckCircle2, FileText, Home, Layers,
-  Loader2, PencilLine, PenLine, TriangleAlert, Users,
+  Loader2, PencilLine, PenLine, Plus, TriangleAlert, Users,
 } from 'lucide-react';
 import { Button, Input } from '@vera/ui';
 import { PERSON_ROLE_LABELS } from '@vera/types';
 import { useProperties } from '@app/hooks/useProperties';
-import { usePeople } from '@app/hooks/usePeople';
+import { usePeople, useCreatePerson } from '@app/hooks/usePeople';
 import {
   useTemplates, useTemplate, useResolveDocument, useCreateDocument,
   type PersonLinkInput, type ResolveResult,
@@ -37,7 +37,9 @@ export const DocumentWizard = () => {
   const [step, setStep] = useState<Step>('template');
   const [templateId, setTemplateId] = useState<string>('');
   const [propertyId, setPropertyId] = useState<string>('');
-  const [personByRole, setPersonByRole] = useState<Record<string, string>>({});
+  const [personsByRole, setPersonsByRole] = useState<Record<string, string[]>>({});
+  const [quickAddRole, setQuickAddRole] = useState<string | null>(null);
+  const [quickAdd, setQuickAdd] = useState({ fullName: '', document: '', primaryPhone: '', primaryEmail: '' });
   const [inputs, setInputs] = useState<Record<string, string>>({});
   const [signatureMethod, setSignatureMethod] = useState<string>('');
   const [signerRequired, setSignerRequired] = useState<Record<string, boolean>>({});
@@ -76,11 +78,12 @@ export const DocumentWizard = () => {
 
   const persons: PersonLinkInput[] = useMemo(
     () =>
-      Object.entries(personByRole)
-        .filter(([, id]) => id)
-        .map(([role, personId]) => ({ role, personId })),
-    [personByRole],
+      Object.entries(personsByRole).flatMap(([role, ids]) =>
+        (ids || []).filter(Boolean).map((personId) => ({ role, personId })),
+      ),
+    [personsByRole],
   );
+  const createPerson = useCreatePerson();
 
   // Resolvemos SOLO ante cambios estructurales (template/propiedad/personas).
   // NO al tipear: eso re-renderiza y roba el foco del campo. La validación de
@@ -103,7 +106,7 @@ export const DocumentWizard = () => {
   const canAdvance = (): boolean => {
     if (step === 'template') return !!templateId && !!template.data;
     if (step === 'property') return !requirements.needsProperty || !!propertyId;
-    if (step === 'people') return requirements.personRoles.every((r) => personByRole[r]);
+    if (step === 'people') return requirements.personRoles.every((r) => (personsByRole[r]?.length ?? 0) > 0);
     if (step === 'signature') return !!signatureMethod;
     return false;
   };
@@ -235,25 +238,80 @@ export const DocumentWizard = () => {
       {step === 'people' && (
         <section className="vera-wizard__body" data-testid="step-people">
           <h2 className="vera-wizard__h2"><Users size={16} /> Asigná las personas</h2>
-          <p className="vera-wizard__hint">Este template necesita: {requirements.personRoles.map(roleLabel).join(', ')}.</p>
-          {requirements.personRoles.map((role) => (
-            <div key={role} className="vera-wizard__role" data-testid={`wizard-role-${role}`}>
-              <label className="vera-wizard__role-label">{roleLabel(role)}</label>
-              <select
-                className="vera-select"
-                value={personByRole[role] ?? ''}
-                onChange={(e) => setPersonByRole((prev) => ({ ...prev, [role]: e.target.value }))}
-                data-testid={`wizard-role-select-${role}`}
-              >
-                <option value="">Seleccioná una persona…</option>
-                {people.data?.map((person) => (
-                  <option key={person.id} value={person.id}>
-                    {person.fullName}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ))}
+          <p className="vera-wizard__hint">Este template necesita: {requirements.personRoles.map(roleLabel).join(', ')}. Podés asignar más de una persona por rol.</p>
+          {requirements.personRoles.map((role) => {
+            const selected = personsByRole[role] ?? [];
+            const available = (people.data ?? []).filter((p) => !selected.includes(p.id));
+            const addPerson = (id: string) => id && setPersonsByRole((prev) => ({ ...prev, [role]: [...(prev[role] ?? []), id] }));
+            const removePerson = (id: string) => setPersonsByRole((prev) => ({ ...prev, [role]: (prev[role] ?? []).filter((x) => x !== id) }));
+            const submitQuickAdd = async () => {
+              if (!quickAdd.fullName.trim()) return;
+              const created = await createPerson.mutateAsync({
+                fullName: quickAdd.fullName.trim(),
+                document: quickAdd.document.trim() || undefined,
+                primaryPhone: quickAdd.primaryPhone.trim() || undefined,
+                primaryEmail: quickAdd.primaryEmail.trim() || undefined,
+                roles: [role],
+              });
+              setPersonsByRole((prev) => ({ ...prev, [role]: [...(prev[role] ?? []), created.id] }));
+              setQuickAdd({ fullName: '', document: '', primaryPhone: '', primaryEmail: '' });
+              setQuickAddRole(null);
+            };
+            return (
+              <div key={role} className="vera-wizard__role" data-testid={`wizard-role-${role}`}>
+                <label className="vera-wizard__role-label">{roleLabel(role)}</label>
+
+                {selected.length > 0 && (
+                  <div className="vera-wizard__chips" data-testid={`wizard-role-chips-${role}`}>
+                    {selected.map((id) => (
+                      <span key={id} className="vera-wizard__chip">
+                        {people.data?.find((p) => p.id === id)?.fullName ?? 'Persona'}
+                        <button type="button" aria-label="Quitar" data-testid={`wizard-chip-remove-${id}`} onClick={() => removePerson(id)}>×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="vera-wizard__role-add">
+                  <select
+                    className="vera-select"
+                    value=""
+                    onChange={(e) => addPerson(e.target.value)}
+                    data-testid={`wizard-role-select-${role}`}
+                  >
+                    <option value="">Agregar de la base…</option>
+                    {available.map((person) => (
+                      <option key={person.id} value={person.id}>{person.fullName}</option>
+                    ))}
+                  </select>
+                  <Button
+                    variant="secondary" size="sm" type="button"
+                    data-testid={`wizard-quickadd-toggle-${role}`}
+                    onClick={() => setQuickAddRole(quickAddRole === role ? null : role)}
+                  >
+                    <Plus size={15} /> Nuevo
+                  </Button>
+                </div>
+
+                {quickAddRole === role && (
+                  <div className="vera-wizard__quickadd" data-testid={`wizard-quickadd-${role}`}>
+                    <Input placeholder="Nombre y apellido *" value={quickAdd.fullName} data-testid="quickadd-name"
+                      onChange={(e) => setQuickAdd((q) => ({ ...q, fullName: e.target.value }))} />
+                    <Input placeholder="DNI" value={quickAdd.document} data-testid="quickadd-dni"
+                      onChange={(e) => setQuickAdd((q) => ({ ...q, document: e.target.value }))} />
+                    <Input placeholder="Teléfono" value={quickAdd.primaryPhone} data-testid="quickadd-phone"
+                      onChange={(e) => setQuickAdd((q) => ({ ...q, primaryPhone: e.target.value }))} />
+                    <Input placeholder="Email" value={quickAdd.primaryEmail} data-testid="quickadd-email"
+                      onChange={(e) => setQuickAdd((q) => ({ ...q, primaryEmail: e.target.value }))} />
+                    <Button type="button" size="sm" data-testid="quickadd-submit"
+                      disabled={!quickAdd.fullName.trim() || createPerson.isPending} onClick={submitQuickAdd}>
+                      {createPerson.isPending ? 'Agregando…' : 'Agregar persona'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </section>
       )}
 

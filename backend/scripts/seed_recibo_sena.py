@@ -41,6 +41,27 @@ VARIABLES = [
      "type": "money", "required": True},
     {"key": "honorarios", "label": "Honorarios del martillero (USD)", "source": "input",
      "type": "money", "required": True},
+    {"key": "forma_pago", "label": "Forma de pago", "source": "input", "type": "textarea",
+     "required": False,
+     "default": "A la firma de la escritura, la suma total del precio convenido."},
+    {"key": "honorarios_gastos", "label": "Honorarios y gastos", "source": "input", "type": "textarea",
+     "required": False,
+     "default": "Los gastos de escrituración, incluido el EP, son a cargo del comprador, previa aceptación del presupuesto."},
+    {"key": "escrituracion", "label": "Escribano / Escrituración", "source": "input", "type": "textarea",
+     "required": False,
+     "default": "La Escritura Traslativa de Dominio del inmueble referenciado será otorgada por ante la "
+                "Escribana NANCY CECILIA MOAL, en un plazo de 60 días a la firma de la presente, con "
+                "oficina en Sánchez de Loria Nº341 - 6to. Piso, Depto. D, Lomas de Zamora, Tel 221-064868, "
+                "siendo su designación de carácter esencial y necesario para la venta."},
+    {"key": "entrega_estado", "label": "Entrega y estado del inmueble", "source": "input", "type": "textarea",
+     "required": False,
+     "default": "El inmueble será entregado libre de deudas, impuestos, tasas, servicios y gravámenes, al "
+                "día de la posesión, en el estado en que fue visitado y aceptado por el COMPRADOR."},
+    {"key": "jurisdiccion", "label": "Jurisdicción", "source": "input", "type": "textarea",
+     "required": False,
+     "default": "Para cualquier cuestión judicial derivada del presente, las partes se someten a la "
+                "jurisdicción de los Tribunales Ordinarios de Dolores, renunciando a cualquier otro fuero "
+                "o jurisdicción."},
 ]
 
 BODY = {"blocks": [
@@ -56,30 +77,21 @@ BODY = {"blocks": [
      "inmueble detallado precedentemente."},
     {"type": "p", "value": "PRECIO TOTAL DE LA OPERACIÓN. El precio total convenido para la presente "
      "operación asciende a la suma de DÓLARES ESTADOUNIDENSES USD {{precio_total}}."},
-    {"type": "p", "value": "FORMA DE PAGO. A la firma de la escritura, la suma total del precio "
-     "convenido."},
-    {"type": "p", "value": "HONORARIOS Y GASTOS. Los gastos de escrituración, incluido el EP, son a "
-     "cargo del comprador, previa aceptación del presupuesto."},
+    {"type": "p", "value": "FORMA DE PAGO. {{forma_pago}}"},
+    {"type": "p", "value": "HONORARIOS Y GASTOS. {{honorarios_gastos}}"},
     {"type": "p", "value": "Interviene en esta venta el Martillero y Corredor Público JORGE OSCAR "
      "VARELA, con Matrícula T°III F°103 N°865 de la Prov. de Buenos Aires, siendo sus honorarios "
      "pactados con el COMPRADOR de DÓLARES ESTADOUNIDENSES BILLETES USD {{honorarios}}, pagaderos a la "
      "firma de la escritura."},
-    {"type": "p", "value": "ESCRITURACIÓN. La Escritura Traslativa de Dominio del inmueble referenciado "
-     "será otorgada por ante la Escribana NANCY CECILIA MOAL, en un plazo de 60 días a la firma de la "
-     "presente, con oficina en Sánchez de Loria Nº341 - 6to. Piso, Depto. D, Lomas de Zamora, "
-     "Tel 221-064868, siendo su designación de carácter esencial y necesario para la venta."},
+    {"type": "p", "value": "ESCRITURACIÓN. {{escrituracion}}"},
     {"type": "p", "value": "CONDICIONES DE LA RESERVA. En caso de que el VENDEDOR no acepte la operación "
      "en las condiciones aquí establecidas, la suma entregada será reintegrada íntegramente al COMPRADOR, "
      "sin cargo alguno."},
     {"type": "p", "value": "En caso de desistimiento por parte del COMPRADOR, la suma entregada quedará "
      "a favor de la INMOBILIARIA interviniente, en concepto de gastos, gestión y honorarios, sin derecho "
      "a reclamo alguno."},
-    {"type": "p", "value": "ENTREGA Y ESTADO DEL INMUEBLE. El inmueble será entregado libre de deudas, "
-     "impuestos, tasas, servicios y gravámenes, al día de la posesión, en el estado en que fue visitado "
-     "y aceptado por el COMPRADOR."},
-    {"type": "p", "value": "JURISDICCIÓN. Para cualquier cuestión judicial derivada del presente, las "
-     "partes se someten a la jurisdicción de los Tribunales Ordinarios de Dolores, renunciando a "
-     "cualquier otro fuero o jurisdicción."},
+    {"type": "p", "value": "ENTREGA Y ESTADO DEL INMUEBLE. {{entrega_estado}}"},
+    {"type": "p", "value": "JURISDICCIÓN. {{jurisdiccion}}"},
     {"type": "p", "value": "En prueba de conformidad, se firman dos (2) ejemplares de un mismo tenor y a "
      "un solo efecto, en el lugar y fecha indicados al inicio."},
 ]}

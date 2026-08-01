@@ -7281,6 +7281,28 @@ p {
 
 .vera-wizard__role { display: flex; flex-direction: column; gap: 6px; max-width: 480px; }
 .vera-wizard__role-label { font-size: var(--vera-font-size-sm); font-weight: var(--vera-font-weight-medium); color: var(--vera-color-text); }
+.vera-wizard__role { margin-bottom: 18px; }
+.vera-wizard__chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.vera-wizard__chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: color-mix(in srgb, var(--vera-color-primary) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vera-color-primary) 40%, transparent);
+  color: var(--vera-color-text); border-radius: var(--vera-radius-pill);
+  padding: 5px 6px 5px 12px; font-size: var(--vera-font-size-sm);
+}
+.vera-wizard__chip button {
+  border: 0; background: transparent; color: var(--vera-color-text-secondary);
+  cursor: pointer; font-size: 16px; line-height: 1; padding: 0 4px; border-radius: 50%;
+}
+.vera-wizard__chip button:hover { color: var(--vera-color-text); }
+.vera-wizard__role-add { display: flex; gap: 8px; align-items: center; max-width: 480px; }
+.vera-wizard__role-add .vera-select { flex: 1; }
+.vera-wizard__quickadd {
+  display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-width: 480px;
+  padding: 14px; border: 1px dashed var(--vera-color-border); border-radius: var(--vera-radius-md);
+  background: var(--vera-color-surface);
+}
+
 
 .vera-wizard__nav {
   display: flex;

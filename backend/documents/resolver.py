@@ -55,12 +55,13 @@ async def resolve(template: dict, property_id: str | None,
     inputs = inputs or {}
     prop = await property_repository.get(property_id) if property_id else None
 
-    # Persona por rol (una por rol; el rol es el vínculo con el documento).
-    persons_by_role: dict[str, dict] = {}
+    # Personas por rol. Puede haber MÁS DE UNA por rol (p.ej. 2 compradores):
+    # sus valores se agregan con " y " en cada variable.
+    persons_by_role: dict[str, list[dict]] = {}
     for link in persons or []:
         person = await people_repository.get(link.get("personId") or link.get("person_id"))
         if person:
-            persons_by_role[link.get("role")] = person
+            persons_by_role.setdefault(link.get("role"), []).append(person)
 
     resolved: dict = {}
     missing: list[str] = []
@@ -81,11 +82,12 @@ async def resolve(template: dict, property_id: str | None,
             if raw not in _EMPTY:
                 value, origin = raw, "property"
         elif source == "person":
-            person = persons_by_role.get(v.get("role"))
-            if person and path:
-                raw = person.get(_PERSON_PATHS.get(path, path))
-                if raw not in _EMPTY:
-                    value, origin = raw, "person"
+            plist = persons_by_role.get(v.get("role")) or []
+            if plist and path:
+                field = _PERSON_PATHS.get(path, path)
+                vals = [str(p.get(field)) for p in plist if p.get(field) not in _EMPTY]
+                if vals:
+                    value, origin = " y ".join(vals), "person"
 
         # Un valor tipeado por el usuario (override) siempre puede completar / corregir.
         if value in _EMPTY and inputs.get(key) not in _EMPTY:
