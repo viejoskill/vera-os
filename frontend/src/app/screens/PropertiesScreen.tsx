@@ -71,7 +71,7 @@ interface CardActions {
 const channelTone = (status?: string): string =>
   status === 'published' ? 'published' : status === 'error' ? 'error' : 'none';
 
-const ChannelSemaphore = ({ publications }: { publications?: Property['publications'] }) => {
+const ChannelSemaphore = ({ publications, radar }: { publications?: Property['publications']; radar?: boolean }) => {
   const web = publications?.['web-varela']?.status;
   const ml = publications?.['mercadolibre']?.status;
   const label = (channel: string, status?: string) =>
@@ -88,6 +88,11 @@ const ChannelSemaphore = ({ publications }: { publications?: Property['publicati
       <span className="vera-prop__channel" data-testid="property-channel-ml" title={label('Mercado Libre', ml)} aria-label={label('Mercado Libre', ml)}>
         <span className={`vera-dot vera-dot--${channelTone(ml)}`} /> ML
       </span>
+      {radar && (
+        <span className="vera-prop__channel vera-prop__channel--radar" data-testid="property-channel-radar" title="Destacada en la portada del sitio" aria-label="En Radar">
+          <span className="vera-dot vera-dot--radar" /> Radar
+        </span>
+      )}
     </div>
   );
 };
@@ -226,7 +231,7 @@ const PropertyCard = ({ property, actions }: { property: Property; actions: Card
             )}
           </div>
         )}
-        <ChannelSemaphore publications={property.publications} />
+        <ChannelSemaphore publications={property.publications} radar={property.radar} />
       </div>
     </Card>
   );
