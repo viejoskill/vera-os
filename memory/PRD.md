@@ -868,3 +868,7 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - **Separador de miles por tipo `money`**: `_display_vars(resolved, variables)` ahora formatea toda variable declarada `type: money` en el template (monto_sena, precio_total, honorarios → 150.000 / 1.250.000 / 37.500), además de las claves legacy. Genérico para documentos futuros.
 - **Firma fija del asesor**: bloque "Asesor de venta: Sebastian Varela" SOLO en el template `recibo_sena_reserva` (via `document.template_key`).
 - Verificado por script local: PDF generado OK, texto extraído confirma miles + firma; logo negro puro (0,0,0) 611x293.
+
+## Ocultar versiones viejas en "Nuevo documento" — 2026-06
+- `DocumentWizard.tsx`: `availableTemplates` (useMemo) muestra SOLO la última versión por `templateKey` (excluye status deprecated/archived). El selector deja de repetir v1/v2. La solapa Templates (gestión) sigue mostrando todas las versiones.
+- Verificado E2E (screenshot login qa_varela): "Recibo de Seña (Reserva)" ahora muestra solo v2. tsc limpio.

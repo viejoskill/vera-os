@@ -10,7 +10,7 @@ import { useProperties } from '@app/hooks/useProperties';
 import { usePeople, useCreatePerson } from '@app/hooks/usePeople';
 import {
   useTemplates, useTemplate, useResolveDocument, useCreateDocument,
-  type PersonLinkInput, type ResolveResult,
+  type PersonLinkInput, type ResolveResult, type TemplateRow,
 } from './useDocuments';
 
 type Step = 'template' | 'property' | 'people' | 'signature' | 'review';
@@ -45,6 +45,18 @@ export const DocumentWizard = () => {
   const [signerRequired, setSignerRequired] = useState<Record<string, boolean>>({});
 
   const templates = useTemplates();
+  // Solo la última versión de cada template (evita el desorden v1/v2 en el
+  // selector). Se excluyen las versiones retiradas (deprecated/archived).
+  const availableTemplates = useMemo(() => {
+    const rows = templates.data ?? [];
+    const latest = new Map<string, TemplateRow>();
+    for (const t of rows) {
+      if (t.status === 'deprecated' || t.status === 'archived') continue;
+      const cur = latest.get(t.templateKey);
+      if (!cur || t.version > cur.version) latest.set(t.templateKey, t);
+    }
+    return Array.from(latest.values());
+  }, [templates.data]);
   const template = useTemplate(templateId || undefined);
   const properties = useProperties();
   const people = usePeople();
@@ -185,14 +197,14 @@ export const DocumentWizard = () => {
         <section className="vera-wizard__body" data-testid="step-template">
           <h2 className="vera-wizard__h2"><Layers size={16} /> Elegí el tipo de documento</h2>
           {templates.isLoading && <p className="vera-docs__empty">Cargando templates…</p>}
-          {templates.data?.length === 0 && (
+          {!templates.isLoading && availableTemplates.length === 0 && (
             <div className="vera-docs__empty" data-testid="templates-empty">
               <Layers size={24} />
               <p>Todavía no hay templates. Creá el primero desde la solapa Templates.</p>
             </div>
           )}
           <div className="vera-wizard__cards">
-            {templates.data?.map((t) => (
+            {availableTemplates.map((t) => (
               <button
                 key={t.id}
                 type="button"
