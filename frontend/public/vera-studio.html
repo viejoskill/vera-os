@@ -149,6 +149,7 @@
     <button class="mode" id="modeCal" type="button">Calendario mensual</button>
     <button class="mode" id="modeVid" type="button">Video</button>
     <button class="mode" id="modeFotos" type="button">Editor de fotos</button>
+    <button class="mode" id="modePortada" type="button">Portadas</button>
   </div>
 
   <div class="grid">
@@ -244,32 +245,6 @@
             </div>
             <label style="margin-top:10px">Nomenclatura catastral <span class="opt">(peg&aacute; el dato tal cual de ARBA u otra fuente)</span></label>
             <input type="text" id="lCatastro" placeholder="Ej: Partido 123 &middot; Circ. 4 &middot; Secc. CC &middot; Mz 98 &middot; Parc. 10">
-          </div>
-        </div>
-
-        <label class="chk"><input type="checkbox" id="pPortada"> Agregar placa de portada / invitaci&oacute;n (t&iacute;tulo + subt&iacute;tulo + CTA, sin numeraci&oacute;n, ideal para Historia)</label>
-        <div id="pPortadaBox" style="display:none">
-          <div class="slidebox" style="margin-top:10px">
-            <label>T&iacute;tulo <span class="opt">(*palabra* = dorado; vac&iacute;o = usa "T&iacute;tulo corto")</span></label>
-            <input type="text" id="portTitulo" placeholder="Se usa el T\u00edtulo corto de arriba si lo dej\u00e1s vac\u00edo">
-            <label>Subt&iacute;tulo <span class="opt">(opcional; vac&iacute;o = usa "Ubicaci&oacute;n")</span></label>
-            <input type="text" id="portSub" placeholder="Se usa la Ubicaci\u00f3n de arriba si lo dej\u00e1s vac\u00edo">
-            <label>CTA <span class="opt">(opcional; pastilla dorada)</span></label>
-            <input type="text" id="portCta" placeholder="Ej: DESLIZ&Aacute; PARA VER M&Aacute;S">
-            <label style="margin-top:8px">Fondo de la portada</label>
-            <div class="tabs" id="portBgTipo" style="margin-top:0">
-              <button type="button" class="tab" data-bgtipo="color">Color de marca</button>
-              <button type="button" class="tab" data-bgtipo="foto">Foto de la propiedad</button>
-            </div>
-            <div id="portColorBox" style="margin-top:8px">
-              <label>Color de fondo</label>
-              <select id="portColor"></select>
-            </div>
-            <div id="portFotoBox" style="display:none;margin-top:8px">
-              <label>Qu&eacute; foto usar como fondo</label>
-              <select id="portFotoRef"></select>
-              <div class="hint">Se usa con un degrad&eacute; oscuro autom&aacute;tico para que el t&iacute;tulo se lea bien. Ten&eacute;s que haber subido al menos una foto abajo primero.</div>
-            </div>
           </div>
         </div>
 
@@ -387,6 +362,41 @@
         </div>
         <div class="status" id="fStatus"></div>
         <div class="hint">Fotos limpias, sin logo ni textos de marca &mdash; listas para tu web o CRM. El aviso de edici&oacute;n con IA es opcional en los 4 modos. Us&aacute; Potencial con criterio.</div>
+      </div>
+
+      <div class="panel" id="panelPortada" style="display:none">
+        <h2>1 &middot; Portada / Invitaci&oacute;n <span class="opt">(teaser para Historia o cierre de Feed)</span></h2>
+        <label>T&iacute;tulo <span class="opt">(*palabra* = dorado)</span></label>
+        <input type="text" id="crTitulo" placeholder="Ej: NUEVO *INGRESO*">
+        <label>Subt&iacute;tulo <span class="opt">(opcional)</span></label>
+        <input type="text" id="crSub" placeholder="Ej: Mir&aacute; el posteo completo">
+        <label>CTA <span class="opt">(opcional; pastilla dorada)</span></label>
+        <input type="text" id="crCta" placeholder="Ej: DESLIZ&Aacute; PARA VER M&Aacute;S">
+
+        <label style="margin-top:10px">Fondo</label>
+        <div class="tabs" id="crBgTipo" style="margin-top:0">
+          <button type="button" class="tab sel" data-bgtipo="color">Color de marca</button>
+          <button type="button" class="tab" data-bgtipo="foto">Foto</button>
+        </div>
+        <div id="crColorBox" style="margin-top:8px">
+          <label>Color de fondo</label>
+          <select id="crColor"></select>
+        </div>
+        <div id="crFotoBox" style="display:none;margin-top:8px">
+          <label class="btn sec filelbl">Subir foto de fondo<input type="file" id="crFoto" accept="image/*"></label>
+          <span class="hint" id="crFotoState">Sin foto cargada</span>
+          <label style="margin-top:10px">Sumarle dise&ntilde;o con IA <span class="opt">(opcional, para una portada m&aacute;s creativa)</span></label>
+          <div class="tabs" id="crDisenoVista" style="margin-top:0">
+            <button type="button" class="tab sel" data-disvista="original">Foto original</button>
+            <button type="button" class="tab" data-disvista="diseno">Con dise&ntilde;o IA</button>
+          </div>
+          <input type="text" id="crDisenoPrompt" style="margin-top:8px" placeholder="Ej: billetes cayendo suavemente &middot; persona de espaldas mirando la casa &middot; part&iacute;culas de luz dorada">
+          <button class="btn sec mini" id="crDisenoGen" type="button" style="margin-top:8px">Generar dise&ntilde;o</button>
+          <label class="chk" style="margin-top:8px"><input type="checkbox" id="crAviso" checked> Incluir aviso "Dise&ntilde;o con IA"</label>
+        </div>
+        <label class="chk" style="margin-top:10px"><input type="checkbox" id="crContacto"> Mostrar datos de la inmobiliaria</label>
+        <div class="status" id="crIaStatus"></div>
+        <div class="hint">Sin numeraci&oacute;n de carrusel &mdash; pensada como pieza suelta: teaser de Historia con link al posteo, o cierre de un Feed.</div>
       </div>
     </div>
 
@@ -568,7 +578,7 @@ function imagenABlob(img){
 /* ---------- MODOS ---------- */
 function setMode(m){
   mode = m;
-  [["modeCont","cont","panelCont"],["modeProp","prop","panelProp"],["modeCal","cal","panelCal"],["modeVid","vid","panelVid"],["modeFotos","fotos","panelFotos"]].forEach(([btn,val,panel])=>{
+  [["modeCont","cont","panelCont"],["modeProp","prop","panelProp"],["modeCal","cal","panelCal"],["modeVid","vid","panelVid"],["modeFotos","fotos","panelFotos"],["modePortada","portada","panelPortada"]].forEach(([btn,val,panel])=>{
     $(btn).classList.toggle("sel", m===val);
     $(panel).style.display = (m===val) ? "" : "none";
   });
@@ -581,6 +591,7 @@ $("modeProp").onclick = ()=> setMode("prop");
 $("modeCal").onclick = ()=> setMode("cal");
 $("modeVid").onclick = ()=> setMode("vid");
 $("modeFotos").onclick = ()=> setMode("fotos");
+$("modePortada").onclick = ()=> setMode("portada");
 
 /* ---------- CARRUSEL DE CONTENIDO ---------- */
 function nuevoSlide(esUltima){ return { titulo:"TU *GANCHO* AC\u00c1", sec:"", cta:"", estilo:"estudio", textoPos:"izq", altura:"centro", fotoOff:0, zoom:0, bgType:"flat", bgColor:0, bgImg:null, bgDesc:"", contacto: !!esUltima }; }
@@ -936,50 +947,8 @@ $("lMirror").addEventListener("change", e=>{ prop.lote.mirror = e.target.checked
 });
 lRedibujarCamposMedidas();
 
-prop.mostrarPortada = false;
-prop.portada = { titulo:"", subtitulo:"", cta:"", bgColor:0, bgTipo:"color", bgFotoIdx:0 };
-$("portColor").innerHTML = PALETA.map((p,i)=>`<option value="${i}">${p.n}</option>`).join("");
-function actualizarSelectorPortadaFoto(){
-  const sel = $("portFotoRef");
-  const prev = prop.portada.bgFotoIdx;
-  sel.innerHTML = prop.fotos.map((f,i)=>`<option value="${i}">Foto ${i+1}</option>`).join("");
-  if(prop.fotos.length){
-    prop.portada.bgFotoIdx = Math.min(prev||0, prop.fotos.length-1);
-    sel.value = prop.portada.bgFotoIdx;
-  }
-}
-$("portBgTipo").querySelectorAll("[data-bgtipo]").forEach(b=>{
-  b.onclick = ()=>{
-    prop.portada.bgTipo = b.dataset.bgtipo;
-    $("portBgTipo").querySelectorAll("[data-bgtipo]").forEach(x=> x.classList.toggle("sel", x===b));
-    $("portColorBox").style.display = prop.portada.bgTipo==="color" ? "" : "none";
-    $("portFotoBox").style.display = prop.portada.bgTipo==="foto" ? "" : "none";
-    if(prop.portada.bgTipo==="foto") actualizarSelectorPortadaFoto();
-    render();
-  };
-});
-$("portFotoRef").addEventListener("change", e=>{ prop.portada.bgFotoIdx = parseInt(e.target.value); render(); });
-$("pPortada").addEventListener("change", e=>{
-  prop.mostrarPortada = e.target.checked;
-  $("pPortadaBox").style.display = prop.mostrarPortada ? "" : "none";
-  if(prop.mostrarPortada){ prop.curF = -2; actualizarSelectorPortadaFoto(); }
-  else if(prop.curF===-2) prop.curF = prop.esLote ? -1 : (prop.fotos.length ? 0 : -1);
-  drawPTabs(); render();
-});
-$("portTitulo").addEventListener("input", e=>{ prop.portada.titulo = e.target.value; render(); });
-$("portSub").addEventListener("input", e=>{ prop.portada.subtitulo = e.target.value; render(); });
-$("portCta").addEventListener("input", e=>{ prop.portada.cta = e.target.value; render(); });
-$("portColor").addEventListener("change", e=>{ prop.portada.bgColor = parseInt(e.target.value); render(); });
-
 function drawPTabs(){
   const t = $("pTabs"); t.innerHTML = "";
-  if(prop.mostrarPortada){
-    const bP = document.createElement("button");
-    bP.className = "tab"+(prop.curF===-2?" sel":"");
-    bP.textContent = "Portada";
-    bP.onclick = ()=>{ prop.curF=-2; drawPTabs(); drawPEditor(); render(); };
-    t.appendChild(bP);
-  }
   if(prop.esLote){
     const bF = document.createElement("button");
     bF.className = "tab"+(prop.curF===-1?" sel":"");
@@ -994,11 +963,9 @@ function drawPTabs(){
     b.onclick = ()=>{ prop.curF=i; drawPTabs(); drawPEditor(); render(); };
     t.appendChild(b);
   });
-  if($("portFotoRef")) actualizarSelectorPortadaFoto();
 }
 function drawPEditor(){
   const box = $("pEditor");
-  if(prop.curF===-2){ box.innerHTML = '<div class="hint">Complet\u00e1 el t\u00edtulo, subt\u00edtulo, CTA y color arriba. Esta placa no lleva foto ni numeraci\u00f3n.</div>'; return; }
   if(prop.curF===-1){ box.innerHTML = '<div class="hint">Complet\u00e1 los datos de la ficha arriba. Us\u00e1 "Agregar fotos" para sumar fotos del entorno debajo de la ficha.</div>'; return; }
   if(!prop.fotos.length){ box.innerHTML = ""; return; }
   const f = prop.fotos[prop.curF];
@@ -1389,6 +1356,7 @@ function render(){
   if(cv.height !== H){ cv.height = H; }
   if(mode==="prop"){ renderProp(P); }
   else if(mode==="vid"){ renderVidPreview(P); }
+  else if(mode==="portada"){ renderPortadaModulo(P); }
   else { renderCont(P); }
 }
 
@@ -1580,7 +1548,6 @@ function drawImageCover(img, x, y, w, h){
 function renderProp(P){
   ctx.clearRect(0,0,W,H);
   ctx.fillStyle = "#0c0d0f"; ctx.fillRect(0,0,W,H);
-  if(prop.mostrarPortada && prop.curF===-2){ renderPortadaInvitacion(P); return; }
   if(prop.esLote && prop.curF===-1){ renderFichaLotePortada(P); return; }
   const total = prop.fotos.length;
   if(!total){
@@ -1818,84 +1785,6 @@ function renderFichaLotePortada(P){
 
   $("dl1").href = cv.toDataURL("image/jpeg", .92);
   $("dl1").download = nombreBase()+"_00-ficha.jpg";
-}
-
-function renderPortadaInvitacion(P){
-  const usaFoto = prop.portada.bgTipo==="foto" && prop.fotos[prop.portada.bgFotoIdx];
-  if(usaFoto){
-    const foto = prop.fotos[prop.portada.bgFotoIdx];
-    const pr = PRESETS[foto.preset];
-    ctx.save();
-    ctx.filter = pr.filtro;
-    drawImageCover(foto.img, 0, 0, W, H);
-    ctx.restore();
-    if(pr.calidez>0){ ctx.fillStyle = `rgba(242,180,60,${pr.calidez})`; ctx.fillRect(0,0,W,H); }
-    const vg = ctx.createRadialGradient(W/2,H/2,H*.3, W/2,H/2,H*.8);
-    vg.addColorStop(0,"rgba(0,0,0,0)"); vg.addColorStop(1,"rgba(0,0,0,.45)");
-    ctx.fillStyle = vg; ctx.fillRect(0,0,W,H);
-    let gt = ctx.createLinearGradient(0,0,0,H*.5);
-    gt.addColorStop(0,"rgba(8,9,11,.75)"); gt.addColorStop(1,"rgba(8,9,11,0)");
-    ctx.fillStyle = gt; ctx.fillRect(0,0,W,H*.5);
-    let gb = ctx.createLinearGradient(0,H*.45,0,H);
-    gb.addColorStop(0,"rgba(8,9,11,0)"); gb.addColorStop(1,"rgba(8,9,11,.85)");
-    ctx.fillStyle = gb; ctx.fillRect(0,H*.45,W,H*.55);
-  }else{
-    const pal = PALETA[prop.portada.bgColor||0];
-    let dg = ctx.createLinearGradient(0,0,W*.6,H);
-    dg.addColorStop(0, pal.a); dg.addColorStop(1, pal.b);
-    ctx.fillStyle = dg; ctx.fillRect(0,0,W,H);
-    const rg = ctx.createRadialGradient(W*.8,H*.25,60,W*.8,H*.25,900);
-    rg.addColorStop(0, rgba(ORO,.07)); rg.addColorStop(1,"rgba(0,0,0,0)");
-    ctx.fillStyle = rg; ctx.fillRect(0,0,W,H);
-  }
-
-  drawDots(W-30-3*17, P.dotTop, 4, 7);
-  drawDots(24, H-P.dotBotOff-6*17, 3, 7);
-  drawLogo(P);
-
-  ctx.textBaseline = "top";
-  const titFont = "700 100px Oswald";
-  // si no escribiste texto propio de portada, usa el Titulo corto / Ubicacion ya cargados arriba
-  const tit = ((prop.portada.titulo||"").trim() || $("pTitulo").value.trim()).toUpperCase();
-  const lineas = tit ? wrapSpans(parseSpans(tit), titFont, W-2*PAD) : [];
-  const sub = (prop.portada.subtitulo||"").trim() || $("pUbi").value.trim();
-  const subFont = "400 40px Inter";
-  const subLineas = sub ? wrapSpans(parseSpans(sub), subFont, W-2*PAD) : [];
-  const cta = (prop.portada.cta||"").trim();
-
-  let bloque = lineas.length*112;
-  if(subLineas.length) bloque += subLineas.length*52 + 20;
-  if(cta) bloque += 110;
-  let y = Math.round((H - bloque)/2);
-
-  lineas.forEach(line=>{
-    ctx.font = titFont; let x = PAD;
-    line.forEach(tok=>{ ctx.fillStyle = tok.g?ORO:BLANCO; ctx.fillText(tok.t,x,y); x += ctx.measureText(tok.t).width; });
-    y += 112;
-  });
-  if(subLineas.length){
-    subLineas.forEach(line=>{
-      ctx.font = subFont; let x = PAD;
-      line.forEach(tok=>{ ctx.fillStyle = tok.g?ORO:"#ddd9cf"; ctx.fillText(tok.t,x,y); x += ctx.measureText(tok.t).width; });
-      y += 52;
-    });
-    y += 20;
-  }
-  if(cta){
-    ctx.font = "700 42px Inter";
-    const t = cta.toUpperCase();
-    const tw = ctx.measureText(t).width;
-    roundRect(PAD, y, tw+72, 92, 18);
-    ctx.fillStyle = ORO; ctx.fill();
-    ctx.fillStyle = "#141414";
-    ctx.fillText(t, PAD+36, y+26);
-  }
-
-  const conContacto = $("pContacto").checked && prop.fotos.length===0 && !prop.esLote;
-  drawPie(P, conContacto, 1, 0, false);
-
-  $("dl1").href = cv.toDataURL("image/jpeg", .92);
-  $("dl1").download = nombreBase()+"_00-portada.jpg";
 }
 
 function renderPropPotencial(P, f, idx, total){
@@ -2742,13 +2631,158 @@ $("fDlAll").onclick = async ()=>{
   $("fStatus").className = "status ok";
 };
 
+/* ---------- MODULO: PORTADAS ---------- */
+let portada = {
+  titulo:"", subtitulo:"", cta:"",
+  bgTipo:"color", bgColor:0,
+  img:null, vista:"original", iaDiseno:null, iaDisenoPrompt:""
+};
+$("crColor").innerHTML = PALETA.map((p,i)=>`<option value="${i}">${p.n}</option>`).join("");
+$("crTitulo").addEventListener("input", e=>{ portada.titulo = e.target.value; render(); });
+$("crSub").addEventListener("input", e=>{ portada.subtitulo = e.target.value; render(); });
+$("crCta").addEventListener("input", e=>{ portada.cta = e.target.value; render(); });
+$("crColor").addEventListener("change", e=>{ portada.bgColor = parseInt(e.target.value); render(); });
+$("crContacto").addEventListener("change", render);
+$("crBgTipo").querySelectorAll("[data-bgtipo]").forEach(b=>{
+  b.onclick = ()=>{
+    portada.bgTipo = b.dataset.bgtipo;
+    $("crBgTipo").querySelectorAll("[data-bgtipo]").forEach(x=> x.classList.toggle("sel", x===b));
+    $("crColorBox").style.display = portada.bgTipo==="color" ? "" : "none";
+    $("crFotoBox").style.display = portada.bgTipo==="foto" ? "" : "none";
+    render();
+  };
+});
+$("crFoto").addEventListener("change", e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const img = new Image();
+  img.onload = ()=>{
+    portada.img = img; portada.vista = "original"; portada.iaDiseno = null;
+    $("crFotoState").textContent = "Foto cargada";
+    render();
+  };
+  img.src = URL.createObjectURL(f);
+});
+$("crDisenoVista").querySelectorAll("[data-disvista]").forEach(b=>{
+  b.onclick = ()=>{
+    const v = b.dataset.disvista;
+    if(v==="diseno" && !portada.iaDiseno){ return; } // se genera con el boton, no con la pestaña
+    portada.vista = v;
+    $("crDisenoVista").querySelectorAll("[data-disvista]").forEach(x=> x.classList.toggle("sel", x.dataset.disvista===v));
+    render();
+  };
+});
+$("crDisenoGen").addEventListener("click", async ()=>{
+  const st = $("crIaStatus");
+  if(!conexionVera()){ st.textContent="Falta el C\u00f3digo de acceso en Identidad fija."; st.className="status err"; $("cfg").open=true; return; }
+  if(!portada.img){ st.textContent="Subi\u00ed una foto de fondo primero."; st.className="status err"; return; }
+  const prompt = $("crDisenoPrompt").value.trim();
+  if(!prompt){ st.textContent="Describ\u00ed qu\u00e9 dise\u00f1o agregar."; st.className="status err"; return; }
+  st.textContent = "Generando dise\u00f1o... 30-60 seg."; st.className="status";
+  try{
+    const blob = await imagenABlob(portada.img);
+    const fd = new FormData();
+    fd.append("model","gpt-image-2");
+    fd.append("prompt","Editar esta fotografia de una propiedad agregando el siguiente elemento decorativo o de diseno grafico, de forma fotorrealista e integrada: "+prompt+". Mantener la arquitectura, la estructura, los materiales y las proporciones originales exactamente iguales, sin alterarlos. El agregado debe ser un elemento visual o atmosferico (objetos, una persona, luces, particulas), nunca una modificacion de la construccion de la propiedad.");
+    fd.append("size","1536x1024");
+    fd.append("quality","medium");
+    fd.append("image[]", blob, "foto.jpg");
+    const data = await llamarVeraForm("/editar", fd);
+    const img = new Image();
+    await new Promise(res=>{ img.onload=res; img.src="data:image/png;base64,"+data.data[0].b64_json; });
+    portada.iaDiseno = img; portada.vista = "diseno";
+    $("crDisenoVista").querySelectorAll("[data-disvista]").forEach(x=> x.classList.toggle("sel", x.dataset.disvista==="diseno"));
+    st.textContent = "Dise\u00f1o listo."; st.className="status ok";
+    render();
+  }catch(e){ st.textContent = e.message; st.className="status err"; }
+});
+
+function renderPortadaModulo(P){
+  const usaFoto = portada.bgTipo==="foto" && portada.img;
+  if(usaFoto){
+    const srcImg = (portada.vista==="diseno" && portada.iaDiseno) ? portada.iaDiseno : portada.img;
+    drawImageCover(srcImg, 0, 0, W, H);
+    const vg = ctx.createRadialGradient(W/2,H/2,H*.3, W/2,H/2,H*.8);
+    vg.addColorStop(0,"rgba(0,0,0,0)"); vg.addColorStop(1,"rgba(0,0,0,.45)");
+    ctx.fillStyle = vg; ctx.fillRect(0,0,W,H);
+    let gt = ctx.createLinearGradient(0,0,0,H*.5);
+    gt.addColorStop(0,"rgba(8,9,11,.75)"); gt.addColorStop(1,"rgba(8,9,11,0)");
+    ctx.fillStyle = gt; ctx.fillRect(0,0,W,H*.5);
+    let gb = ctx.createLinearGradient(0,H*.45,0,H);
+    gb.addColorStop(0,"rgba(8,9,11,0)"); gb.addColorStop(1,"rgba(8,9,11,.85)");
+    ctx.fillStyle = gb; ctx.fillRect(0,H*.45,W,H*.55);
+  }else{
+    const pal = PALETA[portada.bgColor||0];
+    let dg = ctx.createLinearGradient(0,0,W*.6,H);
+    dg.addColorStop(0, pal.a); dg.addColorStop(1, pal.b);
+    ctx.fillStyle = dg; ctx.fillRect(0,0,W,H);
+    const rg = ctx.createRadialGradient(W*.8,H*.25,60,W*.8,H*.25,900);
+    rg.addColorStop(0, rgba(ORO,.07)); rg.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.fillStyle = rg; ctx.fillRect(0,0,W,H);
+  }
+
+  drawDots(W-30-3*17, P.dotTop, 4, 7);
+  drawDots(24, H-P.dotBotOff-6*17, 3, 7);
+  drawLogo(P);
+
+  if(usaFoto && portada.vista==="diseno" && $("crAviso").checked){
+    ctx.save();
+    ctx.textBaseline="top"; ctx.font="600 24px Inter";
+    ctx.shadowColor="rgba(0,0,0,.7)"; ctx.shadowBlur=8;
+    const t = "Dise\u00f1o con IA";
+    ctx.fillStyle = ORO;
+    const tx = ladoEtiqueta()==="izq" ? PAD : W-PAD-ctx.measureText(t).width;
+    ctx.fillText(t, tx, P.logoY+6);
+    ctx.restore();
+  }
+
+  ctx.textBaseline = "top";
+  const titFont = "700 100px Oswald";
+  const tit = (portada.titulo||"").trim().toUpperCase();
+  const lineas = tit ? wrapSpans(parseSpans(tit), titFont, W-2*PAD) : [];
+  const sub = (portada.subtitulo||"").trim();
+  const subFont = "400 40px Inter";
+  const subLineas = sub ? wrapSpans(parseSpans(sub), subFont, W-2*PAD) : [];
+  const cta = (portada.cta||"").trim();
+
+  let y = Math.round(H * 0.62);
+  lineas.forEach(line=>{
+    ctx.font = titFont; let x = PAD;
+    line.forEach(tok=>{ ctx.fillStyle = tok.g?ORO:BLANCO; ctx.fillText(tok.t,x,y); x += ctx.measureText(tok.t).width; });
+    y += 112;
+  });
+  if(subLineas.length){
+    subLineas.forEach(line=>{
+      ctx.font = subFont; let x = PAD;
+      line.forEach(tok=>{ ctx.fillStyle = tok.g?ORO:"#ddd9cf"; ctx.fillText(tok.t,x,y); x += ctx.measureText(tok.t).width; });
+      y += 52;
+    });
+    y += 20;
+  }
+  if(cta){
+    ctx.font = "700 42px Inter";
+    const t = cta.toUpperCase();
+    const tw = ctx.measureText(t).width;
+    roundRect(PAD, y, tw+72, 92, 18);
+    ctx.fillStyle = ORO; ctx.fill();
+    ctx.fillStyle = "#141414";
+    ctx.fillText(t, PAD+36, y+26);
+  }
+
+  if($("crContacto").checked) drawPie(P, true, 1, 0, false);
+
+  $("dl1").href = cv.toDataURL("image/jpeg", .92);
+  const fecha = new Date();
+  const mes = fecha.getFullYear()+"-"+String(fecha.getMonth()+1).padStart(2,"0");
+  $("dl1").download = mes+"_portada_"+slugTexto(portada.titulo||"invitacion")+"_"+(fmt==="story"?"historia":"feed")+".jpg";
+}
+
 CAMPOS.forEach(id=> $(id).addEventListener("input", ()=>{ render(); guardarIdentidad(); }));
 CHECKS.forEach(id=> $(id).addEventListener("change", ()=>{ if(id==="logoTrans") procesarLogo(); render(); guardarIdentidad(); }));
 
 $("dlAll").onclick = async ()=>{
+  if(mode==="portada"){ $("dl1").click(); return; }
   const esProp = mode==="prop";
   const secuenciaProp = esProp ? [
-    ...(prop.mostrarPortada ? [-2] : []),
     ...(prop.esLote ? [-1] : []),
     ...prop.fotos.map((_,i)=>i)
   ] : null;
@@ -2765,8 +2799,7 @@ $("dlAll").onclick = async ()=>{
     await new Promise(res=>setTimeout(res,120));
     const dataUrl = cv.toDataURL("image/jpeg", .92);
     let nombre;
-    if(esProp && secuenciaProp[i]===-2) nombre = base+"_00-portada.jpg";
-    else if(esProp && secuenciaProp[i]===-1) nombre = base+"_"+String(prop.mostrarPortada?1:0).padStart(2,"0")+"-ficha.jpg";
+    if(esProp && secuenciaProp[i]===-1) nombre = base+"_00-ficha.jpg";
     else{ nFoto++; nombre = base+"_"+String(nFoto).padStart(2,"0")+".jpg"; }
     if(usarZip){
       zip.file(nombre, dataUrl.split(",")[1], {base64:true});
