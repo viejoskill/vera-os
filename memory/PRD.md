@@ -882,3 +882,9 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - **Backend**: `DELETE /api/documents/{id}` → `service.delete_document` → `document_repository.delete` (los hijos relationships/participants/signatures caen por ON DELETE CASCADE). Verificado por curl (204 → 404).
 - **Limpieza**: eliminados los 52 documentos de prueba restantes; la lista quedó vacía. Verificado E2E (screenshot: crear fila de prueba → botón papelera visible → borrar → estado vacío).
 - NOTA: la limpieza de datos ya impacta en producción (Supabase compartido). El botón eliminar es cambio de código → requiere **redeploy** para verse en producción.
+
+## Actualización HTML Vera Studio (V1) — 2026-06
+- Reemplazado `/app/frontend/public/vera-studio.html` con el nuevo artifact del usuario (Vera OS Studio -V1), ~140KB.
+- Reinyectado el puente de persistencia (`scripts/inject_studio.py`) → sobrescribe `window.storage` y guarda estado en `/api/studio/kv/{key}?u=<userId>` (sincroniza entre PCs; fallback localStorage sin usuario).
+- Verificado E2E: iframe `/vera-studio.html?u=<uid>` carga con title "VERA OS STUDIO", nueva UI (pestañas Carrusel/Post/Calendario/Video/Editor, preview con marca Varela).
+- NOTA: el HTML vive en public/ → en Preview se sirve directo; en producción requiere **redeploy**.

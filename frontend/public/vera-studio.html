@@ -250,14 +250,26 @@
         <label class="chk"><input type="checkbox" id="pPortada"> Agregar placa de portada / invitaci&oacute;n (t&iacute;tulo + subt&iacute;tulo + CTA, sin numeraci&oacute;n, ideal para Historia)</label>
         <div id="pPortadaBox" style="display:none">
           <div class="slidebox" style="margin-top:10px">
-            <label>T&iacute;tulo <span class="opt">(*palabra* = dorado)</span></label>
-            <input type="text" id="portTitulo" placeholder="Ej: NUEVO *INGRESO*">
-            <label>Subt&iacute;tulo <span class="opt">(opcional)</span></label>
-            <input type="text" id="portSub" placeholder="Ej: Mir&aacute; el posteo completo">
+            <label>T&iacute;tulo <span class="opt">(*palabra* = dorado; vac&iacute;o = usa "T&iacute;tulo corto")</span></label>
+            <input type="text" id="portTitulo" placeholder="Se usa el T\u00edtulo corto de arriba si lo dej\u00e1s vac\u00edo">
+            <label>Subt&iacute;tulo <span class="opt">(opcional; vac&iacute;o = usa "Ubicaci&oacute;n")</span></label>
+            <input type="text" id="portSub" placeholder="Se usa la Ubicaci\u00f3n de arriba si lo dej\u00e1s vac\u00edo">
             <label>CTA <span class="opt">(opcional; pastilla dorada)</span></label>
             <input type="text" id="portCta" placeholder="Ej: DESLIZ&Aacute; PARA VER M&Aacute;S">
-            <label>Color de fondo</label>
-            <select id="portColor"></select>
+            <label style="margin-top:8px">Fondo de la portada</label>
+            <div class="tabs" id="portBgTipo" style="margin-top:0">
+              <button type="button" class="tab" data-bgtipo="color">Color de marca</button>
+              <button type="button" class="tab" data-bgtipo="foto">Foto de la propiedad</button>
+            </div>
+            <div id="portColorBox" style="margin-top:8px">
+              <label>Color de fondo</label>
+              <select id="portColor"></select>
+            </div>
+            <div id="portFotoBox" style="display:none;margin-top:8px">
+              <label>Qu&eacute; foto usar como fondo</label>
+              <select id="portFotoRef"></select>
+              <div class="hint">Se usa con un degrad&eacute; oscuro autom&aacute;tico para que el t&iacute;tulo se lea bien. Ten&eacute;s que haber subido al menos una foto abajo primero.</div>
+            </div>
           </div>
         </div>
 
@@ -925,12 +937,32 @@ $("lMirror").addEventListener("change", e=>{ prop.lote.mirror = e.target.checked
 lRedibujarCamposMedidas();
 
 prop.mostrarPortada = false;
-prop.portada = { titulo:"", subtitulo:"", cta:"", bgColor:0 };
+prop.portada = { titulo:"", subtitulo:"", cta:"", bgColor:0, bgTipo:"color", bgFotoIdx:0 };
 $("portColor").innerHTML = PALETA.map((p,i)=>`<option value="${i}">${p.n}</option>`).join("");
+function actualizarSelectorPortadaFoto(){
+  const sel = $("portFotoRef");
+  const prev = prop.portada.bgFotoIdx;
+  sel.innerHTML = prop.fotos.map((f,i)=>`<option value="${i}">Foto ${i+1}</option>`).join("");
+  if(prop.fotos.length){
+    prop.portada.bgFotoIdx = Math.min(prev||0, prop.fotos.length-1);
+    sel.value = prop.portada.bgFotoIdx;
+  }
+}
+$("portBgTipo").querySelectorAll("[data-bgtipo]").forEach(b=>{
+  b.onclick = ()=>{
+    prop.portada.bgTipo = b.dataset.bgtipo;
+    $("portBgTipo").querySelectorAll("[data-bgtipo]").forEach(x=> x.classList.toggle("sel", x===b));
+    $("portColorBox").style.display = prop.portada.bgTipo==="color" ? "" : "none";
+    $("portFotoBox").style.display = prop.portada.bgTipo==="foto" ? "" : "none";
+    if(prop.portada.bgTipo==="foto") actualizarSelectorPortadaFoto();
+    render();
+  };
+});
+$("portFotoRef").addEventListener("change", e=>{ prop.portada.bgFotoIdx = parseInt(e.target.value); render(); });
 $("pPortada").addEventListener("change", e=>{
   prop.mostrarPortada = e.target.checked;
   $("pPortadaBox").style.display = prop.mostrarPortada ? "" : "none";
-  if(prop.mostrarPortada) prop.curF = -2;
+  if(prop.mostrarPortada){ prop.curF = -2; actualizarSelectorPortadaFoto(); }
   else if(prop.curF===-2) prop.curF = prop.esLote ? -1 : (prop.fotos.length ? 0 : -1);
   drawPTabs(); render();
 });
@@ -962,6 +994,7 @@ function drawPTabs(){
     b.onclick = ()=>{ prop.curF=i; drawPTabs(); drawPEditor(); render(); };
     t.appendChild(b);
   });
+  if($("portFotoRef")) actualizarSelectorPortadaFoto();
 }
 function drawPEditor(){
   const box = $("pEditor");
@@ -1788,13 +1821,33 @@ function renderFichaLotePortada(P){
 }
 
 function renderPortadaInvitacion(P){
-  const pal = PALETA[prop.portada.bgColor||0];
-  let dg = ctx.createLinearGradient(0,0,W*.6,H);
-  dg.addColorStop(0, pal.a); dg.addColorStop(1, pal.b);
-  ctx.fillStyle = dg; ctx.fillRect(0,0,W,H);
-  const rg = ctx.createRadialGradient(W*.8,H*.25,60,W*.8,H*.25,900);
-  rg.addColorStop(0, rgba(ORO,.07)); rg.addColorStop(1,"rgba(0,0,0,0)");
-  ctx.fillStyle = rg; ctx.fillRect(0,0,W,H);
+  const usaFoto = prop.portada.bgTipo==="foto" && prop.fotos[prop.portada.bgFotoIdx];
+  if(usaFoto){
+    const foto = prop.fotos[prop.portada.bgFotoIdx];
+    const pr = PRESETS[foto.preset];
+    ctx.save();
+    ctx.filter = pr.filtro;
+    drawImageCover(foto.img, 0, 0, W, H);
+    ctx.restore();
+    if(pr.calidez>0){ ctx.fillStyle = `rgba(242,180,60,${pr.calidez})`; ctx.fillRect(0,0,W,H); }
+    const vg = ctx.createRadialGradient(W/2,H/2,H*.3, W/2,H/2,H*.8);
+    vg.addColorStop(0,"rgba(0,0,0,0)"); vg.addColorStop(1,"rgba(0,0,0,.45)");
+    ctx.fillStyle = vg; ctx.fillRect(0,0,W,H);
+    let gt = ctx.createLinearGradient(0,0,0,H*.5);
+    gt.addColorStop(0,"rgba(8,9,11,.75)"); gt.addColorStop(1,"rgba(8,9,11,0)");
+    ctx.fillStyle = gt; ctx.fillRect(0,0,W,H*.5);
+    let gb = ctx.createLinearGradient(0,H*.45,0,H);
+    gb.addColorStop(0,"rgba(8,9,11,0)"); gb.addColorStop(1,"rgba(8,9,11,.85)");
+    ctx.fillStyle = gb; ctx.fillRect(0,H*.45,W,H*.55);
+  }else{
+    const pal = PALETA[prop.portada.bgColor||0];
+    let dg = ctx.createLinearGradient(0,0,W*.6,H);
+    dg.addColorStop(0, pal.a); dg.addColorStop(1, pal.b);
+    ctx.fillStyle = dg; ctx.fillRect(0,0,W,H);
+    const rg = ctx.createRadialGradient(W*.8,H*.25,60,W*.8,H*.25,900);
+    rg.addColorStop(0, rgba(ORO,.07)); rg.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.fillStyle = rg; ctx.fillRect(0,0,W,H);
+  }
 
   drawDots(W-30-3*17, P.dotTop, 4, 7);
   drawDots(24, H-P.dotBotOff-6*17, 3, 7);
@@ -1802,9 +1855,10 @@ function renderPortadaInvitacion(P){
 
   ctx.textBaseline = "top";
   const titFont = "700 100px Oswald";
-  const tit = (prop.portada.titulo||"").trim().toUpperCase();
+  // si no escribiste texto propio de portada, usa el Titulo corto / Ubicacion ya cargados arriba
+  const tit = ((prop.portada.titulo||"").trim() || $("pTitulo").value.trim()).toUpperCase();
   const lineas = tit ? wrapSpans(parseSpans(tit), titFont, W-2*PAD) : [];
-  const sub = (prop.portada.subtitulo||"").trim();
+  const sub = (prop.portada.subtitulo||"").trim() || $("pUbi").value.trim();
   const subFont = "400 40px Inter";
   const subLineas = sub ? wrapSpans(parseSpans(sub), subFont, W-2*PAD) : [];
   const cta = (prop.portada.cta||"").trim();
