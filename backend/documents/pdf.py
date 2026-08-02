@@ -241,6 +241,22 @@ def _advisor_signature(st: dict) -> list:
     ]
 
 
+def _inmobiliaria_signature(st: dict) -> list:
+    """Bloque de firma fijo de la inmobiliaria (Aceptación de Oferta)."""
+    return [
+        Spacer(1, 1.0 * cm),
+        Paragraph("____________________________________", st["cert"]),
+        Paragraph("<b>INMOBILIARIA VARELA COSTA DEL ESTE</b>", st["cert"]),
+        Paragraph("Jorge Oscar Varela · Mat. T°III F°103 N°865", st["small"]),
+    ]
+
+
+_FIXED_SIGNATURES = {
+    "recibo_sena_reserva": _advisor_signature,
+    "aceptacion_oferta": _inmobiliaria_signature,
+}
+
+
 def build_document_pdf(document: dict, participants: list[dict]) -> bytes:
     st = _styles()
     raw_vars = document.get("resolved_variables") or {}
@@ -258,8 +274,9 @@ def build_document_pdf(document: dict, participants: list[dict]) -> bytes:
             story.append(Paragraph(_emphasize(_interpolate(b.get("value", ""), disp_vars)), st["body"]))
 
     story += _signature_flowables(document, participants, st)
-    if document.get("template_key") == "recibo_sena_reserva":
-        story += _advisor_signature(st)
+    fixed = _FIXED_SIGNATURES.get(document.get("template_key"))
+    if fixed:
+        story += fixed(st)
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=2 * cm, bottomMargin=2 * cm,

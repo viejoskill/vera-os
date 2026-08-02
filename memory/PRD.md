@@ -888,3 +888,9 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Reinyectado el puente de persistencia (`scripts/inject_studio.py`) → sobrescribe `window.storage` y guarda estado en `/api/studio/kv/{key}?u=<userId>` (sincroniza entre PCs; fallback localStorage sin usuario).
 - Verificado E2E: iframe `/vera-studio.html?u=<uid>` carga con title "VERA OS STUDIO", nueva UI (pestañas Carrusel/Post/Calendario/Video/Editor, preview con marca Varela).
 - NOTA: el HTML vive en public/ → en Preview se sirve directo; en producción requiere **redeploy**.
+
+## Template "Aceptación de Oferta" — 2026-06
+- Seed `/app/backend/scripts/seed_aceptacion_oferta.py` (templateKey `aceptacion_oferta`, categoría `oferta`, v1 activo). Fiel al PDF del usuario.
+- Persona rol `propietario` (elegir de la base o alta rápida desde el wizard). Variables editables: precio_convenido, pago_escritura, escrituracion (default escritura traslativa/Moal/60 días), honorarios (default martillero Varela a cargo del comprador), observaciones (condicional notEmpty). Montos tipo money → separador de miles.
+- `pdf.py`: bloque de firma fijo por template vía `_FIXED_SIGNATURES` (recibo_sena_reserva → asesor Sebastian Varela; aceptacion_oferta → INMOBILIARIA VARELA COSTA DEL ESTE / Jorge Oscar Varela). Firma del vendedor sale por el motor de participantes.
+- Verificado: seed OK, PDF (pdfminer) con todos los campos y miles; screenshot wizard muestra el template en el selector.
