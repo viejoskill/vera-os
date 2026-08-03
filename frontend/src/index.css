@@ -7396,6 +7396,36 @@ p {
 }
 .vera-docs__delete:disabled { opacity: 0.5; cursor: default; }
 
+.vera-sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 4px;
+}
+.vera-sync-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: var(--vera-font-size-xs, 12px);
+  font-weight: 600;
+  line-height: 1;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.vera-sync-chip--ok {
+  color: #1a7f4b;
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.30);
+}
+.vera-sync-chip--warn {
+  color: #a15c00;
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.30);
+}
+.vera-sync-chip__time { opacity: 0.7; font-weight: 500; }
+
 .vera-wizard__signers { display: flex; flex-direction: column; gap: var(--vera-space-xs); margin-top: var(--vera-space-md); }
 .vera-wizard__signer {
   display: flex; align-items: center; gap: var(--vera-space-sm);

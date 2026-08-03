@@ -363,6 +363,23 @@ async def publish(prop: dict, images: list[dict], existing_item_id: str | None) 
     return {"item_id": data.get("id", fallback_id), "permalink": data.get("permalink", "")}
 
 
+async def sync_status(item_id: str, desired: str) -> str | None:
+    """Ajusta el estado del aviso a `desired` ('active' | 'paused') SOLO si difiere del
+    actual y el item es editable (no cerrado/pendiente). Devuelve el estado final.
+    Se usa para pausar el aviso cuando la propiedad pasa a Reservada/Vendida y
+    reactivarlo cuando vuelve a Disponible."""
+    access = await _valid_token()
+    current = await _item_status(access, item_id)
+    if current is None or current == desired or current not in _EDITABLE_STATUS:
+        return current
+    async with httpx.AsyncClient(timeout=30) as h:
+        headers = {"Authorization": f"Bearer {access}", "Content-Type": "application/json"}
+        r = await h.put(f"{config.MELI_API}/items/{item_id}", headers=headers, json={"status": desired})
+    if r.status_code >= 400:
+        raise MeliError(r.status_code, r.text)
+    return desired
+
+
 async def close(item_id: str) -> None:
     access = await _valid_token()
     async with httpx.AsyncClient(timeout=30) as h:

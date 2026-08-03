@@ -100,6 +100,14 @@ async def ml_resync_patch(prop: dict) -> dict:
         detail = getattr(e, "detail", str(e))
         logger.error("ML re-sync error (%s): %s", prop.get("id"), detail)
         return {"mercadolibre": {**ml_pub, "status": "error", "lastSync": _now(), "error": str(detail)[:800]}}
+    # Pausar el aviso si la propiedad está Reservada/Vendida; reactivarlo si vuelve a
+    # Disponible (best-effort, no rompe el guardado).
+    final_item = res.get("item_id") or item_id
+    desired = "paused" if prop.get("status") in ("reserved", "sold") else "active"
+    try:
+        await ml.sync_status(final_item, desired)
+    except Exception as e:  # noqa: BLE001
+        logger.error("ML sync_status error (%s → %s): %s", prop.get("id"), desired, e)
     return {"mercadolibre": {
         **ml_pub, "status": "published", "lastSync": _now(),
         "url": res["permalink"], "itemId": res["item_id"], "error": None,

@@ -24,6 +24,7 @@ import { BasicInfoSection } from './BasicInfoSection';
 import { FeaturesSection } from './FeaturesSection';
 import { AmenitiesSection } from './AmenitiesSection';
 import { ChannelsSection } from './ChannelsSection';
+import { SyncBadge } from './SyncBadge';
 import { OwnerSection } from './OwnerSection';
 import { TrackingSection } from './TrackingSection';
 import { PhotosSection } from './PhotosSection';
@@ -390,6 +391,7 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
             </div>
           </div>
           <div className="vera-workspace__actions">
+            {!isNew && <SyncBadge publications={detail?.publications} />}
             {!isNew && liveStatus !== 'idle' && (
               <span className={`vera-live-status vera-live-status--${liveStatus}`} data-testid="live-status">
                 {liveLabel}
