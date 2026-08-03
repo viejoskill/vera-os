@@ -1,8 +1,14 @@
 """Row (PostgREST dict) -> API response mapping. Signed URLs are generated here so
 the frontend receives ready-to-use, time-limited links and never touches Supabase."""
+import asyncio
+import time
+
 import config
 from schemas import DocumentResponse, ImageResponse, PropertyDetailResponse, PropertyResponse, VisitResponse
 from storage_service import get_storage
+
+# Cache TTL de Signed URLs: {bucket/object_path: (url, expiry_monotonic)}.
+_SIGN_CACHE: dict[str, tuple[str, float]] = {}
 
 
 def _property_code(pid: str) -> str:
@@ -31,8 +37,17 @@ def visit_to_response(v: dict) -> VisitResponse:
 async def _sign(bucket: str, object_path: str) -> str:
     if not config.supabase_configured():
         return ""
+    # Cache en memoria: las Signed URLs valen SIGNED_URL_TTL_SECONDS; reusarlas
+    # evita re-firmar en cada request (lista/detalle cargan casi al instante).
+    key = f"{bucket}/{object_path}"
+    now = time.monotonic()
+    hit = _SIGN_CACHE.get(key)
+    if hit and hit[1] > now:
+        return hit[0]
     try:
-        return await get_storage().signed_url(bucket, object_path, config.SIGNED_URL_TTL_SECONDS)
+        url = await get_storage().signed_url(bucket, object_path, config.SIGNED_URL_TTL_SECONDS)
+        _SIGN_CACHE[key] = (url, now + max(60, config.SIGNED_URL_TTL_SECONDS - 300))
+        return url
     except Exception:
         return ""
 
@@ -119,6 +134,9 @@ async def property_to_response(prop: dict) -> PropertyResponse:
 async def property_to_detail(prop: dict) -> PropertyDetailResponse:
     base = await property_to_response(prop)
     images_rows = sorted(prop.get("property_images") or [], key=lambda i: i.get("position", 0))
-    images = [await image_to_response(i) for i in images_rows]
-    documents = [await document_to_response(d) for d in (prop.get("property_documents") or [])]
+    # Firmamos imágenes y documentos en paralelo (evita el N+1 secuencial).
+    images = list(await asyncio.gather(*(image_to_response(i) for i in images_rows)))
+    documents = list(await asyncio.gather(
+        *(document_to_response(d) for d in (prop.get("property_documents") or []))
+    ))
     return PropertyDetailResponse(**base.model_dump(), images=images, documents=documents)

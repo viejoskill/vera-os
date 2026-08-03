@@ -1,4 +1,5 @@
 """Property CRUD endpoints. All persistence goes through SupabasePropertyRepository."""
+import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Optional
@@ -34,7 +35,8 @@ def _ensure() -> None:
 async def list_properties(status: Optional[str] = None, query: Optional[str] = None):
     _ensure()
     rows = await property_repository.list_properties(status=status, query=query)
-    return [await property_to_response(r) for r in rows]
+    # Firmamos las portadas en paralelo (evita el N+1 secuencial ~10s → <1s).
+    return list(await asyncio.gather(*(property_to_response(r) for r in rows)))
 
 
 @router.post("", response_model=PropertyDetailResponse, status_code=201)

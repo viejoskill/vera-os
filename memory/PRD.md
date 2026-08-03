@@ -894,3 +894,9 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Persona rol `propietario` (elegir de la base o alta rápida desde el wizard). Variables editables: precio_convenido, pago_escritura, escrituracion (default escritura traslativa/Moal/60 días), honorarios (default martillero Varela a cargo del comprador), observaciones (condicional notEmpty). Montos tipo money → separador de miles.
 - `pdf.py`: bloque de firma fijo por template vía `_FIXED_SIGNATURES` (recibo_sena_reserva → asesor Sebastian Varela; aceptacion_oferta → INMOBILIARIA VARELA COSTA DEL ESTE / Jorge Oscar Varela). Firma del vendedor sale por el motor de participantes.
 - Verificado: seed OK, PDF (pdfminer) con todos los campos y miles; screenshot wizard muestra el template en el selector.
+
+## Bugfix: guardado silencioso + lentitud/cuelgue de propiedades — 2026-06
+- **Causa #2 (no guardaba título/descripción):** `ApiPropertyRepository.update` tragaba el error y devolvía null → `handleSave` mostraba "Guardado" falso aunque el PATCH fallara. Ahora `update` NO traga (lanza) → la UI muestra "No pudimos guardar. Reintentá" y no pierde datos en silencio. Fotos usan path live aparte (por eso se veían pero el título no).
+- **Causa #3 (se cuelga al abrir/cargar):** endpoints lentos por N+1 secuencial firmando Signed URLs (lista 10,5s, detalle 3,7s). Fix: `asyncio.gather` en `list_properties` (routes_properties) y en `property_to_detail` (serializers) + **cache TTL en memoria** de Signed URLs (`_SIGN_CACHE`). Resultado: lista 0,6s cacheada / detalle 0,75s. Se agregó timeout de 30s en `ApiPropertyRepository.request` (AbortController) para que cuelgues se conviertan en error visible.
+- Verificado E2E (preview): workspace carga rápido; editar título + Guardar + reload → persiste.
+- PENDIENTE user: #4 (dónde ve "similares" sin RESERVADA) y #5 (auto-sync Web+ML al Guardar).

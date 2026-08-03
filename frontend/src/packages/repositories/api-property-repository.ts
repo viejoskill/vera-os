@@ -11,10 +11,23 @@ export class ApiPropertyRepository implements PropertyRepository {
   private readonly base = `${env.backendUrl}/api/properties`;
 
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
-    const res = await fetch(`${this.base}${path}`, {
-      headers: { 'Content-Type': 'application/json' },
-      ...init,
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    let res: Response;
+    try {
+      res = await fetch(`${this.base}${path}`, {
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        ...init,
+      });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        throw new Error('VERA API: la solicitud tardó demasiado (timeout). Reintentá.');
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeout);
+    }
     if (!res.ok) {
       throw new Error(`VERA API ${res.status}: ${await res.text()}`);
     }
@@ -50,14 +63,12 @@ export class ApiPropertyRepository implements PropertyRepository {
   }
 
   async update(id: string, patch: Partial<Property>): Promise<PropertyDetail | null> {
-    try {
-      return await this.request<PropertyDetail>(`/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(patch),
-      });
-    } catch {
-      return null;
-    }
+    // No tragamos el error: si falla (red, timeout, 4xx/5xx), lanzamos para que
+    // la UI muestre "No pudimos guardar" en vez de un "Guardado" falso.
+    return this.request<PropertyDetail>(`/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    });
   }
 
   async delete(id: string): Promise<boolean> {
