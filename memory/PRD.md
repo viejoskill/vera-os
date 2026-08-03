@@ -909,3 +909,9 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 ## Pausar ML al reservar + cartelito de sincronización — 2026-06
 - **Pausar ML:** `mercadolibre/service.py` nuevo `sync_status(item_id, desired)` (pausa/reactiva solo si difiere y el item es editable). `ml_resync_patch` (routes_ml) calcula desired="paused" si status∈{reserved,sold}, "active" si Disponible, y lo aplica tras actualizar el aviso. Al reactivar vuelve a active. Verificado camino active (queda active, sin error).
 - **Cartelito sincronización:** nuevo `SyncBadge.tsx` (property-workspace) en el header, junto a Guardar. Chips Web/ML verdes "✓ Hace X" (published) o ámbar (inconsistent/error), leyendo `detail.publications` (se refresca por invalidación de ["property", id] tras Guardar). CSS `.vera-sync-badge/.vera-sync-chip`. Verificado E2E (Web ✓ / ML ✓).
+
+## Fix pantalla negra al abrir propiedad (Google Translate) — 2026-06
+- Síntoma: en la PC de escritorio (Chrome con traductor activo, "Se ha traducido al español") la ficha de propiedad quedaba en negro; en la notebook (sin traductor) andaba bien. Causa: Google Translate muta los nodos de texto y rompe la reconciliación de React → crash en la vista de detalle.
+- Fix en `frontend/public/index.html`: `<html lang="es" translate="no">` + `<meta name="google" content="notranslate">`. La app ya está 100% en español, así que desactivar la traducción no tiene contra.
+- Verificado: la propiedad 9c1d4217 abre perfecta en Preview. Usuario confirmó que era el traductor.
+- Requiere **Deploy** (cambio en HTML base). Workaround inmediato en la PC: desactivar "traducir siempre este sitio" en Chrome.
