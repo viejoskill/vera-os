@@ -77,6 +77,25 @@ async def _images(prop: dict) -> list[dict]:
     return out
 
 
+async def _stamped_images(prop: dict, status: str) -> list[dict]:
+    """Portada con sello (VENDIDA/RESERVADA) primero + el resto de las fotos.
+    Si no se puede generar el sello, cae a las fotos normales."""
+    from property_stamp import stamped_cover_url, cover_row
+
+    stamped = await stamped_cover_url(prop, status)
+    if not stamped:
+        return await _images(prop)
+    cover = cover_row(prop) or {}
+    rest = []
+    for img in prop.get("property_images") or []:
+        if img.get("object_path") == cover.get("object_path"):
+            continue  # la portada original se reemplaza por la sellada
+        url = await _sign(img.get("bucket"), img.get("object_path"))
+        if url:
+            rest.append({"url": url})
+    return [{"url": stamped}] + rest
+
+
 async def _set_channel(prop: dict, patch: dict) -> None:
     pubs = dict(prop.get("publications") or {})
     current = dict(pubs.get("mercadolibre") or {})
@@ -94,20 +113,16 @@ async def ml_resync_patch(prop: dict) -> dict:
     item_id = ml_pub.get("itemId")
     if not item_id or not config.meli_configured():
         return {}
+    # Si está Reservada/Vendida, la portada del aviso lleva el sello quemado; el aviso
+    # NO se pausa automáticamente (el usuario lo pausa a mano si lo necesita).
+    status = prop.get("status")
     try:
-        res = await ml.publish(prop, await _images(prop), item_id)
+        images = await _stamped_images(prop, status) if status in ("reserved", "sold") else await _images(prop)
+        res = await ml.publish(prop, images, item_id)
     except Exception as e:  # noqa: BLE001 — best-effort
         detail = getattr(e, "detail", str(e))
         logger.error("ML re-sync error (%s): %s", prop.get("id"), detail)
         return {"mercadolibre": {**ml_pub, "status": "error", "lastSync": _now(), "error": str(detail)[:800]}}
-    # Pausar el aviso si la propiedad está Reservada/Vendida; reactivarlo si vuelve a
-    # Disponible (best-effort, no rompe el guardado).
-    final_item = res.get("item_id") or item_id
-    desired = "paused" if prop.get("status") in ("reserved", "sold") else "active"
-    try:
-        await ml.sync_status(final_item, desired)
-    except Exception as e:  # noqa: BLE001
-        logger.error("ML sync_status error (%s → %s): %s", prop.get("id"), desired, e)
     return {"mercadolibre": {
         **ml_pub, "status": "published", "lastSync": _now(),
         "url": res["permalink"], "itemId": res["item_id"], "error": None,

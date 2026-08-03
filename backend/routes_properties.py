@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
 
 import config
 import web_publisher
@@ -57,6 +58,26 @@ async def get_property(property_id: str):
     if prop is None:
         raise HTTPException(404, "Property not found")
     return await property_to_detail(prop)
+
+
+@router.get("/{property_id}/stamped-cover")
+async def stamped_cover(property_id: str, status: Optional[str] = None):
+    """Portada con el sello VENDIDA/RESERVADA + logo Varela quemado (JPEG), para
+    descargar/compartir. Si no se pasa `status`, usa el estado actual de la propiedad."""
+    _ensure()
+    from property_stamp import get_stamped_cover_bytes
+    prop = await property_repository.get(property_id)
+    if prop is None:
+        raise HTTPException(404, "Property not found")
+    st = status or prop.get("status") or "sold"
+    data = await get_stamped_cover_bytes(prop, st)
+    if not data:
+        raise HTTPException(404, "La propiedad no tiene una foto de portada.")
+    return Response(
+        content=data,
+        media_type="image/jpeg",
+        headers={"Content-Disposition": f'attachment; filename="portada-{st}.jpg"'},
+    )
 
 
 @router.patch("/{property_id}", response_model=PropertyDetailResponse)

@@ -7432,6 +7432,23 @@ p {
 }
 .vera-sync-chip__time { opacity: 0.7; font-weight: 500; }
 
+.vera-stamp-dl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: var(--vera-font-size-sm, 13px);
+  font-weight: 600;
+  color: #14140f;
+  background: #e3ff33;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+.vera-stamp-dl:hover { transform: translateY(-1px); opacity: 0.92; }
+
 .vera-fallback {
   min-height: 100vh;
   display: flex;

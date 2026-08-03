@@ -920,3 +920,10 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - **Reactivar ML:** nuevo `POST /api/ml/listings/{id}/reactivate` (routes_ml) → `ml.sync_status(item_id, "active")`, sin tocar el estado de la propiedad. Frontend `ChannelsSection.tsx`: botón "Reactivar" (data-testid reactivate-mercadolibre) visible solo si `mlLive.status==="paused"`; invalida ["ml-state", id] al éxito. Verificado endpoint 200 → active.
 - **Pantalla de respaldo:** nuevo `app/ErrorBoundary.tsx` (class component, getDerivedStateFromError) envuelve <VeraOS/> en index.tsx. Muestra card con botón Recargar + tip del traductor en vez de pantalla negra. CSS `.vera-fallback*`. Verificado: transparente en operación normal.
 - Requiere Deploy para producción.
+
+## Placa VENDIDA/RESERVADA en tablero + foto con sello (descarga + ML) — 2026-06
+- **Parte 1 (tablero):** sello diagonal en las tarjetas de la grilla `PropertiesScreen.tsx` (const STAMP + overlay `.vera-pub-stamp--card`), reutiliza el estilo de la web. VENDIDA amarillo / RESERVADA rojo. Verificado.
+- **Parte 2 (foto con sello):** nuevo `backend/property_stamp.py` (Pillow): `render_stamped_cover` quema el sello diagonal (fuente LiberationSans-Bold) + logo Varela en BLANCO con sombra, misma estética que la web. `get_stamped_cover_bytes` (descarga portada) y `stamped_cover_url` (sube a `property-images/stamped/{id}-{status}.jpg` con upsert + URL firmada larga para ML). Se agregó `upsert` a `storage_service.upload`.
+  - Endpoint `GET /api/properties/{id}/stamped-cover?status=` → JPEG attachment. Botón "Foto con sello" en el header del workspace (data-testid download-stamped-cover), visible si status∈{sold,reserved}.
+  - **ML:** `ml_resync_patch` ahora, si status∈{sold,reserved}, publica la portada con sello primero (`_stamped_images`) y YA NO auto-pausa (decisión del usuario: dejar activo con sello; pausar manual con Finalizar/Reactivar). La portada ML se actualiza en el próximo Guardar de la propiedad.
+- Verificado: imagen generada (se ve el sello + logo), endpoint 200, upsert overwrite OK, botón visible en ficha. Requiere Deploy para producción.

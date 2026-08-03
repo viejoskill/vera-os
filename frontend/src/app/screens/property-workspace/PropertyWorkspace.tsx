@@ -4,7 +4,8 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Building2, AlertTriangle, Save } from 'lucide-react';
+import { ArrowLeft, Building2, AlertTriangle, Save, ImageDown } from 'lucide-react';
+import { env } from '@vera/config';
 import { Button, Panel, Progress, Toast } from '@vera/ui';
 import {
   assistantService,
@@ -392,6 +393,18 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
           </div>
           <div className="vera-workspace__actions">
             {!isNew && <SyncBadge publications={detail?.publications} />}
+            {!isNew && detail && (detail.status === 'sold' || detail.status === 'reserved') && (
+              <a
+                className="vera-stamp-dl"
+                href={`${env.backendUrl}/api/properties/${detail.id}/stamped-cover?status=${detail.status}`}
+                target="_blank"
+                rel="noreferrer"
+                data-testid="download-stamped-cover"
+                title="Descargar la portada con el sello para compartir"
+              >
+                <ImageDown size={15} /> Foto con sello
+              </a>
+            )}
             {!isNew && liveStatus !== 'idle' && (
               <span className={`vera-live-status vera-live-status--${liveStatus}`} data-testid="live-status">
                 {liveLabel}

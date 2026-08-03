@@ -44,12 +44,12 @@ class SupabaseStorageService(StorageService):
     def __init__(self) -> None:
         self.client = get_supabase()
 
-    async def upload(self, bucket: str, object_path: str, content: bytes, content_type: str) -> None:
+    async def upload(self, bucket: str, object_path: str, content: bytes, content_type: str, upsert: bool = False) -> None:
         def _do():
             return self.client.storage.from_(bucket).upload(
                 path=object_path,
                 file=content,
-                file_options={"content-type": content_type, "upsert": "false"},
+                file_options={"content-type": content_type, "upsert": "true" if upsert else "false"},
             )
 
         await asyncio.to_thread(_do)
