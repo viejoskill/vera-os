@@ -4,8 +4,7 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Building2, AlertTriangle, Save, ImageDown } from 'lucide-react';
-import { env } from '@vera/config';
+import { ArrowLeft, Building2, AlertTriangle, Save } from 'lucide-react';
 import { Button, Panel, Progress, Toast } from '@vera/ui';
 import {
   assistantService,
@@ -26,6 +25,7 @@ import { FeaturesSection } from './FeaturesSection';
 import { AmenitiesSection } from './AmenitiesSection';
 import { ChannelsSection } from './ChannelsSection';
 import { SyncBadge } from './SyncBadge';
+import { StampShareButtons } from './StampShareButtons';
 import { OwnerSection } from './OwnerSection';
 import { TrackingSection } from './TrackingSection';
 import { PhotosSection } from './PhotosSection';
@@ -394,16 +394,12 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
           <div className="vera-workspace__actions">
             {!isNew && <SyncBadge publications={detail?.publications} />}
             {!isNew && detail && (detail.status === 'sold' || detail.status === 'reserved') && (
-              <a
-                className="vera-stamp-dl"
-                href={`${env.backendUrl}/api/properties/${detail.id}/stamped-cover?status=${detail.status}`}
-                target="_blank"
-                rel="noreferrer"
-                data-testid="download-stamped-cover"
-                title="Descargar la portada con el sello para compartir"
-              >
-                <ImageDown size={15} /> Foto con sello
-              </a>
+              <StampShareButtons
+                propertyId={detail.id}
+                status={detail.status}
+                title={detail.title}
+                address={detail.address}
+              />
             )}
             {!isNew && liveStatus !== 'idle' && (
               <span className={`vera-live-status vera-live-status--${liveStatus}`} data-testid="live-status">

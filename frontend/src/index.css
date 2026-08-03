@@ -7449,6 +7449,22 @@ p {
 }
 .vera-stamp-dl:hover { transform: translateY(-1px); opacity: 0.92; }
 
+.vera-stamp-share {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: var(--vera-font-size-sm, 13px);
+  font-weight: 600;
+  color: #fff;
+  background: #25d366;
+  border: none;
+  cursor: pointer;
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+.vera-stamp-share:hover { transform: translateY(-1px); opacity: 0.92; }
+
 .vera-fallback {
   min-height: 100vh;
   display: flex;

@@ -927,3 +927,7 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
   - Endpoint `GET /api/properties/{id}/stamped-cover?status=` → JPEG attachment. Botón "Foto con sello" en el header del workspace (data-testid download-stamped-cover), visible si status∈{sold,reserved}.
   - **ML:** `ml_resync_patch` ahora, si status∈{sold,reserved}, publica la portada con sello primero (`_stamped_images`) y YA NO auto-pausa (decisión del usuario: dejar activo con sello; pausar manual con Finalizar/Reactivar). La portada ML se actualiza en el próximo Guardar de la propiedad.
 - Verificado: imagen generada (se ve el sello + logo), endpoint 200, upsert overwrite OK, botón visible en ficha. Requiere Deploy para producción.
+
+## Compartir directo la foto con sello — 2026-06
+- Nuevo `StampShareButtons.tsx` (property-workspace): botones "Foto con sello" (descarga) + "Compartir" (verde WhatsApp). Compartir usa Web Share API (`navigator.share({files})`) → en móvil abre el share sheet con la imagen adjunta (WhatsApp/IG); fallback desktop: `wa.me/?text=` con título/dirección + link a la imagen. Visible solo si status∈{sold,reserved}. CSS `.vera-stamp-share`.
+- Verificado: ambos botones renderizan en la ficha. Requiere Deploy para producción.
