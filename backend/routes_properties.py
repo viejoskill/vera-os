@@ -65,25 +65,35 @@ async def update_property(property_id: str, payload: PropertyUpdate):
     prop = await property_repository.update(property_id, payload.model_dump(exclude_none=True))
     if prop is None:
         raise HTTPException(404, "Property not found")
-    # Auto-sync: si ya está publicada en la web, reflejar cambios y garantizar que la
-    # URL pública quede persistida (fuente única: publications['web-varela'].url).
-    web = (prop.get("publications") or {}).get("web-varela") or {}
-    if web.get("status") in ("published", "inconsistent"):
-        try:
-            url_value = await web_publisher.publish(prop)  # valida persistencia en la web
-            pubs = dict(prop.get("publications") or {})
-            pubs["web-varela"] = {
-                "status": "published",
-                "lastSync": datetime.now(timezone.utc).isoformat(),
-                "url": url_value,
-            }
-            prop = await property_repository.update(property_id, {"publications": pubs}) or prop
-        except Exception as e:  # noqa: BLE001 — best-effort, no romper el guardado
-            logger.error("Re-sync web INCONSISTENTE para %s: %s", property_id, e)
-            pubs = dict(prop.get("publications") or {})
-            pubs["web-varela"] = {**web, "status": "inconsistent", "url": ""}
-            prop = await property_repository.update(property_id, {"publications": pubs}) or prop
+    # Auto-sync al Guardar: reflejar los cambios en Web Varela y Mercado Libre en
+    # PARALELO (si ya están publicadas), con un único write de `publications`.
+    from routes_ml import ml_resync_patch
+    web_patch, ml_patch = await asyncio.gather(
+        _web_resync_patch(property_id, prop),
+        ml_resync_patch(prop),
+    )
+    if web_patch or ml_patch:
+        merged = {**(prop.get("publications") or {}), **web_patch, **ml_patch}
+        prop = await property_repository.update(property_id, {"publications": merged}) or prop
     return await property_to_detail(prop)
+
+
+async def _web_resync_patch(property_id: str, prop: dict) -> dict:
+    """Re-empuja la propiedad a la web (si está publicada) y devuelve el patch de
+    `publications['web-varela']` (sin escribir en DB). Best-effort."""
+    web = (prop.get("publications") or {}).get("web-varela") or {}
+    if web.get("status") not in ("published", "inconsistent"):
+        return {}
+    try:
+        url_value = await web_publisher.publish(prop)  # valida persistencia en la web
+        return {"web-varela": {
+            "status": "published",
+            "lastSync": datetime.now(timezone.utc).isoformat(),
+            "url": url_value,
+        }}
+    except Exception as e:  # noqa: BLE001 — best-effort, no romper el guardado
+        logger.error("Re-sync web INCONSISTENTE para %s: %s", property_id, e)
+        return {"web-varela": {**web, "status": "inconsistent", "url": ""}}
 
 
 @router.patch("/{property_id}/archive", response_model=PropertyDetailResponse)

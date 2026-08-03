@@ -85,6 +85,27 @@ async def _set_channel(prop: dict, patch: dict) -> None:
     await property_repository.update(prop["id"], {"publications": pubs})
 
 
+async def ml_resync_patch(prop: dict) -> dict:
+    """Re-sincroniza el aviso de Mercado Libre con los datos actuales (título, precio,
+    descripción, fotos) y devuelve el patch de `publications` (sin escribir en DB).
+    Best-effort: si falla, devuelve el canal en estado 'error'. Solo actúa si ya hay
+    un aviso publicado (itemId)."""
+    ml_pub = (prop.get("publications") or {}).get("mercadolibre") or {}
+    item_id = ml_pub.get("itemId")
+    if not item_id or not config.meli_configured():
+        return {}
+    try:
+        res = await ml.publish(prop, await _images(prop), item_id)
+    except Exception as e:  # noqa: BLE001 — best-effort
+        detail = getattr(e, "detail", str(e))
+        logger.error("ML re-sync error (%s): %s", prop.get("id"), detail)
+        return {"mercadolibre": {**ml_pub, "status": "error", "lastSync": _now(), "error": str(detail)[:800]}}
+    return {"mercadolibre": {
+        **ml_pub, "status": "published", "lastSync": _now(),
+        "url": res["permalink"], "itemId": res["item_id"], "error": None,
+    }}
+
+
 @router.post("/listings/{property_id}/publish")
 async def publish_listing(property_id: str):
     _ensure()

@@ -10,6 +10,7 @@ Contrato desacoplable: el día que reemplacemos el sitio, se cambia este driver
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 
 import httpx
@@ -74,15 +75,16 @@ async def _photo_urls(prop: dict) -> list[str]:
     images = list(prop.get("property_images") or [])
     images.sort(key=lambda i: i.get("position", 0))
     images.sort(key=lambda i: not i.get("is_cover", False))  # portada primero
-    urls: list[str] = []
-    for img in images[:_MAX_PHOTOS]:
+    storage = get_storage()
+
+    async def _one(img: dict) -> str:
         try:
-            u = await get_storage().signed_url(img["bucket"], img["object_path"], _PHOTO_TTL)
-            if u:
-                urls.append(u)
+            return await storage.signed_url(img["bucket"], img["object_path"], _PHOTO_TTL) or ""
         except Exception:  # noqa: BLE001
-            continue
-    return urls
+            return ""
+
+    signed = await asyncio.gather(*(_one(img) for img in images[:_MAX_PHOTOS]))
+    return [u for u in signed if u]
 
 
 async def _row(prop: dict) -> dict:
