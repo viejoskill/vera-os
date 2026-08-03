@@ -46,6 +46,12 @@ const STATUS_META: Record<PropertyStatus, { label: string; className: string }> 
   draft: { label: 'Borrador', className: 'vera-badge--draft' },
 };
 
+// Sello diagonal sobre la portada (igual que en la web pública).
+const STAMP: Record<string, { label: string; cls: string } | undefined> = {
+  sold: { label: 'VENDIDA', cls: 'vera-pub-stamp--sold' },
+  reserved: { label: 'RESERVADA', cls: 'vera-pub-stamp--reserved' },
+};
+
 function formatPrice(property: Property): string {
   const symbol = property.currency === 'USD' ? 'US$' : '$';
   const amount = new Intl.NumberFormat(appConfig.locale).format(property.price);
@@ -123,6 +129,14 @@ const PropertyCard = ({ property, actions }: { property: Property; actions: Card
           <div className="vera-prop__media-empty" data-testid={`property-noimage-${property.id}`}>
             <Building2 size={28} />
           </div>
+        )}
+        {STAMP[property.status] && (
+          <span
+            className={`vera-pub-stamp vera-pub-stamp--card ${STAMP[property.status]!.cls}`}
+            data-testid={`card-stamp-${property.id}`}
+          >
+            {STAMP[property.status]!.label}
+          </span>
         )}
         <span className={`vera-badge ${meta.className}`}>{meta.label}</span>
 

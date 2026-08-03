@@ -6947,6 +6947,12 @@ p {
   padding: 12px 34px;
   border-width: 6px;
 }
+.vera-pub-stamp--card {
+  font-size: 22px;
+  padding: 6px 16px;
+  border-width: 3px;
+  z-index: 2;
+}
 .vera-pub-detail__gallery {
   position: relative;
 }
