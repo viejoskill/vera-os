@@ -915,3 +915,8 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Fix en `frontend/public/index.html`: `<html lang="es" translate="no">` + `<meta name="google" content="notranslate">`. La app ya está 100% en español, así que desactivar la traducción no tiene contra.
 - Verificado: la propiedad 9c1d4217 abre perfecta en Preview. Usuario confirmó que era el traductor.
 - Requiere **Deploy** (cambio en HTML base). Workaround inmediato en la PC: desactivar "traducir siempre este sitio" en Chrome.
+
+## Reactivar ML (1 clic) + Error Boundary — 2026-06
+- **Reactivar ML:** nuevo `POST /api/ml/listings/{id}/reactivate` (routes_ml) → `ml.sync_status(item_id, "active")`, sin tocar el estado de la propiedad. Frontend `ChannelsSection.tsx`: botón "Reactivar" (data-testid reactivate-mercadolibre) visible solo si `mlLive.status==="paused"`; invalida ["ml-state", id] al éxito. Verificado endpoint 200 → active.
+- **Pantalla de respaldo:** nuevo `app/ErrorBoundary.tsx` (class component, getDerivedStateFromError) envuelve <VeraOS/> en index.tsx. Muestra card con botón Recargar + tip del traductor en vez de pantalla negra. CSS `.vera-fallback*`. Verificado: transparente en operación normal.
+- Requiere Deploy para producción.

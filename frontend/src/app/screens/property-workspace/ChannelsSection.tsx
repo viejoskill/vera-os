@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Globe, Loader2, RotateCcw, ExternalLink, Link2, Plug } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Globe, Loader2, RotateCcw, ExternalLink, Link2, Plug, Play } from 'lucide-react';
 import { Button } from '@vera/ui';
 import { env } from '@vera/config';
 import { publicationService } from '@vera/services';
@@ -61,6 +61,23 @@ export const ChannelsSection = ({
     const res = await fetch(`${env.backendUrl}/api/ml/oauth/start?origin=${encodeURIComponent(window.location.origin)}`);
     const { auth_url } = await res.json();
     window.location.href = auth_url;
+  };
+
+  const queryClient = useQueryClient();
+  const reactivateMl = async () => {
+    setBusy('mercadolibre');
+    setMlError('');
+    try {
+      const res = await fetch(`${env.backendUrl}/api/ml/listings/${propertyId}/reactivate`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.detail || 'No se pudo reactivar');
+      setPubs((p) => ({ ...p, mercadolibre: { ...p.mercadolibre, status: 'published', lastSync: new Date().toISOString() } }));
+      await queryClient.invalidateQueries({ queryKey: ['ml-state', propertyId] });
+    } catch (e) {
+      setMlError(e instanceof Error ? e.message : 'No se pudo reactivar');
+    } finally {
+      setBusy(null);
+    }
   };
 
   if (!propertyId) {
@@ -187,6 +204,11 @@ export const ChannelsSection = ({
                   </Button>
                 ) : published ? (
                   <>
+                    {isMl && mlInfo?.status === 'paused' && (
+                      <Button type="button" variant="primary" size="sm" disabled={isBusy} data-testid="reactivate-mercadolibre" onClick={reactivateMl}>
+                        <Play size={14} /> Reactivar
+                      </Button>
+                    )}
                     {!autoLink && (
                       <button
                         type="button"

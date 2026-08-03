@@ -183,3 +183,22 @@ async def close_listing(property_id: str):
         raise HTTPException(400, f"No se pudo finalizar en Mercado Libre: {e.detail[:300]}")
     await _set_channel(prop, {"status": "none", "lastSync": _now(), "error": None})
     return {"status": "none"}
+
+
+@router.post("/listings/{property_id}/reactivate")
+async def reactivate_listing(property_id: str):
+    """Reactiva (status 'active') el aviso pausado en Mercado Libre, SIN cambiar el
+    estado de la propiedad en el CRM."""
+    _ensure()
+    prop = await property_repository.get(property_id)
+    if not prop:
+        raise HTTPException(404, "Propiedad no encontrada.")
+    item_id = ((prop.get("publications") or {}).get("mercadolibre") or {}).get("itemId")
+    if not item_id:
+        raise HTTPException(400, "Esta propiedad no tiene una publicación de Mercado Libre.")
+    try:
+        final = await ml.sync_status(item_id, "active")
+    except ml.MeliError as e:
+        raise HTTPException(400, f"No se pudo reactivar en Mercado Libre: {e.detail[:300]}")
+    await _set_channel(prop, {"status": "published", "lastSync": _now(), "error": None})
+    return {"status": final or "active"}

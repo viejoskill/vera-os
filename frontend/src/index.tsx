@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { injectDesignTokens } from '@vera/design-tokens';
 import './index.css';
 import { VeraOS } from '@app/VeraOS';
+import { ErrorBoundary } from '@app/ErrorBoundary';
 
 injectDesignTokens();
 
@@ -11,6 +12,8 @@ if (!container) throw new Error('Root container #root not found');
 
 ReactDOM.createRoot(container).render(
   <React.StrictMode>
-    <VeraOS />
+    <ErrorBoundary>
+      <VeraOS />
+    </ErrorBoundary>
   </React.StrictMode>,
 );
