@@ -954,3 +954,10 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Textos con **Oswald**: Precio (Bold 128, amarillo #F6E63A), Titulo (Medium 58, mayusculas, blanco, 2 lineas), Direccion (Light 48, gris). Pie web (Regular 36) debajo de la linea amarilla (y=1589).
 - Fonts en `assets/fonts/Oswald-*.ttf`. Fallback a color solido si falta la placa.
 - Verificado visualmente (render de prueba con foto real). Endpoint `/api/properties/{id}/story` usa la nueva logica (hot reload).
+
+## Implemented (Web externa — Hero Radar Showcase — 2026-06)
+- **Sitio externo** `varelapropiedadescde.com.ar` (NO está en este repo; el usuario pasó `index.html`). Se reemplazó el mockup estático del dashboard en el hero por un **showcase de propiedades del Radar**.
+- Nuevo `#hero-showcase` + funciones JS `renderHero/heroSlideHTML/heroShow/heroGo/heroSet`: toma `todasProps.filter(p => p.radar)` (mismo flag `radar` que ya cura la sección Radar), muestra 1 propiedad a la vez (foto full-bleed, badge RADAR, badge Reservada/Vendida, tipo·operación, título, ubicación, features dorm/baños/m², precio, CTA "Ver propiedad"), **rota automáticamente cada 5s** con fade, flechas + dots, pausa al hover, click abre `abrirFicha(id)`. Fallback: si no hay radar, usa las 5 últimas activas.
+- **Selección manual = flag `radar` por propiedad** (ya existente). CSS `.hero-showcase/.hs-*` agregado al `<style>`.
+- Verificado E2E (screenshot con datos reales de Supabase): 4 propiedades radar, rotación + navegación OK.
+- **Entrega**: archivo final en `/app/frontend/public/varela-index.html` (descargable desde el preview). El usuario lo sube a su host externo.
