@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Sparkles, ArrowUp, Plus, History, Trash2 } from 'lucide-react';
+import { Sparkles, ArrowUp, Plus, History, Trash2, Palette, Copy, Check } from 'lucide-react';
 import { veraBrain, type ConversationSummary } from '@app/brain/brain-gateway';
 import { useAuthUser } from '@app/auth/useAuthUser';
 import { useAuth } from '@app/auth/AuthProvider';
+
+type Mode = 'vera' | 'studio';
 
 interface Msg {
   role: 'user' | 'vera';
@@ -23,14 +25,22 @@ const clean = (t: string): string =>
     .replace(/^\s*---\s*$/gm, '')
     .trim();
 
-const newSession = () => `vera-hoy-${Date.now()}`;
+const newSession = (mode: Mode) => `vera-${mode}-${Date.now()}`;
 
-const SUGGESTIONS = [
-  '¿Qué pasó hoy en la inmobiliaria?',
-  '¿Qué leads necesito responder?',
-  '¿Cómo funciona el módulo de Documentos?',
-  'Ayudame a redactar un mensaje para un cliente',
-];
+const SUGGESTIONS: Record<Mode, string[]> = {
+  vera: [
+    '¿Qué pasó hoy en la inmobiliaria?',
+    '¿Qué leads necesito responder?',
+    '¿Cómo funciona el módulo de Documentos?',
+    'Ayudame a redactar un mensaje para un cliente',
+  ],
+  studio: [
+    'Necesito ideas de contenido para una propiedad del Radar',
+    'Un carrusel para captar propietarios este finde largo',
+    'Ideas de reel / video para TikTok de la inmobiliaria',
+    'Una historia distinta, que no suba cualquier inmobiliaria',
+  ],
+};
 
 /** VERA Chat — conversación con VERA (Claude), con memoria e historial por usuario. */
 export const VeraChat = () => {
@@ -40,13 +50,15 @@ export const VeraChat = () => {
 
   const threadRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
-  const sessionRef = useRef<string>(newSession());
+  const sessionRef = useRef<string>(newSession('vera'));
 
+  const [mode, setMode] = useState<Mode>('vera');
   const [value, setValue] = useState('');
   const [messages, setMessages] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
   const refreshHistory = useCallback(async () => {
     setConversations(await veraBrain.conversations(email));
@@ -67,7 +79,7 @@ export const VeraChat = () => {
     setMessages((m) => [...m, { role: 'user', text: q }]);
     setLoading(true);
     try {
-      const answer = await veraBrain.ask(q, sessionRef.current, email);
+      const answer = await veraBrain.ask(q, sessionRef.current, email, mode);
       setMessages((m) => [...m, { role: 'vera', text: clean(answer) }]);
       refreshHistory();
     } catch {
@@ -82,14 +94,34 @@ export const VeraChat = () => {
   };
 
   const startNew = () => {
-    sessionRef.current = newSession();
+    sessionRef.current = newSession(mode);
     setMessages([]);
     setShowHistory(false);
     inputRef.current?.focus();
   };
 
+  const switchMode = (m: Mode) => {
+    if (m === mode) return;
+    setMode(m);
+    sessionRef.current = newSession(m);
+    setMessages([]);
+    setShowHistory(false);
+    inputRef.current?.focus();
+  };
+
+  const copyMsg = async (text: string, i: number) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedIdx(i);
+      setTimeout(() => setCopiedIdx((c) => (c === i ? null : c)), 1500);
+    } catch {
+      /* clipboard no disponible */
+    }
+  };
+
   const openConversation = async (sessionId: string) => {
     sessionRef.current = sessionId;
+    setMode(sessionId.startsWith('vera-studio-') ? 'studio' : 'vera');
     setShowHistory(false);
     setLoading(true);
     const msgs = await veraBrain.conversation(sessionId, email);
@@ -105,11 +137,33 @@ export const VeraChat = () => {
   };
 
   const empty = messages.length === 0;
+  const isStudio = mode === 'studio';
 
   return (
-    <section className="vera-chat" data-testid="vera-chat">
+    <section className={`vera-chat${isStudio ? ' vera-chat--studio' : ''}`} data-testid="vera-chat">
       <header className="vera-chat__bar">
-        <span className="vera-chat__bar-title"><Sparkles size={15} /> VERA</span>
+        <div className="vera-chat__modes" role="tablist" aria-label="Modo de VERA">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={!isStudio}
+            className={`vera-chat__mode${!isStudio ? ' is-active' : ''}`}
+            data-testid="vera-chat-mode-vera"
+            onClick={() => switchMode('vera')}
+          >
+            <Sparkles size={14} /> VERA
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={isStudio}
+            className={`vera-chat__mode${isStudio ? ' is-active' : ''}`}
+            data-testid="vera-chat-mode-studio"
+            onClick={() => switchMode('studio')}
+          >
+            <Palette size={14} /> Studio
+          </button>
+        </div>
         <div className="vera-chat__bar-actions">
           <button
             type="button"
@@ -160,13 +214,19 @@ export const VeraChat = () => {
       <div className="vera-chat__thread" data-testid="vera-chat-thread" ref={threadRef}>
         {empty && (
           <div className="vera-chat__welcome" data-testid="vera-chat-welcome">
-            <span className="vera-chat__orb" aria-hidden="true"><Sparkles size={22} /></span>
-            <h1 className="vera-chat__greeting">{greeting()}, {greetingName}.</h1>
+            <span className="vera-chat__orb" aria-hidden="true">
+              {isStudio ? <Palette size={22} /> : <Sparkles size={22} />}
+            </span>
+            <h1 className="vera-chat__greeting">
+              {isStudio ? 'VERA Studio' : `${greeting()}, ${greetingName}.`}
+            </h1>
             <p className="vera-chat__lead">
-              Soy VERA. Preguntame lo que quieras del sistema o de tu inmobiliaria.
+              {isStudio
+                ? 'Soy tu directora creativa. Contame qué necesitás (o sobre qué propiedad) y te propongo ideas de contenido con impronta propia — carruseles, historias, reels y videos para TikTok.'
+                : 'Soy VERA. Preguntame lo que quieras del sistema o de tu inmobiliaria.'}
             </p>
             <div className="vera-chat__suggest">
-              {SUGGESTIONS.map((s) => (
+              {SUGGESTIONS[mode].map((s) => (
                 <button
                   key={s}
                   type="button"
@@ -188,7 +248,21 @@ export const VeraChat = () => {
             data-testid={`vera-chat-message-${m.role}`}
           >
             {m.role === 'vera' && (
-              <span className="vera-chat__msg-badge"><Sparkles size={12} /> VERA</span>
+              <div className="vera-chat__msg-head">
+                <span className="vera-chat__msg-badge">
+                  {isStudio ? <Palette size={12} /> : <Sparkles size={12} />} {isStudio ? 'STUDIO' : 'VERA'}
+                </span>
+                <button
+                  type="button"
+                  className="vera-chat__copy"
+                  data-testid="vera-chat-copy"
+                  onClick={() => copyMsg(m.text, i)}
+                  aria-label="Copiar respuesta"
+                >
+                  {copiedIdx === i ? <Check size={13} /> : <Copy size={13} />}
+                  {copiedIdx === i ? 'Copiado' : 'Copiar'}
+                </button>
+              </div>
             )}
             <p>{m.text}</p>
           </div>
@@ -196,7 +270,9 @@ export const VeraChat = () => {
 
         {loading && (
           <div className="vera-chat__msg vera-chat__msg--vera" data-testid="vera-chat-thinking">
-            <span className="vera-chat__msg-badge"><Sparkles size={12} /> VERA</span>
+            <span className="vera-chat__msg-badge">
+              {isStudio ? <Palette size={12} /> : <Sparkles size={12} />} {isStudio ? 'STUDIO' : 'VERA'}
+            </span>
             <p className="vera-chat__typing"><span /><span /><span /></p>
           </div>
         )}
@@ -207,7 +283,7 @@ export const VeraChat = () => {
           ref={inputRef}
           className="vera-chat__input"
           data-testid="vera-chat-input"
-          placeholder="Escribí tu pregunta para VERA…"
+          placeholder={isStudio ? 'Pedile ideas a VERA Studio…' : 'Escribí tu pregunta para VERA…'}
           rows={1}
           value={value}
           onChange={(e) => setValue(e.target.value)}

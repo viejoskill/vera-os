@@ -63,11 +63,11 @@ export interface ConversationMessage {
 }
 
 export const veraBrain = {
-  ask: async (question: string, sessionId?: string, email?: string): Promise<string> => {
+  ask: async (question: string, sessionId?: string, email?: string, mode: 'vera' | 'studio' = 'vera'): Promise<string> => {
     const res = await fetch(`${base}/ask`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, session_id: sessionId, email }),
+      body: JSON.stringify({ question, session_id: sessionId, email, mode }),
     });
     if (!res.ok) throw new Error('brain-ask-failed');
     return ((await res.json()) as { answer: string }).answer;

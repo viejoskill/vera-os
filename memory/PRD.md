@@ -961,3 +961,9 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - **Selección manual = flag `radar` por propiedad** (ya existente). CSS `.hero-showcase/.hs-*` agregado al `<style>`.
 - Verificado E2E (screenshot con datos reales de Supabase): 4 propiedades radar, rotación + navegación OK.
 - **Entrega**: archivo final en `/app/frontend/public/varela-index.html` (descargable desde el preview). El usuario lo sube a su host externo.
+
+## Implemented (VERA Brain — Modo Studio / directora creativa de contenido — 2026-06)
+- **Nuevo modo "Studio"** en VERA Brain (mismo motor Claude, memoria multi-turno y Knowledge Hub). Personalidad de directora creativa de contenido para la inmobiliaria: propone carruseles, posts, historias, reels y **videos para TikTok**, con impronta anti-genérica.
+- Backend: `vera_brain/studio.py` (`STUDIO_IDENTITY` con el loop: preguntar antes → generar en bruto → filtrar → entregar 3-5 ideas TOP con hook/mini-guion de tomas/CTA → SIEMPRE sección "Extra/arriesgadas" → iterar). `brain._system(mode)` y `brain.ask(q, session_id, mode)` eligen identidad Vera/Studio; `AskRequest.mode` en `routes_brain`. Conoce la cartera real (Knowledge Hub) y la voz de marca; marca "verificar" en lugar de inventar.
+- Frontend (`VeraChat.tsx` en "Hoy"): toggle segmentado **VERA ⟷ Studio** en el header, sesión separada por modo (prefijo `vera-{mode}-`), saludo/sugerencias/placeholder propios de Studio, y **botón "Copiar"** por respuesta. `brain-gateway.ask(...)` acepta `mode`. CSS `.vera-chat__modes/.vera-chat__mode/.vera-chat__copy`.
+- Verificado E2E: curl (2 turnos: preguntó primero conociendo la casa real "Los Cedros 1015 · USD 129.000 · 14 fotos", luego entregó ideas de reel/TikTok con guion toma por toma + Extra) + screenshot del toggle en la UI. tsc limpio, backend OK.

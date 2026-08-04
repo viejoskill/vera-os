@@ -10,6 +10,7 @@ from .ai_provider import active_provider
 from .goals import goals
 from .knowledge import hub
 from .memory import memory
+from .studio import STUDIO_IDENTITY
 
 AR_TZ = timezone(timedelta(hours=-3))
 
@@ -31,9 +32,10 @@ IDENTITY = (
 )
 
 
-async def _system() -> str:
+async def _system(mode: str = "vera") -> str:
+    identity = STUDIO_IDENTITY if mode == "studio" else IDENTITY
     return (
-        IDENTITY
+        identity
         + "\n\n===== OBJETIVO ACTUAL DEL USUARIO (GOALS) =====\n"
         + goals.as_context()
         + "\n\n===== KNOWLEDGE HUB (tu conocimiento) =====\n"
@@ -44,8 +46,8 @@ async def _system() -> str:
 
 
 class VeraBrain:
-    async def ask(self, question: str, session_id: str | None = None) -> str:
-        return await active_provider.reason(await _system(), question, session_id)
+    async def ask(self, question: str, session_id: str | None = None, mode: str = "vera") -> str:
+        return await active_provider.reason(await _system(mode), question, session_id)
 
     async def today_briefing(self, business_context: str = "") -> str:
         now = datetime.now(AR_TZ)

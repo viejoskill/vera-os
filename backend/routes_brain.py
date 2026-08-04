@@ -20,6 +20,7 @@ class AskRequest(BaseModel):
     question: str
     session_id: str | None = None
     email: str | None = None
+    mode: str = "vera"  # vera | studio (Studio = directora creativa de contenido)
 
 
 class GoalRequest(BaseModel):
@@ -59,7 +60,7 @@ async def ask(payload: AskRequest):
     try:
         # Continuidad: incluimos el historial reciente de esta conversación.
         augmented = await conversations.history_prompt(email, session_id, question)
-        answer = await brain.ask(augmented, session_id)
+        answer = await brain.ask(augmented, session_id, payload.mode)
     except Exception as exc:  # noqa: BLE001
         logger.exception("VERA Brain ask failed")
         raise HTTPException(502, "VERA no pudo responder ahora.") from exc

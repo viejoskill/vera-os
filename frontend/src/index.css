@@ -5176,6 +5176,36 @@ p {
   transition: border-color 200ms ease, color 200ms ease;
 }
 .vera-chat__bar-btn:hover { border-color: var(--vera-color-primary); color: var(--vera-color-text); }
+/* Toggle de modo VERA / Studio (segmented control) */
+.vera-chat__modes {
+  display: inline-flex; align-items: center; gap: 2px;
+  background: var(--vera-color-surface); border: 1px solid var(--vera-color-border);
+  border-radius: 999px; padding: 3px;
+}
+.vera-chat__mode {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: none; background: transparent; cursor: pointer;
+  color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-xs); font-weight: 600;
+  padding: 6px 14px; border-radius: 999px;
+  transition: background-color 220ms ease, color 220ms ease, box-shadow 220ms ease;
+}
+.vera-chat__mode:hover { color: var(--vera-color-text); }
+.vera-chat__mode.is-active {
+  background: var(--vera-color-primary); color: #1C1C1C;
+  box-shadow: 0 0 18px rgba(246, 230, 58, 0.25);
+}
+/* Botón copiar por mensaje */
+.vera-chat__msg-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.vera-chat__copy {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid var(--vera-color-border); background: transparent;
+  color: var(--vera-color-text-secondary); border-radius: 999px;
+  padding: 4px 10px; font-size: var(--vera-font-size-xs); cursor: pointer;
+  opacity: 0; transition: opacity 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+.vera-chat__msg--vera:hover .vera-chat__copy { opacity: 1; }
+.vera-chat__copy:hover { border-color: var(--vera-color-primary); color: var(--vera-color-text); }
+
 .vera-chat__history {
   max-height: 240px; overflow-y: auto; flex-shrink: 0;
   border-bottom: 1px solid var(--vera-color-border); background: var(--vera-color-bg);
