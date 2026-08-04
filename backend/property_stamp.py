@@ -7,9 +7,18 @@ from PIL import Image, ImageDraw, ImageFont
 
 from storage_service import get_storage
 
-_FONT_B = os.path.join(os.path.dirname(__file__), "assets", "fonts", "LiberationSans-Bold.ttf")
-_FONT_R = os.path.join(os.path.dirname(__file__), "assets", "fonts", "LiberationSans-Regular.ttf")
-_LOGO = os.path.join(os.path.dirname(__file__), "assets", "brand", "varela-logo.png")
+_ASSETS = os.path.dirname(__file__)
+_FONT_B = os.path.join(_ASSETS, "assets", "fonts", "LiberationSans-Bold.ttf")
+_FONT_R = os.path.join(_ASSETS, "assets", "fonts", "LiberationSans-Regular.ttf")
+_LOGO = os.path.join(_ASSETS, "assets", "brand", "varela-logo.png")
+
+# Fuentes Oswald (placa Historia) y placa base provista por la marca.
+_OSWALD_BOLD = os.path.join(_ASSETS, "assets", "fonts", "Oswald-Bold.ttf")
+_OSWALD_SEMIBOLD = os.path.join(_ASSETS, "assets", "fonts", "Oswald-SemiBold.ttf")
+_OSWALD_MEDIUM = os.path.join(_ASSETS, "assets", "fonts", "Oswald-Medium.ttf")
+_OSWALD_REGULAR = os.path.join(_ASSETS, "assets", "fonts", "Oswald-Regular.ttf")
+_OSWALD_LIGHT = os.path.join(_ASSETS, "assets", "fonts", "Oswald-Light.ttf")
+_STORY_BASE = os.path.join(_ASSETS, "assets", "brand", "story-base.jpg")
 _STAMP_TTL = 10 * 365 * 24 * 3600  # URL que no caduca (para ML)
 
 _STAMP = {
@@ -113,10 +122,15 @@ async def stamped_cover_url(prop: dict, status: str) -> str | None:
 
 # ---------------------------------------------------------------------------
 # Formato HISTORIA (9:16, 1080x1920) para Instagram / WhatsApp / Facebook.
+# Usa la placa base de marca (logo VARELA + línea + puntos ya incluidos) y
+# tipografía Oswald. La foto va en 16:9 grande, protagonista.
 # ---------------------------------------------------------------------------
 _STORY_W, _STORY_H = 1080, 1920
-_BG = (20, 20, 15)
-_ACCENT = (227, 255, 51)
+_BG = (28, 28, 28)          # fallback si no está la placa
+_ACCENT = (246, 230, 58)    # amarillo de marca (#F6E63A)
+_LINE_Y = 1589              # línea amarilla de la placa
+_PHOTO_TOP = 400            # debajo del logo (logo termina ~y=332)
+_PHOTO_MARGIN = 40
 
 
 def _wrap(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont, max_w: int, max_lines: int = 2) -> list[str]:
@@ -140,60 +154,61 @@ def _wrap(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont, ma
     return lines
 
 
+def _cover_fit(img: Image.Image, w: int, h: int) -> Image.Image:
+    """Escala + recorte central para llenar exactamente w×h (estilo object-fit: cover)."""
+    scale = max(w / img.width, h / img.height)
+    nw, nh = max(1, int(img.width * scale)), max(1, int(img.height * scale))
+    img = img.resize((nw, nh), Image.LANCZOS)
+    left, top = (nw - w) // 2, (nh - h) // 2
+    return img.crop((left, top, left + w, top + h))
+
+
 def render_story(image_bytes: bytes, status: str, *, title: str = "", price: str = "", address: str = "") -> bytes:
-    """Placa vertical 9:16 lista para historias: logo, foto con sello, precio, título y dirección."""
-    canvas = Image.new("RGB", (_STORY_W, _STORY_H), _BG)
+    """Placa vertical 9:16 lista para historias sobre la placa de marca:
+    foto 16:9 grande (con sello), precio, título y dirección en Oswald."""
+    if os.path.exists(_STORY_BASE):
+        canvas = Image.open(_STORY_BASE).convert("RGB").resize((_STORY_W, _STORY_H), Image.LANCZOS)
+    else:
+        canvas = Image.new("RGB", (_STORY_W, _STORY_H), _BG)
     draw = ImageDraw.Draw(canvas)
 
-    # Logo Varela (blanco) centrado arriba.
-    logo = _white_logo(int(_STORY_W * 0.40))
-    top = 96
-    if logo is not None:
-        canvas.paste(logo, ((_STORY_W - logo.width) // 2, top), logo)
-        top += logo.height + 60
-    else:
-        top = 200
-
-    # Foto con sello, ajustada al ancho, con esquinas redondeadas.
+    # Foto 16:9 grande (con sello VENDIDA/RESERVADA quemado, sin logo).
     stamped = render_stamped_cover(image_bytes, status, with_logo=False)
     photo = Image.open(io.BytesIO(stamped)).convert("RGB")
-    card_w = _STORY_W - 120
-    card_h = int(photo.height * (card_w / photo.width))
-    card_h = min(card_h, 1020)
-    photo = photo.resize((card_w, int(photo.height * (card_w / photo.width))), Image.LANCZOS)
-    if photo.height > card_h:  # recorte central si es muy alta
-        off = (photo.height - card_h) // 2
-        photo = photo.crop((0, off, card_w, off + card_h))
+    card_w = _STORY_W - _PHOTO_MARGIN * 2
+    card_h = round(card_w * 9 / 16)
+    photo = _cover_fit(photo, card_w, card_h)
     mask = Image.new("L", (card_w, card_h), 0)
-    ImageDraw.Draw(mask).rounded_rectangle([0, 0, card_w, card_h], radius=40, fill=255)
-    canvas.paste(photo, (60, top), mask)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, card_w, card_h], radius=28, fill=255)
+    canvas.paste(photo, (_PHOTO_MARGIN, _PHOTO_TOP), mask)
 
-    # Panel de información.
-    y = top + card_h + 70
+    # Panel de información en Oswald, debajo de la foto.
+    x = 60
+    y = _PHOTO_TOP + card_h + 60
     if price:
-        f_price = ImageFont.truetype(_FONT_B, 96)
-        draw.text((60, y), f"USD {price}", font=f_price, fill=_ACCENT)
-        y += 120
+        f_price = ImageFont.truetype(_OSWALD_BOLD, 128)
+        draw.text((x, y), f"USD {price}", font=f_price, fill=_ACCENT)
+        y += 168
     if title:
-        f_title = ImageFont.truetype(_FONT_B, 52)
-        for line in _wrap(draw, title, f_title, _STORY_W - 120, max_lines=2):
-            draw.text((60, y), line, font=f_title, fill=(255, 255, 255))
-            y += 64
-        y += 8
+        f_title = ImageFont.truetype(_OSWALD_MEDIUM, 58)
+        for line in _wrap(draw, title.upper(), f_title, _STORY_W - 120, max_lines=2):
+            draw.text((x, y), line, font=f_title, fill=(255, 255, 255))
+            y += 70
+        y += 10
     if address:
-        f_addr = ImageFont.truetype(_FONT_R, 44)
+        f_addr = ImageFont.truetype(_OSWALD_LIGHT, 48)
         for line in _wrap(draw, address, f_addr, _STORY_W - 120, max_lines=1):
-            draw.text((60, y), line, font=f_addr, fill=(190, 190, 185))
-            y += 56
+            draw.text((x, y), line, font=f_addr, fill=(185, 185, 185))
+            y += 58
 
-    # Pie de marca.
-    f_foot = ImageFont.truetype(_FONT_B, 38)
+    # Pie de marca, debajo de la línea amarilla de la placa.
+    f_foot = ImageFont.truetype(_OSWALD_REGULAR, 36)
     foot = "varelapropiedadescde.com.ar"
     fw = draw.textlength(foot, font=f_foot)
-    draw.text(((_STORY_W - fw) / 2, _STORY_H - 96), foot, font=f_foot, fill=(150, 150, 145))
+    draw.text(((_STORY_W - fw) / 2, _LINE_Y + 28), foot, font=f_foot, fill=(170, 170, 170))
 
     out = io.BytesIO()
-    canvas.save(out, "JPEG", quality=88)
+    canvas.save(out, "JPEG", quality=90)
     return out.getvalue()
 
 

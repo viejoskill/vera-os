@@ -947,3 +947,10 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Agrupar botones: nuevo ShareMenu.tsx (dropdown) reemplaza StampShareButtons/ShareListingButton (borrados). Un solo boton "Compartir": Compartir ficha (siempre) + Foto con sello/Historia 9:16/Compartir foto (si sold/reserved). Header despejado.
 - Verificado por testing_agent (iteration_41): backend OG+redirect OK, /web/{id} renderiza la propiedad, menu agrupado OK, frontend 100%.
 - Requiere Deploy para produccion.
+
+## Implemented (Historia 9:16 con placa de marca + Oswald — 2026-06)
+- `render_story()` (`property_stamp.py`) reescrita: usa la placa base oficial `assets/brand/story-base.jpg` (logo VARELA + linea amarilla + puntos ya incluidos) como fondo en vez de color solido.
+- Foto de la propiedad ahora en **16:9 grande** (cover-fit + esquinas redondeadas) con sello VENDIDA/RESERVADA quemado, ubicada bajo el logo (y=400).
+- Textos con **Oswald**: Precio (Bold 128, amarillo #F6E63A), Titulo (Medium 58, mayusculas, blanco, 2 lineas), Direccion (Light 48, gris). Pie web (Regular 36) debajo de la linea amarilla (y=1589).
+- Fonts en `assets/fonts/Oswald-*.ttf`. Fallback a color solido si falta la placa.
+- Verificado visualmente (render de prueba con foto real). Endpoint `/api/properties/{id}/story` usa la nueva logica (hot reload).
