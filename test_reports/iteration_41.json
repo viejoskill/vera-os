@@ -1,0 +1,36 @@
+{
+  "summary": "Verified share-link bugfix end-to-end. Backend GET /api/properties/{id}/share returns HTML 200 with correct og:title, og:image (http URL, stamped for sold), og:url ending /web/{id}, plus both meta-refresh redirect and window.location.replace to /web/{id}. Tested with sold property 7bab1bf2 and an active property. /stamped-cover?status=sold returns image/jpeg; /story?status=sold returns image/jpeg at 1080x1920. Frontend: PropertyWorkspace shows a single 'Compartir' trigger; no orphan share buttons in header. Panel contains 'Compartir ficha' for any status, and additionally 'Foto con sello', 'Historia (9:16)', 'Compartir foto' when sold/reserved (verified sold-shows-all, active-shows-only-share-listing). Public page /web/{id} loads and renders the property (title, price US$ 129.000, address, cover with VENDIDA stamp, gallery, description).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/properties/{invalid_id}/share", "issue": "Returns 500 instead of 404 when property_id is not a valid UUID (repository raises instead of returning None). Not blocking real users."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_share.py",
+    "/app/test_reports/pytest/share_results.xml"
+  ],
+  "action_items": [
+    "(Optional) In routes_properties.share_page, catch invalid UUID errors from property_repository.get and return 404 instead of 500."
+  ],
+  "critical_code_review_comments": [
+    "share_page correctly uses x-forwarded-host/proto to build og:url on the external preview host; verified og:url uses the REACT_APP_BACKEND_URL host.",
+    "ShareMenu closes on outside click and hides stamp/story/share-foto for non sold/reserved statuses — good separation.",
+    "Minor: property_repository.get should not leak DB errors as 500 for malformed IDs."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_share.py (new)"
+  ],
+  "success_rate": {"backend": "80% (4/5, minor 404-vs-500 case)", "frontend": "100%"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "None. Only GETs. Sold property 7bab1bf2-3170-4396-914e-837b0a03afb2 and active 9fd023a5-28bf-4c76-b7b6-93557d19223e were used read-only.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Share bug is fixed. /api/properties/{id}/share returns OG-tagged HTML that redirects to /web/{id}. Frontend ShareMenu (data-testid share-menu-trigger + share-menu-panel with items share-listing, download-stamped-cover, download-story, share-stamped-cover) works as spec. Only pending nit: 500 on invalid UUID for /share.",
+  "rca of the issue": "Original bug: header exposed multiple share buttons and 'Compartir ficha' link pointed to the external site home instead of the specific property, with a generic OG thumbnail. Fix implemented: (a) new backend endpoint /api/properties/{id}/share renders HTML with per-property OG tags (og:image = cover or stamped cover for sold/reserved, og:url = {site}/web/{id}) and redirects (meta refresh + window.location.replace) to /web/{id}; (b) frontend consolidates share actions into a single ShareMenu dropdown. Verified working."
+}

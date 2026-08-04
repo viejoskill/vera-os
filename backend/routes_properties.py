@@ -4,8 +4,8 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import Response
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import Response, HTMLResponse
 
 import config
 import web_publisher
@@ -97,6 +97,69 @@ async def story_cover(property_id: str, status: Optional[str] = None):
         media_type="image/jpeg",
         headers={"Content-Disposition": f'attachment; filename="historia-{st}.jpg"'},
     )
+
+
+@router.get("/{property_id}/share", response_class=HTMLResponse)
+async def share_page(property_id: str, request: Request):
+    """Página de compartir con OG tags por propiedad (foto + título reales) que
+    redirige a la ficha pública propia `/web/{id}`. Así WhatsApp/redes muestran la
+    miniatura correcta y el link abre la propiedad (no la home del sitio externo)."""
+    import html as _html
+    _ensure()
+    prop = await property_repository.get(property_id)
+    if prop is None:
+        raise HTTPException(404, "Property not found")
+    detail = await property_to_detail(prop)
+
+    cover = ""
+    imgs = detail.images or []
+    if imgs:
+        cover = next((i.url for i in imgs if getattr(i, "isCover", False)), imgs[0].url)
+    status = prop.get("status")
+    if status in ("reserved", "sold"):
+        from property_stamp import stamped_cover_url
+        stamped = await stamped_cover_url(prop, status)
+        if stamped:
+            cover = stamped
+
+    price = prop.get("price")
+    try:
+        price_str = f"{int(float(price)):,}".replace(",", ".") if price else ""
+    except (ValueError, TypeError):
+        price_str = ""
+    moneda = prop.get("currency") or "USD"
+    desc_parts = [f"{moneda} {price_str}".strip(), prop.get("address"), prop.get("city")]
+    desc = " · ".join([p for p in desc_parts if p])
+
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or ""
+    scheme = request.headers.get("x-forwarded-proto", "https")
+    site = f"{scheme}://{host}"
+    target = f"{site}/web/{property_id}"
+
+    title = _html.escape(prop.get("title") or "Propiedad — Varela")
+    desc_e = _html.escape(desc)
+    cover_e = _html.escape(cover)
+    target_e = _html.escape(target)
+    page = f"""<!doctype html><html lang="es"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>{title}</title>
+<meta property="og:type" content="website"/>
+<meta property="og:title" content="{title}"/>
+<meta property="og:description" content="{desc_e}"/>
+<meta property="og:image" content="{cover_e}"/>
+<meta property="og:url" content="{target_e}"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="{title}"/>
+<meta name="twitter:description" content="{desc_e}"/>
+<meta name="twitter:image" content="{cover_e}"/>
+<meta http-equiv="refresh" content="0; url={target_e}"/>
+</head><body style="font-family:sans-serif;background:#14140f;color:#fff;text-align:center;padding:48px">
+<p>Abriendo la propiedad… <a style="color:#e3ff33" href="{target_e}">Ver ahora</a></p>
+<script>window.location.replace("{target_e}");</script>
+</body></html>"""
+    return HTMLResponse(content=page)
+
 
 
 @router.patch("/{property_id}", response_model=PropertyDetailResponse)
