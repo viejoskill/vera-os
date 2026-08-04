@@ -106,7 +106,10 @@ async def share_page(property_id: str, request: Request):
     miniatura correcta y el link abre la propiedad (no la home del sitio externo)."""
     import html as _html
     _ensure()
-    prop = await property_repository.get(property_id)
+    try:
+        prop = await property_repository.get(property_id)
+    except Exception:  # noqa: BLE001 — id malformado u otro error de lookup
+        prop = None
     if prop is None:
         raise HTTPException(404, "Property not found")
     detail = await property_to_detail(prop)

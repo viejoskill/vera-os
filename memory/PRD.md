@@ -937,3 +937,13 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - **Formato historia (9:16):** `property_stamp.render_story`/`get_story_bytes` (1080x1920: logo Varela, foto con sello sin logo duplicado, precio en amarillo, título, dirección, footer web). Endpoint `GET /api/properties/{id}/story?status=`. Botón "Historia" en `StampShareButtons`.
 - **Compartir ficha completa:** nuevo `ShareListingButton.tsx` comparte `detail.publicUrl` (canónico) por share nativo / wa.me. Visible cuando hay publicUrl.
 - `render_stamped_cover(with_logo=)` para no duplicar logo en historia. Verificado: web stamped url OK, story 1080x1920 se ve pro, 4 botones renderizan. Requiere Deploy.
+
+## Correcciones al compartir + menú agrupado — 2026-06 (testeado iteration_41)
+- **Bug link/miniatura:** nuevo `GET /api/properties/{id}/share` (routes_properties) → HTML con OG tags por propiedad (og:title, og:description precio+dirección, og:image portada/portada con sello, og:url = {site}/web/{id}) + redirect (meta refresh + window.location.replace) a la ficha pública propia `/web/{id}`. Corrige: el link ahora abre la propiedad (no la home externa) y la miniatura muestra foto+título (no "CRM Varela"). Fix 500→404 en UUID inválido.
+- **Agrupar botones:** nuevo `ShareMenu.tsx` (dropdown) reemplaza StampShareButtons/ShareListingButton (borrados). Un solo botón "Compartir" con: Compartir ficha (siempre) + Foto con sello/Historia 9:16/Compartir foto (si sold/reserved). Header despejado.
+- Verificado por testing_agent (iteration_41): backend OG+redirect OK, /web/{id} renderiza la propiedad, menú agrupado OK. frontend 100
+## Correcciones al compartir + menú agrupado — 2026-06 (testeado iteration_41)
+- Bug link/miniatura: nuevo GET /api/properties/{id}/share (routes_properties) -> HTML con OG tags por propiedad (og:title, og:description precio+direccion, og:image portada/portada con sello, og:url = {site}/web/{id}) + redirect (meta refresh + window.location.replace) a la ficha publica propia /web/{id}. Corrige: el link abre la propiedad (no la home externa) y la miniatura muestra foto+titulo (no "CRM Varela"). Fix 500->404 en UUID invalido.
+- Agrupar botones: nuevo ShareMenu.tsx (dropdown) reemplaza StampShareButtons/ShareListingButton (borrados). Un solo boton "Compartir": Compartir ficha (siempre) + Foto con sello/Historia 9:16/Compartir foto (si sold/reserved). Header despejado.
+- Verificado por testing_agent (iteration_41): backend OG+redirect OK, /web/{id} renderiza la propiedad, menu agrupado OK, frontend 100%.
+- Requiere Deploy para produccion.
