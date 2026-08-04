@@ -931,3 +931,9 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 ## Compartir directo la foto con sello — 2026-06
 - Nuevo `StampShareButtons.tsx` (property-workspace): botones "Foto con sello" (descarga) + "Compartir" (verde WhatsApp). Compartir usa Web Share API (`navigator.share({files})`) → en móvil abre el share sheet con la imagen adjunta (WhatsApp/IG); fallback desktop: `wa.me/?text=` con título/dirección + link a la imagen. Visible solo si status∈{sold,reserved}. CSS `.vera-stamp-share`.
 - Verificado: ambos botones renderizan en la ficha. Requiere Deploy para producción.
+
+## Sello en Web + compartir ficha + formato historia — 2026-06
+- **Sello en la Web:** `web_publisher._photo_urls` antepone la portada con sello (via `property_stamp.stamped_cover_url`) cuando status∈{sold,reserved}; reemplaza la portada original. Se aplica en el próximo Guardar (re-sync web). ML ya lo hacía.
+- **Formato historia (9:16):** `property_stamp.render_story`/`get_story_bytes` (1080x1920: logo Varela, foto con sello sin logo duplicado, precio en amarillo, título, dirección, footer web). Endpoint `GET /api/properties/{id}/story?status=`. Botón "Historia" en `StampShareButtons`.
+- **Compartir ficha completa:** nuevo `ShareListingButton.tsx` comparte `detail.publicUrl` (canónico) por share nativo / wa.me. Visible cuando hay publicUrl.
+- `render_stamped_cover(with_logo=)` para no duplicar logo en historia. Verificado: web stamped url OK, story 1080x1920 se ve pro, 4 botones renderizan. Requiere Deploy.

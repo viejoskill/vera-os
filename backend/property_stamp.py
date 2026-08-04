@@ -8,6 +8,7 @@ from PIL import Image, ImageDraw, ImageFont
 from storage_service import get_storage
 
 _FONT_B = os.path.join(os.path.dirname(__file__), "assets", "fonts", "LiberationSans-Bold.ttf")
+_FONT_R = os.path.join(os.path.dirname(__file__), "assets", "fonts", "LiberationSans-Regular.ttf")
 _LOGO = os.path.join(os.path.dirname(__file__), "assets", "brand", "varela-logo.png")
 _STAMP_TTL = 10 * 365 * 24 * 3600  # URL que no caduca (para ML)
 
@@ -32,7 +33,7 @@ def _white_logo(target_w: int) -> Image.Image | None:
         return None
 
 
-def render_stamped_cover(image_bytes: bytes, status: str) -> bytes:
+def render_stamped_cover(image_bytes: bytes, status: str, with_logo: bool = True) -> bytes:
     """Devuelve la portada (JPEG) con el sello diagonal + logo Varela quemados."""
     base = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     W, H = base.size
@@ -64,7 +65,7 @@ def render_stamped_cover(image_bytes: bytes, status: str) -> bytes:
     overlay.alpha_composite(stamp, ((W - stamp.width) // 2, (H - stamp.height) // 2))
 
     # Logo Varela (blanco) arriba a la izquierda, con sombra sutil para legibilidad.
-    logo = _white_logo(int(W * 0.24))
+    logo = _white_logo(int(W * 0.24)) if with_logo else None
     if logo is not None:
         margin = int(W * 0.035)
         shadow = Image.new("RGBA", logo.size, (0, 0, 0, 0))
@@ -108,3 +109,103 @@ async def stamped_cover_url(prop: dict, status: str) -> str | None:
     path = f"stamped/{prop['id']}-{status}.jpg"
     await get_storage().upload(bucket, path, data, "image/jpeg", upsert=True)
     return await get_storage().signed_url(bucket, path, _STAMP_TTL)
+
+
+# ---------------------------------------------------------------------------
+# Formato HISTORIA (9:16, 1080x1920) para Instagram / WhatsApp / Facebook.
+# ---------------------------------------------------------------------------
+_STORY_W, _STORY_H = 1080, 1920
+_BG = (20, 20, 15)
+_ACCENT = (227, 255, 51)
+
+
+def _wrap(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont, max_w: int, max_lines: int = 2) -> list[str]:
+    lines, cur = [], ""
+    for word in text.split():
+        cand = (cur + " " + word).strip()
+        if draw.textlength(cand, font=font) <= max_w:
+            cur = cand
+        else:
+            if cur:
+                lines.append(cur)
+            cur = word
+        if len(lines) >= max_lines:
+            break
+    if cur and len(lines) < max_lines:
+        lines.append(cur)
+    if len(lines) == max_lines and draw.textlength(lines[-1], font=font) > max_w:
+        while lines[-1] and draw.textlength(lines[-1] + "…", font=font) > max_w:
+            lines[-1] = lines[-1][:-1]
+        lines[-1] += "…"
+    return lines
+
+
+def render_story(image_bytes: bytes, status: str, *, title: str = "", price: str = "", address: str = "") -> bytes:
+    """Placa vertical 9:16 lista para historias: logo, foto con sello, precio, título y dirección."""
+    canvas = Image.new("RGB", (_STORY_W, _STORY_H), _BG)
+    draw = ImageDraw.Draw(canvas)
+
+    # Logo Varela (blanco) centrado arriba.
+    logo = _white_logo(int(_STORY_W * 0.40))
+    top = 96
+    if logo is not None:
+        canvas.paste(logo, ((_STORY_W - logo.width) // 2, top), logo)
+        top += logo.height + 60
+    else:
+        top = 200
+
+    # Foto con sello, ajustada al ancho, con esquinas redondeadas.
+    stamped = render_stamped_cover(image_bytes, status, with_logo=False)
+    photo = Image.open(io.BytesIO(stamped)).convert("RGB")
+    card_w = _STORY_W - 120
+    card_h = int(photo.height * (card_w / photo.width))
+    card_h = min(card_h, 1020)
+    photo = photo.resize((card_w, int(photo.height * (card_w / photo.width))), Image.LANCZOS)
+    if photo.height > card_h:  # recorte central si es muy alta
+        off = (photo.height - card_h) // 2
+        photo = photo.crop((0, off, card_w, off + card_h))
+    mask = Image.new("L", (card_w, card_h), 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, card_w, card_h], radius=40, fill=255)
+    canvas.paste(photo, (60, top), mask)
+
+    # Panel de información.
+    y = top + card_h + 70
+    if price:
+        f_price = ImageFont.truetype(_FONT_B, 96)
+        draw.text((60, y), f"USD {price}", font=f_price, fill=_ACCENT)
+        y += 120
+    if title:
+        f_title = ImageFont.truetype(_FONT_B, 52)
+        for line in _wrap(draw, title, f_title, _STORY_W - 120, max_lines=2):
+            draw.text((60, y), line, font=f_title, fill=(255, 255, 255))
+            y += 64
+        y += 8
+    if address:
+        f_addr = ImageFont.truetype(_FONT_R, 44)
+        for line in _wrap(draw, address, f_addr, _STORY_W - 120, max_lines=1):
+            draw.text((60, y), line, font=f_addr, fill=(190, 190, 185))
+            y += 56
+
+    # Pie de marca.
+    f_foot = ImageFont.truetype(_FONT_B, 38)
+    foot = "varelapropiedadescde.com.ar"
+    fw = draw.textlength(foot, font=f_foot)
+    draw.text(((_STORY_W - fw) / 2, _STORY_H - 96), foot, font=f_foot, fill=(150, 150, 145))
+
+    out = io.BytesIO()
+    canvas.save(out, "JPEG", quality=88)
+    return out.getvalue()
+
+
+async def get_story_bytes(prop: dict, status: str) -> bytes | None:
+    cover = cover_row(prop)
+    if not cover:
+        return None
+    raw = await get_storage().download(cover["bucket"], cover["object_path"])
+    price = prop.get("price")
+    try:
+        price_str = f"{int(float(price)):,}".replace(",", ".") if price else ""
+    except (ValueError, TypeError):
+        price_str = str(price or "")
+    address = " · ".join([p for p in [prop.get("address"), prop.get("city")] if p])
+    return render_story(raw, status, title=prop.get("title") or "", price=price_str, address=address)

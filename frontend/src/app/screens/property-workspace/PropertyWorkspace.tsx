@@ -26,6 +26,7 @@ import { AmenitiesSection } from './AmenitiesSection';
 import { ChannelsSection } from './ChannelsSection';
 import { SyncBadge } from './SyncBadge';
 import { StampShareButtons } from './StampShareButtons';
+import { ShareListingButton } from './ShareListingButton';
 import { OwnerSection } from './OwnerSection';
 import { TrackingSection } from './TrackingSection';
 import { PhotosSection } from './PhotosSection';
@@ -393,6 +394,14 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
           </div>
           <div className="vera-workspace__actions">
             {!isNew && <SyncBadge publications={detail?.publications} />}
+            {!isNew && detail?.publicUrl && (
+              <ShareListingButton
+                url={detail.publicUrl}
+                title={detail.title}
+                price={detail.price}
+                currency={detail.currency}
+              />
+            )}
             {!isNew && detail && (detail.status === 'sold' || detail.status === 'reserved') && (
               <StampShareButtons
                 propertyId={detail.id}

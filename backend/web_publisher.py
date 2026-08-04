@@ -83,8 +83,20 @@ async def _photo_urls(prop: dict) -> list[str]:
         except Exception:  # noqa: BLE001
             return ""
 
-    signed = await asyncio.gather(*(_one(img) for img in images[:_MAX_PHOTOS]))
-    return [u for u in signed if u]
+    imgs = images[:_MAX_PHOTOS]
+    signed = await asyncio.gather(*(_one(img) for img in imgs))
+    pairs = [(img, u) for img, u in zip(imgs, signed) if u]
+
+    # Si está Reservada/Vendida, la portada de la web lleva el sello quemado.
+    status = prop.get("status")
+    if status in ("reserved", "sold"):
+        from property_stamp import stamped_cover_url, cover_row
+        stamped = await stamped_cover_url(prop, status)
+        if stamped:
+            cover = cover_row(prop) or {}
+            rest = [u for img, u in pairs if img.get("object_path") != cover.get("object_path")]
+            return [stamped] + rest
+    return [u for _, u in pairs]
 
 
 async def _row(prop: dict) -> dict:

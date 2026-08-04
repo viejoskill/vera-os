@@ -80,6 +80,25 @@ async def stamped_cover(property_id: str, status: Optional[str] = None):
     )
 
 
+@router.get("/{property_id}/story")
+async def story_cover(property_id: str, status: Optional[str] = None):
+    """Placa en formato HISTORIA (9:16) con la foto sellada + datos, para redes."""
+    _ensure()
+    from property_stamp import get_story_bytes
+    prop = await property_repository.get(property_id)
+    if prop is None:
+        raise HTTPException(404, "Property not found")
+    st = status or prop.get("status") or "sold"
+    data = await get_story_bytes(prop, st)
+    if not data:
+        raise HTTPException(404, "La propiedad no tiene una foto de portada.")
+    return Response(
+        content=data,
+        media_type="image/jpeg",
+        headers={"Content-Disposition": f'attachment; filename="historia-{st}.jpg"'},
+    )
+
+
 @router.patch("/{property_id}", response_model=PropertyDetailResponse)
 async def update_property(property_id: str, payload: PropertyUpdate):
     _ensure()
