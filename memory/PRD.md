@@ -1004,3 +1004,8 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Verificado E2E: curl stream (pedido normal 6483 chars, `done:true`, 51s; pedido gigante ahora entrega parcial en vivo con HTTP 200 en vez de 502) + screenshot (VERA escribiendo en vivo con formato en el chat ampliado, modo Studio). tsc + imports backend OK.
 - NOTA: `/api/studio/ideas` y `/api/studio/plan` (herramienta) siguen sin stream (devuelven JSON); el plan con muchos días podría acercarse a 60s — pendiente stream/chunk si hace falta. El `ask` no-stream queda como fallback sin uso en el front.
 - Producción: requiere REDEPLOY para aplicar el fix en real-estate-os-10.emergent.host.
+
+## Implemented (VERA Chat — Botón Detener + streaming abort — 2026-06)
+- Mientras VERA responde (streaming) el botón de enviar se convierte en **Detener** (icono Square, pulso). Al tocarlo aborta el fetch (`AbortController`) y **conserva el texto parcial** ya recibido; vuelve el botón Enviar.
+- `veraBrain.askStream()` acepta `AbortSignal`; ante `AbortError` devuelve el texto parcial sin lanzar. `VeraChat`: estado `streaming` + `abortRef`. CSS `.vera-chat__send--stop`.
+- Verificado por screenshot: aparece Detener al escribir, corta a mitad, parcial preservado (268 chars), Enviar de vuelta. tsc limpio.

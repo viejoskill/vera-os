@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Sparkles, ArrowUp, Plus, History, Trash2, Palette, Copy, Check, GraduationCap, X, Maximize2, Minimize2 } from 'lucide-react';
+import { Sparkles, ArrowUp, Plus, History, Trash2, Palette, Copy, Check, GraduationCap, X, Maximize2, Minimize2, Square } from 'lucide-react';
 import { veraBrain, veraStudioBrain, type ConversationSummary } from '@app/brain/brain-gateway';
 import { VeraMessage } from './VeraMessage';
 import { useAuthUser } from '@app/auth/useAuthUser';
@@ -51,11 +51,13 @@ export const VeraChat = () => {
   const threadRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const sessionRef = useRef<string>(newSession('vera'));
+  const abortRef = useRef<AbortController | null>(null);
 
   const [mode, setMode] = useState<Mode>('vera');
   const [value, setValue] = useState('');
   const [messages, setMessages] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(false);
+  const [streaming, setStreaming] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
@@ -110,38 +112,50 @@ export const VeraChat = () => {
 
   const send = async (question: string) => {
     const q = question.trim();
-    if (!q || loading) return;
+    if (!q || loading || streaming) return;
     setValue('');
     setMessages((m) => [...m, { role: 'user', text: q }]);
     setLoading(true);
+    setStreaming(true);
+    const controller = new AbortController();
+    abortRef.current = controller;
     let started = false;
     try {
-      await veraBrain.askStream(q, sessionRef.current, email, mode, (full) => {
-        const text = clean(full);
-        if (!started) {
-          started = true;
-          setLoading(false);
-          setMessages((m) => [...m, { role: 'vera', text }]);
-        } else {
-          setMessages((m) => {
-            const copy = [...m];
-            copy[copy.length - 1] = { role: 'vera', text };
-            return copy;
-          });
-        }
-      });
+      await veraBrain.askStream(
+        q,
+        sessionRef.current,
+        email,
+        mode,
+        (full) => {
+          const text = clean(full);
+          if (!started) {
+            started = true;
+            setLoading(false);
+            setMessages((m) => [...m, { role: 'vera', text }]);
+          } else {
+            setMessages((m) => {
+              const copy = [...m];
+              copy[copy.length - 1] = { role: 'vera', text };
+              return copy;
+            });
+          }
+        },
+        controller.signal,
+      );
       refreshHistory();
     } catch {
       const errText = 'No pude responder en este momento. Probá de nuevo en unos segundos.';
-      setMessages((m) =>
-        started
-          ? m
-          : [...m, { role: 'vera', text: errText }],
-      );
+      setMessages((m) => (started ? m : [...m, { role: 'vera', text: errText }]));
     } finally {
       setLoading(false);
+      setStreaming(false);
+      abortRef.current = null;
       inputRef.current?.focus();
     }
+  };
+
+  const stopStreaming = () => {
+    abortRef.current?.abort();
   };
 
   const startNew = () => {
@@ -422,16 +436,29 @@ export const VeraChat = () => {
             }
           }}
         />
-        <button
-          type="button"
-          className="vera-chat__send"
-          data-testid="vera-chat-send"
-          onClick={() => send(value)}
-          disabled={!value.trim() || loading}
-          aria-label="Enviar"
-        >
-          <ArrowUp size={18} />
-        </button>
+        {streaming ? (
+          <button
+            type="button"
+            className="vera-chat__send vera-chat__send--stop"
+            data-testid="vera-chat-stop"
+            onClick={stopStreaming}
+            aria-label="Detener"
+            title="Detener respuesta"
+          >
+            <Square size={15} fill="currentColor" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="vera-chat__send"
+            data-testid="vera-chat-send"
+            onClick={() => send(value)}
+            disabled={!value.trim()}
+            aria-label="Enviar"
+          >
+            <ArrowUp size={18} />
+          </button>
+        )}
       </div>
     </section>
     </>

@@ -99,11 +99,13 @@ export const veraBrain = {
     email: string | undefined,
     mode: 'vera' | 'studio',
     onDelta: (full: string) => void,
+    signal?: AbortSignal,
   ): Promise<string> => {
     const res = await fetch(`${base}/ask/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question, session_id: sessionId, email, mode }),
+      signal,
     });
     if (!res.ok || !res.body) throw new Error('brain-stream-failed');
     const reader = res.body.getReader();
@@ -111,27 +113,33 @@ export const veraBrain = {
     let buffer = '';
     let full = '';
     let errored = false;
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const events = buffer.split('\n\n');
-      buffer = events.pop() ?? '';
-      for (const ev of events) {
-        const line = ev.split('\n').find((l) => l.startsWith('data:'));
-        if (!line) continue;
-        try {
-          const data = JSON.parse(line.slice(5).trim()) as { delta?: string; error?: string; done?: boolean };
-          if (data.delta) {
-            full += data.delta;
-            onDelta(full);
-          } else if (data.error) {
-            errored = true;
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split('\n\n');
+        buffer = events.pop() ?? '';
+        for (const ev of events) {
+          const line = ev.split('\n').find((l) => l.startsWith('data:'));
+          if (!line) continue;
+          try {
+            const data = JSON.parse(line.slice(5).trim()) as { delta?: string; error?: string; done?: boolean };
+            if (data.delta) {
+              full += data.delta;
+              onDelta(full);
+            } else if (data.error) {
+              errored = true;
+            }
+          } catch {
+            /* ignora líneas parciales */
           }
-        } catch {
-          /* ignora líneas parciales */
         }
       }
+    } catch (e) {
+      // Aborto del usuario (botón Detener): devolvemos lo que ya llegó.
+      if ((e as { name?: string })?.name === 'AbortError') return full;
+      throw e;
     }
     if (errored && !full) throw new Error('brain-stream-error');
     return full;
