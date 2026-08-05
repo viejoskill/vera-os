@@ -90,6 +90,52 @@ export const veraBrain = {
     if (!res.ok) throw new Error('brain-ask-failed');
     return ((await res.json()) as { answer: string }).answer;
   },
+
+  /** Streaming (SSE): evita el corte del proxy a los 60s en respuestas largas y
+   * hace que VERA escriba en vivo. `onDelta` recibe el texto acumulado. */
+  askStream: async (
+    question: string,
+    sessionId: string | undefined,
+    email: string | undefined,
+    mode: 'vera' | 'studio',
+    onDelta: (full: string) => void,
+  ): Promise<string> => {
+    const res = await fetch(`${base}/ask/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, session_id: sessionId, email, mode }),
+    });
+    if (!res.ok || !res.body) throw new Error('brain-stream-failed');
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let full = '';
+    let errored = false;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split('\n\n');
+      buffer = events.pop() ?? '';
+      for (const ev of events) {
+        const line = ev.split('\n').find((l) => l.startsWith('data:'));
+        if (!line) continue;
+        try {
+          const data = JSON.parse(line.slice(5).trim()) as { delta?: string; error?: string; done?: boolean };
+          if (data.delta) {
+            full += data.delta;
+            onDelta(full);
+          } else if (data.error) {
+            errored = true;
+          }
+        } catch {
+          /* ignora líneas parciales */
+        }
+      }
+    }
+    if (errored && !full) throw new Error('brain-stream-error');
+    return full;
+  },
   /** Lista las conversaciones previas del usuario (para retomar). */
   conversations: async (email: string): Promise<ConversationSummary[]> => {
     try {

@@ -1,8 +1,10 @@
 """VERA Brain — endpoints. La UI consume VERA Brain; nunca sabe que por detrás
 razona Claude. El usuario siempre habla con VERA."""
 import logging
+import json
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 import config
@@ -69,6 +71,44 @@ async def ask(payload: AskRequest):
     except Exception:  # noqa: BLE001
         logger.exception("No se pudo guardar la conversación")
     return {"answer": answer}
+
+
+@router.post("/ask/stream")
+async def ask_stream(payload: AskRequest):
+    """Igual que /ask pero en streaming (SSE). Evita el corte del proxy a los 60s en
+    respuestas largas y hace que VERA 'escriba' en vivo."""
+    if not config.ai_configured():
+        raise HTTPException(503, "VERA Brain no está configurado.")
+    question = (payload.question or "").strip()
+    if not question:
+        raise HTTPException(422, "Escribí una pregunta para VERA.")
+    email = payload.email or "anon"
+    session_id = payload.session_id or "default"
+    augmented = await conversations.history_prompt(email, session_id, question)
+
+    async def gen():
+        parts: list[str] = []
+        try:
+            async for chunk in brain.ask_stream(augmented, session_id, payload.mode):
+                parts.append(chunk)
+                yield f"data: {json.dumps({'delta': chunk})}\n\n"
+        except Exception:  # noqa: BLE001
+            logger.exception("VERA Brain stream failed")
+            yield f"data: {json.dumps({'error': 'VERA no pudo responder ahora.'})}\n\n"
+        answer = "".join(parts).strip()
+        if answer:
+            try:
+                await conversations.append(email, session_id, question, answer)
+            except Exception:  # noqa: BLE001
+                logger.exception("No se pudo guardar la conversación")
+        yield f"data: {json.dumps({'done': True})}\n\n"
+
+    return StreamingResponse(
+        gen(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive"},
+    )
+
 
 
 @router.get("/conversations")

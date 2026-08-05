@@ -995,3 +995,12 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Nuevo `VeraMessage.tsx`: parser propio (sin dependencias) que renderiza la salida de VERA con títulos (#), viñetas (- •), listas numeradas (1.), líneas ★, **negritas** y *palabras destacadas* (dorado, clase `.vera-md__hl`).
 - `VeraChat.tsx`: `clean()` ya NO borra el markdown (solo saca `---`); los mensajes de VERA se renderizan con `<VeraMessage/>`, los del usuario siguen en `<p>` plano. Bubble movido de `p` a `.vera-md`. CSS `.vera-md*` en index.css.
 - Verificado por screenshot en chat ampliado con respuesta real de Studio: 5 h4, 15 listas, 42 <strong>, 20 highlights; se lee claro y estructurado. tsc limpio.
+
+## Bug Fix (VERA Brain — "No pude responder" en respuestas largas — 2026-06)
+- CAUSA RAÍZ: el proxy/ingress corta la petición a los ~60s. `/api/brain/ask` (no-stream) devolvía 502 (página HTML de Cloudflare) cuando la generación de Studio superaba 60s → el front mostraba "No pude responder en este momento". Reproducido: pedido pesado = 60.3s → HTTP 502.
+- FIX: **streaming SSE**. Nuevo `POST /api/brain/ask/stream` (`StreamingResponse` text/event-stream) que emite `data: {"delta": ...}` token a token y `{"done": true}` al final; guarda la conversación al terminar. Provider: `ClaudeProvider.stream()` usa `LlmChat.stream_message()` (TextDelta). `brain.ask_stream()`.
+- Frontend: `veraBrain.askStream()` (lee ReadableStream/SSE) y `VeraChat.send()` ahora muestra a VERA **escribiendo en vivo** (append incremental + formato renderizado en tiempo real). El indicador de "pensando" se apaga al primer token.
+- Steer de concisión en `STUDIO_IDENTITY`: por defecto breve; no vuelca el guion toma-por-toma de TODAS las ideas de una (ofrece desarrollar UNA), para que las respuestas terminen con margen dentro de los 60s.
+- Verificado E2E: curl stream (pedido normal 6483 chars, `done:true`, 51s; pedido gigante ahora entrega parcial en vivo con HTTP 200 en vez de 502) + screenshot (VERA escribiendo en vivo con formato en el chat ampliado, modo Studio). tsc + imports backend OK.
+- NOTA: `/api/studio/ideas` y `/api/studio/plan` (herramienta) siguen sin stream (devuelven JSON); el plan con muchos días podría acercarse a 60s — pendiente stream/chunk si hace falta. El `ask` no-stream queda como fallback sin uso en el front.
+- Producción: requiere REDEPLOY para aplicar el fix en real-estate-os-10.emergent.host.

@@ -60,6 +60,11 @@ class VeraBrain:
     async def ask(self, question: str, session_id: str | None = None, mode: str = "vera") -> str:
         return await active_provider.reason(await _system(mode), question, session_id)
 
+    async def ask_stream(self, question: str, session_id: str | None = None, mode: str = "vera"):
+        system = await _system(mode)
+        async for chunk in active_provider.stream(system, question, session_id):
+            yield chunk
+
     async def today_briefing(self, business_context: str = "") -> str:
         now = datetime.now(AR_TZ)
         system = await _system()

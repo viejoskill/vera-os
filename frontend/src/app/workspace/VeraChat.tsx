@@ -114,15 +114,30 @@ export const VeraChat = () => {
     setValue('');
     setMessages((m) => [...m, { role: 'user', text: q }]);
     setLoading(true);
+    let started = false;
     try {
-      const answer = await veraBrain.ask(q, sessionRef.current, email, mode);
-      setMessages((m) => [...m, { role: 'vera', text: clean(answer) }]);
+      await veraBrain.askStream(q, sessionRef.current, email, mode, (full) => {
+        const text = clean(full);
+        if (!started) {
+          started = true;
+          setLoading(false);
+          setMessages((m) => [...m, { role: 'vera', text }]);
+        } else {
+          setMessages((m) => {
+            const copy = [...m];
+            copy[copy.length - 1] = { role: 'vera', text };
+            return copy;
+          });
+        }
+      });
       refreshHistory();
     } catch {
-      setMessages((m) => [
-        ...m,
-        { role: 'vera', text: 'No pude responder en este momento. Probá de nuevo en unos segundos.' },
-      ]);
+      const errText = 'No pude responder en este momento. Probá de nuevo en unos segundos.';
+      setMessages((m) =>
+        started
+          ? m
+          : [...m, { role: 'vera', text: errText }],
+      );
     } finally {
       setLoading(false);
       inputRef.current?.focus();
