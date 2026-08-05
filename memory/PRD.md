@@ -1017,3 +1017,8 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Herramienta Studio (`vera-studio.html`, tab Carrusel): input "Imagen de referencia" (multiple, resize client-side), preview con quitar, envía `images` en el fetch a `/api/studio/ideas`; permite generar solo desde imagen.
 - Verificado E2E: chat+img (stream, analizó foto real y rectángulo de test correctamente), studio+img (4 placas desde imagen), UI chat (clip→miniatura→imagen en mensaje→análisis) y UI studio (input+preview, sin errores de consola). tsc limpio, backend imports OK.
 - Payloads livianos por resize client-side (evita el límite de body / 60s). Producción: requiere REDEPLOY.
+
+## Bug Fixes (Placa desbordada + descarga sin extensión — 2026-06)
+- PLACA UGC desbordada con mucho texto: `renderUgc()` en `vera-studio.html` anclaba el bloque título+secundario+CTA con posición fija y se cortaba abajo. FIX: se calcula el alto total y se ESCALA el bloque (fuentes/altos/gaps, factor min 0.5) para que SIEMPRE entre entre el logo (topLimit) y el pie (botLimit = H - lineOff - 120); anclaje arriba/centro/abajo recalculado. Verificado por screenshot con texto largo (título 7 líneas + sec 3 líneas + CTA, todo visible). Sirve para Feed 4:5 e Historia 9:16.
+- DESCARGA INDIVIDUAL sin extensión (bajaba "foto-4" sin .jpg, no abría; el .zip sí andaba): en `routes_files.py` el filename salía de `original_name/stored_name` que a veces no tenía extensión. FIX: `_ensure_ext(filename, mime)` agrega extensión según mime_type (image/jpeg→.jpg, png, webp, heic, etc.) antes del Content-Disposition en `/properties/{id}/images/{id}/download`. Verificado (unit + endpoint real).
+- Producción: requiere REDEPLOY.

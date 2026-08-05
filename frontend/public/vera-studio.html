@@ -1417,65 +1417,76 @@ function renderUgc(P, s){
 
   // titulo en chips estilo historia de Instagram
   ctx.textBaseline = "top";
-  const chipFont = "700 58px Inter";
-  const secFont = "600 38px Inter";
-  // medir alto total del bloque para poder anclarlo arriba/centro/abajo
+  const baseChip = "700 58px Inter";
+  const baseSec = "600 38px Inter";
+  // Conteo de lineas con tamaño base (define los cortes de linea).
   let n1 = 0;
-  s.titulo.split("\n").forEach(mline=>{ n1 += wrapSpans(parseSpans(mline), chipFont, W-2*PAD-72).length; });
-  let n2 = 0;
-  if(s.sec.trim()) n2 = wrapSpans(parseSpans(s.sec), secFont, W-2*PAD-64).length;
-  let totalH = n1*96 + 14 + (n2? n2*70+18 : 0) + (s.cta.trim()? 86 : 0);
+  const chipMlines = s.titulo.split("\n").map(mline=>{ const ls = wrapSpans(parseSpans(mline), baseChip, W-2*PAD-72); n1 += ls.length; return ls; });
+  const secLines = s.sec.trim() ? wrapSpans(parseSpans(s.sec), baseSec, W-2*PAD-64) : [];
+  const n2 = secLines.length;
+  const totalHbase = n1*96 + 14 + (n2? n2*70+18 : 0) + (s.cta.trim()? 86 : 0);
+  // Escala para que el bloque SIEMPRE entre entre el logo y el pie (evita desborde con mucho texto).
+  const topLimit = P.logoY + 150;
+  const botLimit = H - P.lineOff - 120;
+  const avail = botLimit - topLimit;
+  const sc = totalHbase > avail ? Math.max(0.5, avail / totalHbase) : 1;
+  const totalH = totalHbase * sc;
+  const chipFont = "700 " + Math.round(58*sc) + "px Inter";
+  const secFont = "600 " + Math.round(38*sc) + "px Inter";
+  const ctaFont = "700 " + Math.round(38*sc) + "px Inter";
+  const stepChip=96*sc, boxChip=84*sc, chipDy=13*sc, padChip=28*sc, gapChip=56*sc, radChip=16*sc;
+  const gap1=14*sc, stepSec=70*sc, boxSec=60*sc, secDy=10*sc, padSec=22*sc, gapSec=44*sc, radSec=13*sc, gap2=18*sc;
+  const boxCta=86*sc, ctaDy=24*sc, padCta=34*sc, gapCta=68*sc, radCta=18*sc;
   let y;
-  if(s.altura==="arriba") y = P.logoY + 170;
-  else if(s.altura==="abajo") y = H - P.lineOff - 46 - totalH;
-  else y = P.tituloY + 30;
+  if(s.altura==="arriba") y = topLimit;
+  else if(s.altura==="abajo") y = botLimit - totalH;
+  else y = topLimit + (avail - totalH)/2;
+  if(y < topLimit) y = topLimit;
   // refuerzo de legibilidad cuando el texto va abajo
   if(s.altura==="abajo" && s.bgImg){
     g = ctx.createLinearGradient(0,y-90,0,H);
     g.addColorStop(0,"rgba(0,0,0,0)"); g.addColorStop(.5,"rgba(0,0,0,.35)"); g.addColorStop(1,"rgba(0,0,0,.6)");
     ctx.fillStyle = g; ctx.fillRect(0,y-90,W,H-(y-90));
   }
-  s.titulo.split("\n").forEach(mline=>{
-    const lines = wrapSpans(parseSpans(mline), chipFont, W-2*PAD-72);
+  chipMlines.forEach(lines=>{
     lines.forEach(line=>{
       ctx.font = chipFont;
       const lw = line.reduce((a,t)=> a+ctx.measureText(t.t).width, 0);
-      const x0 = der ? W-PAD-(lw+56) : PAD;
-      roundRect(x0, y, lw+56, 84, 16);
+      const x0 = der ? W-PAD-(lw+gapChip) : PAD;
+      roundRect(x0, y, lw+gapChip, boxChip, radChip);
       ctx.fillStyle = "rgba(0,0,0,.58)"; ctx.fill();
-      let x = x0+28;
+      let x = x0+padChip;
       line.forEach(tok=>{
         ctx.fillStyle = tok.g ? ORO : "#ffffff";
-        ctx.fillText(tok.t, x, y+13);
+        ctx.fillText(tok.t, x, y+chipDy);
         x += ctx.measureText(tok.t).width;
       });
-      y += 96;
+      y += stepChip;
     });
   });
-  y += 14;
+  y += gap1;
   if(s.sec.trim()){
-    const lines = wrapSpans(parseSpans(s.sec), secFont, W-2*PAD-64);
-    lines.forEach(line=>{
+    secLines.forEach(line=>{
       ctx.font = secFont;
       const lw = line.reduce((a,t)=> a+ctx.measureText(t.t).width, 0);
-      const x0 = der ? W-PAD-(lw+44) : PAD;
-      roundRect(x0, y, lw+44, 60, 13);
+      const x0 = der ? W-PAD-(lw+gapSec) : PAD;
+      roundRect(x0, y, lw+gapSec, boxSec, radSec);
       ctx.fillStyle = "rgba(0,0,0,.46)"; ctx.fill();
-      let x = x0+22;
-      line.forEach(tok=>{ ctx.fillStyle = tok.g?ORO:"#f3f0e8"; ctx.fillText(tok.t, x, y+10); x+=ctx.measureText(tok.t).width; });
-      y += 70;
+      let x = x0+padSec;
+      line.forEach(tok=>{ ctx.fillStyle = tok.g?ORO:"#f3f0e8"; ctx.fillText(tok.t, x, y+secDy); x+=ctx.measureText(tok.t).width; });
+      y += stepSec;
     });
-    y += 18;
+    y += gap2;
   }
   if(s.cta.trim()){
-    ctx.font = "700 38px Inter";
+    ctx.font = ctaFont;
     const t = s.cta.trim().toUpperCase();
     const tw = ctx.measureText(t).width;
-    const x0 = der ? W-PAD-(tw+68) : PAD;
-    roundRect(x0, y, tw+68, 86, 18);
+    const x0 = der ? W-PAD-(tw+gapCta) : PAD;
+    roundRect(x0, y, tw+gapCta, boxCta, radCta);
     ctx.fillStyle = ORO; ctx.fill();
     ctx.fillStyle = "#141414";
-    ctx.fillText(t, x0+34, y+24);
+    ctx.fillText(t, x0+padCta, y+ctaDy);
   }
 
   drawPie(P, s.contacto, slides.length, cur, P.deslizar);

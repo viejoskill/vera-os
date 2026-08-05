@@ -1,6 +1,7 @@
 """File endpoints. Uploads go to private Supabase buckets via StorageService;
 only metadata + object paths are stored in the DB. Reads use signed URLs."""
 from urllib.parse import quote
+import os
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
@@ -14,10 +15,23 @@ from storage_service import get_storage
 
 router = APIRouter(prefix="/properties", tags=["files"])
 
+_MIME_EXT = {
+    "image/jpeg": ".jpg", "image/jpg": ".jpg", "image/png": ".png",
+    "image/webp": ".webp", "image/heic": ".heic", "image/heif": ".heif",
+    "image/gif": ".gif", "image/avif": ".avif",
+}
+
 
 def _ensure() -> None:
     if not config.supabase_configured():
         raise HTTPException(503, "Supabase is not configured.")
+
+
+def _ensure_ext(filename: str, mime: str | None) -> str:
+    """Garantiza que el nombre tenga extensión (evita bajar archivos sin extensión)."""
+    if os.path.splitext(filename)[1]:
+        return filename
+    return filename + _MIME_EXT.get((mime or "").lower(), ".jpg")
 
 
 def _content_disposition(filename: str) -> str:
@@ -148,6 +162,7 @@ async def download_image(property_id: str, image_id: str):
         raise HTTPException(404, "Image not found")
     data = await get_storage().download(image["bucket"], image["object_path"])
     filename = image.get("original_name") or image.get("stored_name") or "foto.jpg"
+    filename = _ensure_ext(filename, image.get("mime_type"))
     return Response(
         content=data,
         media_type=image.get("mime_type") or "application/octet-stream",
