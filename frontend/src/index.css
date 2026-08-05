@@ -5156,12 +5156,12 @@ p {
 }
 /* Modo ampliado: overlay cómodo para leer y responder */
 .vera-chat__backdrop {
-  position: fixed; inset: 0; z-index: 54;
+  position: fixed; inset: 0; z-index: 1000;
   background: rgba(6, 6, 8, 0.68); backdrop-filter: blur(3px);
   animation: vera-train-in 160ms ease;
 }
 .vera-chat--expanded {
-  position: fixed; z-index: 55;
+  position: fixed; z-index: 1001;
   top: 88px; bottom: 24px; left: 50%; transform: translateX(-50%);
   width: min(1080px, calc(100vw - 48px));
   height: auto;

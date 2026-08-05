@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Sparkles, ArrowUp, Plus, History, Trash2, Palette, Copy, Check, GraduationCap, X, Maximize2, Minimize2 } from 'lucide-react';
 import { veraBrain, veraStudioBrain, type ConversationSummary } from '@app/brain/brain-gateway';
 import { VeraMessage } from './VeraMessage';
@@ -174,7 +175,7 @@ export const VeraChat = () => {
   const empty = messages.length === 0;
   const isStudio = mode === 'studio';
 
-  return (
+  const view = (
     <>
       {expanded && <div className="vera-chat__backdrop" data-testid="vera-chat-backdrop" onClick={() => setExpanded(false)} />}
     <section
@@ -420,6 +421,8 @@ export const VeraChat = () => {
     </section>
     </>
   );
+
+  return expanded ? createPortal(view, document.body) : view;
 };
 
 export default VeraChat;
