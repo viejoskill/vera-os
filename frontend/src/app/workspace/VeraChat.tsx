@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Sparkles, ArrowUp, Plus, History, Trash2, Palette, Copy, Check, GraduationCap, X } from 'lucide-react';
+import { Sparkles, ArrowUp, Plus, History, Trash2, Palette, Copy, Check, GraduationCap, X, Maximize2, Minimize2 } from 'lucide-react';
 import { veraBrain, veraStudioBrain, type ConversationSummary } from '@app/brain/brain-gateway';
 import { useAuthUser } from '@app/auth/useAuthUser';
 import { useAuth } from '@app/auth/AuthProvider';
@@ -63,6 +63,17 @@ export const VeraChat = () => {
   const [showTrain, setShowTrain] = useState(false);
   const [trainText, setTrainText] = useState('');
   const [trainState, setTrainState] = useState<'idle' | 'loading' | 'saving' | 'saved'>('idle');
+
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setExpanded(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [expanded]);
 
   const openTraining = async () => {
     setShowTrain(true);
@@ -165,7 +176,12 @@ export const VeraChat = () => {
   const isStudio = mode === 'studio';
 
   return (
-    <section className={`vera-chat${isStudio ? ' vera-chat--studio' : ''}`} data-testid="vera-chat">
+    <>
+      {expanded && <div className="vera-chat__backdrop" data-testid="vera-chat-backdrop" onClick={() => setExpanded(false)} />}
+    <section
+      className={`vera-chat${isStudio ? ' vera-chat--studio' : ''}${expanded ? ' vera-chat--expanded' : ''}`}
+      data-testid="vera-chat"
+    >
       <header className="vera-chat__bar">
         <div className="vera-chat__modes" role="tablist" aria-label="Modo de VERA">
           <button
@@ -215,6 +231,17 @@ export const VeraChat = () => {
             onClick={startNew}
           >
             <Plus size={15} /> Nueva
+          </button>
+          <button
+            type="button"
+            className="vera-chat__bar-btn vera-chat__bar-btn--expand"
+            data-testid="vera-chat-expand"
+            onClick={() => setExpanded((e) => !e)}
+            aria-label={expanded ? 'Reducir' : 'Ampliar'}
+            title={expanded ? 'Reducir' : 'Ampliar ventana'}
+          >
+            {expanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+            {expanded ? 'Reducir' : 'Ampliar'}
           </button>
         </div>
       </header>
@@ -392,6 +419,7 @@ export const VeraChat = () => {
         </button>
       </div>
     </section>
+    </>
   );
 };
 

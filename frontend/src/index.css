@@ -5154,6 +5154,24 @@ p {
   background: var(--vera-color-surface);
   overflow: hidden;
 }
+/* Modo ampliado: overlay cómodo para leer y responder */
+.vera-chat__backdrop {
+  position: fixed; inset: 0; z-index: 54;
+  background: rgba(6, 6, 8, 0.68); backdrop-filter: blur(3px);
+  animation: vera-train-in 160ms ease;
+}
+.vera-chat--expanded {
+  position: fixed; z-index: 55;
+  top: 88px; bottom: 24px; left: 50%; transform: translateX(-50%);
+  width: min(1080px, calc(100vw - 48px));
+  height: auto;
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6);
+  animation: vera-train-in 180ms ease;
+}
+@media (max-width: 640px) {
+  .vera-chat--expanded { top: 72px; bottom: 10px; width: calc(100vw - 20px); }
+  .vera-chat__bar-btn--expand span { display: none; }
+}
 .vera-chat__bar {
   display: flex;
   align-items: center;

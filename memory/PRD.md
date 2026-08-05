@@ -984,3 +984,8 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - **Ideas por propiedad**: en la herramienta Studio (`vera-studio.html`, tab Carrusel) nuevo desplegable **"Propiedad de tu cartera"** que se puebla desde `GET /api/studio/properties` (29-30 activas). Al elegir una y generar, VERA arma el carrusel con sus **datos reales** (precio, ambientes, zona, amenities) sin escribir tema.
   - Backend: `GET /api/studio/properties` (id+label), `IdeasBody.property_id` opcional + `_property_context()` (fetch vía `property_repository.get`) inyectado al prompt. tema opcional si hay propiedad.
 - Verificado E2E: curl (training PUT/GET, properties list=29, ideas por propiedad usando datos reales: "350 m², carpinterías Aluar, 660 m² forestados, USD 590.000") + screenshots (tool: PH generó "UN PH EN EL BOSQUE, A 500 METROS DEL MAR" sin tema; chat: modal Entrenar carga/guarda). tsc limpio. Entrenamiento reseteado a vacío para el usuario.
+
+## Implemented (VERA Chat — Modo ampliado — 2026-06)
+- Botón **"Ampliar"/"Reducir"** (Maximize2/Minimize2) en el header del chat de "Hoy". Abre el chat como overlay casi a pantalla completa (`.vera-chat--expanded`: fixed, top 88px/bottom 24px, ancho min(1080px, 100vw-48px)) con backdrop oscuro (`.vera-chat__backdrop`). Cierra por botón, click en fondo o tecla Escape.
+- Aplica a ambos modos (VERA y Studio). `VeraChat.tsx`: estado `expanded` + useEffect Escape; CSS en index.css.
+- Verificado por screenshot: chat expandido 1080×1032, header completo visible, sin superponerse a la barra superior. tsc limpio.
