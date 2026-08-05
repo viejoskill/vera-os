@@ -989,3 +989,8 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Botón **"Ampliar"/"Reducir"** (Maximize2/Minimize2) en el header del chat de "Hoy". Abre el chat como overlay casi a pantalla completa (`.vera-chat--expanded`: fixed, top 88px/bottom 24px, ancho min(1080px, 100vw-48px)) con backdrop oscuro (`.vera-chat__backdrop`). Cierra por botón, click en fondo o tecla Escape.
 - Aplica a ambos modos (VERA y Studio). `VeraChat.tsx`: estado `expanded` + useEffect Escape; CSS en index.css.
 - Verificado por screenshot: chat expandido 1080×1032, header completo visible, sin superponerse a la barra superior. tsc limpio.
+
+## Implemented (VERA Chat — Formato enriquecido de respuestas — 2026-06)
+- Nuevo `VeraMessage.tsx`: parser propio (sin dependencias) que renderiza la salida de VERA con títulos (#), viñetas (- •), listas numeradas (1.), líneas ★, **negritas** y *palabras destacadas* (dorado, clase `.vera-md__hl`).
+- `VeraChat.tsx`: `clean()` ya NO borra el markdown (solo saca `---`); los mensajes de VERA se renderizan con `<VeraMessage/>`, los del usuario siguen en `<p>` plano. Bubble movido de `p` a `.vera-md`. CSS `.vera-md*` en index.css.
+- Verificado por screenshot en chat ampliado con respuesta real de Studio: 5 h4, 15 listas, 42 <strong>, 20 highlights; se lee claro y estructurado. tsc limpio.

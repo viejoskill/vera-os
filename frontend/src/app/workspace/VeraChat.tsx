@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Sparkles, ArrowUp, Plus, History, Trash2, Palette, Copy, Check, GraduationCap, X, Maximize2, Minimize2 } from 'lucide-react';
 import { veraBrain, veraStudioBrain, type ConversationSummary } from '@app/brain/brain-gateway';
+import { VeraMessage } from './VeraMessage';
 import { useAuthUser } from '@app/auth/useAuthUser';
 import { useAuth } from '@app/auth/AuthProvider';
 
@@ -20,8 +21,6 @@ const greeting = (): string => {
 
 const clean = (t: string): string =>
   t
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/\*\*(.+?)\*\*/g, '$1')
     .replace(/^\s*---\s*$/gm, '')
     .trim();
 
@@ -377,7 +376,7 @@ export const VeraChat = () => {
                 </button>
               </div>
             )}
-            <p>{m.text}</p>
+            {m.role === 'vera' ? <VeraMessage text={m.text} /> : <p>{m.text}</p>}
           </div>
         ))}
 
