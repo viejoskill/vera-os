@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Sparkles, ArrowUp, Plus, History, Trash2, Palette, Copy, Check, GraduationCap, X, Maximize2, Minimize2, Square } from 'lucide-react';
+import { Sparkles, ArrowUp, Plus, History, Trash2, Palette, Copy, Check, GraduationCap, X, Maximize2, Minimize2, Square, Paperclip } from 'lucide-react';
 import { veraBrain, veraStudioBrain, type ConversationSummary } from '@app/brain/brain-gateway';
 import { VeraMessage } from './VeraMessage';
 import { useAuthUser } from '@app/auth/useAuthUser';
@@ -8,10 +8,46 @@ import { useAuth } from '@app/auth/AuthProvider';
 
 type Mode = 'vera' | 'studio';
 
+interface Attachment {
+  url: string; // dataURL para preview
+  b64: string; // base64 crudo para enviar
+}
+
 interface Msg {
   role: 'user' | 'vera';
   text: string;
+  images?: string[];
 }
+
+/** Redimensiona una imagen a máx 1280px y la convierte a JPEG base64 (liviano). */
+const resizeToBase64 = (file: File): Promise<Attachment> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 1280;
+        let { width, height } = img;
+        if (width > max || height > max) {
+          const r = Math.min(max / width, max / height);
+          width = Math.round(width * r);
+          height = Math.round(height * r);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('no-canvas'));
+        ctx.drawImage(img, 0, 0, width, height);
+        const url = canvas.toDataURL('image/jpeg', 0.82);
+        resolve({ url, b64: url.split(',', 2)[1] });
+      };
+      img.onerror = reject;
+      img.src = reader.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 
 const greeting = (): string => {
   const h = new Date().getHours();
@@ -61,6 +97,24 @@ export const VeraChat = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [attached, setAttached] = useState<Attachment[]>([]);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const onPickImages = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const picked = Array.from(files).slice(0, 4 - attached.length);
+    const results: Attachment[] = [];
+    for (const f of picked) {
+      if (!f.type.startsWith('image/')) continue;
+      try {
+        results.push(await resizeToBase64(f));
+      } catch {
+        /* ignora archivo inválido */
+      }
+    }
+    setAttached((a) => [...a, ...results].slice(0, 4));
+    if (fileRef.current) fileRef.current.value = '';
+  };
 
   const [showTrain, setShowTrain] = useState(false);
   const [trainText, setTrainText] = useState('');
@@ -112,9 +166,11 @@ export const VeraChat = () => {
 
   const send = async (question: string) => {
     const q = question.trim();
-    if (!q || loading || streaming) return;
+    const imgs = attached;
+    if ((!q && imgs.length === 0) || loading || streaming) return;
     setValue('');
-    setMessages((m) => [...m, { role: 'user', text: q }]);
+    setAttached([]);
+    setMessages((m) => [...m, { role: 'user', text: q, images: imgs.map((a) => a.url) }]);
     setLoading(true);
     setStreaming(true);
     const controller = new AbortController();
@@ -122,10 +178,11 @@ export const VeraChat = () => {
     let started = false;
     try {
       await veraBrain.askStream(
-        q,
+        q || 'Analizá esta imagen y ayudame con el contexto.',
         sessionRef.current,
         email,
         mode,
+        imgs.map((a) => a.b64),
         (full) => {
           const text = clean(full);
           if (!started) {
@@ -406,7 +463,20 @@ export const VeraChat = () => {
                 </button>
               </div>
             )}
-            {m.role === 'vera' ? <VeraMessage text={m.text} /> : <p>{m.text}</p>}
+            {m.role === 'vera' ? (
+              <VeraMessage text={m.text} />
+            ) : (
+              <>
+                {m.images && m.images.length > 0 && (
+                  <div className="vera-chat__msg-imgs">
+                    {m.images.map((src, k) => (
+                      <img key={k} src={src} alt="adjunto" className="vera-chat__msg-img" />
+                    ))}
+                  </div>
+                )}
+                {m.text && <p>{m.text}</p>}
+              </>
+            )}
           </div>
         ))}
 
@@ -421,44 +491,84 @@ export const VeraChat = () => {
       </div>
 
       <div className="vera-chat__field">
-        <textarea
-          ref={inputRef}
-          className="vera-chat__input"
-          data-testid="vera-chat-input"
-          placeholder={isStudio ? 'Pedile ideas a VERA Studio…' : 'Escribí tu pregunta para VERA…'}
-          rows={1}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              send(value);
-            }
-          }}
-        />
-        {streaming ? (
-          <button
-            type="button"
-            className="vera-chat__send vera-chat__send--stop"
-            data-testid="vera-chat-stop"
-            onClick={stopStreaming}
-            aria-label="Detener"
-            title="Detener respuesta"
-          >
-            <Square size={15} fill="currentColor" />
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="vera-chat__send"
-            data-testid="vera-chat-send"
-            onClick={() => send(value)}
-            disabled={!value.trim()}
-            aria-label="Enviar"
-          >
-            <ArrowUp size={18} />
-          </button>
+        {attached.length > 0 && (
+          <div className="vera-chat__attachments" data-testid="vera-chat-attachments">
+            {attached.map((a, i) => (
+              <div key={i} className="vera-chat__thumb">
+                <img src={a.url} alt="adjunto" />
+                <button
+                  type="button"
+                  className="vera-chat__thumb-del"
+                  data-testid="vera-chat-thumb-remove"
+                  onClick={() => setAttached((arr) => arr.filter((_, k) => k !== i))}
+                  aria-label="Quitar imagen"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
         )}
+        <div className="vera-chat__field-row">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            data-testid="vera-chat-file-input"
+            onChange={(e) => onPickImages(e.target.files)}
+          />
+          <button
+            type="button"
+            className="vera-chat__attach"
+            data-testid="vera-chat-attach"
+            onClick={() => fileRef.current?.click()}
+            disabled={attached.length >= 4}
+            aria-label="Adjuntar imagen"
+            title="Adjuntar imagen o screenshot"
+          >
+            <Paperclip size={17} />
+          </button>
+          <textarea
+            ref={inputRef}
+            className="vera-chat__input"
+            data-testid="vera-chat-input"
+            placeholder={isStudio ? 'Pedile ideas a VERA Studio…' : 'Escribí tu pregunta para VERA…'}
+            rows={1}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                send(value);
+              }
+            }}
+          />
+          {streaming ? (
+            <button
+              type="button"
+              className="vera-chat__send vera-chat__send--stop"
+              data-testid="vera-chat-stop"
+              onClick={stopStreaming}
+              aria-label="Detener"
+              title="Detener respuesta"
+            >
+              <Square size={15} fill="currentColor" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="vera-chat__send"
+              data-testid="vera-chat-send"
+              onClick={() => send(value)}
+              disabled={!value.trim() && attached.length === 0}
+              aria-label="Enviar"
+            >
+              <ArrowUp size={18} />
+            </button>
+          )}
+        </div>
       </div>
     </section>
     </>

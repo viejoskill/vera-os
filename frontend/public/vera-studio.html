@@ -158,6 +158,9 @@
         <h2>1 &middot; Contenido</h2>
         <label>Propiedad de tu cartera <span style="opacity:.6;font-weight:400">(opcional &mdash; VERA arma el carrusel con sus datos reales)</span></label>
         <select id="propSel"><option value="">— Sin propiedad (tema libre) —</option></select>
+        <label style="margin-top:12px">Imagen de referencia <span style="opacity:.6;font-weight:400">(opcional &mdash; screenshot o foto para que VERA la analice)</span></label>
+        <input type="file" id="studioImg" accept="image/*" multiple>
+        <div id="studioImgPrev" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
         <label style="margin-top:12px">Tema del post o carrusel</label>
         <input type="text" id="tema" placeholder="Ej: costos reales al vender una propiedad">
         <div class="row3">
@@ -754,14 +757,14 @@ const TONOS = {
 };
 async function generarIdeas(){
   const st = $("stIdeas");
-  if(!$("tema").value.trim() && !($("propSel") && $("propSel").value)){ st.textContent="Escrib\u00ed el tema o eleg\u00ed una propiedad."; st.className="status err"; return; }
+  if(!$("tema").value.trim() && !($("propSel") && $("propSel").value) && studioImgs.length===0){ st.textContent="Escrib\u00ed el tema, eleg\u00ed una propiedad o sub\u00ed una imagen."; st.className="status err"; return; }
   const n = parseInt($("nplacas").value);
   st.textContent = "Generando copys con VERA..."; st.className="status";
   $("ideas").disabled = true;
   try{
     const r = await fetch("/api/studio/ideas", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ tema:$("tema").value.trim(), enfoque:$("enfoque").value, tono:$("tono").value, n, property_id: ($("propSel") ? $("propSel").value : "") || null })
+        body: JSON.stringify({ tema:$("tema").value.trim(), enfoque:$("enfoque").value, tono:$("tono").value, n, property_id: ($("propSel") ? $("propSel").value : "") || null, images: studioImgs.map(im=>im.b64) })
     });
     const data = await r.json();
     if(!r.ok) throw new Error(data && data.detail ? data.detail : ("Error "+r.status));
@@ -779,6 +782,29 @@ async function generarIdeas(){
   finally{ $("ideas").disabled = false; }
 }
 $("ideas").addEventListener("click", generarIdeas);
+let studioImgs = [];
+function resizeImgStudio(file){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onload=()=>{ const im=new Image(); im.onload=()=>{
+      const max=1280; let w=im.width,h=im.height;
+      if(w>max||h>max){ const r=Math.min(max/w,max/h); w=Math.round(w*r); h=Math.round(h*r); }
+      const c=document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(im,0,0,w,h);
+      const url=c.toDataURL('image/jpeg',0.82); res({url, b64:url.split(',',2)[1]});
+    }; im.onerror=rej; im.src=fr.result; };
+    fr.onerror=rej; fr.readAsDataURL(file);
+  });
+}
+function renderStudioImgs(){
+  const p=$("studioImgPrev"); if(!p) return;
+  p.innerHTML=studioImgs.map((im,i)=>'<span style="position:relative;display:inline-block"><img src="'+im.url+'" style="width:54px;height:54px;object-fit:cover;border-radius:8px;border:1px solid #333"><button data-i="'+i+'" class="ipx" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:none;background:#000;color:#fff;cursor:pointer;line-height:1">\u00d7</button></span>').join('');
+  p.querySelectorAll('.ipx').forEach(b=> b.addEventListener('click', ()=>{ studioImgs.splice(+b.dataset.i,1); renderStudioImgs(); }));
+}
+(function(){ const si=$("studioImg"); if(si){ si.addEventListener("change", async e=>{
+  for(const f of Array.from(e.target.files).slice(0,4-studioImgs.length)){ if(!f.type.startsWith('image/')) continue; try{ studioImgs.push(await resizeImgStudio(f)); }catch(_){} }
+  renderStudioImgs(); si.value='';
+}); } })();
 async function cargarPropsStudio(){
   const sel = $("propSel"); if(!sel) return;
   try{

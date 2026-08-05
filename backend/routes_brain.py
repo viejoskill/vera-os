@@ -23,6 +23,7 @@ class AskRequest(BaseModel):
     session_id: str | None = None
     email: str | None = None
     mode: str = "vera"  # vera | studio (Studio = directora creativa de contenido)
+    images: list[str] = []  # base64/dataURL de imágenes (screenshots/fotos) para analizar
 
 
 class GoalRequest(BaseModel):
@@ -62,7 +63,7 @@ async def ask(payload: AskRequest):
     try:
         # Continuidad: incluimos el historial reciente de esta conversación.
         augmented = await conversations.history_prompt(email, session_id, question)
-        answer = await brain.ask(augmented, session_id, payload.mode)
+        answer = await brain.ask(augmented, session_id, payload.mode, payload.images or None)
     except Exception as exc:  # noqa: BLE001
         logger.exception("VERA Brain ask failed")
         raise HTTPException(502, "VERA no pudo responder ahora.") from exc
@@ -85,11 +86,12 @@ async def ask_stream(payload: AskRequest):
     email = payload.email or "anon"
     session_id = payload.session_id or "default"
     augmented = await conversations.history_prompt(email, session_id, question)
+    images = payload.images or None
 
     async def gen():
         parts: list[str] = []
         try:
-            async for chunk in brain.ask_stream(augmented, session_id, payload.mode):
+            async for chunk in brain.ask_stream(augmented, session_id, payload.mode, images):
                 parts.append(chunk)
                 yield f"data: {json.dumps({'delta': chunk})}\n\n"
         except Exception:  # noqa: BLE001

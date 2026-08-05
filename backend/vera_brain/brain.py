@@ -57,12 +57,12 @@ async def _system(mode: str = "vera") -> str:
 
 
 class VeraBrain:
-    async def ask(self, question: str, session_id: str | None = None, mode: str = "vera") -> str:
-        return await active_provider.reason(await _system(mode), question, session_id)
+    async def ask(self, question: str, session_id: str | None = None, mode: str = "vera", images: list[str] | None = None) -> str:
+        return await active_provider.reason(await _system(mode), question, session_id, images)
 
-    async def ask_stream(self, question: str, session_id: str | None = None, mode: str = "vera"):
+    async def ask_stream(self, question: str, session_id: str | None = None, mode: str = "vera", images: list[str] | None = None):
         system = await _system(mode)
-        async for chunk in active_provider.stream(system, question, session_id):
+        async for chunk in active_provider.stream(system, question, session_id, images):
             yield chunk
 
     async def today_briefing(self, business_context: str = "") -> str:

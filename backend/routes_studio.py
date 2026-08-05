@@ -86,6 +86,7 @@ class IdeasBody(BaseModel):
     tono: str = "profesional"
     n: int = 5
     property_id: str | None = None
+    images: list[str] = []
 
 
 class PlanBody(BaseModel):
@@ -107,13 +108,13 @@ def _parse_json(raw: str) -> dict:
         raise
 
 
-async def _think(prompt: str) -> str:
+async def _think(prompt: str, images: list[str] | None = None) -> str:
     """Razona con el MISMO cerebro que el chat de Studio (identidad + cartera + memoria)."""
     from vera_brain.ai_provider import active_provider
     from vera_brain.brain import _system
 
     system = await _system("studio")
-    return await active_provider.reason(system, prompt)
+    return await active_provider.reason(system, prompt, None, images)
 
 
 async def _property_context(property_id: str) -> str:
@@ -207,8 +208,9 @@ async def ideas(body: IdeasBody):
     prop_ctx = ""
     if body.property_id:
         prop_ctx = await _property_context(body.property_id)
-    if not tema and not prop_ctx:
-        raise HTTPException(422, "Escribí el tema o elegí una propiedad.")
+    imgs = body.images or None
+    if not tema and not prop_ctx and not imgs:
+        raise HTTPException(422, "Escribí el tema, elegí una propiedad o subí una imagen.")
     n = max(1, min(int(body.n or 5), 10))
     tono = TONOS.get(body.tono, TONOS["profesional"])
     tema_line = (
@@ -216,11 +218,18 @@ async def ideas(body: IdeasBody):
         if tema
         else f"Enfoque: {body.enfoque or 'destacar lo mejor de la propiedad'}.\n"
     )
+    img_line = (
+        "Te adjunté una o más imágenes (screenshot/foto): analizalas y usá ESE contexto como "
+        "base del carrusel (lo que muestran, lo que sugieren, la propiedad/ambiente/situación).\n"
+        if imgs
+        else ""
+    )
     prompt = (
         "TAREA (herramienta Studio, salida para placas): armá un carrusel para Instagram.\n"
         f"Tono a usar: {tono}\n"
         f"{tema_line}"
         f"{prop_ctx}"
+        f"{img_line}"
         f"Cantidad de placas: {n}.\n\n"
         "Estructura: placa 1 = GANCHO fuerte que frena el scroll; placas intermedias = "
         "CONTENIDO concreto y útil; última placa = REMATE + llamado a la acción.\n"
@@ -237,7 +246,7 @@ async def ideas(body: IdeasBody):
         f'{{"slides":[{{"titulo":"...","sec":"...","cta":"..."}}]}} con exactamente {n} slides.'
     )
     try:
-        data = _parse_json(await _think(prompt))
+        data = _parse_json(await _think(prompt, imgs))
         slides = (data.get("slides") or [])[:n]
     except Exception as exc:  # noqa: BLE001
         logger.exception("studio/ideas failed")

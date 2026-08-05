@@ -1009,3 +1009,11 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Mientras VERA responde (streaming) el botón de enviar se convierte en **Detener** (icono Square, pulso). Al tocarlo aborta el fetch (`AbortController`) y **conserva el texto parcial** ya recibido; vuelve el botón Enviar.
 - `veraBrain.askStream()` acepta `AbortSignal`; ante `AbortError` devuelve el texto parcial sin lanzar. `VeraChat`: estado `streaming` + `abortRef`. CSS `.vera-chat__send--stop`.
 - Verificado por screenshot: aparece Detener al escribir, corta a mitad, parcial preservado (268 chars), Enviar de vuelta. tsc limpio.
+
+## Implemented (VERA — Visión / análisis de imágenes — 2026-06)
+- VERA ahora ANALIZA imágenes (Claude Sonnet visión vía emergentintegrations `UserMessage.file_contents=[ImageContent(image_base64)]`). Análisis adaptativo al contexto (leer un screenshot para responder a un cliente, analizar una propiedad/aviso, resumir, etc.).
+- Backend: `ClaudeProvider.reason/stream` + `brain.ask/ask_stream` aceptan `images`; `_user_message()` arma multimodal (strip de prefijo data-url). `AskRequest.images` en `/api/brain/ask` y `/ask/stream`. `IdeasBody.images` + `_think(prompt, images)` en `/api/studio/ideas` (permite ideas solo-imagen).
+- Frontend CHAT (`VeraChat.tsx`): botón clip (Paperclip) + input file (image/*, multiple, hasta 4), redimensión client-side a máx 1280px JPEG 0.82 (`resizeToBase64`), tira de miniaturas con quitar, la imagen se muestra en el mensaje del usuario. `veraBrain.askStream` envía `images` (base64). Funciona en modo VERA y Studio, con streaming + Detener.
+- Herramienta Studio (`vera-studio.html`, tab Carrusel): input "Imagen de referencia" (multiple, resize client-side), preview con quitar, envía `images` en el fetch a `/api/studio/ideas`; permite generar solo desde imagen.
+- Verificado E2E: chat+img (stream, analizó foto real y rectángulo de test correctamente), studio+img (4 placas desde imagen), UI chat (clip→miniatura→imagen en mensaje→análisis) y UI studio (input+preview, sin errores de consola). tsc limpio, backend imports OK.
+- Payloads livianos por resize client-side (evita el límite de body / 60s). Producción: requiere REDEPLOY.

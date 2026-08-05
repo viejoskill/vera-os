@@ -98,13 +98,14 @@ export const veraBrain = {
     sessionId: string | undefined,
     email: string | undefined,
     mode: 'vera' | 'studio',
+    images: string[],
     onDelta: (full: string) => void,
     signal?: AbortSignal,
   ): Promise<string> => {
     const res = await fetch(`${base}/ask/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, session_id: sessionId, email, mode }),
+      body: JSON.stringify({ question, session_id: sessionId, email, mode, images }),
       signal,
     });
     if (!res.ok || !res.body) throw new Error('brain-stream-failed');
