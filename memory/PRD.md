@@ -977,3 +977,10 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Cómo se "entrena" el cerebro único: editar `vera_brain/studio.py` (STUDIO_IDENTITY) impacta chat + tool; la memoria/knowledge de VERA es compartida.
 - Verificado E2E: curl ideas (4 placas, palabras *marcadas*, \n, CTA final, tono picante) + curl plan (mix carrusel/ugc/propiedad/personal/vendida, tonos rotados, datos reales de zona) + screenshot del tool generando sin código de acceso, placa renderizada OK, sin errores de consola.
 - Nota: el plan con n grande puede tardar (~45s+). Imagen/video quedan atados al Worker.
+
+## Implemented (Studio — Panel de entrenamiento + Ideas por propiedad — 2026-06)
+- **Panel de entrenamiento (cerebro único, editable sin código)**: en el chat de "Hoy", modo Studio, botón **"Entrenar"** abre un modal para escribir la persona/estilo de VERA Studio. Se guarda en Mongo (`studio_config/studio_training`) y se inyecta en `_system("studio")` con prioridad alta → afecta chat Y herramienta Studio a la vez.
+  - Backend: `vera_brain/training.py` (get/set), `GET|PUT /api/studio/training`. Frontend: `veraStudioBrain` en brain-gateway + modal `.vera-train` en `VeraChat.tsx`.
+- **Ideas por propiedad**: en la herramienta Studio (`vera-studio.html`, tab Carrusel) nuevo desplegable **"Propiedad de tu cartera"** que se puebla desde `GET /api/studio/properties` (29-30 activas). Al elegir una y generar, VERA arma el carrusel con sus **datos reales** (precio, ambientes, zona, amenities) sin escribir tema.
+  - Backend: `GET /api/studio/properties` (id+label), `IdeasBody.property_id` opcional + `_property_context()` (fetch vía `property_repository.get`) inyectado al prompt. tema opcional si hay propiedad.
+- Verificado E2E: curl (training PUT/GET, properties list=29, ideas por propiedad usando datos reales: "350 m², carpinterías Aluar, 660 m² forestados, USD 590.000") + screenshots (tool: PH generó "UN PH EN EL BOSQUE, A 500 METROS DEL MAR" sin tema; chat: modal Entrenar carga/guarda). tsc limpio. Entrenamiento reseteado a vacío para el usuario.

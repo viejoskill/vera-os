@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Sparkles, ArrowUp, Plus, History, Trash2, Palette, Copy, Check } from 'lucide-react';
-import { veraBrain, type ConversationSummary } from '@app/brain/brain-gateway';
+import { Sparkles, ArrowUp, Plus, History, Trash2, Palette, Copy, Check, GraduationCap, X } from 'lucide-react';
+import { veraBrain, veraStudioBrain, type ConversationSummary } from '@app/brain/brain-gateway';
 import { useAuthUser } from '@app/auth/useAuthUser';
 import { useAuth } from '@app/auth/AuthProvider';
 
@@ -59,6 +59,31 @@ export const VeraChat = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+
+  const [showTrain, setShowTrain] = useState(false);
+  const [trainText, setTrainText] = useState('');
+  const [trainState, setTrainState] = useState<'idle' | 'loading' | 'saving' | 'saved'>('idle');
+
+  const openTraining = async () => {
+    setShowTrain(true);
+    setTrainState('loading');
+    try {
+      setTrainText(await veraStudioBrain.getTraining());
+    } finally {
+      setTrainState('idle');
+    }
+  };
+
+  const saveTraining = async () => {
+    setTrainState('saving');
+    try {
+      await veraStudioBrain.setTraining(trainText);
+      setTrainState('saved');
+      setTimeout(() => setTrainState('idle'), 1600);
+    } catch {
+      setTrainState('idle');
+    }
+  };
 
   const refreshHistory = useCallback(async () => {
     setConversations(await veraBrain.conversations(email));
@@ -165,6 +190,16 @@ export const VeraChat = () => {
           </button>
         </div>
         <div className="vera-chat__bar-actions">
+          {isStudio && (
+            <button
+              type="button"
+              className="vera-chat__bar-btn"
+              data-testid="vera-chat-train"
+              onClick={openTraining}
+            >
+              <GraduationCap size={15} /> Entrenar
+            </button>
+          )}
           <button
             type="button"
             className="vera-chat__bar-btn"
@@ -183,6 +218,57 @@ export const VeraChat = () => {
           </button>
         </div>
       </header>
+
+      {showTrain && (
+        <div className="vera-train" data-testid="vera-train" onClick={() => setShowTrain(false)}>
+          <div className="vera-train__panel" onClick={(e) => e.stopPropagation()}>
+            <div className="vera-train__head">
+              <span className="vera-train__title"><GraduationCap size={16} /> Entrenar a VERA Studio</span>
+              <button
+                type="button"
+                className="vera-train__close"
+                data-testid="vera-train-close"
+                onClick={() => setShowTrain(false)}
+                aria-label="Cerrar"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p className="vera-train__hint">
+              Escribí en tus palabras cómo querés que piense y escriba VERA Studio: tono, palabras a evitar,
+              público prioritario, muletillas de la marca, ejemplos de frases. Esto guía tanto el chat como la
+              herramienta de contenido (un solo cerebro).
+            </p>
+            <textarea
+              className="vera-train__textarea"
+              data-testid="vera-train-textarea"
+              placeholder={
+                'Ej: Tono cercano rioplatense, nunca uses la palabra "soñado". Priorizá inversores y familias jóvenes. Mencioná los pinares y la tranquilidad de Costa del Este cuando encaje…'
+              }
+              value={trainText}
+              onChange={(e) => setTrainText(e.target.value)}
+              rows={10}
+              disabled={trainState === 'loading'}
+            />
+            <div className="vera-train__actions">
+              <span className="vera-train__status">
+                {trainState === 'loading' && 'Cargando…'}
+                {trainState === 'saving' && 'Guardando…'}
+                {trainState === 'saved' && '✓ Guardado. VERA ya piensa así.'}
+              </span>
+              <button
+                type="button"
+                className="vera-train__save"
+                data-testid="vera-train-save"
+                onClick={saveTraining}
+                disabled={trainState === 'saving' || trainState === 'loading'}
+              >
+                Guardar entrenamiento
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showHistory && (
         <div className="vera-chat__history" data-testid="vera-chat-history">

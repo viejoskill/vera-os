@@ -3,6 +3,24 @@ import { env } from '@vera/config';
 /** Gateway a VERA Brain. Único punto de contacto del front con la inteligencia.
  * Las Apps consumen esto; nunca saben que por detrás razona un modelo concreto. */
 const base = `${env.backendUrl}/api/brain`;
+const studioBase = `${env.backendUrl}/api/studio`;
+
+/** Entrenamiento editable del cerebro de VERA Studio (persona/estilo). */
+export const veraStudioBrain = {
+  getTraining: async (): Promise<string> => {
+    const res = await fetch(`${studioBase}/training`);
+    if (!res.ok) return '';
+    return ((await res.json()) as { text: string }).text ?? '';
+  },
+  setTraining: async (text: string): Promise<void> => {
+    const res = await fetch(`${studioBase}/training`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) throw new Error('studio-training-save-failed');
+  },
+};
 
 /** Memoria estructurada: lo que VERA APRENDIÓ (≠ Knowledge). */
 export interface MemoryItem {

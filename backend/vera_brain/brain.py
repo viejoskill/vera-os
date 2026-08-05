@@ -34,8 +34,19 @@ IDENTITY = (
 
 async def _system(mode: str = "vera") -> str:
     identity = STUDIO_IDENTITY if mode == "studio" else IDENTITY
+    extra = ""
+    if mode == "studio":
+        from .training import get_training
+
+        training = await get_training()
+        if training.strip():
+            extra = (
+                "\n\n===== ENTRENAMIENTO / PERSONALIZACIÓN (definido por el equipo, prioridad alta) =====\n"
+                + training.strip()
+            )
     return (
         identity
+        + extra
         + "\n\n===== OBJETIVO ACTUAL DEL USUARIO (GOALS) =====\n"
         + goals.as_context()
         + "\n\n===== KNOWLEDGE HUB (tu conocimiento) =====\n"

@@ -156,7 +156,9 @@
     <div>
       <div class="panel" id="panelCont">
         <h2>1 &middot; Contenido</h2>
-        <label>Tema del post o carrusel</label>
+        <label>Propiedad de tu cartera <span style="opacity:.6;font-weight:400">(opcional &mdash; VERA arma el carrusel con sus datos reales)</span></label>
+        <select id="propSel"><option value="">— Sin propiedad (tema libre) —</option></select>
+        <label style="margin-top:12px">Tema del post o carrusel</label>
         <input type="text" id="tema" placeholder="Ej: costos reales al vender una propiedad">
         <div class="row3">
           <div>
@@ -752,14 +754,14 @@ const TONOS = {
 };
 async function generarIdeas(){
   const st = $("stIdeas");
-  if(!$("tema").value.trim()){ st.textContent="Escrib\u00ed el tema."; st.className="status err"; return; }
+  if(!$("tema").value.trim() && !($("propSel") && $("propSel").value)){ st.textContent="Escrib\u00ed el tema o eleg\u00ed una propiedad."; st.className="status err"; return; }
   const n = parseInt($("nplacas").value);
   st.textContent = "Generando copys con VERA..."; st.className="status";
   $("ideas").disabled = true;
   try{
     const r = await fetch("/api/studio/ideas", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ tema:$("tema").value.trim(), enfoque:$("enfoque").value, tono:$("tono").value, n })
+        body: JSON.stringify({ tema:$("tema").value.trim(), enfoque:$("enfoque").value, tono:$("tono").value, n, property_id: ($("propSel") ? $("propSel").value : "") || null })
     });
     const data = await r.json();
     if(!r.ok) throw new Error(data && data.detail ? data.detail : ("Error "+r.status));
@@ -777,6 +779,17 @@ async function generarIdeas(){
   finally{ $("ideas").disabled = false; }
 }
 $("ideas").addEventListener("click", generarIdeas);
+async function cargarPropsStudio(){
+  const sel = $("propSel"); if(!sel) return;
+  try{
+    const r = await fetch("/api/studio/properties");
+    const d = await r.json();
+    (d.properties||[]).forEach(p=>{
+      const o = document.createElement("option"); o.value = p.id; o.textContent = p.label; sel.appendChild(o);
+    });
+  }catch(e){}
+}
+cargarPropsStudio();
 
 /* ---------- POST DE PROPIEDAD ---------- */
 const MODOS_IA = {

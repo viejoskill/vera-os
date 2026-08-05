@@ -81,10 +81,11 @@ TONOS = {
 
 
 class IdeasBody(BaseModel):
-    tema: str
+    tema: str = ""
     enfoque: str = ""
     tono: str = "profesional"
     n: int = 5
+    property_id: str | None = None
 
 
 class PlanBody(BaseModel):
@@ -115,20 +116,112 @@ async def _think(prompt: str) -> str:
     return await active_provider.reason(system, prompt)
 
 
+async def _property_context(property_id: str) -> str:
+    """Contexto de una propiedad real de la cartera para armar el carrusel sobre ella."""
+    from property_repository import property_repository
+
+    prop = await property_repository.get(property_id)
+    if not prop:
+        raise HTTPException(404, "Propiedad no encontrada.")
+    price = prop.get("price")
+    cur = prop.get("currency") or "USD"
+    try:
+        price_s = f"{cur} {int(float(price)):,}".replace(",", ".") if price else "a consultar"
+    except (ValueError, TypeError):
+        price_s = f"{cur} {price}"
+    ubic = " · ".join(p for p in [prop.get("address"), prop.get("neighborhood"), prop.get("city")] if p)
+    feats = []
+    for key, lbl in (("bedrooms", "dorm."), ("bathrooms", "baños"), ("area_m2", "m² cubiertos"), ("lot_area_m2", "m² lote")):
+        v = prop.get(key)
+        if v:
+            feats.append(f"{v} {lbl}")
+    amen = ", ".join(prop.get("amenities") or [])
+    desc = (prop.get("description") or "").strip()[:600]
+    lines = [
+        "PROPIEDAD REAL (base del carrusel, usá SOLO estos datos):",
+        f"- Título: {prop.get('title') or '—'}",
+        f"- Operación/Tipo: {prop.get('operation') or '—'} / {prop.get('type') or '—'}",
+        f"- Precio: {price_s}",
+        f"- Ubicación: {ubic or '—'}",
+    ]
+    if feats:
+        lines.append(f"- Características: {', '.join(feats)}")
+    if prop.get("condition") or prop.get("orientation"):
+        lines.append(f"- Estado/Orientación: {prop.get('condition') or '—'} / {prop.get('orientation') or '—'}")
+    if amen:
+        lines.append(f"- Amenities: {amen}")
+    if desc:
+        lines.append(f"- Descripción: {desc}")
+    return "\n".join(lines) + "\n"
+
+
+@router.get("/properties")
+async def studio_properties():
+    """Lista compacta de propiedades activas para el selector de la herramienta."""
+    if not config.supabase_configured():
+        return {"properties": []}
+    from property_repository import property_repository
+
+    rows = await property_repository.list_properties()
+    out = []
+    for p in rows:
+        if p.get("archived"):
+            continue
+        price = p.get("price")
+        cur = p.get("currency") or "USD"
+        try:
+            price_s = f"{cur} {int(float(price)):,}".replace(",", ".") if price else ""
+        except (ValueError, TypeError):
+            price_s = ""
+        ubic = p.get("neighborhood") or p.get("city") or ""
+        label = " · ".join(x for x in [p.get("title") or "Propiedad", ubic, price_s] if x)
+        out.append({"id": p.get("id"), "label": label})
+    return {"properties": out}
+
+
+class TrainingBody(BaseModel):
+    text: str = ""
+
+
+@router.get("/training")
+async def get_training_route():
+    from vera_brain.training import get_training
+
+    return {"text": await get_training()}
+
+
+@router.put("/training")
+async def put_training_route(body: TrainingBody):
+    from vera_brain.training import set_training
+
+    await set_training(body.text)
+    return {"ok": True}
+
+
 @router.post("/ideas")
 async def ideas(body: IdeasBody):
     """Genera los copys de un carrusel (JSON estructurado) con el cerebro de VERA Studio."""
     if not config.ai_configured():
         raise HTTPException(503, "VERA Brain no está configurado.")
     tema = (body.tema or "").strip()
-    if not tema:
-        raise HTTPException(422, "Escribí el tema.")
+    prop_ctx = ""
+    if body.property_id:
+        prop_ctx = await _property_context(body.property_id)
+    if not tema and not prop_ctx:
+        raise HTTPException(422, "Escribí el tema o elegí una propiedad.")
     n = max(1, min(int(body.n or 5), 10))
     tono = TONOS.get(body.tono, TONOS["profesional"])
+    tema_line = (
+        f"Tema: {tema}. Enfoque: {body.enfoque or 'libre'}.\n"
+        if tema
+        else f"Enfoque: {body.enfoque or 'destacar lo mejor de la propiedad'}.\n"
+    )
     prompt = (
         "TAREA (herramienta Studio, salida para placas): armá un carrusel para Instagram.\n"
         f"Tono a usar: {tono}\n"
-        f"Tema: {tema}. Enfoque: {body.enfoque or 'libre'}. Cantidad de placas: {n}.\n\n"
+        f"{tema_line}"
+        f"{prop_ctx}"
+        f"Cantidad de placas: {n}.\n\n"
         "Estructura: placa 1 = GANCHO fuerte que frena el scroll; placas intermedias = "
         "CONTENIDO concreto y útil; última placa = REMATE + llamado a la acción.\n"
         "Reglas de cada título: máximo 7 palabras, con saltos de línea usando \\n para ritmo "
@@ -138,7 +231,8 @@ async def ideas(body: IdeasBody):
         "entre *asteriscos*. 'cta' = solo en la última placa, imperativo corto (vacío \"\" en el resto).\n"
         "No inventes cifras, porcentajes ni datos legales: si el tema los requiere, usá "
         "marcadores como [X%] para que el usuario los complete. Ortografía y tildes perfectas.\n"
-        "Podés apoyarte en tu conocimiento de la cartera real y la marca si el tema lo pide.\n\n"
+        "Si te di una propiedad, el carrusel es SOBRE ella: usá sus datos reales (precio, "
+        "ambientes, zona, características) y no inventes atributos que no figuran.\n\n"
         f"Respondé SOLO JSON válido, sin markdown ni texto extra: "
         f'{{"slides":[{{"titulo":"...","sec":"...","cta":"..."}}]}} con exactamente {n} slides.'
     )
