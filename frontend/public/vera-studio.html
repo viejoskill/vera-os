@@ -424,10 +424,11 @@
             </select>
           </div>
           <div>
-            <label>&nbsp;</label>
-            <button class="btn" id="caGen" type="button" style="width:100%">✨ Generar cartel</button>
+            <label>Look / acabado</label>
+            <select id="caLook"></select>
           </div>
         </div>
+        <button class="btn" id="caGen" type="button" style="margin-top:10px;width:100%">✨ Generar cartel</button>
         <div class="status" id="caStatus"></div>
 
         <label style="margin-top:16px">Datos del cartel <span class="opt">(marca real, siempre n&iacute;tida)</span></label>
@@ -2882,16 +2883,23 @@ const cvCartel = $("cvCartel"), cxC = cvCartel.getContext("2d");
 let cartel = { fotoImg:null, escenaImg:null, cx:0.5, cy:0.42, sizeFrac:0.42, rot:0 };
 
 const RECETAS_CARTEL = [
-  { n:"Persona sosteniendo un cartel gigante", prompt:"una persona parada en el camino sosteniendo con ambos brazos en alto un cartel GIGANTE, mucho mas grande que ella, como en una foto viral de redes sociales." },
-  { n:"Cartel / valla plantado en el lote", prompt:"un cartel o valla GIGANTE plantado firmemente al costado del camino o en el lote, sobre postes robustos, dominando la escena como una gran publicidad de campo." },
-  { n:"Cartel flotando (escala imposible)", prompt:"un cartel GIGANTE flotando en el aire de forma surrealista sobre el lote, desafiando la gravedad, con su sombra proyectada en el suelo, estilo publicidad creativa viral." },
-  { n:"Valla de ruta gigante", prompt:"una enorme valla publicitaria de ruta elevada sobre una estructura metalica al costado del camino, imponente como cartel de autopista." },
-  { n:"Cartel emergiendo del pinar", prompt:"un cartel GIGANTE emergiendo entre los pinos del bosque costero, como si creciera del paisaje, integrado con la vegetacion." },
-  { n:"Mano gigante sosteniendo el cartel", prompt:"una mano gigante surrealista que emerge del suelo y sostiene un cartel enorme sobre el lote, estilo publicidad creativa impactante." }
+  { n:"Persona sosteniendo un cartel gigante", mat:"un gran cartel de lona/vinilo sobre un bastidor liviano", prompt:"una persona real parada en el camino, vista de espaldas o de perfil, sosteniendo en alto con ambos brazos un cartel GIGANTE (mucho mas grande que ella), con esfuerzo natural y creible, como en una foto viral y espontanea de redes sociales." },
+  { n:"Cartel / valla plantado en el lote", mat:"un cartel impreso montado sobre postes de madera clavados en la tierra", prompt:"un cartel o valla GIGANTE plantado firmemente al costado del camino de tierra, sobre postes robustos, dominando la escena como una gran publicidad de venta de campo." },
+  { n:"Cartel flotando (escala imposible)", mat:"una gran placa impresa rigida", prompt:"un cartel GIGANTE suspendido en el aire de forma surrealista y creativa sobre el lote, con una sombra realista proyectada en el suelo que confirma su volumen, estilo publicidad viral impactante." },
+  { n:"Valla de ruta gigante", mat:"una lona publicitaria tensada sobre una estructura metalica de valla de ruta", prompt:"una enorme valla publicitaria de ruta elevada sobre una estructura metalica al costado del camino, imponente y realista como un cartel de autopista." },
+  { n:"Cartel emergiendo del pinar", mat:"una placa impresa de gran formato", prompt:"un cartel GIGANTE emergiendo entre los pinos del bosque costero, parcialmente rodeado de ramas y agujas de pino, integrado de forma natural con la vegetacion." },
+  { n:"Mano gigante sosteniendo el cartel", mat:"una placa impresa de gran formato", prompt:"una mano gigante fotorrealista que emerge y sostiene un cartel enorme sobre el lote, con piel y sombras realistas, estilo publicidad creativa impactante." }
 ];
 RECETAS_CARTEL.forEach((r,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=r.n; $("caReceta").appendChild(o); });
 $("caRecetaHint").textContent = RECETAS_CARTEL[0].n + " — la IA dibuja el cartel completo con tu marca.";
 $("caReceta").addEventListener("change", ()=>{ $("caRecetaHint").textContent = RECETAS_CARTEL[+$("caReceta").value].n + " — la IA dibuja el cartel completo con tu marca."; });
+
+const LOOKS_CARTEL = [
+  { n:"Foto natural (celular / UGC)", foto:"Estetica de foto real tomada con un celular moderno de gama alta, luz natural del dia, aspecto autentico, espontaneo y fresco tipo contenido UGC de redes.", calidad:"nitidez de camara de celular actual, contraste y colores naturales, leve grano real, sin verse producido." },
+  { n:"Editorial premium", foto:"Estetica de fotografia inmobiliaria profesional tomada con camara reflex full-frame y lente nitido, encuadre cuidado con regla de tercios, luz limpia y equilibrada.", calidad:"alta resolucion, colores ricos pero naturales, leve profundidad de campo, acabado editorial de revista." },
+  { n:"Hora dorada cinematografica", foto:"Estetica cinematografica al atardecer en hora dorada, luz calida rasante, sombras largas y atmosfera premium y envolvente.", calidad:"look cinematografico, rango dinamico alto, tonos calidos, reflejos suaves." }
+];
+LOOKS_CARTEL.forEach((l,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=l.n; $("caLook").appendChild(o); });
 
 (async ()=>{
   try{
@@ -2929,20 +2937,22 @@ function caPrompt(rec){
   const u=($("caUbic").value||"").toUpperCase().trim();
   const pr=($("caPrecio").value||"").toUpperCase().trim();
   const conLogo=$("caLogo").checked;
-  let p = "Transforma la PRIMERA imagen (la fotografia base) manteniendo su ubicacion real, iluminacion, cielo y fondo. "
-    + "Agrega de forma fotorrealista, con escala impactante e integrada a la escena (sombras, perspectiva y luz coherentes, NUNCA plano ni pegado): " + rec.prompt + " ";
-  p += "El cartel es una gran senal publicitaria inmobiliaria con esta identidad de marca EXACTA: ";
-  p += "mitad superior con fondo AMARILLO vibrante (#F6E63A) y texto en NEGRO; mitad inferior con fondo NEGRO y texto en BLANCO. ";
-  p += "Tipografia condensada gruesa tipo Oswald, en MAYUSCULAS, alineada y prolija. ";
-  p += "En el amarillo, arriba y bien grande, la palabra: \"" + t + "\"";
-  if(u) p += "; debajo, mas chico: \"" + u + "\"";
-  p += ". ";
-  if(pr) p += "En el negro, el precio bien grande en blanco: \"" + pr + "\". ";
-  if(conLogo){
-    p += "Debajo del precio, sobre el negro, reproduci FIELMENTE el logo de la marca que aparece en la SEGUNDA imagen de referencia (logo \"VARELA INMOBILIARIA\"), centrado, en color claro/blanco o amarillo, respetando su forma, el ovalo y las proporciones originales. ";
-  }
-  p += "MUY IMPORTANTE: escribi el texto y los numeros EXACTAMENTE como se indican, sin cambiar ni agregar ninguna letra ni digito. Resultado nitido, fotorrealista, estilo foto viral de redes sociales, sin artefactos ni texto extra.";
-  return p;
+  const look=LOOKS_CARTEL[+$("caLook").value]||LOOKS_CARTEL[0];
+  const parts=[];
+  parts.push("Fotografia publicitaria inmobiliaria HIPERREALISTA, indistinguible de una foto real. "+look.foto);
+  parts.push("Escena base: usa la PRIMERA imagen y manten su ubicacion real, vegetacion, camino, cielo, clima y sobre todo la DIRECCION y TEMPERATURA de la luz.");
+  parts.push("Integra de forma 100% fotorrealista, como si el cartel hubiera estado fisicamente ahi el dia de la foto: "+rec.prompt);
+  parts.push("El cartel es "+rec.mat+", impreso de verdad: superficie MATE con textura real de impresion (lona/vinilo), NUNCA un grafico digital plano, un vector ni un sticker pegado. Debe tener grosor y canto visibles, su propia sombra, y micro-imperfecciones creibles (leves arrugas u ondulaciones de la lona, tornillos u ojales, algo de polvo o barro en la base, algun reflejo sutil del cielo).");
+  parts.push("El cartel recibe EXACTAMENTE la misma luz, sombras y temperatura de color de la escena y proyecta una sombra coherente en el suelo; los verdes y el cielo del entorno tinen levemente sus bordes para fundirlo con la escena.");
+  parts.push("Identidad de marca EXACTA: mitad superior con fondo AMARILLO vibrante (#F6E63A) y texto en NEGRO; mitad inferior con fondo NEGRO y texto en BLANCO. Tipografia condensada gruesa tipo Oswald, en MAYUSCULAS, prolija, centrada y bien alineada.");
+  let texto="Texto del cartel (ortografia y numeros EXACTOS, sin cambiar, agregar ni deformar ni una letra ni un digito): arriba, grande, \""+t+"\"";
+  if(u) texto+="; debajo, mas chico, \""+u+"\"";
+  if(pr) texto+="; en la franja negra, el precio grande en blanco \""+pr+"\"";
+  parts.push(texto+".");
+  if(conLogo) parts.push("Sobre la franja negra, debajo del precio, reproduci FIELMENTE el logo de la SEGUNDA imagen de referencia (logo \"VARELA INMOBILIARIA\" con su ovalo caracteristico), centrado, en amarillo o blanco, respetando su forma y proporciones exactas. Un solo logo.");
+  parts.push("Calidad de salida: "+look.calidad+" Composicion fresca, natural y atractiva, con profundidad de campo realista y detalle nitido. Que parezca una FOTO, no un diseno.");
+  parts.push("EVITAR ESTRICTAMENTE: cartel plano tipo vector o sticker pegado, aspecto de render 3D o collage, colores fluorescentes o sobresaturados, texto o numeros deformados o mal escritos, doble logo, marcas de agua, texto adicional inventado, bordes recortados poco naturales.");
+  return parts.join(" ");
 }
 
 async function caGen(){

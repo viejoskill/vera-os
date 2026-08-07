@@ -1035,3 +1035,9 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Backend: `/api/studio/properties` ahora devuelve también precio/ubicacion/tipo/operacion (para el autocompletado del cartel). Backward compatible.
 - Verificado: modo carga sin errores de consola, 6 recetas OK, canvas renderiza el overlay nítido (screenshot), `/api/studio/properties` HTTP 200. La generación IA real depende del código de acceso del usuario (mismo flujo /editar ya probado en Potencial/Diseño) — no testeado e2e con IA por requerir su código.
 - Producción: requiere REDEPLOY. El usuario puede descargar la última versión del HTML desde /vera-studio.html.
+
+## Cartel viral IA — iteración full-IA + realismo (2026-06)
+- El usuario descartó la estrategia 2b (overlay canvas: quedaba rígido/pegado). Cambiado a FULL-IA: la IA dibuja el cartel completo (texto+precio+logo) integrado a la escena. Se pasa el LOGO real como SEGUNDA imagen `image[]` al Worker /editar (gpt-image-2, quality=high).
+- Feedback "falta realismo y frescura" → prompt reescrito con dirección fotográfica avanzada: material físico real por receta (lona/vinilo, postes, estructura metálica), micro-imperfecciones (arrugas, ojales, polvo), misma luz/sombra/temperatura de la escena, tinte del entorno en bordes, anti "vector/sticker/render". Nuevo selector "Look/acabado": Foto natural (celular/UGC), Editorial premium, Hora dorada cinematográfica (LOOKS_CARTEL). caPrompt arma ~2600 chars.
+- Verificado: modo carga sin errores, caLook 3 opciones, caPrompt OK. La calidad real depende de gpt-image-2 (no testeable e2e sin el código de acceso del usuario). RIESGO: el logo va como 2da imagen; si el Worker solo reenvía la 1ra, el logo se interpreta del texto.
+- Producción: requiere REDEPLOY; herramienta suelta: descargar /vera-studio.html.
