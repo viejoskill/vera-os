@@ -176,6 +176,11 @@ async def studio_properties():
             price_s = ""
         ubic = p.get("neighborhood") or p.get("city") or ""
         label = " · ".join(x for x in [p.get("title") or "Propiedad", ubic, price_s] if x)
+        lot = p.get("lot_area_m2") or p.get("area_m2")
+        try:
+            medidas = f"{int(float(lot))} m²" if lot else ""
+        except (ValueError, TypeError):
+            medidas = ""
         out.append({
             "id": p.get("id"),
             "label": label,
@@ -183,6 +188,8 @@ async def studio_properties():
             "ubicacion": ubic,
             "tipo": p.get("type") or "",
             "operacion": p.get("operation") or "",
+            "direccion": p.get("address") or "",
+            "medidas": medidas,
         })
     return {"properties": out}
 

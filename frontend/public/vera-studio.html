@@ -446,8 +446,21 @@
         </div>
         <label style="margin-top:8px">Precio</label>
         <input type="text" id="caPrecio" value="USD 48.000" placeholder="Ej: USD 48.000">
-        <label class="chk" style="margin-top:8px"><input type="checkbox" id="caLogo" checked> Incluir el logo Varela (la IA lo dibuja desde tu identidad guardada)</label>
-        <div class="hint" style="margin-top:12px">La IA dibuja el cartel <b>completo</b> (texto, precio y logo) integrado a la escena, usando tus <b>colores de marca</b> (amarillo y negro) y tu <b>logo guardado</b>. Puede variar la tipograf&iacute;a o alg&uacute;n n&uacute;mero: revis&aacute; el resultado antes de publicar.</div>
+        <label style="margin-top:8px">Direcci&oacute;n y medidas <span class="opt">(chico, debajo del precio)</span></label>
+        <input type="text" id="caDatos" placeholder="Ej: Calle 12 e/ 3 y 4 &middot; 300 m&sup2;">
+
+        <label class="chk" style="margin-top:10px"><input type="checkbox" id="caLogo" checked> Mostrar el logo Varela en la placa (marca de agua)</label>
+        <div class="row" style="margin-top:8px">
+          <div>
+            <label>Posici&oacute;n del logo</label>
+            <select id="caLogoPos">
+              <option value="tl" selected>Arriba izquierda</option>
+              <option value="tr">Arriba derecha</option>
+            </select>
+          </div>
+          <div></div>
+        </div>
+        <div class="hint" style="margin-top:12px">La IA dibuja el cartel con tus <b>colores de marca</b> (amarillo/negro), el texto, el precio y &mdash; en chico &mdash; la direcci&oacute;n y medidas. El <b>logo real</b> se superpone n&iacute;tido en la esquina de la placa (no lo dibuja la IA, as&iacute; sale siempre perfecto).</div>
       </div>
     </div>
 
@@ -2907,6 +2920,7 @@ LOOKS_CARTEL.forEach((l,i)=>{ const o=document.createElement("option"); o.value=
     (d.properties||[]).forEach(p=>{
       const o=document.createElement("option"); o.value=p.id; o.textContent=p.label;
       o.dataset.tipo=p.tipo||""; o.dataset.ubic=p.ubicacion||""; o.dataset.precio=p.precio||"";
+      o.dataset.direccion=p.direccion||""; o.dataset.medidas=p.medidas||"";
       $("caPropSel").appendChild(o);
     });
   }catch(e){}
@@ -2918,6 +2932,8 @@ $("caPropSel").addEventListener("change", ()=>{
   if(opt.dataset.tipo) $("caTitulo").value = opt.dataset.tipo.toUpperCase();
   if(opt.dataset.ubic) $("caUbic").value = "EN " + opt.dataset.ubic.toUpperCase();
   if(opt.dataset.precio) $("caPrecio").value = opt.dataset.precio;
+  const datos=[opt.dataset.direccion, opt.dataset.medidas].filter(Boolean).join(" · ");
+  if(datos) $("caDatos").value = datos;
   caRender();
 });
 
@@ -2928,19 +2944,20 @@ $("caFoto").addEventListener("change", e=>{
   img.src=URL.createObjectURL(f);
 });
 
-["caTitulo","caUbic","caPrecio"].forEach(id=> $(id).addEventListener("input", caRender));
+["caTitulo","caUbic","caPrecio","caDatos"].forEach(id=> $(id).addEventListener("input", caRender));
 $("caLogo").addEventListener("change", caRender);
+$("caLogoPos").addEventListener("change", caRender);
 $("caFormato").addEventListener("change", caRender);
 
 function caPrompt(rec){
   const t=($("caTitulo").value||"LOTE").toUpperCase().trim();
   const u=($("caUbic").value||"").toUpperCase().trim();
   const pr=($("caPrecio").value||"").toUpperCase().trim();
-  const conLogo=$("caLogo").checked;
+  const dat=($("caDatos").value||"").toUpperCase().trim();
   const look=LOOKS_CARTEL[+$("caLook").value]||LOOKS_CARTEL[0];
   const parts=[];
   parts.push("Fotografia publicitaria inmobiliaria HIPERREALISTA, indistinguible de una foto real. "+look.foto);
-  parts.push("Escena base: usa la PRIMERA imagen y manten su ubicacion real, vegetacion, camino, cielo, clima y sobre todo la DIRECCION y TEMPERATURA de la luz.");
+  parts.push("Escena base: usa la imagen de referencia y manten su ubicacion real, vegetacion, camino, cielo, clima y sobre todo la DIRECCION y TEMPERATURA de la luz.");
   parts.push("Integra de forma 100% fotorrealista, como si el cartel hubiera estado fisicamente ahi el dia de la foto: "+rec.prompt);
   parts.push("El cartel es "+rec.mat+", impreso de verdad: superficie MATE con textura real de impresion (lona/vinilo), NUNCA un grafico digital plano, un vector ni un sticker pegado. Debe tener grosor y canto visibles, su propia sombra, y micro-imperfecciones creibles (leves arrugas u ondulaciones de la lona, tornillos u ojales, algo de polvo o barro en la base, algun reflejo sutil del cielo).");
   parts.push("El cartel recibe EXACTAMENTE la misma luz, sombras y temperatura de color de la escena y proyecta una sombra coherente en el suelo; los verdes y el cielo del entorno tinen levemente sus bordes para fundirlo con la escena.");
@@ -2949,9 +2966,10 @@ function caPrompt(rec){
   if(u) texto+="; debajo, mas chico, \""+u+"\"";
   if(pr) texto+="; en la franja negra, el precio grande en blanco \""+pr+"\"";
   parts.push(texto+".");
-  if(conLogo) parts.push("Sobre la franja negra, debajo del precio, reproduci FIELMENTE el logo de la SEGUNDA imagen de referencia (logo \"VARELA INMOBILIARIA\" con su ovalo caracteristico), centrado, en amarillo o blanco, respetando su forma y proporciones exactas. Un solo logo.");
+  if(dat) parts.push("Debajo del precio, en letra MAS CHICA y prolija en blanco, la direccion y medidas: \""+dat+"\". No agregues ningun logo, marca ni simbolo en el cartel.");
+  else parts.push("No agregues ningun logo, marca ni simbolo en el cartel: solo el texto indicado.");
   parts.push("Calidad de salida: "+look.calidad+" Composicion fresca, natural y atractiva, con profundidad de campo realista y detalle nitido. Que parezca una FOTO, no un diseno.");
-  parts.push("EVITAR ESTRICTAMENTE: cartel plano tipo vector o sticker pegado, aspecto de render 3D o collage, colores fluorescentes o sobresaturados, texto o numeros deformados o mal escritos, doble logo, marcas de agua, texto adicional inventado, bordes recortados poco naturales.");
+  parts.push("EVITAR ESTRICTAMENTE: cartel plano tipo vector o sticker pegado, aspecto de render 3D o collage, colores fluorescentes o sobresaturados, texto o numeros deformados o mal escritos, logos o marcas de agua dentro del cartel, texto adicional inventado, bordes recortados poco naturales.");
   return parts.join(" ");
 }
 
@@ -2960,8 +2978,6 @@ async function caGen(){
   if(!conexionVera()){ st.textContent="Falta el C\u00f3digo de acceso en Identidad fija."; st.className="status err"; $("cfg").open=true; return; }
   if(!cartel.fotoImg){ st.textContent="Sub\u00ed una foto base primero."; st.className="status err"; return; }
   const rec = RECETAS_CARTEL[+$("caReceta").value] || RECETAS_CARTEL[0];
-  const conLogo=$("caLogo").checked;
-  if(conLogo && !(logoRaw||logoImg)){ st.textContent="No hay logo cargado en Identidad fija: sub\u00ed tu logo o destild\u00e1 la opci\u00f3n del logo."; st.className="status err"; return; }
   st.textContent="Generando cartel con IA... 40-70 seg."; st.className="status";
   try{
     const blob = await imagenABlob(cartel.fotoImg);
@@ -2972,10 +2988,6 @@ async function caGen(){
     fd.append("size", sizeMap[$("caFormato").value]||"1024x1536");
     fd.append("quality","high");
     fd.append("image[]", blob, "base.jpg");
-    if(conLogo && (logoRaw||logoImg)){
-      const logoBlob = await imagenABlob(logoRaw||logoImg);
-      fd.append("image[]", logoBlob, "logo.jpg");
-    }
     const data = await llamarVeraForm("/editar", fd);
     const img=new Image();
     await new Promise(res=>{ img.onload=res; img.src="data:image/png;base64,"+data.data[0].b64_json; });
@@ -2990,6 +3002,24 @@ function caCover(g,img,W,H){
   const s=Math.max(W/img.width,H/img.height), w=img.width*s, h=img.height*s;
   g.drawImage(img,(W-w)/2,(H-h)/2,w,h);
 }
+function caLogoOverlay(g,W,H){
+  if(!($("caLogo").checked && logoImg)) return;
+  const m=Math.round(Math.min(W,H)*0.035);
+  const lw=Math.round(W*0.20), lh=Math.round(lw*(logoImg.height/logoImg.width));
+  const pos=$("caLogoPos").value;
+  const x = pos==="tr" ? (W-m-lw) : m;
+  const y = m;
+  const pad=Math.round(lw*0.10), r=Math.round(pad*0.9);
+  g.save();
+  g.fillStyle="rgba(10,11,13,.42)";
+  const bx=x-pad, by=y-pad, bw=lw+pad*2, bh=lh+pad*2;
+  g.beginPath();
+  g.moveTo(bx+r,by); g.arcTo(bx+bw,by,bx+bw,by+bh,r); g.arcTo(bx+bw,by+bh,bx,by+bh,r);
+  g.arcTo(bx,by+bh,bx,by,r); g.arcTo(bx,by,bx+bw,by,r); g.closePath(); g.fill();
+  g.shadowColor="rgba(0,0,0,.5)"; g.shadowBlur=lw*0.05; g.shadowOffsetY=2;
+  g.drawImage(logoImg, x, y, lw, lh);
+  g.restore();
+}
 function caRender(){
   const g=cxC;
   const map={"169":[1920,1080],"916":[1080,1920],"11":[1200,1200]};
@@ -3002,6 +3032,7 @@ function caRender(){
     if(!cartel.escenaImg){ g.fillStyle="rgba(0,0,0,.42)"; g.fillRect(0,0,W,H);
       g.fillStyle="rgba(255,255,255,.9)"; g.textAlign="center"; g.font="600 34px Inter";
       g.fillText("Toc\u00e1 \u201cGenerar cartel\u201d para crearlo con IA", W/2, H/2); }
+    else caLogoOverlay(g,W,H);
   }else{
     g.fillStyle="#15161a"; g.fillRect(0,0,W,H);
     g.fillStyle="#6a6a72"; g.textAlign="center"; g.font="600 34px Inter";

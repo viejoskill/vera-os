@@ -1041,3 +1041,10 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Feedback "falta realismo y frescura" → prompt reescrito con dirección fotográfica avanzada: material físico real por receta (lona/vinilo, postes, estructura metálica), micro-imperfecciones (arrugas, ojales, polvo), misma luz/sombra/temperatura de la escena, tinte del entorno en bordes, anti "vector/sticker/render". Nuevo selector "Look/acabado": Foto natural (celular/UGC), Editorial premium, Hora dorada cinematográfica (LOOKS_CARTEL). caPrompt arma ~2600 chars.
 - Verificado: modo carga sin errores, caLook 3 opciones, caPrompt OK. La calidad real depende de gpt-image-2 (no testeable e2e sin el código de acceso del usuario). RIESGO: el logo va como 2da imagen; si el Worker solo reenvía la 1ra, el logo se interpreta del texto.
 - Producción: requiere REDEPLOY; herramienta suelta: descargar /vera-studio.html.
+
+## Cartel viral IA — logo fuera del cartel + datos chicos (2026-06)
+- El usuario aprobó el realismo. Correcciones: (1) el logo YA NO lo dibuja la IA en el cartel; (2) el LOGO real se superpone como marca de agua en la placa, esquina arriba-izq o arriba-der (select caLogoPos), con chip translúcido para legibilidad (caLogoOverlay en canvas); (3) donde iba el logo, el cartel ahora muestra DIRECCIÓN Y MEDIDAS en chico (campo caDatos, va al prompt); (4) texto principal editable (default LOTE).
+- Backend: `/api/studio/properties` ahora devuelve también `direccion` (address) y `medidas` (lot_area_m2/area_m2 → "N m²") para autocompletar caDatos. Backward compatible.
+- caGen ya NO envía el logo como 2da imagen (evita el riesgo del Worker). Prompt actualizado: "no agregues ningun logo/marca en el cartel".
+- Verificado: overlay del logo en esquina OK (screenshot), prompt incluye datos + instrucción sin-logo (len ~2567), sin errores de consola, routes_studio.py OK. Calidad IA real depende de gpt-image-2 (no e2e sin código de acceso).
+- Producción: requiere REDEPLOY; herramienta suelta: descargar /vera-studio.html.
