@@ -1048,3 +1048,10 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - caGen ya NO envía el logo como 2da imagen (evita el riesgo del Worker). Prompt actualizado: "no agregues ningun logo/marca en el cartel".
 - Verificado: overlay del logo en esquina OK (screenshot), prompt incluye datos + instrucción sin-logo (len ~2567), sin errores de consola, routes_studio.py OK. Calidad IA real depende de gpt-image-2 (no e2e sin código de acceso).
 - Producción: requiere REDEPLOY; herramienta suelta: descargar /vera-studio.html.
+
+## Cartel viral IA — ajustes de marca (2026-06)
+- Logo overlay: sin chip de fondo y más chico (13% ancho) con sombra sutil, coherente con otras placas del Studio (caLogoOverlay).
+- Colores del cartel en el prompt: amarillo DORADO cálido de marca (~#F5C518, no limón/verdoso) + gris oscuro carbón (~#262626, no negro puro).
+- Nuevo campo "Precio anterior" (caPrecioAntes): cuando hay rebaja, el prompt pide el precio anterior TACHADO en gris claro + el nuevo destacado.
+- Verificado: prompt incluye #F5C518, #262626, tachado y precio anterior; logo overlay sin chip; sin errores de consola.
+- Producción: requiere REDEPLOY; herramienta suelta: descargar /vera-studio.html.
