@@ -2964,7 +2964,7 @@ function caPrompt(rec){
   parts.push("Integra de forma 100% fotorrealista, como si el cartel hubiera estado fisicamente ahi el dia de la foto: "+rec.prompt);
   parts.push("El cartel es "+rec.mat+", impreso de verdad: superficie MATE con textura real de impresion (lona/vinilo), NUNCA un grafico digital plano, un vector ni un sticker pegado. Debe tener grosor y canto visibles, su propia sombra, y micro-imperfecciones creibles (leves arrugas u ondulaciones de la lona, tornillos u ojales, algo de polvo o barro en la base, algun reflejo sutil del cielo).");
   parts.push("El cartel recibe EXACTAMENTE la misma luz, sombras y temperatura de color de la escena y proyecta una sombra coherente en el suelo; los verdes y el cielo del entorno tinen levemente sus bordes para fundirlo con la escena.");
-  parts.push("Identidad de marca EXACTA: mitad superior con fondo AMARILLO DORADO calido de marca (tono mostaza/dorado, aprox #F5C518), NUNCA amarillo limon ni verdoso, con el texto en gris muy oscuro casi negro; mitad inferior con fondo GRIS OSCURO CARBON (aprox #262626), NO negro puro, con el texto en BLANCO. Tipografia condensada gruesa tipo Oswald, en MAYUSCULAS, prolija, centrada y bien alineada.");
+  parts.push("Identidad de marca EXACTA: mitad superior con fondo AMARILLO VARELA vivo y brillante, EXACTAMENTE el mismo amarillo del logo de la marca (aprox #F2E23C), NI dorado/mostaza NI palido ni desaturado, con el texto en gris muy oscuro casi negro; mitad inferior con fondo GRIS OSCURO CARBON (aprox #262626), NO negro puro, con el texto en BLANCO. Tipografia condensada gruesa tipo Oswald, en MAYUSCULAS, prolija, centrada y bien alineada.");
   let texto="Texto del cartel (ortografia y numeros EXACTOS, sin cambiar, agregar ni deformar ni una letra ni un digito): arriba, grande, \""+t+"\"";
   if(u) texto+="; debajo, mas chico, \""+u+"\"";
   if(pr){
@@ -2975,7 +2975,7 @@ function caPrompt(rec){
   if(dat) parts.push("Debajo del precio, en letra MAS CHICA y prolija en blanco, la direccion y medidas: \""+dat+"\". No agregues ningun logo, marca ni simbolo en el cartel.");
   else parts.push("No agregues ningun logo, marca ni simbolo en el cartel: solo el texto indicado.");
   parts.push("Calidad de salida: "+look.calidad+" Composicion fresca, natural y atractiva, con profundidad de campo realista y detalle nitido. Que parezca una FOTO, no un diseno.");
-  parts.push("EVITAR ESTRICTAMENTE: cartel plano tipo vector o sticker pegado, aspecto de render 3D o collage, amarillo limon o verdoso, negro puro, colores fluorescentes o sobresaturados, texto o numeros deformados o mal escritos, logos o marcas de agua dentro del cartel, texto adicional inventado, bordes recortados poco naturales.");
+  parts.push("EVITAR ESTRICTAMENTE: cartel plano tipo vector o sticker pegado, aspecto de render 3D o collage, amarillo dorado/mostaza, palido o desaturado (tiene que ser el amarillo vivo del logo), negro puro, colores fluorescentes o sobresaturados, texto o numeros deformados o mal escritos, logos o marcas de agua dentro del cartel, texto adicional inventado, bordes recortados poco naturales.");
   return parts.join(" ");
 }
 
