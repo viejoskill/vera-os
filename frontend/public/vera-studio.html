@@ -150,6 +150,7 @@
     <button class="mode" id="modeVid" type="button">Video</button>
     <button class="mode" id="modeFotos" type="button">Editor de fotos</button>
     <button class="mode" id="modePortada" type="button">Portadas</button>
+    <button class="mode" id="modeCartel" type="button">Cartel viral IA ✨</button>
   </div>
 
   <div class="grid">
@@ -403,6 +404,63 @@
         <div class="status" id="crIaStatus"></div>
         <div class="hint">Sin numeraci&oacute;n de carrusel &mdash; pensada como pieza suelta: teaser de Historia con link al posteo, o cierre de un Feed.</div>
       </div>
+
+      <div class="panel" id="panelCartel" style="display:none">
+        <h2>1 &middot; Cartel viral IA <span class="opt">(escena con IA + marca real superpuesta)</span></h2>
+        <label class="btn sec filelbl">Subir foto base (lote / camino / vos)<input type="file" id="caFoto" accept="image/*"></label>
+        <span class="hint" id="caFotoState">Sin foto cargada</span>
+
+        <label style="margin-top:12px">Estilo creativo <span class="opt">(receta de un clic)</span></label>
+        <select id="caReceta"></select>
+        <div class="hint" id="caRecetaHint" style="margin-top:6px"></div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>Formato</label>
+            <select id="caFormato">
+              <option value="169">16:9 (horizontal)</option>
+              <option value="916" selected>9:16 (reel / historia)</option>
+              <option value="11">1:1 (cuadrado)</option>
+            </select>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button class="btn" id="caGen" type="button" style="width:100%">✨ Generar escena</button>
+          </div>
+        </div>
+        <div class="status" id="caStatus"></div>
+
+        <label style="margin-top:16px">Datos del cartel <span class="opt">(marca real, siempre n&iacute;tida)</span></label>
+        <label style="margin-top:8px">Propiedad de tu cartera <span class="opt">(opcional &mdash; autocompleta)</span></label>
+        <select id="caPropSel"><option value="">— Cargar a mano —</option></select>
+        <div class="row" style="margin-top:8px">
+          <div>
+            <label>Texto principal</label>
+            <input type="text" id="caTitulo" value="LOTE" placeholder="Ej: LOTE / CASA">
+          </div>
+          <div>
+            <label>Ubicaci&oacute;n</label>
+            <input type="text" id="caUbic" value="EN COSTA DEL ESTE" placeholder="Ej: EN COSTA DEL ESTE">
+          </div>
+        </div>
+        <label style="margin-top:8px">Precio</label>
+        <input type="text" id="caPrecio" value="USD 48.000" placeholder="Ej: USD 48.000">
+        <label class="chk" style="margin-top:8px"><input type="checkbox" id="caLogo" checked> Mostrar logo Varela en el cartel</label>
+
+        <label style="margin-top:14px">Ajustar el cartel sobre la imagen</label>
+        <div class="hint" style="margin-top:2px">Arrastr&aacute; el cartel sobre la placa en blanco que gener&oacute; la IA. Us&aacute; los controles para el tama&ntilde;o y la inclinaci&oacute;n.</div>
+        <div class="row" style="margin-top:8px">
+          <div>
+            <label>Tama&ntilde;o</label>
+            <input type="range" id="caSize" min="12" max="95" value="42" style="width:100%">
+          </div>
+          <div>
+            <label>Inclinaci&oacute;n</label>
+            <input type="range" id="caRot" min="-25" max="25" value="0" style="width:100%">
+          </div>
+        </div>
+        <div class="hint">La IA crea la escena con un <b>cartel en blanco en colores de marca</b>; el texto y el logo se pegan encima n&iacute;tidos, para que la marca salga <b>siempre perfecta</b>.</div>
+      </div>
     </div>
 
     <div class="panel" id="panelPreview">
@@ -417,6 +475,15 @@
         <button class="btn sec" id="dlAll" type="button">Descargar todas</button>
       </div>
       <div class="status" id="stCv"></div>
+    </div>
+
+    <div class="panel" id="panelCartelPrev" style="display:none">
+      <h2>2 &middot; Vista previa <span class="opt">(arrastr&aacute; el cartel para ubicarlo)</span></h2>
+      <canvas id="cvCartel" width="1080" height="1920" style="width:100%;height:auto;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.55);background:#111;cursor:grab;touch-action:none"></canvas>
+      <div class="actions">
+        <a class="btn sec" id="caDl" download>Descargar cartel</a>
+      </div>
+      <div class="status" id="caStatus2"></div>
     </div>
   </div>
 </div>
@@ -583,12 +650,14 @@ function imagenABlob(img){
 /* ---------- MODOS ---------- */
 function setMode(m){
   mode = m;
-  [["modeCont","cont","panelCont"],["modeProp","prop","panelProp"],["modeCal","cal","panelCal"],["modeVid","vid","panelVid"],["modeFotos","fotos","panelFotos"],["modePortada","portada","panelPortada"]].forEach(([btn,val,panel])=>{
+  [["modeCont","cont","panelCont"],["modeProp","prop","panelProp"],["modeCal","cal","panelCal"],["modeVid","vid","panelVid"],["modeFotos","fotos","panelFotos"],["modePortada","portada","panelPortada"],["modeCartel","cartel","panelCartel"]].forEach(([btn,val,panel])=>{
     $(btn).classList.toggle("sel", m===val);
     $(panel).style.display = (m===val) ? "" : "none";
   });
-  $("panelPreview").style.display = (m==="fotos") ? "none" : "";
+  $("panelPreview").style.display = (m==="fotos"||m==="cartel") ? "none" : "";
+  $("panelCartelPrev").style.display = (m==="cartel") ? "" : "none";
   if(m==="fotos"){ fRender(); }
+  else if(m==="cartel"){ caRender(); }
   else if(m!=="cal"){ render(); }
 }
 $("modeCont").onclick = ()=> setMode("cont");
@@ -597,6 +666,7 @@ $("modeCal").onclick = ()=> setMode("cal");
 $("modeVid").onclick = ()=> setMode("vid");
 $("modeFotos").onclick = ()=> setMode("fotos");
 $("modePortada").onclick = ()=> setMode("portada");
+$("modeCartel").onclick = ()=> setMode("cartel");
 
 /* ---------- CARRUSEL DE CONTENIDO ---------- */
 function nuevoSlide(esUltima){ return { titulo:"TU *GANCHO* AC\u00c1", sec:"", cta:"", estilo:"estudio", textoPos:"izq", altura:"centro", fotoOff:0, zoom:0, bgType:"flat", bgColor:0, bgImg:null, bgDesc:"", contacto: !!esUltima }; }
@@ -2819,6 +2889,191 @@ function renderPortadaModulo(P){
   const mes = fecha.getFullYear()+"-"+String(fecha.getMonth()+1).padStart(2,"0");
   $("dl1").download = mes+"_portada_"+slugTexto(portada.titulo||"invitacion")+"_"+(fmt==="story"?"historia":"feed")+".jpg";
 }
+
+/* ---------- CARTEL VIRAL IA ---------- */
+const cvCartel = $("cvCartel"), cxC = cvCartel.getContext("2d");
+let cartel = { fotoImg:null, escenaImg:null, cx:0.5, cy:0.42, sizeFrac:0.42, rot:0 };
+
+const RECETAS_CARTEL = [
+  { n:"Persona sosteniendo un cartel gigante", prompt:"una persona parada en el camino sosteniendo con ambos brazos en alto un cartel GIGANTE, mucho mas grande que ella, como en una foto viral de redes sociales." },
+  { n:"Cartel / valla plantado en el lote", prompt:"un cartel o valla GIGANTE plantado firmemente al costado del camino o en el lote, sobre postes robustos, dominando la escena como una gran publicidad de campo." },
+  { n:"Cartel flotando (escala imposible)", prompt:"un cartel GIGANTE flotando en el aire de forma surrealista sobre el lote, desafiando la gravedad, con su sombra proyectada en el suelo, estilo publicidad creativa viral." },
+  { n:"Valla de ruta gigante", prompt:"una enorme valla publicitaria de ruta elevada sobre una estructura metalica al costado del camino, imponente como cartel de autopista." },
+  { n:"Cartel emergiendo del pinar", prompt:"un cartel GIGANTE emergiendo entre los pinos del bosque costero, como si creciera del paisaje, integrado con la vegetacion." },
+  { n:"Mano gigante sosteniendo el cartel", prompt:"una mano gigante surrealista que emerge del suelo y sostiene un cartel enorme sobre el lote, estilo publicidad creativa impactante." }
+];
+RECETAS_CARTEL.forEach((r,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=r.n; $("caReceta").appendChild(o); });
+$("caRecetaHint").textContent = RECETAS_CARTEL[0].n + " — la IA la crea en blanco; el logo y el texto se pegan encima.";
+$("caReceta").addEventListener("change", ()=>{ $("caRecetaHint").textContent = RECETAS_CARTEL[+$("caReceta").value].n + " — la IA la crea en blanco; el logo y el texto se pegan encima."; });
+
+(async ()=>{
+  try{
+    const r = await fetch("/api/studio/properties"); const d = await r.json();
+    (d.properties||[]).forEach(p=>{
+      const o=document.createElement("option"); o.value=p.id; o.textContent=p.label;
+      o.dataset.tipo=p.tipo||""; o.dataset.ubic=p.ubicacion||""; o.dataset.precio=p.precio||"";
+      $("caPropSel").appendChild(o);
+    });
+  }catch(e){}
+})();
+
+$("caPropSel").addEventListener("change", ()=>{
+  const opt = $("caPropSel").selectedOptions[0];
+  if(!opt || !opt.value) return;
+  if(opt.dataset.tipo) $("caTitulo").value = opt.dataset.tipo.toUpperCase();
+  if(opt.dataset.ubic) $("caUbic").value = "EN " + opt.dataset.ubic.toUpperCase();
+  if(opt.dataset.precio) $("caPrecio").value = opt.dataset.precio;
+  caRender();
+});
+
+$("caFoto").addEventListener("change", e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const img=new Image();
+  img.onload=()=>{ cartel.fotoImg=img; cartel.escenaImg=null; $("caFotoState").textContent="Foto cargada"; caRender(); };
+  img.src=URL.createObjectURL(f);
+});
+
+["caTitulo","caUbic","caPrecio"].forEach(id=> $(id).addEventListener("input", caRender));
+$("caLogo").addEventListener("change", caRender);
+$("caFormato").addEventListener("change", caRender);
+$("caSize").addEventListener("input", e=>{ cartel.sizeFrac = +e.target.value/100; caRender(); });
+$("caRot").addEventListener("input", e=>{ cartel.rot = +e.target.value; caRender(); });
+
+function caPrompt(rec){
+  return "Transforma esta fotografia manteniendo su ubicacion real, la iluminacion, el cielo y el fondo. "
+    + "Agrega de forma fotorrealista e integrada a la escena: " + rec.prompt + " "
+    + "El cartel debe ser un panel rectangular COMPLETAMENTE EN BLANCO: sin ningun texto, sin letras, sin numeros, sin logos ni simbolos; una superficie lisa y vacia. "
+    + "Pintalo en amarillo vibrante (#F6E63A) en la mitad superior y negro mate en la mitad inferior, con bordes rectos y definidos y acabado mate. "
+    + "El cartel debe mirar DE FRENTE a la camara, grande y centrado en el encuadre, bien iluminado, con sombras y perspectiva realistas integradas a la escena. "
+    + "NO escribas absolutamente ningun texto ni marca de agua en ninguna parte de la imagen. Resultado nitido y fotorrealista, estilo foto viral de redes sociales, sin artefactos.";
+}
+
+async function caGen(){
+  const st=$("caStatus");
+  if(!conexionVera()){ st.textContent="Falta el C\u00f3digo de acceso en Identidad fija."; st.className="status err"; $("cfg").open=true; return; }
+  if(!cartel.fotoImg){ st.textContent="Sub\u00ed una foto base primero."; st.className="status err"; return; }
+  const rec = RECETAS_CARTEL[+$("caReceta").value] || RECETAS_CARTEL[0];
+  st.textContent="Generando escena... 30-60 seg."; st.className="status";
+  try{
+    const blob = await imagenABlob(cartel.fotoImg);
+    const fd = new FormData();
+    fd.append("model","gpt-image-2");
+    fd.append("prompt", caPrompt(rec));
+    const sizeMap={"169":"1536x1024","916":"1024x1536","11":"1024x1024"};
+    fd.append("size", sizeMap[$("caFormato").value]||"1024x1536");
+    fd.append("quality","medium");
+    fd.append("image[]", blob, "base.jpg");
+    const data = await llamarVeraForm("/editar", fd);
+    const img=new Image();
+    await new Promise(res=>{ img.onload=res; img.src="data:image/png;base64,"+data.data[0].b64_json; });
+    cartel.escenaImg=img;
+    st.textContent="Escena lista. Ubic\u00e1 el cartel arrastr\u00e1ndolo sobre la placa en blanco."; st.className="status ok";
+    caRender();
+  }catch(e){ st.textContent=e.message; st.className="status err"; }
+}
+$("caGen").addEventListener("click", caGen);
+
+function caCover(g,img,W,H){
+  const s=Math.max(W/img.width,H/img.height), w=img.width*s, h=img.height*s;
+  g.drawImage(img,(W-w)/2,(H-h)/2,w,h);
+}
+function caFitFont(g,text,weight,maxW,startPx){
+  let px=startPx; g.font=weight+" "+px+"px Oswald";
+  while(px>8 && g.measureText(text).width>maxW){ px-=2; g.font=weight+" "+px+"px Oswald"; }
+  return px;
+}
+function caDrawBlock(g,W,H){
+  const t=($("caTitulo").value||"").toUpperCase().trim();
+  const u=($("caUbic").value||"").toUpperCase().trim();
+  const pr=($("caPrecio").value||"").toUpperCase().trim();
+  const showLogo=$("caLogo").checked && logoImg;
+  const bw=Math.max(60,cartel.sizeFrac*W), bh=bw*0.9;
+  const bx=cartel.cx*W, by=cartel.cy*H, rot=cartel.rot*Math.PI/180;
+  const logoH=showLogo? bh*0.17 : 0;
+  const yH=(bh-logoH)*(u?0.58:0.62), kH=(bh-logoH)-yH;
+  const pad=bw*0.08;
+  g.save();
+  g.translate(bx,by); g.rotate(rot);
+  g.shadowColor="rgba(0,0,0,.45)"; g.shadowBlur=bw*0.05; g.shadowOffsetY=bw*0.02;
+  g.translate(-bw/2,-bh/2);
+  g.fillStyle=ORO; g.fillRect(0,0,bw,yH);
+  g.shadowColor="transparent";
+  g.fillStyle="#0e0e0e"; g.fillRect(0,yH,bw,kH+logoH);
+  g.textAlign="center"; g.textBaseline="middle";
+  if(t){
+    const tPx=caFitFont(g,t,"700",bw-pad*2,yH*(u?0.66:0.82));
+    g.font="700 "+tPx+"px Oswald"; g.fillStyle="#111";
+    g.fillText(t,bw/2, u? yH*0.37 : yH*0.5);
+  }
+  if(u){
+    const uPx=caFitFont(g,u,"600",bw-pad*2,yH*0.28);
+    g.font="600 "+uPx+"px Oswald"; g.fillStyle="#111";
+    g.fillText(u,bw/2,yH*0.8);
+  }
+  if(pr){
+    const pPx=caFitFont(g,pr,"700",bw-pad*2,kH*0.66);
+    g.font="700 "+pPx+"px Oswald"; g.fillStyle="#fff";
+    g.fillText(pr,bw/2,yH+kH*0.5);
+  }
+  if(showLogo){
+    let fh=logoH*0.7, fw=fh*(logoImg.width/logoImg.height);
+    const fwMax=bw*0.72;
+    if(fw>fwMax){ fw=fwMax; fh=fw*(logoImg.height/logoImg.width); }
+    g.drawImage(logoImg, bw/2-fw/2, yH+kH+(logoH-fh)/2, fw, fh);
+  }
+  g.restore();
+}
+function caRender(){
+  const g=cxC;
+  const map={"169":[1920,1080],"916":[1080,1920],"11":[1200,1200]};
+  const dims=map[$("caFormato").value]||[1080,1920], W=dims[0], H=dims[1];
+  if(cvCartel.width!==W||cvCartel.height!==H){ cvCartel.width=W; cvCartel.height=H; }
+  g.clearRect(0,0,W,H);
+  const bg=cartel.escenaImg||cartel.fotoImg;
+  if(bg){
+    caCover(g,bg,W,H);
+    if(!cartel.escenaImg){ g.fillStyle="rgba(0,0,0,.38)"; g.fillRect(0,0,W,H);
+      g.fillStyle="rgba(255,255,255,.85)"; g.textAlign="center"; g.font="600 34px Inter";
+      g.fillText("Toc\u00e1 \u201cGenerar escena\u201d para crear el cartel con IA", W/2, H*0.08); }
+  }else{
+    g.fillStyle="#15161a"; g.fillRect(0,0,W,H);
+    g.fillStyle="#6a6a72"; g.textAlign="center"; g.font="600 34px Inter";
+    g.fillText("Sub\u00ed una foto base y gener\u00e1 la escena", W/2, H/2);
+  }
+  if(bg) caDrawBlock(g,W,H);
+  $("caDl").href = cvCartel.toDataURL("image/jpeg", .92);
+  const fecha=new Date(), mes=fecha.getFullYear()+"-"+String(fecha.getMonth()+1).padStart(2,"0");
+  $("caDl").download = mes+"_cartel_"+slugTexto($("caTitulo").value||"lote")+".jpg";
+}
+
+function caPoint(e){
+  const r=cvCartel.getBoundingClientRect();
+  return { x:(e.clientX-r.left)*(cvCartel.width/r.width), y:(e.clientY-r.top)*(cvCartel.height/r.height) };
+}
+function caHit(p){
+  const W=cvCartel.width;
+  const bw=Math.max(60,cartel.sizeFrac*W), bh=bw*0.9;
+  const bx=cartel.cx*W, by=cartel.cy*cvCartel.height, rot=-cartel.rot*Math.PI/180;
+  const dx=p.x-bx, dy=p.y-by;
+  const rx=dx*Math.cos(rot)-dy*Math.sin(rot), ry=dx*Math.sin(rot)+dy*Math.cos(rot);
+  return Math.abs(rx)<=bw/2 && Math.abs(ry)<=bh/2;
+}
+let caDragging=false;
+cvCartel.addEventListener("pointerdown", e=>{
+  const p=caPoint(e);
+  if(caHit(p)){ caDragging=true; cvCartel.setPointerCapture(e.pointerId); cvCartel.style.cursor="grabbing"; }
+});
+cvCartel.addEventListener("pointermove", e=>{
+  if(!caDragging) return;
+  const p=caPoint(e);
+  cartel.cx=Math.min(1,Math.max(0,p.x/cvCartel.width));
+  cartel.cy=Math.min(1,Math.max(0,p.y/cvCartel.height));
+  caRender();
+});
+cvCartel.addEventListener("pointerup", ()=>{ caDragging=false; cvCartel.style.cursor="grab"; });
+cvCartel.addEventListener("pointercancel", ()=>{ caDragging=false; cvCartel.style.cursor="grab"; });
+
+
 
 CAMPOS.forEach(id=> $(id).addEventListener("input", ()=>{ render(); guardarIdentidad(); }));
 CHECKS.forEach(id=> $(id).addEventListener("change", ()=>{ if(id==="logoTrans") procesarLogo(); render(); guardarIdentidad(); }));

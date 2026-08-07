@@ -176,7 +176,14 @@ async def studio_properties():
             price_s = ""
         ubic = p.get("neighborhood") or p.get("city") or ""
         label = " · ".join(x for x in [p.get("title") or "Propiedad", ubic, price_s] if x)
-        out.append({"id": p.get("id"), "label": label})
+        out.append({
+            "id": p.get("id"),
+            "label": label,
+            "precio": price_s,
+            "ubicacion": ubic,
+            "tipo": p.get("type") or "",
+            "operacion": p.get("operation") or "",
+        })
     return {"properties": out}
 
 
