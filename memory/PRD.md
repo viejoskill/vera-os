@@ -1061,3 +1061,9 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Logo: el procesado recortarYUsar recoloreaba TODO a un amarillo → las letras blancas "VARELA" se perdían (ese era el "error"). Solución: logo oficial vectorial limpio (transparente) guardado en /app/frontend/public/varela-logo-brand.png (recortado del artifact "Logo Varela Vec"), y función cargarLogoOficial() que lo usa TAL CUAL (sin recolorear). Se carga por defecto si no hay logo guardado + botón "Usar logo oficial Varela" en Identidad para restaurarlo en 1 clic.
 - Verificado: logo oficial carga por defecto, overlay del cartel limpio (óvalo amarillo + VARELA blanco), sin errores de consola.
 - Producción: requiere REDEPLOY; herramienta suelta: descargar /vera-studio.html (y el asset varela-logo-brand.png va incluido al servir desde /public).
+
+## Fix logo con fondo blanco (2026-06)
+- El logo "Logo Varela Vec.png" que se estaba usando tenía un FONDO BLANCO semi-opaco horneado (alpha ~92 en toda la caja) → al aplicarlo salía con caja blanca. 
+- Fix: reconstruí /app/frontend/public/varela-logo-brand.png desde backend/assets/brand/varela-logo.png (negro sobre transparente, alpha limpio), recoloreado a #F6E63A y upscaled x2 (1184x548). Transparencia real verificada (48% px alpha 0, compositado sobre oscuro sin caja blanca).
+- El botón "Usar logo oficial Varela" y el default ahora cargan este PNG limpio. NOTA: es logo mono-tono amarillo (letras VARELA en amarillo, no blancas) por limitación del source; si se quiere versión bicolor (letras blancas) hace falta un vector bicolor limpio.
+- Verificado en herramienta: overlay del cartel sin caja blanca, sin errores de consola.
