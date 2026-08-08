@@ -154,6 +154,7 @@
     <button class="mode" id="modeFotos" type="button">Editor de fotos</button>
     <button class="mode" id="modePortada" type="button">Portadas</button>
     <button class="mode" id="modeCartel" type="button">Cartel viral IA ✨</button>
+    <button class="mode" id="modeInfo" type="button">Infografía IA 📊</button>
   </div>
 
   <div class="grid">
@@ -467,6 +468,43 @@
         </div>
         <div class="hint" style="margin-top:12px">La IA dibuja el cartel con tus <b>colores de marca</b> (amarillo/negro), el texto, el precio y &mdash; en chico &mdash; la direcci&oacute;n y medidas. El <b>logo real</b> se superpone n&iacute;tido en la esquina de la placa (no lo dibuja la IA, as&iacute; sale siempre perfecto).</div>
       </div>
+
+      <div class="panel" id="panelInfo" style="display:none">
+        <h2>1 &middot; Infografía IA <span class="opt">(VERA arma el contenido, con tu marca)</span></h2>
+        <label>Formato de infografía</label>
+        <select id="ifTipo">
+          <option value="auto">Automático (VERA elige)</option>
+          <option value="piramide">Pirámide</option>
+          <option value="pasos">Pasos / Checklist</option>
+          <option value="comparacion">Comparación (A vs B)</option>
+          <option value="dato">Dato + barras</option>
+        </select>
+        <label style="margin-top:10px">Tema <span class="opt">(o dejalo vacío si subís referencia)</span></label>
+        <input type="text" id="ifTema" placeholder="Ej: relación entre precio y demanda de un inmueble">
+        <label class="btn sec filelbl" style="margin-top:10px">Subir infografía de referencia (opcional)<input type="file" id="ifFoto" accept="image/*"></label>
+        <span class="hint" id="ifFotoState">Sin referencia — VERA la reinterpreta, no la copia</span>
+        <button class="btn" id="ifGen" type="button" style="margin-top:10px;width:100%">✨ Generar con VERA</button>
+        <div class="status" id="ifStatus"></div>
+
+        <label style="margin-top:16px">Título</label>
+        <input type="text" id="ifTitulo" placeholder="Título de la infografía">
+        <label style="margin-top:8px">Subtítulo</label>
+        <input type="text" id="ifSub" placeholder="Bajada breve">
+        <div class="row" id="ifColRow" style="margin-top:8px;display:none">
+          <div><label>Columna A (título)</label><input type="text" id="ifColA" placeholder="Ej: Precio justo"></div>
+          <div><label>Columna B (título)</label><input type="text" id="ifColB" placeholder="Ej: Sobreprecio"></div>
+        </div>
+        <label style="margin-top:8px">Contenido <span class="opt" id="ifItemsHint">(una línea por ítem)</span></label>
+        <textarea id="ifItems" rows="7" placeholder="Se completa al generar; podés editarlo"></textarea>
+        <label style="margin-top:8px">Pie / usuario</label>
+        <input type="text" id="ifNota" value="@varelapropiedadescde">
+        <label style="margin-top:8px">Tamaño</label>
+        <select id="ifFormato">
+          <option value="45" selected>Feed 4:5 (1080×1350)</option>
+          <option value="916">Historia 9:16 (1080×1920)</option>
+        </select>
+        <div class="hint" style="margin-top:10px">Todo se dibuja nítido con tu identidad Varela (fondo oscuro + amarillo + logo). Editá cualquier campo y la vista previa se actualiza al instante.</div>
+      </div>
     </div>
 
     <div class="panel" id="panelPreview">
@@ -490,6 +528,15 @@
         <a class="btn sec" id="caDl" download>Descargar cartel</a>
       </div>
       <div class="status" id="caStatus2"></div>
+    </div>
+
+    <div class="panel" id="panelInfoPrev" style="display:none">
+      <h2>2 &middot; Vista previa <span class="opt">(infografía con tu marca)</span></h2>
+      <canvas id="cvInfo" width="1080" height="1350" style="width:100%;height:auto;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.55);background:#0B0B0C"></canvas>
+      <div class="actions">
+        <a class="btn sec" id="ifDl" download>Descargar infografía</a>
+      </div>
+      <div class="status" id="ifStatus2"></div>
     </div>
   </div>
 </div>
@@ -674,14 +721,16 @@ function imagenABlob(img){
 /* ---------- MODOS ---------- */
 function setMode(m){
   mode = m;
-  [["modeCont","cont","panelCont"],["modeProp","prop","panelProp"],["modeCal","cal","panelCal"],["modeVid","vid","panelVid"],["modeFotos","fotos","panelFotos"],["modePortada","portada","panelPortada"],["modeCartel","cartel","panelCartel"]].forEach(([btn,val,panel])=>{
+  [["modeCont","cont","panelCont"],["modeProp","prop","panelProp"],["modeCal","cal","panelCal"],["modeVid","vid","panelVid"],["modeFotos","fotos","panelFotos"],["modePortada","portada","panelPortada"],["modeCartel","cartel","panelCartel"],["modeInfo","info","panelInfo"]].forEach(([btn,val,panel])=>{
     $(btn).classList.toggle("sel", m===val);
     $(panel).style.display = (m===val) ? "" : "none";
   });
-  $("panelPreview").style.display = (m==="fotos"||m==="cartel") ? "none" : "";
+  $("panelPreview").style.display = (m==="fotos"||m==="cartel"||m==="info") ? "none" : "";
   $("panelCartelPrev").style.display = (m==="cartel") ? "" : "none";
+  $("panelInfoPrev").style.display = (m==="info") ? "" : "none";
   if(m==="fotos"){ fRender(); }
   else if(m==="cartel"){ caRender(); }
+  else if(m==="info"){ ifRender(); }
   else if(m!=="cal"){ render(); }
 }
 $("modeCont").onclick = ()=> setMode("cont");
@@ -691,6 +740,7 @@ $("modeVid").onclick = ()=> setMode("vid");
 $("modeFotos").onclick = ()=> setMode("fotos");
 $("modePortada").onclick = ()=> setMode("portada");
 $("modeCartel").onclick = ()=> setMode("cartel");
+$("modeInfo").onclick = ()=> setMode("info");
 
 /* ---------- CARRUSEL DE CONTENIDO ---------- */
 function nuevoSlide(esUltima){ return { titulo:"TU *GANCHO* AC\u00c1", sec:"", cta:"", estilo:"estudio", textoPos:"izq", altura:"centro", fotoOff:0, zoom:0, bgType:"flat", bgColor:0, bgImg:null, bgDesc:"", contacto: !!esUltima }; }
@@ -3114,6 +3164,157 @@ $("dlAll").onclick = async ()=>{
     : "Descargadas "+total+" placas.";
   $("stCv").className = "status ok";
 };
+
+/* ---------- INFOGRAFÍA IA ---------- */
+const cvInfo=$("cvInfo"), cxI=cvInfo.getContext("2d");
+let infoData={tipo:"piramide",titulo:"",subtitulo:"",items:[],colA_titulo:"",colB_titulo:"",colA:[],colB:[],dato:"",dato_label:"",nota:"@varelapropiedadescde"};
+let ifFotoB64=null;
+const IF_HINTS={
+  piramide:'una línea por nivel: "etiqueta | valor"  (ej: +15% por encima | 5%)',
+  pasos:'una línea por paso: "título | descripción"',
+  comparacion:'una línea por ítem: "A | texto"  o  "B | texto"',
+  dato:'línea 1: "NÚMERO | qué significa"; luego "etiqueta | %" por barra'
+};
+function ifTipoActual(){ const t=$("ifTipo").value; return t==="auto" ? (infoData.tipo||"piramide") : t; }
+function ifSyncUI(){ const t=ifTipoActual(); $("ifItemsHint").textContent="("+(IF_HINTS[t]||"una línea por ítem")+")"; $("ifColRow").style.display = t==="comparacion" ? "" : "none"; }
+
+function ifToFields(){
+  $("ifTitulo").value=infoData.titulo||""; $("ifSub").value=infoData.subtitulo||"";
+  $("ifNota").value=infoData.nota||"@varelapropiedadescde";
+  $("ifColA").value=infoData.colA_titulo||""; $("ifColB").value=infoData.colB_titulo||"";
+  const t=ifTipoActual(); let lines=[];
+  if(t==="piramide") lines=(infoData.items||[]).map(x=>((x.izq||"").replace(/\n/g," // "))+" | "+(x.der||""));
+  else if(t==="pasos") lines=(infoData.items||[]).map(x=>(x.t||"")+" | "+(x.d||""));
+  else if(t==="comparacion") lines=[].concat((infoData.colA||[]).map(x=>"A | "+x),(infoData.colB||[]).map(x=>"B | "+x));
+  else if(t==="dato"){ lines=[(infoData.dato||"")+" | "+(infoData.dato_label||"")].concat((infoData.items||[]).map(x=>(x.label||"")+" | "+(x.pct!=null?x.pct:""))); }
+  $("ifItems").value=lines.join("\n");
+}
+function ifFromFields(){
+  infoData.titulo=$("ifTitulo").value; infoData.subtitulo=$("ifSub").value; infoData.nota=$("ifNota").value;
+  infoData.colA_titulo=$("ifColA").value; infoData.colB_titulo=$("ifColB").value;
+  const t=ifTipoActual(); infoData.tipo=t;
+  const rows=$("ifItems").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  if(t==="piramide") infoData.items=rows.map(r=>{const p=r.split("|"); return {izq:(p[0]||"").trim().replace(/\s*\/\/\s*/g,"\n"), der:(p[1]||"").trim()};});
+  else if(t==="pasos") infoData.items=rows.map(r=>{const p=r.split("|"); return {t:(p[0]||"").trim(), d:(p[1]||"").trim()};});
+  else if(t==="comparacion"){ infoData.colA=[]; infoData.colB=[]; rows.forEach(r=>{const i=r.indexOf("|"); const k=r.slice(0,i).trim().toUpperCase(); const v=r.slice(i+1).trim(); if(k==="B") infoData.colB.push(v); else infoData.colA.push(v);}); }
+  else if(t==="dato"){ infoData.items=[]; rows.forEach((r,idx)=>{const i=r.indexOf("|"); const a=r.slice(0,i).trim(), b=r.slice(i+1).trim(); if(idx===0){ infoData.dato=a; infoData.dato_label=b; } else infoData.items.push({label:a, pct:parseFloat(b)||0});}); }
+}
+["ifTitulo","ifSub","ifNota","ifColA","ifColB","ifItems"].forEach(id=> $(id).addEventListener("input", ()=>{ ifFromFields(); ifRender(); }));
+$("ifTipo").addEventListener("change", ()=>{ ifSyncUI(); ifFromFields(); ifRender(); });
+$("ifFormato").addEventListener("change", ifRender);
+$("ifFoto").addEventListener("change", async e=>{ const f=e.target.files[0]; if(!f) return; try{ const im=await resizeImgStudio(f); ifFotoB64=im.b64; $("ifFotoState").textContent="Referencia cargada — VERA la reinterpreta"; }catch(_){ $("ifFotoState").textContent="No se pudo leer la imagen"; } });
+
+async function ifGen(){
+  const st=$("ifStatus"); const tema=$("ifTema").value.trim();
+  if(!tema && !ifFotoB64){ st.textContent="Escribí un tema o subí una referencia."; st.className="status err"; return; }
+  st.textContent="VERA está armando la infografía..."; st.className="status"; $("ifGen").disabled=true;
+  try{
+    const r=await fetch("/api/studio/infografia",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tipo:$("ifTipo").value, tema, images: ifFotoB64?[ifFotoB64]:[]})});
+    const d=await r.json();
+    if(!r.ok) throw new Error(d&&d.detail?d.detail:("Error "+r.status));
+    infoData=Object.assign({items:[],colA:[],colB:[],nota:"@varelapropiedadescde"}, d);
+    if($("ifTipo").value!=="auto") infoData.tipo=$("ifTipo").value;
+    ifSyncUI(); ifToFields(); ifRender();
+    st.textContent="Listo. Editá lo que quieras."; st.className="status ok";
+  }catch(e){ st.textContent=e.message; st.className="status err"; }
+  finally{ $("ifGen").disabled=false; }
+}
+$("ifGen").addEventListener("click", ifGen);
+
+function ifWrap(g,text,x,y,maxW,lh){ const words=(text||"").split(/\s+/); let line="",yy=y; for(const w of words){ const test=line?line+" "+w:w; if(g.measureText(test).width>maxW && line){ g.fillText(line,x,yy); line=w; yy+=lh; } else line=test; } if(line) g.fillText(line,x,yy); return yy; }
+function ifLines(g,text,maxW){ const words=(text||"").split(/\s+/); const out=[]; let ln=""; for(const w of words){ const t=ln?ln+" "+w:w; if(g.measureText(t).width>maxW && ln){ out.push(ln); ln=w; } else ln=t; } if(ln) out.push(ln); return out; }
+function ifFit(g,text,weight,maxW,startPx,font){ let px=startPx; const ff=font||"Oswald"; g.font=weight+" "+px+"px "+ff; while(px>10 && g.measureText(text).width>maxW){ px-=2; g.font=weight+" "+px+"px "+ff; } return px; }
+function ifHeader(g,W){
+  const P=80; g.textAlign="left"; g.textBaseline="alphabetic";
+  g.fillStyle=ORO; g.fillRect(P,88,70,10);
+  const tt=(infoData.titulo||"Infografía").toUpperCase();
+  const tPx=ifFit(g,tt,"700",W-P*2,84); g.font="700 "+tPx+"px Oswald"; g.fillStyle="#fff";
+  let y=132+tPx; g.fillText(tt,P,y);
+  if(infoData.subtitulo){ g.font="400 33px Inter"; g.fillStyle="rgba(255,255,255,.72)"; y+=46; y=ifWrap(g,infoData.subtitulo,P,y,W-P*2,42); }
+  return y+46;
+}
+function ifDrawLogoFooter(g,W,H){
+  if(logoImg){ const lw=W*0.22, lh=lw*(logoImg.height/logoImg.width); g.globalAlpha=1; g.drawImage(logoImg, W/2-lw/2, H-46-lh-22, lw, lh); }
+  g.fillStyle="rgba(255,255,255,.5)"; g.textAlign="center"; g.font="600 26px Inter"; g.fillText(infoData.nota||"", W/2, H-34);
+}
+function ifDrawPiramide(g,W,top,footTop){
+  const items=(infoData.items||[]).slice(0,6); const N=items.length||5;
+  const gap=10, availH=footTop-top, bandH=(availH-gap*(N-1))/N;
+  const cx=W/2, wTop=W*0.10, wBot=W*0.34, P=64;
+  for(let i=0;i<N;i++){ const it=items[i]||{}; const y0=top+i*(bandH+gap);
+    const w0=wTop+(wBot-wTop)*(i/N), w1=wTop+(wBot-wTop)*((i+1)/N);
+    const a=(0.32+0.68*(i/Math.max(1,N-1))).toFixed(2);
+    g.fillStyle="rgba(246,230,58,"+a+")";
+    g.beginPath(); g.moveTo(cx-w0/2,y0); g.lineTo(cx+w0/2,y0); g.lineTo(cx+w1/2,y0+bandH); g.lineTo(cx-w1/2,y0+bandH); g.closePath(); g.fill();
+    const my=y0+bandH/2, lh=32;
+    const leftEdge=cx-wBot/2-30, rightEdge=cx+wBot/2+30;
+    const leftW=leftEdge-P, rightW=(W-P)-rightEdge;
+    // etiqueta izquierda (blanca, alineada a la derecha)
+    g.fillStyle="#fff"; g.textAlign="right"; g.textBaseline="middle"; g.font="600 27px Inter";
+    const liz=ifLines(g,(it.izq||"").replace(/\n/g," "),leftW).slice(0,2);
+    liz.forEach((ln,k)=> g.fillText(ln,leftEdge,my-(liz.length-1)*lh/2+k*lh));
+    // valor derecha (amarillo): corto=Oswald grande; largo=Inter envuelto
+    const der=(it.der||"").trim(); g.textAlign="left"; g.fillStyle=ORO;
+    if(der.length<=5){ g.font="700 "+Math.min(58,bandH*0.62)+"px Oswald"; g.fillText(der,rightEdge,my); }
+    else { g.font="600 26px Inter"; const ld=ifLines(g,der,rightW).slice(0,3); ld.forEach((ln,k)=> g.fillText(ln,rightEdge,my-(ld.length-1)*lh/2+k*lh)); }
+  }
+  g.textBaseline="alphabetic";
+}
+function ifDrawPasos(g,W,top,footTop){
+  const items=(infoData.items||[]).slice(0,6); const N=items.length||3;
+  const P=80, availH=footTop-top, rowH=availH/N, r=Math.min(46,rowH*0.26);
+  g.textBaseline="middle";
+  for(let i=0;i<N;i++){ const it=items[i]||{}; const y=top+i*rowH+rowH*0.42;
+    g.fillStyle=ORO; g.beginPath(); g.arc(P+r,y,r,0,7); g.fill();
+    g.fillStyle="#0B0B0C"; g.textAlign="center"; g.font="700 "+(r*1.1)+"px Oswald"; g.fillText(String(i+1),P+r,y+2);
+    const tx=P+r*2+34; g.textAlign="left"; g.fillStyle="#fff"; g.font="700 40px Oswald"; g.fillText((it.t||"").toUpperCase(),tx,y-10);
+    g.fillStyle="rgba(255,255,255,.72)"; g.font="400 30px Inter"; g.textBaseline="top"; ifWrap(g,it.d||"",tx,y+10,W-tx-P,36); g.textBaseline="middle";
+  }
+  g.textBaseline="alphabetic";
+}
+function ifDrawComparacion(g,W,top,footTop){
+  const P=70, gap=30, colW=(W-P*2-gap)/2, xA=P, xB=P+colW+gap, headH=88;
+  g.textBaseline="middle";
+  g.fillStyle=ORO; g.fillRect(xA,top,colW,headH); g.fillStyle="#0B0B0C"; g.textAlign="center";
+  let aPx=ifFit(g,(infoData.colA_titulo||"A").toUpperCase(),"700",colW-30,42); g.font="700 "+aPx+"px Oswald"; g.fillText((infoData.colA_titulo||"A").toUpperCase(),xA+colW/2,top+headH/2);
+  g.fillStyle="#151515"; g.fillRect(xB,top,colW,headH); g.strokeStyle=ORO; g.lineWidth=3; g.strokeRect(xB+1.5,top+1.5,colW-3,headH-3);
+  g.fillStyle="#fff"; let bPx=ifFit(g,(infoData.colB_titulo||"B").toUpperCase(),"700",colW-30,42); g.font="700 "+bPx+"px Oswald"; g.fillText((infoData.colB_titulo||"B").toUpperCase(),xB+colW/2,top+headH/2);
+  g.textAlign="left"; g.textBaseline="top";
+  const col=(items,x)=>{ let y=top+headH+34; g.font="400 30px Inter"; (items||[]).slice(0,6).forEach(it=>{ g.fillStyle=ORO; g.fillText("•",x,y); g.fillStyle="rgba(255,255,255,.85)"; const e=ifWrap(g,it,x+30,y,colW-30,36); y=e+36; }); };
+  col(infoData.colA,xA); col(infoData.colB,xB);
+  g.textBaseline="alphabetic";
+}
+function ifDrawDato(g,W,top,footTop){
+  const P=80; g.textAlign="center"; g.textBaseline="alphabetic";
+  let y=top+40; const dato=infoData.dato||"";
+  if(dato){ const dPx=ifFit(g,dato,"700",W-P*2,220); g.font="700 "+dPx+"px Oswald"; g.fillStyle=ORO; y=top+dPx*0.85; g.fillText(dato,W/2,y); }
+  if(infoData.dato_label){ g.font="400 34px Inter"; g.fillStyle="rgba(255,255,255,.8)"; y+=54; y=ifWrap(g,infoData.dato_label,W/2,y,W-P*2,42); }
+  const items=(infoData.items||[]).slice(0,5);
+  if(items.length){ g.textAlign="left"; let by=y+80; const bw=W-P*2, bh=42, gp=36;
+    items.forEach(it=>{ const pct=Math.max(0,Math.min(100,it.pct||0));
+      g.fillStyle="rgba(255,255,255,.85)"; g.font="600 28px Inter"; g.fillText((it.label||"")+"  "+pct+"%",P,by-12);
+      g.fillStyle="rgba(255,255,255,.10)"; g.fillRect(P,by,bw,bh);
+      g.fillStyle=ORO; g.fillRect(P,by,bw*pct/100,bh);
+      by+=bh+gp;
+    });
+  }
+}
+function ifRender(){
+  const g=cxI; const dims=$("ifFormato").value==="916"?[1080,1920]:[1080,1350]; const W=dims[0],H=dims[1];
+  if(cvInfo.width!==W||cvInfo.height!==H){ cvInfo.width=W; cvInfo.height=H; }
+  g.fillStyle="#0B0B0C"; g.fillRect(0,0,W,H);
+  const rg=g.createRadialGradient(W*0.82,H*0.14,0,W*0.82,H*0.14,W*0.75); rg.addColorStop(0,"rgba(246,230,58,.10)"); rg.addColorStop(1,"rgba(0,0,0,0)"); g.fillStyle=rg; g.fillRect(0,0,W,H);
+  const top=ifHeader(g,W); const footTop=H-190; const t=ifTipoActual();
+  if(t==="piramide") ifDrawPiramide(g,W,top,footTop);
+  else if(t==="pasos") ifDrawPasos(g,W,top,footTop);
+  else if(t==="comparacion") ifDrawComparacion(g,W,top,footTop);
+  else ifDrawDato(g,W,top,footTop);
+  ifDrawLogoFooter(g,W,H);
+  $("ifDl").href=cvInfo.toDataURL("image/jpeg",.92);
+  const f=new Date(),mes=f.getFullYear()+"-"+String(f.getMonth()+1).padStart(2,"0");
+  $("ifDl").download=mes+"_infografia_"+slugTexto(infoData.titulo||"vera")+".jpg";
+}
+ifSyncUI();
 
 document.fonts.ready.then(async ()=>{ drawTabs(); drawEditor(); await cargarIdentidad(); await cargarPlan(); });
 </script>

@@ -1067,3 +1067,11 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Fix: reconstruí /app/frontend/public/varela-logo-brand.png desde backend/assets/brand/varela-logo.png (negro sobre transparente, alpha limpio), recoloreado a #F6E63A y upscaled x2 (1184x548). Transparencia real verificada (48% px alpha 0, compositado sobre oscuro sin caja blanca).
 - El botón "Usar logo oficial Varela" y el default ahora cargan este PNG limpio. NOTA: es logo mono-tono amarillo (letras VARELA en amarillo, no blancas) por limitación del source; si se quiere versión bicolor (letras blancas) hace falta un vector bicolor limpio.
 - Verificado en herramienta: overlay del cartel sin caja blanca, sin errores de consola.
+
+## Módulo "Infografía IA" en VERA Studio (2026-06)
+- Nuevo modo "Infografía IA 📊" en vera-studio.html. VERA Brain arma el CONTENIDO estructurado (JSON) y se renderiza en canvas con identidad Varela (fondo #0B0B0C + amarillo #F6E63A + logo).
+- 4 formatos: piramide, pasos/checklist, comparacion (A vs B), dato+barras, + "auto" (VERA elige). Formato 4:5 (1080x1350) y 9:16 (1080x1920).
+- Arranca desde TEMA o desde una PLACA DE REFERENCIA subida (visión): VERA la REINTERPRETA (no copia). Textos generados por VERA + totalmente editables (título, subtítulo, contenido multilínea "campo | campo", columnas A/B, pie).
+- Backend: nuevo endpoint POST /api/studio/infografia (routes_studio.py) usa _think (brain + visión) + _parse_json. No requiere el Código de acceso VERA (usa Emergent LLM key del backend); sí requiere ai_configured.
+- Verificado: backend HTTP 200 con JSON válido; los 4 renderizadores dibujan OK (piramide con textos envueltos sin cortes, dato con nº gigante + barras, pasos con círculos numerados, comparacion 2 columnas); generación real end-to-end desde el botón OK; sin errores de consola.
+- Producción: requiere REDEPLOY; herramienta suelta: descargar /vera-studio.html.

@@ -310,3 +310,72 @@ async def plan(body: PlanBody):
         logger.exception("studio/plan failed")
         raise HTTPException(502, "VERA no pudo generar el plan ahora.") from exc
     return {"items": items}
+
+
+class InfografiaBody(BaseModel):
+    tipo: str = "auto"          # auto|piramide|pasos|comparacion|dato
+    tema: str = ""
+    images: list[str] = []
+
+
+_INFO_SCHEMA = (
+    "Formatos posibles y su JSON (llená SOLO los campos del tipo elegido):\n"
+    "- piramide: {\"tipo\":\"piramide\",\"titulo\":\"...\",\"subtitulo\":\"...\","
+    "\"items\":[{\"izq\":\"texto corto (puede tener \\n)\",\"der\":\"valor corto ej 5%\"}],\"nota\":\"@...\"} "
+    "con 4 a 6 niveles ordenados de la punta (arriba) a la base (abajo).\n"
+    "- pasos: {\"tipo\":\"pasos\",\"titulo\":\"...\",\"subtitulo\":\"...\","
+    "\"items\":[{\"t\":\"título del paso\",\"d\":\"1 frase\"}],\"nota\":\"@...\"} con 3 a 5 pasos.\n"
+    "- comparacion: {\"tipo\":\"comparacion\",\"titulo\":\"...\",\"subtitulo\":\"...\","
+    "\"colA_titulo\":\"...\",\"colB_titulo\":\"...\",\"colA\":[\"item\",\"item\"],\"colB\":[\"item\",\"item\"],"
+    "\"nota\":\"@...\"} con 3 a 4 items por columna.\n"
+    "- dato: {\"tipo\":\"dato\",\"titulo\":\"...\",\"subtitulo\":\"...\",\"dato\":\"73%\","
+    "\"dato_label\":\"qué significa el número\",\"items\":[{\"label\":\"...\",\"pct\":73}],\"nota\":\"@...\"} "
+    "donde items son 0 a 4 barras (pct 0-100)."
+)
+
+
+@router.post("/infografia")
+async def infografia(body: InfografiaBody):
+    """Datos estructurados para una infografía educativa (JSON) con el cerebro de VERA Studio."""
+    if not config.ai_configured():
+        raise HTTPException(503, "VERA Brain no está configurado.")
+    tema = (body.tema or "").strip()
+    imgs = body.images or None
+    if not tema and not imgs:
+        raise HTTPException(422, "Escribí un tema o subí una infografía de referencia.")
+    tipo = (body.tipo or "auto").strip().lower()
+    if tipo not in ("auto", "piramide", "pasos", "comparacion", "dato"):
+        tipo = "auto"
+    tipo_line = (
+        "Elegí vos el formato que mejor comunique el tema."
+        if tipo == "auto"
+        else f"Usá OBLIGATORIAMENTE el formato: {tipo}."
+    )
+    img_line = (
+        "Te adjunté una INFOGRAFÍA DE REFERENCIA: entendé su estructura, su lógica y sus datos, y "
+        "REINTERPRETALA para Varela Inmobiliaria (Costa del Este). MUY IMPORTANTE: NO la copies — "
+        "cambiá el título y el enfoque, redactá todo con voz propia y adaptá los ejemplos/datos al "
+        "mercado local; mantené el mismo TIPO de infografía salvo que se indique otro.\n"
+        if imgs
+        else ""
+    )
+    prompt = (
+        "TAREA (herramienta Studio, salida para una INFOGRAFÍA educativa de Instagram, marca "
+        "Varela Inmobiliaria): generá el CONTENIDO estructurado de una infografía clara y útil "
+        "sobre el tema, pensada para educar y posicionar autoridad.\n"
+        f"{tipo_line}\n"
+        f"Tema: {tema or '(deducilo de la imagen de referencia)'}.\n"
+        f"{img_line}"
+        "Español rioplatense, ortografía y tildes perfectas. Textos MUY cortos y concretos (es una "
+        "placa, no un texto largo). Títulos con gancho pero sobrios. No inventes cifras legales; los "
+        "porcentajes/datos deben ser realistas y coherentes con el rubro inmobiliario. 'nota' = el "
+        "usuario de Instagram, por defecto \"@varelapropiedadescde\".\n\n"
+        f"{_INFO_SCHEMA}\n\n"
+        "Respondé SOLO JSON válido, sin markdown ni texto extra."
+    )
+    try:
+        data = _parse_json(await _think(prompt, imgs))
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("studio/infografia failed")
+        raise HTTPException(502, "VERA no pudo generar la infografía ahora.") from exc
+    return data
