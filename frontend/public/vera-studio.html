@@ -10,7 +10,7 @@
 <style>
   :root{
     --ink:#efece4; --paper:#141414; --card:#1d1d1d; --line:#3a3a36;
-    --oro:#f2e23c; --oro-osc:#d6c72c; --gris:#9a978e; --error:#e07a63; --ok:#8fc98f;
+    --oro:#F6E63A; --oro-osc:#d6c72c; --gris:#9a978e; --error:#e07a63; --ok:#8fc98f;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:Inter,system-ui,sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;padding:24px 16px 64px}
@@ -105,7 +105,7 @@
 <body>
 <div class="wrap">
   <header>
-    <svg width="34" height="30" viewBox="0 0 100 100" style="align-self:center" aria-hidden="true"><path d="M0 0 H30 L50 52 L70 0 H100 L62 100 L50 78 L38 100 Z" fill="#f2e23c"/></svg>
+    <svg width="34" height="30" viewBox="0 0 100 100" style="align-self:center" aria-hidden="true"><path d="M0 0 H30 L50 52 L70 0 H100 L62 100 L50 78 L38 100 Z" fill="#F6E63A"/></svg>
     <h1><span style="color:#f5f1e6">VERA</span> <span style="color:var(--oro)">OS</span> <span style="color:var(--gris);font-weight:500">STUDIO</span></h1>
     <span class="sub">texto perfecto &middot; IA solo para ideas y fondos &middot; feed + historia</span>
   </header>
@@ -120,10 +120,13 @@
           <div class="hint">Es tu licencia: activa las funciones de IA. Si no ten&eacute;s uno, ped&iacute;selo a Varela Inmobiliaria.</div>
         </div>
         <div>
-          <label>Logo <span class="opt">(queda guardado; se unifica al amarillo VERA)</span></label>
-          <label class="btn sec filelbl">Subir logo<input type="file" id="logoFile" accept="image/*"></label>
+          <label>Logo <span class="opt">(queda guardado)</span></label>
+          <div class="row" style="margin-top:2px">
+            <label class="btn sec filelbl" style="margin:0">Subir logo<input type="file" id="logoFile" accept="image/*"></label>
+            <button class="btn sec" id="logoOficial" type="button" style="margin:0">Usar logo oficial Varela</button>
+          </div>
           <span class="hint" id="logoState">Sin logo cargado</span>
-          <label class="chk"><input type="checkbox" id="logoTrans" checked> Quitar fondo blanco del logo</label>
+          <label class="chk"><input type="checkbox" id="logoTrans" checked> Quitar fondo blanco del logo (solo para logos subidos)</label>
         </div>
       </div>
       <div class="row">
@@ -493,7 +496,7 @@
 
 <script>
 const $ = id => document.getElementById(id);
-const ORO = "#f2e23c", BLANCO = "#f5f1e6", GRISC = "#b9b5aa";
+const ORO = "#F6E63A", BLANCO = "#f5f1e6", GRISC = "#b9b5aa";
 const PALETA = [
   {n:"Carb\u00f3n",        a:"#17181c", b:"#0b0c0e"},
   {n:"Grafito",            a:"#26262a", b:"#101012"},
@@ -545,6 +548,8 @@ async function cargarIdentidad(){
       await new Promise(res=>{ img.onload=res; img.src=lg; });
       logoRaw = img; $("logoState").textContent = "Logo cargado (guardado)";
       procesarLogo();
+    } else {
+      await cargarLogoOficial(false);
     }
     if(!raw && !lg) $("cfg").open = true;
   }catch(e){ $("cfg").open = true; }
@@ -578,7 +583,7 @@ function recortarYUsar(c){
     for(let i=0;i<d.data.length;i+=4){
       if(d.data[i+3] > 0){
         const lum = .3*d.data[i] + .6*d.data[i+1] + .1*d.data[i+2];
-        if(lum > 110){ d.data[i]=242; d.data[i+1]=226; d.data[i+2]=60; }
+        if(lum > 110){ d.data[i]=246; d.data[i+1]=230; d.data[i+2]=58; }
       }
     }
     x.putImageData(d,0,0);
@@ -611,6 +616,22 @@ $("logoFile").addEventListener("change", e=>{
   };
   reader.readAsDataURL(f);
 });
+
+/* Logo oficial Varela: se usa TAL CUAL (transparente, amarillo de marca), sin recolorear. */
+async function cargarLogoOficial(guardar){
+  try{
+    const resp = await fetch("/varela-logo-brand.png");
+    const blob = await resp.blob();
+    const durl = await new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(blob); });
+    const img = new Image();
+    await new Promise(res=>{ img.onload=res; img.src=durl; });
+    logoRaw = img; logoImg = img; logoDataUrl = durl;
+    $("logoState").textContent = "Logo oficial Varela cargado";
+    if(guardar) guardarIdentidad();
+    render();
+  }catch(e){ $("logoState").textContent = "No se pudo cargar el logo oficial"; }
+}
+$("logoOficial").addEventListener("click", ()=> cargarLogoOficial(true));
 
 /* ---------- CONEXION AL SERVIDOR VERA ---------- */
 const SERVIDOR_VERA = "https://veraos.varelavendecde.workers.dev";
@@ -943,7 +964,7 @@ function dibujarPoligonoLote(ctxL, forma, mirror, medidas, bx,by,bw,bh){
   ctxL.beginPath();
   pts.forEach((p,i)=> i===0?ctxL.moveTo(p[0],p[1]):ctxL.lineTo(p[0],p[1]));
   ctxL.closePath();
-  ctxL.fillStyle = "rgba(242,226,60,.07)"; ctxL.fill();
+  ctxL.fillStyle = "rgba(246,230,58,.07)"; ctxL.fill();
   ctxL.strokeStyle = ORO; ctxL.lineWidth = Math.max(2, bw*0.004); ctxL.stroke();
   pts.forEach(p=>{ ctxL.beginPath(); ctxL.arc(p[0],p[1],Math.max(2.5,bw*0.006),0,7); ctxL.fillStyle=ORO; ctxL.fill(); });
   ctxL.restore();
@@ -2578,7 +2599,7 @@ function renderFichaLoteWeb(f, cw, ch){
   dg.addColorStop(0, tono.a); dg.addColorStop(1, tono.b);
   ctxE.fillStyle = dg; ctxE.fillRect(0,0,cw,ch);
   const rg = ctxE.createRadialGradient(cw*.82,ch*.22,40,cw*.82,ch*.22,Math.max(cw,ch)*.7);
-  rg.addColorStop(0, `rgba(242,226,60,${tono.brillo})`); rg.addColorStop(1,"rgba(0,0,0,0)");
+  rg.addColorStop(0, `rgba(246,230,58,${tono.brillo})`); rg.addColorStop(1,"rgba(0,0,0,0)");
   ctxE.fillStyle = rg; ctxE.fillRect(0,0,cw,ch);
   const pad = Math.round(Math.min(cw,ch)*0.06);
   const horizontal = cw >= ch;
@@ -2711,7 +2732,7 @@ function fRender(){
     const fs = Math.max(20, Math.round(ch*0.026));
     ctxE.font = "600 "+fs+"px Inter"; ctxE.textBaseline="top";
     ctxE.shadowColor="rgba(0,0,0,.75)"; ctxE.shadowBlur=8;
-    ctxE.fillStyle = forzado ? "#f2e23c" : "rgba(255,255,255,.88)";
+    ctxE.fillStyle = forzado ? "#F6E63A" : "rgba(255,255,255,.88)";
     ctxE.fillText(etiqueta, ch*0.035, ch*0.035);
     ctxE.restore();
   }
@@ -2964,7 +2985,7 @@ function caPrompt(rec){
   parts.push("Integra de forma 100% fotorrealista, como si el cartel hubiera estado fisicamente ahi el dia de la foto: "+rec.prompt);
   parts.push("El cartel es "+rec.mat+", impreso de verdad: superficie MATE con textura real de impresion (lona/vinilo), NUNCA un grafico digital plano, un vector ni un sticker pegado. Debe tener grosor y canto visibles, su propia sombra, y micro-imperfecciones creibles (leves arrugas u ondulaciones de la lona, tornillos u ojales, algo de polvo o barro en la base, algun reflejo sutil del cielo).");
   parts.push("El cartel recibe EXACTAMENTE la misma luz, sombras y temperatura de color de la escena y proyecta una sombra coherente en el suelo; los verdes y el cielo del entorno tinen levemente sus bordes para fundirlo con la escena.");
-  parts.push("Identidad de marca EXACTA: mitad superior con fondo AMARILLO VARELA vivo y brillante, EXACTAMENTE el mismo amarillo del logo de la marca (aprox #F2E23C), NI dorado/mostaza NI palido ni desaturado, con el texto en gris muy oscuro casi negro; mitad inferior con fondo GRIS OSCURO CARBON (aprox #262626), NO negro puro, con el texto en BLANCO. Tipografia condensada gruesa tipo Oswald, en MAYUSCULAS, prolija, centrada y bien alineada.");
+  parts.push("Identidad de marca EXACTA: mitad superior con fondo AMARILLO VARELA vivo y brillante, el amarillo de la marca VERA OS (exactamente #F6E63A), NI dorado/mostaza NI palido ni desaturado, con el texto en gris muy oscuro casi negro; mitad inferior con fondo GRIS OSCURO CARBON (aprox #262626), NO negro puro, con el texto en BLANCO. Tipografia condensada gruesa tipo Oswald, en MAYUSCULAS, prolija, centrada y bien alineada.");
   let texto="Texto del cartel (ortografia y numeros EXACTOS, sin cambiar, agregar ni deformar ni una letra ni un digito): arriba, grande, \""+t+"\"";
   if(u) texto+="; debajo, mas chico, \""+u+"\"";
   if(pr){
@@ -3097,4 +3118,6 @@ $("dlAll").onclick = async ()=>{
 document.fonts.ready.then(async ()=>{ drawTabs(); drawEditor(); await cargarIdentidad(); await cargarPlan(); });
 </script>
 </body>
+</html>
+ody>
 </html>

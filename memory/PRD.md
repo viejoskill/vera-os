@@ -1055,3 +1055,9 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Nuevo campo "Precio anterior" (caPrecioAntes): cuando hay rebaja, el prompt pide el precio anterior TACHADO en gris claro + el nuevo destacado.
 - Verificado: prompt incluye #F5C518, #262626, tachado y precio anterior; logo overlay sin chip; sin errores de consola.
 - Producción: requiere REDEPLOY; herramienta suelta: descargar /vera-studio.html.
+
+## Amarillo VERA OS + logo oficial limpio (2026-06)
+- Amarillo de marca unificado a #F6E63A (color primary de VERA OS, según design_guidelines.json). Reemplazado ORO, --oro, tint de recortarYUsar (246,230,58), glows y prompt del cartel en vera-studio.html.
+- Logo: el procesado recortarYUsar recoloreaba TODO a un amarillo → las letras blancas "VARELA" se perdían (ese era el "error"). Solución: logo oficial vectorial limpio (transparente) guardado en /app/frontend/public/varela-logo-brand.png (recortado del artifact "Logo Varela Vec"), y función cargarLogoOficial() que lo usa TAL CUAL (sin recolorear). Se carga por defecto si no hay logo guardado + botón "Usar logo oficial Varela" en Identidad para restaurarlo en 1 clic.
+- Verificado: logo oficial carga por defecto, overlay del cartel limpio (óvalo amarillo + VARELA blanco), sin errores de consola.
+- Producción: requiere REDEPLOY; herramienta suelta: descargar /vera-studio.html (y el asset varela-logo-brand.png va incluido al servir desde /public).
