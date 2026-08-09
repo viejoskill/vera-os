@@ -1459,6 +1459,20 @@ function parseSpans(line){
   }
   return spans;
 }
+/* Igual que parseSpans pero MULTILÍNEA: arrastra el estado dorado a través de los \n
+   (para títulos donde el *...* cruza un salto de línea). Devuelve un array de líneas,
+   cada línea es un array de spans {t,g}. */
+function parseSpansML(text){
+  const lines=[[]]; let gold=false, buf="";
+  const flush=()=>{ if(buf){ lines[lines.length-1].push({t:buf,g:gold}); buf=""; } };
+  for(const ch of (text||"")){
+    if(ch==="*"){ flush(); gold=!gold; }
+    else if(ch==="\n"){ flush(); lines.push([]); }
+    else buf+=ch;
+  }
+  flush();
+  return lines.map(l=> l.length ? l : [{t:"",g:false}]);
+}
 function wrapSpans(spans,font,maxW){
   ctx.font = font;
   const lines=[]; let line=[]; let w=0;
@@ -1592,7 +1606,7 @@ function renderUgc(P, s){
   const baseSec = "600 38px Inter";
   // Conteo de lineas con tamaño base (define los cortes de linea).
   let n1 = 0;
-  const chipMlines = s.titulo.split("\n").map(mline=>{ const ls = wrapSpans(parseSpans(mline), baseChip, W-2*PAD-72); n1 += ls.length; return ls; });
+  const chipMlines = parseSpansML(s.titulo).map(sps=>{ const ls = wrapSpans(sps, baseChip, W-2*PAD-72); n1 += ls.length; return ls; });
   const secLines = s.sec.trim() ? wrapSpans(parseSpans(s.sec), baseSec, W-2*PAD-64) : [];
   const n2 = secLines.length;
   const totalHbase = n1*96 + 14 + (n2? n2*70+18 : 0) + (s.cta.trim()? 86 : 0);
@@ -1701,8 +1715,8 @@ function renderCont(P){
   const titleFont = "700 112px Oswald";
   let y = P.tituloY;
   ctx.textBaseline = "top";
-  s.titulo.split("\n").forEach(mline=>{
-    const lines = wrapSpans(parseSpans(mline.toUpperCase()), titleFont, W-2*PAD);
+  parseSpansML(s.titulo.toUpperCase()).forEach(sps=>{
+    const lines = wrapSpans(sps, titleFont, W-2*PAD);
     lines.forEach(line=>{
       ctx.font = titleFont;
       let lw = 0; line.forEach(tok=> lw += ctx.measureText(tok.t).width);
@@ -2200,7 +2214,7 @@ function drawTituloVideo(P, alpha){
   ctx.shadowColor = "rgba(0,0,0,.8)"; ctx.shadowBlur = 24; ctx.shadowOffsetY = 3;
   const titFont = "700 96px Oswald";
   const subFont = "600 42px Inter";
-  const lines = t ? [].concat(...t.split("\n").map(m=> wrapSpans(parseSpans(m.toUpperCase()), titFont, W-2*PAD))) : [];
+  const lines = t ? [].concat(...parseSpansML(t.toUpperCase()).map(sps=> wrapSpans(sps, titFont, W-2*PAD))) : [];
   const subLines = sub ? wrapSpans(parseSpans(sub), subFont, W-2*PAD) : [];
   const totalH = lines.length*104 + (subLines.length ? subLines.length*56 + 18 : 0);
   let y = H - FMT[fmt].lineOff - 56 - totalH;

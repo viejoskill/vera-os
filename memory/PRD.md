@@ -1082,3 +1082,8 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - UI: toggle "Usar mis fotos como fondo de las placas" (ON al subir fotos) + botón "Aplicar mis fotos" (reasigna sin regenerar). studioImgs ahora guarda .el (Image) para dibujar. aplicarFotos()/quitarFotos() en vera-studio.html.
 - Verificado: backend HTTP 200 devolviendo mezcla inteligente (ugc/flat/img/ugc); render de placa con foto de fondo OK (screenshot); sin errores de consola.
 - Producción: requiere REDEPLOY; herramienta suelta: /vera-studio.html.
+
+## Fix dorado en títulos multilínea (2026-06)
+- Bug: en títulos, el resaltado dorado (*...*) no se activaba cuando el par de asteriscos cruzaba un salto de línea (\n), porque el título se dividía por \n y cada línea se parseaba por separado con parseSpans (regex exige ambos * en la misma línea). En el secundario (1 línea) funcionaba.
+- Fix: nueva función parseSpansML(text) que arrastra el estado dorado a través de los \n y devuelve líneas de spans. Reemplazado en renderUgc (chips), renderCont (título) y el renderer de historia/portada (línea ~2217) en vera-studio.html.
+- Verificado: título "O comprás *tres fuentes\nde ingresos*" ahora dorado en ambas líneas (screenshot); sin errores de consola.
