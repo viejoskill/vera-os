@@ -196,6 +196,7 @@
           </div>
         </div>
         <button class="btn full" id="ideas">Generar ideas con IA (gancho &rarr; contenido &rarr; remate)</button>
+        <button class="btn sec full" id="capBtnCont" type="button" style="margin-top:8px">📱 Texto para publicar (IG / TikTok)</button>
         <div class="status" id="stIdeas"></div>
         <div class="tabs" id="tabs"></div>
         <div id="slideEditor"></div>
@@ -222,6 +223,7 @@
         <input type="text" id="pTitulo" placeholder="Ej: Casa 3 ambientes con parque">
         <label>Ubicaci&oacute;n</label>
         <input type="text" id="pUbi" placeholder="Ej: Zona bosque &middot; Costa del Este">
+        <button class="btn sec" id="capBtnProp" type="button" style="margin-top:10px">📱 Texto para publicar (IG / TikTok)</button>
         <label class="chk"><input type="checkbox" id="pContacto" checked> Datos de la inmobiliaria en la &uacute;ltima foto</label>
         <label class="chk"><input type="checkbox" id="pAvisoIA" checked> Mostrar aviso de edici&oacute;n con IA (Atardecer, D&iacute;a despejado, Despejar y Potencial)</label>
         <label class="chk"><input type="checkbox" id="pEsLote"> Es un lote (agrega una ficha t&eacute;cnica como primera placa)</label>
@@ -438,6 +440,7 @@
         </div>
         <button class="btn" id="caGen" type="button" style="margin-top:10px;width:100%">✨ Generar cartel</button>
         <div class="status" id="caStatus"></div>
+        <button class="btn sec" id="capBtnCartel" type="button" style="margin-top:10px;width:100%">📱 Texto para publicar (IG / TikTok)</button>
 
         <label style="margin-top:16px">Datos del cartel <span class="opt">(marca real, siempre n&iacute;tida)</span></label>
         <label style="margin-top:8px">Propiedad de tu cartera <span class="opt">(opcional &mdash; autocompleta)</span></label>
@@ -541,6 +544,29 @@
         <a class="btn sec" id="ifDl" download>Descargar infografía</a>
       </div>
       <div class="status" id="ifStatus2"></div>
+    </div>
+  </div>
+</div>
+
+<div id="capModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:20px">
+  <div style="background:#16171a;border:1px solid #2a2b2f;border-radius:16px;max-width:640px;width:100%;max-height:88vh;overflow:auto;padding:22px 22px 26px;box-shadow:0 20px 60px rgba(0,0,0,.6)">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <h2 style="margin:0">📱 Texto para publicar <span class="opt">(IG + TikTok)</span></h2>
+      <button id="capClose" class="btn sec" style="padding:6px 12px;margin:0">Cerrar ✕</button>
+    </div>
+    <div class="status" id="capStatus" style="margin-top:8px"></div>
+    <div id="capBody" style="display:none">
+      <label style="margin-top:14px">Instagram</label>
+      <textarea id="capIg" rows="7"></textarea>
+      <button class="btn sec cap-copy" data-cap="capIg" data-lbl="📋 Copiar Instagram" style="margin-top:6px">📋 Copiar Instagram</button>
+      <label style="margin-top:14px">TikTok</label>
+      <textarea id="capTk" rows="5"></textarea>
+      <button class="btn sec cap-copy" data-cap="capTk" data-lbl="📋 Copiar TikTok" style="margin-top:6px">📋 Copiar TikTok</button>
+      <label style="margin-top:14px">Hashtags</label>
+      <textarea id="capTags" rows="3"></textarea>
+      <button class="btn sec cap-copy" data-cap="capTags" data-lbl="📋 Copiar hashtags" style="margin-top:6px">📋 Copiar hashtags</button>
+      <div style="margin-top:16px"><button class="btn" id="capAll" style="width:100%">📋 Copiar TODO (IG + hashtags)</button></div>
+      <div style="margin-top:10px"><button class="btn sec" id="capRegen" style="width:100%">🔄 Generar otra versión</button></div>
     </div>
   </div>
 </div>
@@ -3356,6 +3382,45 @@ function ifRender(){
   $("ifDl").download=mes+"_infografia_"+slugTexto(infoData.titulo||"vera")+".jpg";
 }
 ifSyncUI();
+
+/* ---------- CAPTION IG / TIKTOK ---------- */
+let capCtxFn=null;
+function abrirCaption(getCtx){ capCtxFn=getCtx; $("capModal").style.display="flex"; $("capBody").style.display="none"; genCaption(); }
+async function genCaption(){
+  const st=$("capStatus"); let ctx="";
+  try{ ctx = capCtxFn ? (capCtxFn()||"") : ""; }catch(_){ ctx=""; }
+  if(!ctx.trim()){ st.textContent="Faltan datos para generar el texto (completá el tema/propiedad)."; st.className="status err"; return; }
+  st.textContent="VERA está escribiendo el texto..."; st.className="status";
+  try{
+    const r=await fetch("/api/studio/caption",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contexto:ctx})});
+    const d=await r.json(); if(!r.ok) throw new Error(d&&d.detail?d.detail:("Error "+r.status));
+    $("capIg").value=d.ig||""; $("capTk").value=d.tiktok||""; $("capTags").value=d.hashtags||"";
+    $("capBody").style.display="block"; st.textContent="Listo ✨ Copiá y pegá en tu publicación."; st.className="status ok";
+  }catch(e){ st.textContent=e.message; st.className="status err"; }
+}
+if($("capClose")) $("capClose").addEventListener("click", ()=> $("capModal").style.display="none");
+if($("capModal")) $("capModal").addEventListener("click", e=>{ if(e.target.id==="capModal") $("capModal").style.display="none"; });
+if($("capRegen")) $("capRegen").addEventListener("click", genCaption);
+document.querySelectorAll("#capModal .cap-copy").forEach(b=> b.addEventListener("click", async ()=>{ try{ await navigator.clipboard.writeText($(b.dataset.cap).value); const lbl=b.dataset.lbl; b.textContent="✅ Copiado"; setTimeout(()=>{ b.textContent=lbl; },1300); }catch(_){ b.textContent="Copiá manualmente"; } }));
+if($("capAll")) $("capAll").addEventListener("click", async ()=>{ const t=($("capIg").value+"\n\n"+$("capTags").value).trim(); try{ await navigator.clipboard.writeText(t); $("capAll").textContent="✅ Copiado"; setTimeout(()=>{ $("capAll").textContent="📋 Copiar TODO (IG + hashtags)"; },1300);}catch(_){}});
+
+function ctxCarrusel(){
+  const prop = ($("propSel") && $("propSel").value && $("propSel").selectedOptions[0]) ? $("propSel").selectedOptions[0].textContent : "";
+  const tema = $("tema") ? $("tema").value.trim() : "";
+  const tits = (slides||[]).map(s=>(s.titulo||"").replace(/\n/g," ").replace(/\*/g,"").trim()).filter(Boolean).join("  |  ");
+  return "Tipo de pieza: CARRUSEL de Instagram.\n"+(prop?("Propiedad: "+prop+"\n"):"")+(tema?("Tema: "+tema+"\n"):"")+(tits?("Placas del carrusel: "+tits):"");
+}
+function ctxProp(){
+  const op=$("pOp")?$("pOp").value:""; const tit=$("pTitulo")?$("pTitulo").value.trim():""; const ubi=$("pUbi")?$("pUbi").value.trim():""; const pr=$("pPrecio")?$("pPrecio").value.trim():""; const pra=$("pPrecioAntes")?$("pPrecioAntes").value.trim():"";
+  return "Tipo de pieza: POST de una PROPIEDAD.\n"+(op?("Operación: "+op+"\n"):"")+(tit?("Título: "+tit+"\n"):"")+(ubi?("Ubicación: "+ubi+"\n"):"")+(pr?("Precio: "+pr+(pra?(" (antes "+pra+", rebaja)"):"")+"\n"):"");
+}
+function ctxCartel(){
+  const t=$("caTitulo")?$("caTitulo").value.trim():""; const u=$("caUbic")?$("caUbic").value.trim():""; const pr=$("caPrecio")?$("caPrecio").value.trim():""; const pra=$("caPrecioAntes")?$("caPrecioAntes").value.trim():""; const dat=$("caDatos")?$("caDatos").value.trim():"";
+  return "Tipo de pieza: CARTEL/placa viral de una propiedad.\n"+(t?(t+"\n"):"")+(u?(u+"\n"):"")+(pr?("Precio: "+pr+(pra?(" (antes "+pra+", rebaja)"):"")+"\n"):"")+(dat?("Dirección y medidas: "+dat):"");
+}
+if($("capBtnCont")) $("capBtnCont").addEventListener("click", ()=> abrirCaption(ctxCarrusel));
+if($("capBtnProp")) $("capBtnProp").addEventListener("click", ()=> abrirCaption(ctxProp));
+if($("capBtnCartel")) $("capBtnCartel").addEventListener("click", ()=> abrirCaption(ctxCartel));
 
 document.fonts.ready.then(async ()=>{ drawTabs(); drawEditor(); await cargarIdentidad(); await cargarPlan(); });
 </script>

@@ -1087,3 +1087,10 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Bug: en títulos, el resaltado dorado (*...*) no se activaba cuando el par de asteriscos cruzaba un salto de línea (\n), porque el título se dividía por \n y cada línea se parseaba por separado con parseSpans (regex exige ambos * en la misma línea). En el secundario (1 línea) funcionaba.
 - Fix: nueva función parseSpansML(text) que arrastra el estado dorado a través de los \n y devuelve líneas de spans. Reemplazado en renderUgc (chips), renderCont (título) y el renderer de historia/portada (línea ~2217) en vera-studio.html.
 - Verificado: título "O comprás *tres fuentes\nde ingresos*" ahora dorado en ambas líneas (screenshot); sin errores de consola.
+
+## Caption IG/TikTok en Carrusel, Post y Cartel (2026-06)
+- Nueva ventana (modal compartido #capModal) que genera el TEXTO para publicar en Instagram y TikTok con muchos emojis + hashtags, para resolver la publicación en el mismo lugar.
+- Backend: POST /api/studio/caption (routes_studio.py) → VERA Brain devuelve {ig, tiktok, hashtags}. IG con gancho+valor+CTA (DM/WhatsApp), TikTok más corto/informal, 12-18 hashtags locales. No inventa datos.
+- Frontend: botón "📱 Texto para publicar (IG/TikTok)" en Carrusel (capBtnCont), Post (capBtnProp) y Cartel viral (capBtnCartel). El contexto se arma por modo (tema+placas+propiedad / campos del post / datos del cartel). Modal con textareas editables, copiar individual, "Copiar TODO (IG+hashtags)", "Generar otra versión". No requiere Código de acceso VERA (usa Emergent key backend).
+- Verificado: endpoint HTTP 200 con caption real (emojis+CTA+hashtags); modal abre, genera y copia OK (screenshot); sin errores de consola.
+- Producción: requiere REDEPLOY; herramienta suelta: /vera-studio.html.

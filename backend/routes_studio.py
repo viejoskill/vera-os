@@ -398,3 +398,42 @@ async def infografia(body: InfografiaBody):
         logger.exception("studio/infografia failed")
         raise HTTPException(502, "VERA no pudo generar la infografía ahora.") from exc
     return data
+
+
+class CaptionBody(BaseModel):
+    contexto: str = ""
+    images: list[str] = []
+
+
+@router.post("/caption")
+async def caption(body: CaptionBody):
+    """Genera el texto/caption para publicar en Instagram y TikTok (con emojis)."""
+    if not config.ai_configured():
+        raise HTTPException(503, "VERA Brain no está configurado.")
+    ctx = (body.contexto or "").strip()
+    imgs = body.images or None
+    if not ctx and not imgs:
+        raise HTTPException(422, "Falta el contexto para generar el texto.")
+    prompt = (
+        "TAREA (herramienta Studio, marca Varela Inmobiliaria, Costa del Este / Mar del Tuyú / "
+        "Partido de la Costa): redactá el TEXTO (caption) para publicar en redes sobre esto:\n"
+        f"{ctx}\n\n"
+        "Generá DOS versiones en español rioplatense, cálidas, humanas y vendedoras, con BASTANTES "
+        "emojis bien ubicados (que sumen, sin volverlo ilegible):\n"
+        "- ig: para Instagram. 1er renglón = GANCHO con emoji; luego 2 a 4 renglones cortos de valor "
+        "con emojis y saltos de línea reales; cerrá con un llamado a la acción claro (escribinos por "
+        "DM o WhatsApp para más info / coordinar visita).\n"
+        "- tiktok: más corta, dinámica, tono informal y directo, con emojis y un cierre con CTA.\n"
+        "- hashtags: 12 a 18 hashtags relevantes y variados (inmobiliaria, Costa del Este, Mar del "
+        "Tuyú, Partido de la Costa, inversión, casa/lote según el caso), separados por espacios, cada "
+        "uno empezando con #.\n\n"
+        "No inventes datos, precios ni características que no estén en el contexto. Ortografía y tildes "
+        "perfectas. Respondé SOLO JSON válido, sin markdown: "
+        "{\"ig\":\"...\",\"tiktok\":\"...\",\"hashtags\":\"...\"}"
+    )
+    try:
+        data = _parse_json(await _think(prompt, imgs))
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("studio/caption failed")
+        raise HTTPException(502, "VERA no pudo generar el texto ahora.") from exc
+    return data
