@@ -163,9 +163,13 @@
         <h2>1 &middot; Contenido</h2>
         <label>Propiedad de tu cartera <span style="opacity:.6;font-weight:400">(opcional &mdash; VERA arma el carrusel con sus datos reales)</span></label>
         <select id="propSel"><option value="">— Sin propiedad (tema libre) —</option></select>
-        <label style="margin-top:12px">Imagen de referencia <span style="opacity:.6;font-weight:400">(opcional &mdash; screenshot o foto para que VERA la analice)</span></label>
+        <label style="margin-top:12px">Imagen de referencia <span style="opacity:.6;font-weight:400">(opcional &mdash; VERA la analiza y puede usarla en las placas)</span></label>
         <input type="file" id="studioImg" accept="image/*" multiple>
         <div id="studioImgPrev" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
+        <div id="studioFotoRow" style="display:none;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap">
+          <label class="chk" style="margin:0"><input type="checkbox" id="usarFotos" checked> Usar mis fotos como fondo de las placas</label>
+          <button class="btn sec" id="aplicarFotos" type="button" style="margin:0;padding:6px 12px">Aplicar mis fotos</button>
+        </div>
         <label style="margin-top:12px">Tema del post o carrusel</label>
         <input type="text" id="tema" placeholder="Ej: costos reales al vender una propiedad">
         <div class="row3">
@@ -919,7 +923,10 @@ async function generarIdeas(){
       slides[i].sec = o.sec||"";
       slides[i].cta = o.cta||"";
       slides[i].contacto = (i===n-1);
+      slides[i]._fotoIA = (o.foto===undefined) ? undefined : !!o.foto;
+      slides[i]._estiloIA = o.estilo||"";
     });
+    if(studioImgs.length && $("usarFotos") && $("usarFotos").checked) aplicarFotos();
     st.textContent = "Ideas cargadas. Edit\u00e1 lo que quieras en cada placa."; st.className="status ok";
     drawTabs(); drawEditor(); render();
   }catch(e){ st.textContent = e.message; st.className="status err"; }
@@ -944,11 +951,31 @@ function renderStudioImgs(){
   const p=$("studioImgPrev"); if(!p) return;
   p.innerHTML=studioImgs.map((im,i)=>'<span style="position:relative;display:inline-block"><img src="'+im.url+'" style="width:54px;height:54px;object-fit:cover;border-radius:8px;border:1px solid #333"><button data-i="'+i+'" class="ipx" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:none;background:#000;color:#fff;cursor:pointer;line-height:1">\u00d7</button></span>').join('');
   p.querySelectorAll('.ipx').forEach(b=> b.addEventListener('click', ()=>{ studioImgs.splice(+b.dataset.i,1); renderStudioImgs(); }));
+  const row=$("studioFotoRow"); if(row) row.style.display = studioImgs.length ? "flex" : "none";
 }
 (function(){ const si=$("studioImg"); if(si){ si.addEventListener("change", async e=>{
-  for(const f of Array.from(e.target.files).slice(0,4-studioImgs.length)){ if(!f.type.startsWith('image/')) continue; try{ studioImgs.push(await resizeImgStudio(f)); }catch(_){} }
+  for(const f of Array.from(e.target.files).slice(0,4-studioImgs.length)){ if(!f.type.startsWith('image/')) continue; try{ const o=await resizeImgStudio(f); o.el=new Image(); o.el.src=o.url; studioImgs.push(o); }catch(_){} }
   renderStudioImgs(); si.value='';
 }); } })();
+
+/* Coloca las fotos subidas como fondo de las placas, según lo que decidió VERA (foto/estilo por placa). */
+function aplicarFotos(){
+  const els = studioImgs.map(im=>im.el).filter(Boolean);
+  if(!els.length) return;
+  let k=0;
+  slides.forEach((s,i)=>{
+    if(s.contacto) return;
+    const est = s._estiloIA || (i===0 ? "ugc" : "img");
+    const usa = (s._fotoIA===undefined) ? true : !!s._fotoIA;
+    if(!usa || est==="flat"){ s.estilo="estudio"; s.bgType="flat"; s.bgImg=null; return; }
+    s.bgImg = els[k % els.length]; k++;
+    if(est==="ugc"){ s.estilo="ugc"; } else { s.estilo="estudio"; s.bgType="img"; }
+  });
+  drawTabs(); drawEditor(); render();
+}
+function quitarFotos(){ slides.forEach(s=>{ if(!s.contacto){ s.estilo="estudio"; s.bgType="flat"; s.bgImg=null; } }); drawTabs(); drawEditor(); render(); }
+if($("aplicarFotos")) $("aplicarFotos").addEventListener("click", aplicarFotos);
+if($("usarFotos")) $("usarFotos").addEventListener("change", ()=>{ $("usarFotos").checked ? aplicarFotos() : quitarFotos(); });
 async function cargarPropsStudio(){
   const sel = $("propSel"); if(!sel) return;
   try{

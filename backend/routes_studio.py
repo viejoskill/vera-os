@@ -238,12 +238,31 @@ async def ideas(body: IdeasBody):
         if imgs
         else ""
     )
+    n_fotos = len(imgs) if imgs else 0
+    foto_line = (
+        f"IMPORTANTE: tengo {n_fotos} FOTO(S) reales para usar como fondo de las placas. Además del "
+        "copy, decidí en qué placas conviene mostrar una foto y con qué estilo. Agregá a CADA slide "
+        "dos campos: \"foto\" (true/false) y \"estilo\": "
+        "\"ugc\" = foto a pantalla completa con el texto en chips (ideal para el GANCHO de la placa 1 "
+        "y para el REMATE final); \"img\" = foto de fondo con degradé y texto editorial (ideal para "
+        "placas de contenido); \"flat\" = sin foto, fondo de color (para placas de puro dato o texto). "
+        "Aprovechá las fotos (no las desperdicies): la placa 1 casi siempre con foto potente. Si una "
+        "placa no lleva foto, poné \"foto\":false y \"estilo\":\"flat\".\n"
+        if imgs
+        else ""
+    )
+    schema = (
+        '{"slides":[{"titulo":"...","sec":"...","cta":"...","foto":true,"estilo":"ugc"}]}'
+        if imgs
+        else '{"slides":[{"titulo":"...","sec":"...","cta":"..."}]}'
+    )
     prompt = (
         "TAREA (herramienta Studio, salida para placas): armá un carrusel para Instagram.\n"
         f"Tono a usar: {tono}\n"
         f"{tema_line}"
         f"{prop_ctx}"
         f"{img_line}"
+        f"{foto_line}"
         f"Cantidad de placas: {n}.\n\n"
         "Estructura: placa 1 = GANCHO fuerte que frena el scroll; placas intermedias = "
         "CONTENIDO concreto y útil; última placa = REMATE + llamado a la acción.\n"
@@ -257,7 +276,7 @@ async def ideas(body: IdeasBody):
         "Si te di una propiedad, el carrusel es SOBRE ella: usá sus datos reales (precio, "
         "ambientes, zona, características) y no inventes atributos que no figuran.\n\n"
         f"Respondé SOLO JSON válido, sin markdown ni texto extra: "
-        f'{{"slides":[{{"titulo":"...","sec":"...","cta":"..."}}]}} con exactamente {n} slides.'
+        f"{schema} con exactamente {n} slides."
     )
     try:
         data = _parse_json(await _think(prompt, imgs))

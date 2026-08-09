@@ -1075,3 +1075,10 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Backend: nuevo endpoint POST /api/studio/infografia (routes_studio.py) usa _think (brain + visión) + _parse_json. No requiere el Código de acceso VERA (usa Emergent LLM key del backend); sí requiere ai_configured.
 - Verificado: backend HTTP 200 con JSON válido; los 4 renderizadores dibujan OK (piramide con textos envueltos sin cortes, dato con nº gigante + barras, pasos con círculos numerados, comparacion 2 columnas); generación real end-to-end desde el botón OK; sin errores de consola.
 - Producción: requiere REDEPLOY; herramienta suelta: descargar /vera-studio.html.
+
+## Carrusel: usar fotos de referencia en las placas (2026-06)
+- Antes: las fotos de referencia solo se mandaban a VERA para leer contexto (copy); NO se colocaban en las placas. 
+- Ahora: VERA decide por placa (endpoint /api/studio/ideas devuelve foto:bool + estilo:"ugc"|"img"|"flat" por slide cuando hay imágenes). El frontend asigna las fotos subidas como fondo cicleando: ugc=foto full + chips, img=foto + degradé editorial, flat=texto. La placa de contacto (última) queda como texto.
+- UI: toggle "Usar mis fotos como fondo de las placas" (ON al subir fotos) + botón "Aplicar mis fotos" (reasigna sin regenerar). studioImgs ahora guarda .el (Image) para dibujar. aplicarFotos()/quitarFotos() en vera-studio.html.
+- Verificado: backend HTTP 200 devolviendo mezcla inteligente (ugc/flat/img/ugc); render de placa con foto de fondo OK (screenshot); sin errores de consola.
+- Producción: requiere REDEPLOY; herramienta suelta: /vera-studio.html.
