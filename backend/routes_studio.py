@@ -437,3 +437,43 @@ async def caption(body: CaptionBody):
         logger.exception("studio/caption failed")
         raise HTTPException(502, "VERA no pudo generar el texto ahora.") from exc
     return data
+
+
+class PortadaBody(BaseModel):
+    brief: str = ""
+    images: list[str] = []
+
+
+@router.post("/portada")
+async def portada(body: PortadaBody):
+    """Textos estructurados para una PORTADA/HISTORIA gancho (estilo poster viral)."""
+    if not config.ai_configured():
+        raise HTTPException(503, "VERA Brain no está configurado.")
+    brief = (body.brief or "").strip()
+    imgs = body.images or None
+    if not brief and not imgs:
+        raise HTTPException(422, "Escribí un brief o subí una foto de referencia.")
+    prompt = (
+        "TAREA (herramienta Studio, marca Varela Inmobiliaria, Costa del Este): a partir del BRIEF, "
+        "generá los TEXTOS de una PORTADA/HISTORIA gancho estilo poster viral (potente, con impacto). "
+        "Cada vez debe salir distinta pero siempre con la misma estética de marca.\n"
+        f"BRIEF: {brief or '(deducilo de la imagen)'}\n\n"
+        "Devolvé este JSON (todo en MAYÚSCULAS salvo la bajada; español rioplatense; sin inventar datos):\n"
+        "{\n"
+        '  "tag_izq": "etiqueta corta arriba-izq (ej: CONVOCATORIA, EXCLUSIVO, ATENCIÓN)",\n'
+        '  "tag_der": "etiqueta corta arriba-der (ej: NUEVA SERIE, OPORTUNIDAD)",\n'
+        '  "titulo": "titular GRANDE de 3 a 6 palabras con \\n para cortar en 2-4 líneas; marcá con '
+        "*asteriscos* las 1-3 palabras clave que van en amarillo (ej: *BUSCO*\\nUNA CASA\\nEN COSTA\\nDEL ESTE)\",\n"
+        '  "bajada": "1 frase corta de apoyo (ej: Para intentar venderla en 90 días usando solo TikTok)",\n'
+        '  "marca": "marca/− lema de la barra inferior, corto (ej: DESAFÍO TIKTOK)",\n'
+        '  "datos": [{"icono":"📅","texto":"90 DÍAS"},{"icono":"🏠","texto":"1 CASA"},{"icono":"🎯","texto":"1 OBJETIVO"}],\n'
+        '  "episodio": "texto de la pastilla inferior (ej: EPISODIO 1) o \\"\\" si no aplica"\n'
+        "}\n"
+        "0 a 3 datos. Respondé SOLO JSON válido, sin markdown."
+    )
+    try:
+        data = _parse_json(await _think(prompt, imgs))
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("studio/portada failed")
+        raise HTTPException(502, "VERA no pudo generar la portada ahora.") from exc
+    return data
