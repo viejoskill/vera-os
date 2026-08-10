@@ -381,6 +381,11 @@
       </div>
 
       <div class="panel" id="panelPortada" style="display:none">
+        <div class="tabs" id="crSub" style="margin-top:0">
+          <button type="button" class="tab sel" data-crsub="clasica">Cl&aacute;sica</button>
+          <button type="button" class="tab" data-crsub="gancho">Gancho IA</button>
+        </div>
+        <div id="subPortadaClasica">
         <h2>1 &middot; Portada / Invitaci&oacute;n <span class="opt">(teaser para Historia o cierre de Feed)</span></h2>
         <label>T&iacute;tulo <span class="opt">(*palabra* = dorado)</span></label>
         <input type="text" id="crTitulo" placeholder="Ej: NUEVO *INGRESO*">
@@ -413,6 +418,37 @@
         <label class="chk" style="margin-top:10px"><input type="checkbox" id="crContacto"> Mostrar datos de la inmobiliaria</label>
         <div class="status" id="crIaStatus"></div>
         <div class="hint">Sin numeraci&oacute;n de carrusel &mdash; pensada como pieza suelta: teaser de Historia con link al posteo, o cierre de un Feed.</div>
+        </div>
+
+        <div id="subPortadaGancho" style="display:none">
+          <h2>1 &middot; Portada gancho IA <span class="opt">(VERA arma el p&oacute;ster viral)</span></h2>
+          <label class="btn sec filelbl">Subir foto (vos o la propiedad)<input type="file" id="pgFoto" accept="image/*"></label>
+          <span class="hint" id="pgFotoState">Sin foto cargada</span>
+          <label style="margin-top:10px">Brief <span class="opt">(&iquest;de qu&eacute; se trata? tema, objetivo, tono)</span></label>
+          <textarea id="pgBrief" rows="3" placeholder="Ej: Reto de vender una casa en Costa del Este en 90 d&iacute;as usando solo TikTok. Serie de episodios."></textarea>
+          <button class="btn full" id="pgGen" type="button" style="margin-top:8px">Generar portada con VERA</button>
+          <div class="status" id="pgStatus"></div>
+
+          <div id="pgFields" style="display:none">
+            <label style="margin-top:12px">Etiquetas <span class="opt">(izquierda &middot; derecha)</span></label>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="pgTagIzq" placeholder="CONVOCATORIA">
+              <input type="text" id="pgTagDer" placeholder="NUEVA SERIE">
+            </div>
+            <label style="margin-top:10px">Titular <span class="opt">(*palabra* = dorado &middot; Enter = salto de l&iacute;nea)</span></label>
+            <textarea id="pgTitulo" rows="4" placeholder="*BUSCO*&#10;UNA CASA&#10;EN COSTA&#10;DEL ESTE"></textarea>
+            <label style="margin-top:10px">Bajada</label>
+            <input type="text" id="pgBajada" placeholder="Para venderla en 90 d&iacute;as usando solo TikTok">
+            <label class="chk" style="margin-top:10px"><input type="checkbox" id="pgVerDatos" checked> Mostrar datos (p&iacute;ldoras con &iacute;cono)</label>
+            <div id="pgDatosBox" style="margin-top:6px"></div>
+            <button class="btn sec mini" id="pgAddDato" type="button" style="margin-top:6px">+ Agregar dato</button>
+            <label style="margin-top:10px">Barra inferior <span class="opt">(marca / lema)</span></label>
+            <input type="text" id="pgMarca" placeholder="DESAF&Iacute;O TIKTOK">
+            <label style="margin-top:10px">Pastilla episodio <span class="opt">(opcional)</span></label>
+            <input type="text" id="pgEpisodio" placeholder="EPISODIO 1">
+          </div>
+          <div class="hint">VERA propone; vos edit&aacute;s. Cada generaci&oacute;n var&iacute;a el copy manteniendo la est&eacute;tica de marca. Descarg&aacute; con el bot&oacute;n de siempre.</div>
+        </div>
       </div>
 
       <div class="panel" id="panelCartel" style="display:none">
@@ -1600,7 +1636,7 @@ function render(){
   if(cv.height !== H){ cv.height = H; }
   if(mode==="prop"){ renderProp(P); }
   else if(mode==="vid"){ renderVidPreview(P); }
-  else if(mode==="portada"){ renderPortadaModulo(P); }
+  else if(mode==="portada"){ if(portadaSub==="gancho"){ renderPortadaGancho(P); } else { renderPortadaModulo(P); } }
   else { renderCont(P); }
 }
 
@@ -3030,6 +3066,245 @@ function renderPortadaModulo(P){
   const mes = fecha.getFullYear()+"-"+String(fecha.getMonth()+1).padStart(2,"0");
   $("dl1").download = mes+"_portada_"+slugTexto(portada.titulo||"invitacion")+"_"+(fmt==="story"?"historia":"feed")+".jpg";
 }
+
+/* ---------- MODULO: PORTADA GANCHO IA ---------- */
+let portadaSub = "clasica";
+let portadaG = { img:null, imgB64:null, tagIzq:"", tagDer:"", titulo:"", bajada:"", marca:"", episodio:"", datos:[], verDatos:true };
+
+$("crSub").querySelectorAll("[data-crsub]").forEach(b=>{
+  b.onclick=()=>{
+    portadaSub=b.dataset.crsub;
+    $("crSub").querySelectorAll("[data-crsub]").forEach(x=>x.classList.toggle("sel",x===b));
+    $("subPortadaClasica").style.display = portadaSub==="clasica"?"":"none";
+    $("subPortadaGancho").style.display = portadaSub==="gancho"?"":"none";
+    render();
+  };
+});
+
+$("pgFoto").addEventListener("change", async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    const o=await resizeImgStudio(f);
+    const img=new Image();
+    await new Promise(r=>{ img.onload=r; img.src=o.url; });
+    portadaG.img=img; portadaG.imgB64=o.b64;
+    $("pgFotoState").textContent="Foto cargada";
+    render();
+  }catch(_){ $("pgFotoState").textContent="No se pudo leer la imagen"; }
+});
+
+function renderDatosEditor(){
+  const box=$("pgDatosBox");
+  box.innerHTML = portadaG.datos.map((d,i)=>
+    '<div style="display:flex;gap:8px;margin-top:6px;align-items:center">'
+    +'<input type="text" data-pgd="icono" data-i="'+i+'" value="'+(d.icono||"").replace(/"/g,"&quot;")+'" placeholder="\uD83D\uDCC5" style="width:64px;text-align:center">'
+    +'<input type="text" data-pgd="texto" data-i="'+i+'" value="'+(d.texto||"").replace(/"/g,"&quot;")+'" placeholder="90 D\u00cdAS" style="flex:1">'
+    +'<button type="button" class="btn sec mini" data-pgdel="'+i+'">\u00d7</button>'
+    +'</div>'
+  ).join("");
+  box.querySelectorAll("[data-pgd]").forEach(inp=>{
+    inp.addEventListener("input", e=>{
+      const i=+e.target.dataset.i, k=e.target.dataset.pgd;
+      portadaG.datos[i][k]=e.target.value; render();
+    });
+  });
+  box.querySelectorAll("[data-pgdel]").forEach(btn=>{
+    btn.onclick=()=>{ portadaG.datos.splice(+btn.dataset.pgdel,1); renderDatosEditor(); render(); };
+  });
+}
+$("pgAddDato").addEventListener("click", ()=>{ if(portadaG.datos.length>=6) return; portadaG.datos.push({icono:"",texto:""}); renderDatosEditor(); render(); });
+
+function syncGanchoFields(){
+  $("pgTagIzq").value=portadaG.tagIzq;
+  $("pgTagDer").value=portadaG.tagDer;
+  $("pgTitulo").value=portadaG.titulo;
+  $("pgBajada").value=portadaG.bajada;
+  $("pgMarca").value=portadaG.marca;
+  $("pgEpisodio").value=portadaG.episodio;
+  $("pgVerDatos").checked=portadaG.verDatos;
+  renderDatosEditor();
+}
+[["pgTagIzq","tagIzq"],["pgTagDer","tagDer"],["pgTitulo","titulo"],["pgBajada","bajada"],["pgMarca","marca"],["pgEpisodio","episodio"]].forEach(([id,k])=>{
+  $(id).addEventListener("input", e=>{ portadaG[k]=e.target.value; render(); });
+});
+$("pgVerDatos").addEventListener("change", e=>{ portadaG.verDatos=e.target.checked; render(); });
+
+$("pgGen").addEventListener("click", async ()=>{
+  const st=$("pgStatus");
+  const brief=$("pgBrief").value.trim();
+  if(!brief && !portadaG.imgB64){ st.textContent="Escrib\u00ed un brief o sub\u00ed una foto de referencia."; st.className="status err"; return; }
+  st.textContent="VERA est\u00e1 armando la portada... 10-20 seg."; st.className="status";
+  $("pgGen").disabled=true;
+  try{
+    const r=await fetch("/api/studio/portada",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({brief, images: portadaG.imgB64?[portadaG.imgB64]:[]})});
+    const data=await r.json();
+    if(!r.ok) throw new Error(data && data.detail ? data.detail : ("Error "+r.status));
+    portadaG.tagIzq=data.tag_izq||"";
+    portadaG.tagDer=data.tag_der||"";
+    portadaG.titulo=(data.titulo||"").replace(/\\n/g,"\n");
+    portadaG.bajada=data.bajada||"";
+    portadaG.marca=data.marca||"";
+    portadaG.episodio=data.episodio||"";
+    portadaG.datos=Array.isArray(data.datos)?data.datos.map(d=>({icono:d.icono||"",texto:d.texto||""})):[];
+    portadaG.verDatos=true;
+    syncGanchoFields();
+    $("pgFields").style.display="";
+    st.textContent="Portada lista. Edit\u00e1 lo que quieras."; st.className="status ok";
+    render();
+  }catch(e){ st.textContent=e.message; st.className="status err"; }
+  finally{ $("pgGen").disabled=false; }
+});
+
+function drawTagPillG(text, align, y){
+  text=(text||"").trim(); if(!text) return;
+  ctx.font="700 26px Inter";
+  const t=text.toUpperCase();
+  const tw=ctx.measureText(t).width, pw=tw+44, ph=58;
+  const x = align==="izq" ? PAD : W-PAD-pw;
+  roundRect(x,y,pw,ph,29);
+  ctx.fillStyle="rgba(15,15,15,.55)"; ctx.fill();
+  ctx.strokeStyle=rgba(ORO,.9); ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle=ORO; ctx.textBaseline="middle";
+  ctx.fillText(t, x+22, y+ph/2+1); ctx.textBaseline="top";
+}
+
+function renderPortadaGancho(P){
+  const g = portadaG;
+  const isStory = fmt==="story";
+  ctx.clearRect(0,0,W,H);
+  // fondo
+  if(g.img){ drawImageCover(g.img,0,0,W,H); }
+  else {
+    const pal = PALETA[0];
+    const dg = ctx.createLinearGradient(0,0,W*.6,H);
+    dg.addColorStop(0,pal.a); dg.addColorStop(1,pal.b);
+    ctx.fillStyle=dg; ctx.fillRect(0,0,W,H);
+    const rg = ctx.createRadialGradient(W*.8,H*.22,60,W*.8,H*.22,900);
+    rg.addColorStop(0, rgba(ORO,.06)); rg.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+  }
+  // scrims para legibilidad
+  let gt = ctx.createLinearGradient(0,0,0,H*.40);
+  gt.addColorStop(0,"rgba(8,9,11,.85)"); gt.addColorStop(1,"rgba(8,9,11,0)");
+  ctx.fillStyle=gt; ctx.fillRect(0,0,W,H*.40);
+  let gb = ctx.createLinearGradient(0,H*.36,0,H);
+  gb.addColorStop(0,"rgba(8,9,11,0)"); gb.addColorStop(.55,"rgba(8,9,11,.6)"); gb.addColorStop(1,"rgba(8,9,11,.95)");
+  ctx.fillStyle=gb; ctx.fillRect(0,H*.36,W,H*.64);
+  const vg = ctx.createRadialGradient(W/2,H*.5,H*.28,W/2,H*.5,H*.85);
+  vg.addColorStop(0,"rgba(0,0,0,0)"); vg.addColorStop(1,"rgba(0,0,0,.42)");
+  ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+
+  ctx.textBaseline="top";
+  drawDots(W-30-3*17, isStory?232:30, 4, 7);
+
+  // Tags arriba
+  const tagY = isStory ? 228 : 64;
+  drawTagPillG(g.tagIzq, "izq", tagY);
+  drawTagPillG(g.tagDer, "der", tagY);
+
+  // ----- Barra inferior: logo/marca + episodio -----
+  const barY = H - (isStory ? 250 : 150);
+  ctx.strokeStyle = rgba(ORO,.55); ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(PAD, barY); ctx.lineTo(W-PAD, barY); ctx.stroke();
+  const brandY = barY + 22;
+  let bx = PAD;
+  if(logoImg){
+    const lh = 44, lw = lh*logoImg.width/logoImg.height;
+    ctx.drawImage(logoImg, PAD, brandY, lw, lh);
+    bx = PAD + lw + 20;
+  }
+  const marca = (g.marca||"").trim().toUpperCase();
+  const ep = (g.episodio||"").trim().toUpperCase();
+  // episodio pill (derecha) primero para medir su ancho y truncar la marca
+  let epW = 0;
+  if(ep){
+    ctx.font="700 24px Inter";
+    const tw=ctx.measureText(ep).width, pw=tw+40, ph=52;
+    const x=W-PAD-pw, y=brandY-2;
+    roundRect(x,y,pw,ph,26); ctx.fillStyle=ORO; ctx.fill();
+    ctx.fillStyle="#141414"; ctx.textBaseline="middle";
+    ctx.fillText(ep, x+20, y+ph/2+1); ctx.textBaseline="top";
+    epW = pw + 30;
+  }
+  if(marca){
+    ctx.font="700 26px Inter"; ctx.fillStyle=BLANCO; ctx.textBaseline="middle";
+    let mt=marca; const maxMW = W-PAD-bx-epW;
+    if(maxMW>60){
+      while(ctx.measureText(mt).width>maxMW && mt.length>4) mt=mt.slice(0,-2);
+      if(mt!==marca) mt=mt.trim()+"\u2026";
+      ctx.fillText(mt, bx, brandY+22);
+    }
+    ctx.textBaseline="top";
+  }
+
+  // ----- Datos (pills) encima de la barra -----
+  let datosTop = barY - 30;
+  if(g.verDatos && g.datos && g.datos.length){
+    ctx.font="700 26px Inter";
+    const ph=60, gap=16, maxRow=W-2*PAD;
+    const pills = g.datos.filter(d=>(d.texto||"").trim() || (d.icono||"").trim()).map(d=>{
+      const ic=(d.icono||"").trim(), tx=(d.texto||"").trim().toUpperCase();
+      const label=(ic?ic+"  ":"")+tx;
+      return {label, w: ctx.measureText(label).width+40};
+    });
+    if(pills.length){
+      const rows=[[]]; let rw=0;
+      pills.forEach(p=>{ if(rw+p.w+gap>maxRow && rows[rows.length-1].length){ rows.push([]); rw=0; } rows[rows.length-1].push(p); rw+=p.w+gap; });
+      const totalH = rows.length*(ph+gap)-gap;
+      let py = barY - 24 - totalH;
+      datosTop = py;
+      rows.forEach(row=>{
+        let px=PAD;
+        row.forEach(p=>{
+          roundRect(px,py,p.w,ph,30);
+          ctx.fillStyle="rgba(20,20,20,.5)"; ctx.fill();
+          ctx.strokeStyle=rgba(ORO,.5); ctx.lineWidth=1.5; ctx.stroke();
+          ctx.fillStyle=BLANCO; ctx.textBaseline="middle"; ctx.font="700 26px Inter";
+          ctx.fillText(p.label, px+20, py+ph/2+1); ctx.textBaseline="top";
+          px+=p.w+gap;
+        });
+        py+=ph+gap;
+      });
+    }
+  }
+
+  // ----- Titular + bajada (anclado sobre datos/barra) -----
+  const titSize = isStory ? 104 : 92;
+  const titFont = "700 "+titSize+"px Oswald";
+  const titLH = Math.round(titSize*1.02);
+  const titLines = parseSpansML((g.titulo||"").toUpperCase());
+  const bajada = (g.bajada||"").trim();
+  const bajFont = "400 "+(isStory?40:36)+"px Inter";
+  const bajLines = bajada ? wrapSpans(parseSpans(bajada), bajFont, W-2*PAD) : [];
+  const bajLH = isStory?52:46;
+  const hasTit = (g.titulo||"").trim().length>0;
+  const blockH = (hasTit?titLines.length*titLH:0) + (bajLines.length? 24 + bajLines.length*bajLH : 0);
+  let y = datosTop - 40 - blockH;
+  const minY = isStory ? 520 : 300;
+  if(y < minY) y = minY;
+
+  if(hasTit){
+    titLines.forEach(line=>{
+      ctx.font=titFont; let x=PAD;
+      line.forEach(tok=>{ ctx.fillStyle= tok.g?ORO:BLANCO; ctx.fillText(tok.t,x,y); x+=ctx.measureText(tok.t).width; });
+      y+=titLH;
+    });
+  }
+  if(bajLines.length){
+    y+=24;
+    bajLines.forEach(line=>{
+      ctx.font=bajFont; let x=PAD;
+      line.forEach(tok=>{ ctx.fillStyle= tok.g?ORO:"#ddd9cf"; ctx.fillText(tok.t,x,y); x+=ctx.measureText(tok.t).width; });
+      y+=bajLH;
+    });
+  }
+
+  // descarga
+  $("dl1").href = cv.toDataURL("image/jpeg", .92);
+  const fecha=new Date(), mes=fecha.getFullYear()+"-"+String(fecha.getMonth()+1).padStart(2,"0");
+  $("dl1").download = mes+"_portada_gancho_"+slugTexto((g.titulo||"gancho").replace(/[\n*]/g," "))+"_"+(fmt==="story"?"historia":"feed")+".jpg";
+}
+
 
 /* ---------- CARTEL VIRAL IA ---------- */
 const cvCartel = $("cvCartel"), cxC = cvCartel.getContext("2d");

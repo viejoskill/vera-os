@@ -1094,3 +1094,11 @@ Ajustes de generación en `/app/backend/documents/pdf.py` (solo render, sin re-s
 - Frontend: botón "📱 Texto para publicar (IG/TikTok)" en Carrusel (capBtnCont), Post (capBtnProp) y Cartel viral (capBtnCartel). El contexto se arma por modo (tema+placas+propiedad / campos del post / datos del cartel). Modal con textareas editables, copiar individual, "Copiar TODO (IG+hashtags)", "Generar otra versión". No requiere Código de acceso VERA (usa Emergent key backend).
 - Verificado: endpoint HTTP 200 con caption real (emojis+CTA+hashtags); modal abre, genera y copia OK (screenshot); sin errores de consola.
 - Producción: requiere REDEPLOY; herramienta suelta: /vera-studio.html.
+
+## Implemented (Vera Studio — "Portada gancho IA" — 2026-06)
+Nuevo modo dentro del módulo **Portadas** de Vera Studio (`vera-studio.html`): genera pósters/portadas gancho estilo viral (9:16 Historia y 4:5 Feed) manteniendo la estética de marca. Verificado E2E (curl `/api/studio/portada` + screenshots Feed/Historia).
+- **UI**: sub-pestañas "Clásica" / "Gancho IA" en el panel Portadas (no rompe la portada clásica existente). El modo Gancho: subir foto (vos o la propiedad) + brief libre + botón "Generar portada con VERA".
+- **Backend** (`routes_studio.py` `POST /studio/portada`, ya existía): a partir del brief (+foto opcional) devuelve JSON estructurado `{tag_izq, tag_der, titulo (con *palabras* en dorado y \n), bajada, marca, datos[{icono,texto}], episodio}`. Cada generación varía el copy manteniendo la marca. No inventa datos.
+- **Editable**: todos los textos que propone VERA quedan en inputs editables (tags, titular, bajada, marca, episodio) + editor de datos (ícono/texto, agregar/quitar hasta 6) + toggle "Mostrar datos". VERA propone, el usuario decide.
+- **Render canvas** (`renderPortadaGancho`): foto full-bleed con scrims para legibilidad, tags con borde dorado en esquinas superiores, titular grande Oswald con palabras clave en amarillo `#F6E63A`, bajada, fila de píldoras de datos con ícono, barra inferior con logo Varela + marca/lema + pastilla de episodio dorada. Layout responsivo a Feed (1080×1350) y Historia (1080×1920). Descarga con el botón de siempre (`dl1`).
+- Archivos: `/app/frontend/public/vera-studio.html` (panel + JS + render), `/app/backend/routes_studio.py` (endpoint, preexistente).
