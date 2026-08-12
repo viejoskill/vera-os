@@ -13,9 +13,6 @@ const CALIDADES: [string, string][] = [['economica', 'Económica'], ['estandar',
 
 interface Group { title: string; hint?: string; step: number; fields: [string, string][]; }
 
-const constrFields = (): [string, string][] =>
-  ZONAS.flatMap(([zk, zl]) => CALIDADES.map(([ck, cl]) => [`precio_constr_${zk}_${ck}`, `${zl} · ${cl}`] as [string, string]));
-
 const GROUPS: Group[] = [
   {
     title: 'Coeficiente Varela y apertura', step: 0.01,
@@ -26,7 +23,11 @@ const GROUPS: Group[] = [
       ['rango_apertura', 'Apertura del rango (±)'],
     ],
   },
-  { title: 'Precio de construcción · USD por m² cubierto', step: 10, fields: constrFields() },
+  {
+    title: 'Precio de construcción · USD por m² cubierto', step: 10,
+    hint: 'El costo de construir por m² es igual en todas las zonas. Lo que cambia por ubicación es el precio del lote (más abajo).',
+    fields: CALIDADES.map(([ck, cl]) => [`precio_constr_${ck}`, cl] as [string, string]),
+  },
   {
     title: 'Precio de lote · USD por m²', step: 5,
     fields: ZONAS.map(([zk, zl]) => [`precio_lote_${zk}`, zl] as [string, string]),

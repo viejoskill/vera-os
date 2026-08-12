@@ -24,12 +24,7 @@ SEED: dict[str, float] = {
     "mult_est_excelente": 1.12, "mult_est_muybueno": 1.05, "mult_est_bueno": 1.0, "mult_est_reciclar": 0.78,
     "mult_serv_gas": 1.1, "mult_serv_cloacas": 1.05,
     "mult_vista_frente": 1.2, "mult_vista_lateral": 1.0, "mult_vista_contra": 0.85,
-    "precio_constr_costa_economica": 850, "precio_constr_costa_estandar": 1150, "precio_constr_costa_superior": 1325, "precio_constr_costa_premium": 1500,
-    "precio_constr_av2_economica": 520, "precio_constr_av2_estandar": 700, "precio_constr_av2_superior": 800, "precio_constr_av2_premium": 900,
-    "precio_constr_mar_economica": 1000, "precio_constr_mar_estandar": 1400, "precio_constr_mar_superior": 1600, "precio_constr_mar_premium": 1800,
-    "precio_constr_inter_economica": 500, "precio_constr_inter_estandar": 680, "precio_constr_inter_superior": 780, "precio_constr_inter_premium": 880,
-    "precio_constr_bosque_economica": 700, "precio_constr_bosque_estandar": 900, "precio_constr_bosque_superior": 1050, "precio_constr_bosque_premium": 1200,
-    "precio_constr_fondo_economica": 550, "precio_constr_fondo_estandar": 700, "precio_constr_fondo_superior": 825, "precio_constr_fondo_premium": 950,
+    "precio_constr_economica": 850, "precio_constr_estandar": 1150, "precio_constr_superior": 1325, "precio_constr_premium": 1500,
     "precio_depto_1amb": 2200, "precio_depto_2amb": 2000, "precio_depto_3amb": 1850, "precio_depto_4amb": 1700,
     "precio_lote_costa": 300, "precio_lote_av2": 205, "precio_lote_mar": 140,
     "precio_lote_inter": 160, "precio_lote_bosque": 85, "precio_lote_fondo": 60,
@@ -64,6 +59,7 @@ async def get_config() -> dict[str, float]:
 
 async def set_config(values: dict[str, float]) -> dict[str, float]:
     merged = {**(await get_config()), **{k: float(v) for k, v in values.items()}}
+    merged = {k: merged[k] for k in SEED}
     await _col().update_one({"_id": "varela"}, {"$set": {"values": merged}}, upsert=True)
     return merged
 
@@ -111,7 +107,7 @@ def tasar(inp: dict, cfg: dict) -> dict:
             breakdown.append({"paso": f"m² lote × precio lote {zsuf}", "valor": base})
         else:
             calidad = inp.get("calidad") or "estandar"
-            pconstr = v(f"precio_constr_{zsuf}_{calidad}")
+            pconstr = v(f"precio_constr_{calidad}")
             plote = v(f"precio_lote_{zsuf}")
             vconstr = cub * pconstr
             m2libre = max(0.0, lote - cub)
