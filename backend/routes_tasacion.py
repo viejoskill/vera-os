@@ -269,7 +269,7 @@ async def jpg(body: JpgBody):
         y += 48
 
     _ic_pin(d, MX, y + 2, 26, GOLD, 4)
-    _left(d, MX + 40, y, "Costa del Este · Mar del Tuyú", _font(28), INK_SOFT)
+    _left(d, MX + 40, y, "Costa del Este", _font(28), INK_SOFT)
     y += 52
 
     tipo = r["tipoNombre"].upper()
