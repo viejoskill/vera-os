@@ -9,7 +9,7 @@ const ZONAS: [string, string][] = [
   ['costa', 'Av. Costanera'], ['av2', 'Av. 2 y Camelias'], ['mar', 'Zona Mar'],
   ['inter', 'Av. Interbalnearia'], ['bosque', 'Zona Bosque'], ['fondo', 'Zona Fondo'],
 ];
-const CALIDADES: [string, string][] = [['economica', 'Económica'], ['estandar', 'Estándar'], ['premium', 'Premium']];
+const CALIDADES: [string, string][] = [['economica', 'Económica'], ['estandar', 'Estándar'], ['superior', 'Superior'], ['premium', 'Premium']];
 
 interface Group { title: string; hint?: string; step: number; fields: [string, string][]; }
 
@@ -48,7 +48,7 @@ const GROUPS: Group[] = [
   },
   {
     title: 'Estado de conservación · multiplicador', step: 0.01,
-    fields: [['mult_est_muybueno', 'Muy bueno'], ['mult_est_bueno', 'Bueno'], ['mult_est_reciclar', 'A reciclar']],
+    fields: [['mult_est_excelente', 'Excelente'], ['mult_est_muybueno', 'Muy bueno'], ['mult_est_bueno', 'Bueno'], ['mult_est_reciclar', 'A reciclar']],
   },
   {
     title: 'Servicios · multiplicador', step: 0.01,

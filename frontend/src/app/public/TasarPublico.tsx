@@ -155,9 +155,9 @@ export const TasarPublico = () => {
             {esCasa && (
               <div className="tasp__row2">
                 <Sel label="Calidad" value={f.calidad} onChange={(v) => set('calidad', v)} testid="tasp-calidad"
-                  options={[['economica', 'Económica'], ['estandar', 'Estándar'], ['premium', 'Premium']]} />
+                  options={[['economica', 'Económica'], ['estandar', 'Estándar'], ['superior', 'Superior'], ['premium', 'Premium']]} />
                 <Sel label="Estado" value={f.estado} onChange={(v) => set('estado', v)} testid="tasp-estado"
-                  options={[['muybueno', 'Muy bueno'], ['bueno', 'Bueno'], ['reciclar', 'A reciclar']]} />
+                  options={[['reciclar', 'A reciclar'], ['bueno', 'Bueno'], ['muybueno', 'Muy bueno'], ['excelente', 'Excelente']]} />
                 <Sel label="Antigüedad" value={f.antiguedad} onChange={(v) => set('antiguedad', v)} testid="tasp-antiguedad"
                   options={[['estrenar', 'A estrenar'], ['hasta10', 'Hasta 10 años'], ['diez25', '10 a 25'], ['mas25', 'Más de 25']]} />
               </div>

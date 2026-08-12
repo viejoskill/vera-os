@@ -21,15 +21,15 @@ SEED: dict[str, float] = {
     "add_pileta": 0.06, "add_quincho": 0.03,
     "coef_varela_min": 0.83, "coef_varela_max": 0.83,
     "mult_ant_estrenar": 1.12, "mult_ant_hasta10": 1.0, "mult_ant_10a25": 0.92, "mult_ant_mas25": 0.82,
-    "mult_est_muybueno": 1.05, "mult_est_bueno": 1.0, "mult_est_reciclar": 0.78,
+    "mult_est_excelente": 1.12, "mult_est_muybueno": 1.05, "mult_est_bueno": 1.0, "mult_est_reciclar": 0.78,
     "mult_serv_gas": 1.1, "mult_serv_cloacas": 1.05,
     "mult_vista_frente": 1.2, "mult_vista_lateral": 1.0, "mult_vista_contra": 0.85,
-    "precio_constr_costa_economica": 850, "precio_constr_costa_estandar": 1150, "precio_constr_costa_premium": 1500,
-    "precio_constr_av2_economica": 520, "precio_constr_av2_estandar": 700, "precio_constr_av2_premium": 900,
-    "precio_constr_mar_economica": 1000, "precio_constr_mar_estandar": 1400, "precio_constr_mar_premium": 1800,
-    "precio_constr_inter_economica": 500, "precio_constr_inter_estandar": 680, "precio_constr_inter_premium": 880,
-    "precio_constr_bosque_economica": 700, "precio_constr_bosque_estandar": 900, "precio_constr_bosque_premium": 1200,
-    "precio_constr_fondo_economica": 550, "precio_constr_fondo_estandar": 700, "precio_constr_fondo_premium": 950,
+    "precio_constr_costa_economica": 850, "precio_constr_costa_estandar": 1150, "precio_constr_costa_superior": 1325, "precio_constr_costa_premium": 1500,
+    "precio_constr_av2_economica": 520, "precio_constr_av2_estandar": 700, "precio_constr_av2_superior": 800, "precio_constr_av2_premium": 900,
+    "precio_constr_mar_economica": 1000, "precio_constr_mar_estandar": 1400, "precio_constr_mar_superior": 1600, "precio_constr_mar_premium": 1800,
+    "precio_constr_inter_economica": 500, "precio_constr_inter_estandar": 680, "precio_constr_inter_superior": 780, "precio_constr_inter_premium": 880,
+    "precio_constr_bosque_economica": 700, "precio_constr_bosque_estandar": 900, "precio_constr_bosque_superior": 1050, "precio_constr_bosque_premium": 1200,
+    "precio_constr_fondo_economica": 550, "precio_constr_fondo_estandar": 700, "precio_constr_fondo_superior": 825, "precio_constr_fondo_premium": 950,
     "precio_depto_1amb": 2200, "precio_depto_2amb": 2000, "precio_depto_3amb": 1850, "precio_depto_4amb": 1700,
     "precio_lote_costa": 300, "precio_lote_av2": 205, "precio_lote_mar": 140,
     "precio_lote_inter": 160, "precio_lote_bosque": 85, "precio_lote_fondo": 60,
@@ -122,7 +122,7 @@ def tasar(inp: dict, cfg: dict) -> dict:
             amap = {"estrenar": "mult_ant_estrenar", "hasta10": "mult_ant_hasta10",
                     "diez25": "mult_ant_10a25", "mas25": "mult_ant_mas25"}
             base *= v(amap.get(inp.get("antiguedad"), "mult_ant_hasta10"), 1)
-            emap = {"muybueno": "mult_est_muybueno", "bueno": "mult_est_bueno", "reciclar": "mult_est_reciclar"}
+            emap = {"excelente": "mult_est_excelente", "muybueno": "mult_est_muybueno", "bueno": "mult_est_bueno", "reciclar": "mult_est_reciclar"}
             base *= v(emap.get(inp.get("estado"), "mult_est_bueno"), 1)
         if inp.get("gas"):
             base *= v("mult_serv_gas", 1)
