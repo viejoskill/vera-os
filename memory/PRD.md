@@ -1102,3 +1102,14 @@ Nuevo modo dentro del módulo **Portadas** de Vera Studio (`vera-studio.html`): 
 - **Editable**: todos los textos que propone VERA quedan en inputs editables (tags, titular, bajada, marca, episodio) + editor de datos (ícono/texto, agregar/quitar hasta 6) + toggle "Mostrar datos". VERA propone, el usuario decide.
 - **Render canvas** (`renderPortadaGancho`): foto full-bleed con scrims para legibilidad, tags con borde dorado en esquinas superiores, titular grande Oswald con palabras clave en amarillo `#F6E63A`, bajada, fila de píldoras de datos con ícono, barra inferior con logo Varela + marca/lema + pastilla de episodio dorada. Layout responsivo a Feed (1080×1350) y Historia (1080×1920). Descarga con el botón de siempre (`dl1`).
 - Archivos: `/app/frontend/public/vera-studio.html` (panel + JS + render), `/app/backend/routes_studio.py` (endpoint, preexistente).
+
+## Implemented (Tasación — rediseño del reporte JPG — 2026-06)
+Se reemplazó por completo el diseño del reporte de tasación que genera `POST /api/tasacion/jpg` (`routes_tasacion.py`, render PIL 1080×1620). Verificado con inspección de imagen (casa completa + lote). El flujo del frontend (Tasador manual → "Generar JPG" → descarga/WhatsApp) no cambió.
+- Header: **logo Varela** arriba-izq + "REPORTE DE TASACIÓN" / ID REPORTE (VR-AAAA-MMDD-XXXX) / FECHA (con ícono calendario) a la derecha; divisor dorado.
+- PROPIEDAD: label + subrayado dorado + dirección grande (auto-fit) + **SOLICITANTE** (nombre · teléfono del propietario, debajo de la dirección — pedido del usuario) + pin "Costa del Este · Mar del Tuyú" + badge de tipo.
+- Caja protagonista: **"VALOR DE CIERRE REAL ESTIMADO"** (antes "VALOR RECOMENDADO VERA") con rango `cierreMin–cierreMax` + subtítulo.
+- Dos tarjetas: "REFERENCIA DE MERCADO" (rango de portales `pubMin–pubMax`, ícono barras) y "CONFIANZA IA" (**valor fijo 94% + pill verde ALTA**, ícono escudo).
+- Fila de specs con íconos line-art dibujados en PIL (home/warehouse/terreno/cama/baño), adapta según tipo (casa/depto/lote).
+- Nota explicativa con ícono sparkle. Pie: "POWERED BY Varela Propiedades / **Sebastián Varela · Asesor Inmobiliario · hace 20 años en Costa del Este**" (firma fija) + co-branding "VERA OS · Real Estate Intelligence" a la derecha. **Sin QR** (decisión del usuario).
+- Modelo `JpgBody` ahora acepta `telefono` y `email` (el frontend ya los enviaba).
+- Assets: usa `backend/assets/brand/varela-logo.png`.
