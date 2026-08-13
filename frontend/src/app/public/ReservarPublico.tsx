@@ -14,7 +14,7 @@ export const ReservarPublico = () => {
     <div className="rt-pub" data-testid="reservar-publico">
       <header className="rt-pub__hero">
         <img src="/varela-logo-brand.png" alt="Varela Propiedades" className="rt-pub__logo" />
-        <h1>Alquileres de verano en Costa del Este</h1>
+        <h1>Alquileres de <em>verano</em> en Costa del Este</h1>
         <p>Elegí tu propiedad, mirá la disponibilidad y reservá online. Coordinamos todo con vos.</p>
       </header>
 

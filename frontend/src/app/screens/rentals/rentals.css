@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400;1,700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
 /* ===================== Alquileres · interno (tema VERA) ===================== */
 .rt__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: var(--vera-space-lg, 20px); flex-wrap: wrap; }
 .rt__title { display: flex; align-items: center; gap: 9px; margin: 0 0 6px; }
@@ -187,3 +189,69 @@
   .rt-res__row { grid-template-columns: 1fr; gap: 6px; }
   .rt-book__panel { position: static; }
 }
+
+/* ============ Público · TEMA VARELA (idéntico a varelapropiedadescde.com.ar) ============ */
+.rt-pub {
+  --am: #D6CC6A; --am-light: #E8E07A;
+  --pbg: #1E1E20; --pbg2: #191919; --pcard: #272729;
+  --pborder: rgba(255,255,255,0.08); --pborder2: rgba(255,255,255,0.12);
+  --ptext: #FFFFFF; --ptext2: rgba(255,255,255,0.65); --ptext3: rgba(255,255,255,0.40);
+  background: var(--pbg); color: var(--ptext);
+  font-family: 'DM Sans', sans-serif; -webkit-font-smoothing: antialiased;
+}
+.rt-pub__topbar { padding: 20px 40px; border-bottom: 1px solid var(--pborder); background: rgba(14,14,16,0.85); backdrop-filter: blur(18px); }
+.rt-pub__topbar img { height: 46px; }
+.rt-pub__hero { text-align: center; padding: 74px 20px 40px; max-width: 760px; }
+.rt-pub__logo { height: 72px; margin-bottom: 26px; }
+.rt-pub__hero h1 { font-family: 'DM Sans', sans-serif; font-weight: 700; color: #fff; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.05; letter-spacing: -1.5px; margin-bottom: 18px; }
+.rt-pub__hero h1 em { font-family: 'Playfair Display', serif; color: var(--am); font-style: italic; }
+.rt-pub__hero p { color: var(--ptext2); font-size: 1.02rem; }
+.rt-pub__loading { text-align: center; color: var(--ptext3); padding: 60px; }
+.rt-pub__card { background: var(--pcard); border: 1px solid var(--pborder); border-radius: 18px; overflow: hidden; transition: transform .22s, border-color .22s, box-shadow .22s; }
+.rt-pub__card:hover { transform: translateY(-5px); border-color: rgba(214,204,106,0.4); box-shadow: 0 16px 48px rgba(0,0,0,0.5), 0 0 60px rgba(214,204,106,0.06); }
+.rt-pub__img { height: 210px; border-radius: 0; background-color: var(--pbg2); color: var(--ptext3); }
+.rt-pub__cbody { padding: 16px 18px 18px; }
+.rt-pub__cbody h3 { font-family: 'Playfair Display', serif; font-weight: 700; color: #fff; font-size: 1.2rem; margin-bottom: 6px; }
+.rt-pub__addr { color: var(--ptext3); }
+.rt-pub__specs { color: var(--ptext2); }
+.rt-pub__price { color: var(--am); font-weight: 700; }
+.rt-pub__price em { color: var(--ptext3); }
+.rt-pub__foot { color: var(--ptext3); border-top: 1px solid var(--pborder); font-family: 'DM Sans', sans-serif; }
+.rt-pub__back { color: var(--am); }
+
+.rt-detail__main { background-color: var(--pbg2); border-radius: 18px; }
+.rt-detail__thumbs button { border-radius: 10px; border: 2px solid transparent; }
+.rt-detail__thumbs button.sel { border-color: var(--am); }
+.rt-detail__info h1 { font-family: 'Playfair Display', serif; font-weight: 700; color: #fff; font-size: 2.1rem; letter-spacing: -.5px; }
+.rt-detail__addr { color: var(--ptext2); }
+.rt-detail__specs { border-top: 1px solid var(--pborder); border-bottom: 1px solid var(--pborder); }
+.rt-detail__desc { color: var(--ptext2); }
+.rt-detail__amen li { color: var(--ptext2); }
+.rt-detail__amen li svg { color: var(--am); stroke: var(--am); }
+
+.rt-book__cal h3 { font-family: 'Playfair Display', serif; font-weight: 700; color: #fff; }
+.rt-book__cal .rt-cal__cell { background: var(--pcard); color: #fff; }
+.rt-book__cal .rt-cal__cell:not(:disabled):hover { background: var(--pbg2); }
+.rt-book__cal .rt-cal__cell--range { background: rgba(214,204,106,0.22); }
+.rt-book__cal .rt-cal__cell--edge { background: var(--am); color: #1E1E20; }
+.rt-book__cal .rt-cal__cell--blocked { background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.06) 4px, rgba(255,255,255,0.06) 5px); color: var(--ptext3); }
+.rt-book__cal .rt-cal__cell--past { color: rgba(255,255,255,0.18); }
+.rt-book__cal .rt-cal__mtitle, .rt-book__cal .rt-cal__wd span { color: var(--ptext2); }
+.rt-book__cal .rt-cal__nav button { background: var(--pcard); border-color: var(--pborder2); color: #fff; }
+.rt-book__panel { background: var(--pcard); border: 1px solid var(--pborder); box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
+.rt-book__from { color: #fff; }
+.rt-book__from em { color: var(--ptext3); }
+.rt-book__hint { color: var(--ptext2); }
+.rt-book__quote { border: 1px solid var(--pborder); }
+.rt-book__line { color: var(--ptext2); }
+.rt-book__line--disc { color: var(--am-light); }
+.rt-book__total { border-top: 1px solid var(--pborder); color: #fff; }
+.rt-book__form input, .rt-book__form textarea { background: var(--pbg2); border: 1px solid var(--pborder2); color: #fff; }
+.rt-book__form input::placeholder, .rt-book__form textarea::placeholder { color: var(--ptext3); }
+.rt-book__error { color: #e88; }
+.rt-book__cta { background: var(--am); color: #1E1E20; }
+.rt-book__cta:hover { background: var(--am-light); box-shadow: 0 10px 30px rgba(214,204,106,0.25); }
+.rt-book__note { color: var(--ptext3); }
+.rt-ok h2 { font-family: 'Playfair Display', serif; color: #fff; }
+.rt-ok p { color: var(--ptext2); }
+.rt-ok svg { color: var(--am); }
