@@ -28,6 +28,7 @@ export const ReservarPublico = () => {
               <Link to={`/reservar/${p.slug}`} className="rt-pub__card" key={p.id} data-testid={`rt-pub-card-${p.slug}`}>
                 <div className="rt-pub__img" style={cover ? { backgroundImage: `url(${cover.url})` } : undefined}>{!cover && <Palmtree size={28} />}</div>
                 <div className="rt-pub__cbody">
+                  {p.codigo && <span className="rt-pub__code">{p.codigo}</span>}
                   <h3>{p.titulo}</h3>
                   <p className="rt-pub__addr"><MapPin size={13} /> {p.localidad}</p>
                   <div className="rt-pub__specs"><span><Users size={14} /> {p.capacidad}</span><span><BedDouble size={14} /> {p.dormitorios}</span><span><Bath size={14} /> {p.banos}</span></div>

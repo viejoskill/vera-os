@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar, TopBar, type SidebarItem } from '@vera/ui';
 import { appConfig, workspaceConfig } from '@vera/config';
@@ -13,13 +13,21 @@ export const AppLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { displayName } = useAuthUser();
-  const { approval } = useAuth();
+  const { approval, approvalReady } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Empleados (aprobados, no admin): acceso restringido solo a Alquileres.
+  const isEmployee = approvalReady && approval && !approval.isAdmin;
+  useEffect(() => {
+    if (isEmployee && !location.pathname.startsWith('/alquileres')) {
+      navigate('/alquileres', { replace: true });
+    }
+  }, [isEmployee, location.pathname, navigate]);
 
   const active = navRoutes.find((r) => location.pathname.startsWith(r.path)) ?? navRoutes[1];
 
   const items: SidebarItem[] = navRoutes
-    .filter((r) => r.id !== 'equipo' || approval?.isAdmin)
+    .filter((r) => (approval?.isAdmin ? true : r.id === 'alquileres'))
     .map((r) => ({
       id: r.id,
       label: r.label,

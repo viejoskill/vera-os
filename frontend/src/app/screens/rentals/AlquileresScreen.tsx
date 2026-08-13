@@ -22,6 +22,7 @@ export const AlquileresScreen = () => {
   const [salePropsList, setSalePropsList] = useState<SaleProperty[] | null>(null);
   const [saleQuery, setSaleQuery] = useState('');
   const [importing, setImporting] = useState('');
+  const [q, setQ] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -79,7 +80,12 @@ export const AlquileresScreen = () => {
 
       <div className="rt__tabs">
         <button type="button" className={tab === 'props' ? 'sel' : ''} onClick={() => setTab('props')} data-testid="rt-tab-props">Propiedades ({props.length})</button>
-        <button type="button" className={tab === 'res' ? 'sel' : ''} onClick={() => setTab('res')} data-testid="rt-tab-res">Reservas</button>
+        <button type="button" className={tab === 'res' ? 'sel' : ''} onClick={() => setTab('res')} data-testid="rt-tab-res">
+          Reservas
+          {res.filter((r) => r.estado === 'prereserva').length > 0 && (
+            <span className="rt-tabbadge" data-testid="rt-pending-badge">{res.filter((r) => r.estado === 'prereserva').length}</span>
+          )}
+        </button>
       </div>
 
       {loading ? <p className="rt__loading">Cargando…</p> : tab === 'props' ? (
@@ -90,8 +96,17 @@ export const AlquileresScreen = () => {
             <Button variant="primary" size="md" onClick={() => nav('/alquileres/nueva')}><Plus size={16} /> Nueva propiedad</Button>
           </div>
         ) : (
-          <div className="rt__grid" data-testid="rt-props-grid">
-            {props.map((p) => {
+          <>
+            <div className="rt__searchbar">
+              <Search size={15} />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por código (CDE001), título o dirección…" data-testid="rt-search" />
+            </div>
+            <div className="rt__grid" data-testid="rt-props-grid">
+              {props.filter((p) => {
+                const t = q.trim().toLowerCase();
+                if (!t) return true;
+                return [p.codigo, p.titulo, p.direccion].some((v) => (v || '').toLowerCase().includes(t));
+              }).map((p) => {
               const cover = p.imagenes.find((i) => i.isCover) || p.imagenes[0];
               return (
                 <article className="rt-card" key={p.id} data-testid={`rt-card-${p.id}`}>
@@ -120,7 +135,8 @@ export const AlquileresScreen = () => {
                 </article>
               );
             })}
-          </div>
+            </div>
+          </>
         )
       ) : (
         <div data-testid="rt-res-tab">

@@ -501,6 +501,17 @@ async def public_prereserva(slug: str, body: PrereservaBody):
         "createdAt": _now(),
     }
     await _res().insert_one(doc)
+    try:
+        from documents import notifications
+        h = doc["huesped"]
+        await notifications.create(
+            type="rental_prereserva",
+            title="Nueva pre-reserva de alquiler",
+            message=f"{h.get('nombre') or 'Un huésped'} solicitó {p.get('titulo')} · {body.checkIn} → {body.checkOut} ({q['noches']} noches) · Origen: {body.origen or 'Directo'}",
+            link="/alquileres",
+        )
+    except Exception:
+        pass
     return {"ok": True, "reservaId": doc["_id"], "estado": "prereserva", "total": q["total"], "moneda": q["moneda"]}
 
 
