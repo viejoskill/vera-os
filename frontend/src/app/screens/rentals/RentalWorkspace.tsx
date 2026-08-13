@@ -128,6 +128,11 @@ export const RentalWorkspace = () => {
         </div>
       </header>
       {flash && <p className="rt__flash" data-testid="rt-flash">{flash}</p>}
+      {pid && !f.activa && (
+        <div className="rt-notice" data-testid="rt-hidden-notice">
+          🔒 Esta propiedad está <strong>oculta</strong> y no aparece en la web pública. Para publicarla, cargá el <strong>precio por noche</strong> y activá <strong>“Publicada en la web”</strong> (más abajo), luego <strong>Guardá</strong>.
+        </div>
+      )}
 
       <div className="rt-ws">
         <section className="rt-ws__col">
