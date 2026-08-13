@@ -5,6 +5,7 @@ import { Button } from '@vera/ui';
 import { api, fmtMoney, displayEstado, esEsperandoSena, type RentalProperty, type Reservation, type SaleProperty, type RentalSettings } from './api';
 import { CobrarSena } from './CobrarSena';
 import { ConfirmarReserva } from './ConfirmarReserva';
+import { WhatsappReserva } from './WhatsappReserva';
 import './rentals.css';
 
 const Badge = ({ reserva }: { reserva: Reservation }) => {
@@ -199,9 +200,7 @@ export const AlquileresScreen = () => {
                     {r.estado === 'confirmada' && (
                       <button type="button" className="rt-mini rt-mini--no" onClick={() => changeStatus(r.id, 'cancelada')} data-testid={`rt-cancel-${r.id}`}><XCircle size={15} /> Cancelar</button>
                     )}
-                    {r.huesped.telefono && (
-                      <a className="rt-mini" href={`https://wa.me/${(r.huesped.telefono || '').replace(/\D/g, '')}`} target="_blank" rel="noreferrer" data-testid={`rt-wa-${r.id}`}>WhatsApp</a>
-                    )}
+                    {r.huesped.telefono && <WhatsappReserva reserva={r} />}
                     {(r.estado === 'confirmada' || r.estado === 'prereserva') && <CobrarSena reserva={r} onUpdated={load} />}
                   </div>
                   {r.huesped.comentario && <p className="rt-res__note">“{r.huesped.comentario}”</p>}

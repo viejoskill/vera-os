@@ -6,6 +6,7 @@ import { api, fmtMoney, nightsBetween, ESTADOS, displayEstado, TIPO_MOV, type Re
 import { RentalCalendar } from './RentalCalendar';
 import { CobrarSena } from './CobrarSena';
 import { ConfirmarReserva } from './ConfirmarReserva';
+import { WhatsappReserva } from './WhatsappReserva';
 import './rentals.css';
 
 const empty: Partial<RentalProperty> = {
@@ -321,6 +322,7 @@ export const RentalWorkspace = () => {
                         <button type="button" className="rt-mini rt-mini--no" onClick={() => changeStatus(r.id, 'cancelada')} data-testid={`rt-wscancel-${r.id}`}>Rechazar</button>
                       </>}
                       {(r.estado === 'confirmada' || r.estado === 'prereserva') && <CobrarSena reserva={r} onUpdated={() => pid && loadRes(pid)} />}
+                      {r.huesped.telefono && <WhatsappReserva reserva={r} />}
                     </div>
                   </div>
                 );

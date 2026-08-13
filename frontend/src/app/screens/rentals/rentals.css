@@ -340,3 +340,7 @@
 .rt-cond__accept { display: flex; align-items: flex-start; gap: 10px; font-size: .88rem; cursor: pointer; margin-bottom: 16px; }
 .rt-cond__accept input { margin-top: 3px; width: 18px; height: 18px; }
 
+/* Botón WhatsApp (click-to-send) */
+.rt-mini--wa { border-color: rgba(37,211,102,.5); color: #25d366; }
+.rt-mini--wa:hover { background: rgba(37,211,102,.12); }
+

@@ -1178,3 +1178,10 @@ Set de mejoras pedidas por el usuario. Verificado: backend por curl y frontend 1
 - Separadores de miles: `fmtMoney` ya usa `toLocaleString('es-AR')` — verificado en todos los lugares.
 - Endpoints nuevos: `GET/PUT /api/rentals/settings`. Helper backend `_create_sena_link` reutilizado por link manual y autogeneración al confirmar.
 
+
+## Implemented (Alquileres · WhatsApp asistido / click-to-send — 2026-06)
+- Botón **"WhatsApp"** enriquecido en cada reserva (AlquileresScreen + RentalWorkspace) que abre `wa.me` con un mensaje **pre-escrito**: saludo al huésped, datos de la reserva (fechas, noches, total) y, si existe, el **link de seña de Mercado Pago**. Envío desde el WhatsApp propio del usuario (sin API, sin costo, sin plantillas Meta).
+- Componente `WhatsappReserva.tsx`; utils `waLink()` y `mensajeReserva()` en `api.ts`. El mensaje se adapta al estado del pago (pendiente → incluye link; pagado → "reserva confirmada"; sin link → "en breve te enviamos los datos").
+- DECISIÓN: el usuario NO tiene cuenta de WhatsApp Business/Twilio contratada. El envío 100% automático (server-side, sin intervención) queda como P1 pendiente y requiere contratar Twilio o Meta WhatsApp Cloud API (costo por mensaje + plantillas aprobadas). Mientras tanto, el aviso de nuevas pre-reservas ya llega por la campanita del OS.
+- Verificado: tsc limpio + validación de la generación del link/mensaje. (Cambio chico self-contained, sin testing agent.)
+

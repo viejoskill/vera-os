@@ -112,6 +112,36 @@ export const fmtMoney = (n: number, moneda = 'ARS') => {
   const s = Math.round(n || 0).toLocaleString('es-AR');
   return moneda === 'USD' ? `USD ${s}` : `$ ${s}`;
 };
+
+/** Link wa.me con mensaje pre-escrito (click-to-send desde el WhatsApp del usuario). */
+export const waLink = (telefono: string, mensaje: string): string => {
+  const num = (telefono || '').replace(/\D/g, '');
+  return `https://wa.me/${num}?text=${encodeURIComponent(mensaje)}`;
+};
+
+/** Mensaje al huésped con datos de la reserva y (si existe) el link de seña. */
+export const mensajeReserva = (r: Reservation): string => {
+  const nombre = r.huesped?.nombre?.split(' ')[0] || '';
+  const l: string[] = [];
+  l.push(`¡Hola ${nombre}! 👋 Te escribimos de Inmobiliaria Varela por tu reserva de ${r.propertyTitulo || 'la propiedad'}.`);
+  l.push('');
+  l.push(`📅 ${r.checkIn} al ${r.checkOut} (${r.noches} noches)`);
+  l.push(`💰 Total estimado: ${fmtMoney(r.montoEstimado, r.moneda)}`);
+  if (r.pago?.initPoint && r.pago.estado !== 'pagado') {
+    l.push('');
+    l.push(`Para confirmar la reserva necesitamos la seña de ${fmtMoney(r.pago.monto || 0, 'ARS')}. Podés abonarla de forma segura desde este link:`);
+    l.push(r.pago.initPoint);
+  } else if (r.pago?.estado === 'pagado') {
+    l.push('');
+    l.push('✅ Ya recibimos tu seña. ¡Tu reserva quedó confirmada!');
+  } else {
+    l.push('');
+    l.push('En breve te enviamos los datos para abonar la seña y confirmar la reserva.');
+  }
+  l.push('');
+  l.push('¡Muchas gracias! 🌴');
+  return l.join('\n');
+};
 export const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 export const parseISO = (s: string) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
 export const addDays = (d: Date, n: number) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
