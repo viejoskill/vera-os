@@ -154,6 +154,7 @@ def _res_out(r: dict) -> dict:
         "noches": r.get("noches"), "montoEstimado": r.get("montoEstimado"), "moneda": r.get("moneda", "ARS"),
         "origen": r.get("origen"), "motivo": r.get("motivo"),
         "huesped": r.get("huesped") or {}, "createdAt": r.get("createdAt"),
+        "pago": r.get("pago"),
     }
 
 
@@ -212,6 +213,11 @@ class BlockBody(BaseModel):
 class StatusBody(BaseModel):
     estado: str
     motivo: str | None = None
+
+
+class PaymentLinkBody(BaseModel):
+    monto: float
+    descripcion: str | None = None
 
 
 class PrereservaBody(BaseModel):
@@ -469,6 +475,85 @@ async def liquidacion(propertyId: str = Query(...), desde: str = Query(...), has
         "gastosPropietario": round(tot["gasto_prop"]), "gastosNuestros": round(tot["gasto_nuestro"]),
         "netoPropietario": neto, "movimientos": movs,
     }
+
+
+@router.get("/liquidacion/pdf")
+async def liquidacion_pdf(propertyId: str = Query(...), desde: str = Query(...), hasta: str = Query(...)):
+    data = await liquidacion(propertyId=propertyId, desde=desde, hasta=hasta)
+    from rentals_pdf import build_liquidacion_pdf
+    pdf = build_liquidacion_pdf(data)
+    cod = data["propiedad"].get("codigo") or "liquidacion"
+    fname = f"Liquidacion-{cod}-{desde}_a_{hasta}.pdf"
+    return Response(
+        content=pdf, media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )
+
+
+# ------------------------------ Pagos (Mercado Pago) --------------------- #
+@router.get("/reservations/{rid}")
+async def get_reservation(rid: str):
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    return _res_out(r)
+
+
+@router.post("/reservations/{rid}/payment-link", status_code=201)
+async def create_payment_link(rid: str, body: PaymentLinkBody):
+    if not appconfig.mp_configured():
+        raise HTTPException(503, "Mercado Pago no configurado.")
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    if body.monto is None or body.monto <= 0:
+        raise HTTPException(400, "El monto de la seña debe ser mayor a cero.")
+    prop = await _props().find_one({"_id": r.get("propertyId")})
+    h = r.get("huesped") or {}
+    titulo = f"Seña alquiler · {(prop or {}).get('codigo') or ''} {r.get('propertyTitulo') or ''}".strip()
+    desc = body.descripcion or f"{r.get('checkIn')} → {r.get('checkOut')} · {h.get('nombre') or 'Huésped'}"
+    import payments_mp
+    try:
+        pref = await payments_mp.create_preference(
+            titulo=titulo, descripcion=desc, monto=body.monto,
+            external_reference=rid, payer_email=h.get("email") or None,
+        )
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, f"No se pudo generar el link de pago: {e}")
+    pago = {
+        "proveedor": "mercadopago", "monto": round(float(body.monto)), "moneda": "ARS",
+        "estado": "pendiente", "preferenceId": pref["preference_id"],
+        "initPoint": pref["init_point"], "creadoEl": _now(),
+    }
+    await _res().update_one({"_id": rid}, {"$set": {"pago": pago}})
+    return {"initPoint": pref["init_point"], "preferenceId": pref["preference_id"], "monto": pago["monto"]}
+
+
+@router.post("/payment-webhook")
+async def payment_webhook(payload: dict):
+    """Notificación de Mercado Pago. Verifica el pago server-side y actualiza la reserva."""
+    if (payload or {}).get("type") != "payment":
+        return {"received": True}
+    payment_id = str(((payload or {}).get("data") or {}).get("id") or "")
+    if not payment_id:
+        return {"received": True}
+    import payments_mp
+    try:
+        p = await payments_mp.get_payment(payment_id)
+    except Exception:
+        return {"received": True}
+    rid = p.get("external_reference")
+    if not rid:
+        return {"received": True}
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        return {"received": True}
+    status = p.get("status")
+    estado = {"approved": "pagado", "rejected": "rechazado", "cancelled": "rechazado"}.get(status, "pendiente")
+    pago = {**(r.get("pago") or {}), "estado": estado, "paymentId": payment_id,
+            "mpStatus": status, "pagadoEl": _now() if estado == "pagado" else None}
+    await _res().update_one({"_id": rid}, {"$set": {"pago": pago}})
+    return {"received": True}
 
 
 # --------------------- Importar desde el CRM de ventas -------------------- #

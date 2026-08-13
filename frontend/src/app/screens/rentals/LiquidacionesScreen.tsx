@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FileText, Calculator } from 'lucide-react';
+import { FileText, Calculator, Download } from 'lucide-react';
 import { Button } from '@vera/ui';
 import { api, fmtMoney, TIPO_MOV, type RentalProperty, type Liquidacion } from './api';
 import './rentals.css';
@@ -49,6 +49,7 @@ export const LiquidacionesScreen = () => {
               <p>Propietario: <strong>{liq.propietario.nombre || '—'}</strong>{liq.propietario.telefono ? ` · ${liq.propietario.telefono}` : ''}</p>
               <p className="rt-hint">Período {liq.periodo.desde} → {liq.periodo.hasta}</p>
             </div>
+            <Button variant="secondary" size="sm" onClick={() => window.open(api.liquidacionPdfUrl(pid, desde, hasta), '_blank')} data-testid="rt-liq-pdf"><Download size={15} /> Descargar PDF</Button>
           </div>
           <div className="rt-liq__grid">
             <div className="rt-liq__cell"><span>Alquileres cobrados</span><strong>{fmtMoney(liq.ingresos, mon)}</strong></div>

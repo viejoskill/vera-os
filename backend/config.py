@@ -45,6 +45,16 @@ def meli_configured() -> bool:
 
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY") or None
 
+# Mercado Pago (Checkout Pro). Access Token = SOLO backend, nunca al frontend.
+MP_ACCESS_TOKEN = os.environ.get("MP_ACCESS_TOKEN") or None
+MP_WEBHOOK_SECRET = os.environ.get("MP_WEBHOOK_SECRET") or None
+# Base pública para armar notification_url y back_urls de Checkout Pro.
+PUBLIC_APP_URL = (os.environ.get("PUBLIC_APP_URL") or "").rstrip("/") or None
+
+
+def mp_configured() -> bool:
+    return bool(MP_ACCESS_TOKEN)
+
 # Arturito (primer adapter conversacional). API Key + secret del webhook = solo backend.
 ARTURITO_API_KEY = os.environ.get("ARTURITO_API_KEY") or None
 ARTURITO_WEBHOOK_SECRET = os.environ.get("ARTURITO_WEBHOOK_SECRET") or None

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Palmtree, Plus, Pencil, ExternalLink, Link2, Check, Users, BedDouble, Bath, CheckCircle2, XCircle, Building2, Search, X } from 'lucide-react';
 import { Button } from '@vera/ui';
 import { api, fmtMoney, ESTADOS, type RentalProperty, type Reservation, type SaleProperty } from './api';
+import { CobrarSena } from './CobrarSena';
 import './rentals.css';
 
 const Badge = ({ estado }: { estado: string }) => {
@@ -174,6 +175,7 @@ export const AlquileresScreen = () => {
                     {r.huesped.telefono && (
                       <a className="rt-mini" href={`https://wa.me/${(r.huesped.telefono || '').replace(/\D/g, '')}`} target="_blank" rel="noreferrer" data-testid={`rt-wa-${r.id}`}>WhatsApp</a>
                     )}
+                    {(r.estado === 'confirmada' || r.estado === 'prereserva') && <CobrarSena reserva={r} onUpdated={load} />}
                   </div>
                   {r.huesped.comentario && <p className="rt-res__note">“{r.huesped.comentario}”</p>}
                 </div>

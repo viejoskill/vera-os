@@ -1157,3 +1157,12 @@ Seguimiento financiero por propiedad + liquidaciones al propietario por período
 - Nit cosmético no bloqueante: inputs `type=date` muestran mm/dd/yyyy según locale del navegador de test (en el navegador argentino del usuario se ve dd/mm/yyyy; `<html lang="es">` ya está seteado).
 - Propiedad de prueba CDE002 (`6744cf8a907f4a239a7504101c66a2df`) queda cargada en el preview; el usuario la borrará.
 
+
+## Implemented (Alquileres · Link de pago (Mercado Pago) + Recibo PDF — 2026-06)
+Dos features sobre la Fase 3. Verificado: backend por curl (link real + PDF 200) y frontend 100% por testing agent (iteration_44.json).
+- **Link de pago de la seña (Mercado Pago Checkout Pro)**: en una reserva confirmada/pre-reserva, el admin genera un link de pago en **pesos ARS**. El monto lo escribe el admin (sugerido **30% del total** precargado para reservas en ARS; para reservas en USD ingresa el equivalente en ARS a mano). Al generar, el link se copia al portapapeles y la reserva muestra el estado de la seña (`link enviado` / `rechazada` / `Seña pagada`). Componente `CobrarSena.tsx` (botón + modal) reutilizado en `AlquileresScreen` (pestaña Reservas) y `RentalWorkspace`.
+  - Backend: `payments_mp.py` (único módulo que toca el SDK `mercadopago==3.3.0`), `POST /api/rentals/reservations/{rid}/payment-link` (crea preference, guarda `pago{proveedor,monto,moneda,estado,preferenceId,initPoint}` en la reserva), `POST /api/rentals/payment-webhook` (verifica el pago server-side y marca `pagado`/`rechazado`), `GET /api/rentals/reservations/{rid}`. Config `MP_ACCESS_TOKEN` (producción, solo backend), `MP_WEBHOOK_SECRET` (vacío por ahora), `PUBLIC_APP_URL` en `.env`; `config.mp_configured()`.
+  - Notas: token de PRODUCCIÓN (cobros reales). El webhook aún no valida firma HMAC (`MP_WEBHOOK_SECRET` vacío) — la verdad la da la consulta server-side del pago. Fuente de verdad = webhook + `payment.get`, nunca el redirect del navegador. Back URLs apuntan a `/pago/resultado` (placeholder, sin pantalla dedicada aún).
+- **Recibo PDF de liquidación**: `rentals_pdf.py` (reportlab, reutiliza el logo Varela negro de `documents/pdf.py`). `GET /api/rentals/liquidacion/pdf?propertyId=&desde=&hasta=` → PDF con logo, código+título de la propiedad, propietario, período, tabla de movimientos, resumen con **Neto a liquidar destacado**, gastos de agencia informados aparte, fecha de emisión y firma de la inmobiliaria. Botón "Descargar PDF" (`rt-liq-pdf`) en `LiquidacionesScreen`.
+- Dependencia nueva: `mercadopago==3.3.0` (en requirements.txt).
+

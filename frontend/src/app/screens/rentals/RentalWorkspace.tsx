@@ -4,6 +4,7 @@ import { ArrowLeft, Save, Trash2, Upload, Star, CalendarX2, ExternalLink } from 
 import { Button, Input } from '@vera/ui';
 import { api, fmtMoney, nightsBetween, ESTADOS, TIPO_MOV, type RentalProperty, type Reservation, type RentalImage, type Movimiento } from './api';
 import { RentalCalendar } from './RentalCalendar';
+import { CobrarSena } from './CobrarSena';
 import './rentals.css';
 
 const empty: Partial<RentalProperty> = {
@@ -297,6 +298,7 @@ export const RentalWorkspace = () => {
                         <button type="button" className="rt-mini rt-mini--ok" onClick={() => changeStatus(r.id, 'confirmada')} data-testid={`rt-wsconfirm-${r.id}`}>Confirmar</button>
                         <button type="button" className="rt-mini rt-mini--no" onClick={() => changeStatus(r.id, 'cancelada')} data-testid={`rt-wscancel-${r.id}`}>Rechazar</button>
                       </>}
+                      {(r.estado === 'confirmada' || r.estado === 'prereserva') && <CobrarSena reserva={r} onUpdated={() => pid && loadRes(pid)} />}
                     </div>
                   </div>
                 );

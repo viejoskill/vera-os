@@ -32,10 +32,15 @@ export interface SaleProperty {
   dormitorios: number; banos: number; fotos: number; cover: string;
 }
 export interface Occupied { checkIn: string; checkOut: string; estado?: string; }
+export interface Pago {
+  proveedor?: string; monto?: number; moneda?: string; estado?: string;
+  preferenceId?: string; initPoint?: string; paymentId?: string; mpStatus?: string;
+  creadoEl?: string; pagadoEl?: string | null;
+}
 export interface Reservation {
   id: string; propertyId: string; propertyTitulo?: string; estado: string;
   checkIn: string; checkOut: string; noches: number; montoEstimado: number; moneda: string;
-  origen?: string; motivo?: string; createdAt?: string;
+  origen?: string; motivo?: string; createdAt?: string; pago?: Pago | null;
   huesped: { nombre?: string; telefono?: string; email?: string; dni?: string; huespedes?: number; comentario?: string };
 }
 
@@ -81,6 +86,11 @@ export const api = {
   deleteMovimiento: (mid: string) => fetch(`${RENTALS_API}/movimientos/${mid}`, { method: 'DELETE' }).then(json),
   liquidacion: (propertyId: string, desde: string, hasta: string): Promise<Liquidacion> =>
     fetch(`${RENTALS_API}/liquidacion?propertyId=${propertyId}&desde=${desde}&hasta=${hasta}`).then(json),
+  liquidacionPdfUrl: (propertyId: string, desde: string, hasta: string): string =>
+    `${RENTALS_API}/liquidacion/pdf?propertyId=${propertyId}&desde=${desde}&hasta=${hasta}`,
+  paymentLink: (rid: string, monto: number, descripcion?: string): Promise<{ initPoint: string; preferenceId: string; monto: number }> =>
+    fetch(`${RENTALS_API}/reservations/${rid}/payment-link`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ monto, descripcion }) }).then(json),
+  getReservation: (rid: string): Promise<Reservation> => fetch(`${RENTALS_API}/reservations/${rid}`).then(json),
   // Público
   publicList: (): Promise<RentalProperty[]> => fetch(`${RENTALS_API}/public/properties`).then(json),
   publicProperty: (slug: string): Promise<RentalProperty> => fetch(`${RENTALS_API}/public/properties/${slug}`).then(json),
