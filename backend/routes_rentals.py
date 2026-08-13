@@ -111,6 +111,14 @@ def _prop_out(p: dict, public: bool = False) -> dict:
         "amenities": p.get("amenities") or [], "moneda": p.get("moneda", "ARS"),
         "precioNoche": p.get("precioNoche"), "activa": p.get("activa", True),
         "imagenes": [{"id": i["id"], "url": _img_url(i["id"]), "isCover": i.get("isCover", False)} for i in imgs],
+        # Condiciones de la reserva (visibles también en la web pública).
+        "ropaBlanca": p.get("ropaBlanca", False),
+        "aceptaMascotas": p.get("aceptaMascotas", False),
+        "depositoGarantia": p.get("depositoGarantia", 0),
+        "checkInHora": p.get("checkInHora", ""),
+        "checkOutHora": p.get("checkOutHora", ""),
+        "estadiaMinima": p.get("estadiaMinima", 0),
+        "condiciones": p.get("condiciones") or [],
     }
     if not public:
         out.update({
@@ -125,6 +133,10 @@ def _prop_out(p: dict, public: bool = False) -> dict:
 
 def _movs():
     return _db()["rental_movimientos"]
+
+
+def _settings():
+    return _db()["rental_settings"]
 
 
 TIPOS_MOV = {"ingreso", "gasto_prop", "gasto_nuestro", "comision"}
@@ -186,6 +198,13 @@ class PropertyBody(BaseModel):
     comisionMinima: float = 0
     notas: str | None = ""
     propietario: OwnerBody | None = None
+    ropaBlanca: bool = False
+    aceptaMascotas: bool = False
+    depositoGarantia: float = 0
+    checkInHora: str | None = ""
+    checkOutHora: str | None = ""
+    estadiaMinima: int = 0
+    condiciones: list[str] = []
 
 
 class ReservationBody(BaseModel):
@@ -230,6 +249,15 @@ class PrereservaBody(BaseModel):
     checkIn: str
     checkOut: str
     origen: str = "Directo"
+    aceptaCondiciones: bool = False
+
+
+class SettingsBody(BaseModel):
+    condicionesGenerales: list[str] = []
+    avisoValidez: str | None = ""
+
+
+AVISO_VALIDEZ = "Esta pre-reserva tiene una validez de 24 horas y queda sujeta a confirmación de la inmobiliaria."
 
 
 # --------------------------- Helpers de acceso --------------------------- #
@@ -419,6 +447,17 @@ async def update_status(rid: str, body: StatusBody):
                     "descripcion": f"Comisión {pct}% · {r.get('huesped', {}).get('nombre', '')}".strip(),
                     "createdAt": _now(),
                 })
+    # Al confirmar, genera automáticamente el link de seña (30% del total, solo ARS).
+    if body.estado == "confirmada" and appconfig.mp_configured():
+        r2 = await _res().find_one({"_id": rid})
+        pago_prev = (r2 or {}).get("pago") or {}
+        if r2 and r2.get("moneda", "ARS") == "ARS" and not pago_prev.get("initPoint"):
+            sena = round(float(r2.get("montoEstimado") or 0) * 0.3)
+            if sena > 0:
+                try:
+                    await _create_sena_link(r2, sena)
+                except Exception:
+                    pass
     return _res_out(await _res().find_one({"_id": rid}))
 
 
@@ -431,6 +470,30 @@ async def delete_reservation(rid: str):
 async def property_calendar(pid: str):
     await _get_prop(pid)
     return {"ocupados": await _occupied(pid)}
+
+
+# ------------------------------ Ajustes -------------------------------- #
+@router.get("/settings")
+async def get_settings():
+    s = await _settings().find_one({"_id": "global"}) or {}
+    return {
+        "condicionesGenerales": s.get("condicionesGenerales") or [],
+        "avisoValidez": s.get("avisoValidez") or AVISO_VALIDEZ,
+    }
+
+
+@router.put("/settings")
+async def update_settings(body: SettingsBody):
+    await _settings().update_one(
+        {"_id": "global"},
+        {"$set": {
+            "condicionesGenerales": [c.strip() for c in body.condicionesGenerales if c.strip()],
+            "avisoValidez": (body.avisoValidez or "").strip() or AVISO_VALIDEZ,
+            "updatedAt": _now(),
+        }},
+        upsert=True,
+    )
+    return await get_settings()
 
 
 # ------------------------------ Finanzas -------------------------------- #
@@ -491,6 +554,26 @@ async def liquidacion_pdf(propertyId: str = Query(...), desde: str = Query(...),
 
 
 # ------------------------------ Pagos (Mercado Pago) --------------------- #
+async def _create_sena_link(r: dict, monto: float) -> dict:
+    """Crea la preference de la seña en Mercado Pago y la guarda en la reserva."""
+    prop = await _props().find_one({"_id": r.get("propertyId")})
+    h = r.get("huesped") or {}
+    titulo = f"Seña alquiler · {(prop or {}).get('codigo') or ''} {r.get('propertyTitulo') or ''}".strip()
+    desc = f"{r.get('checkIn')} → {r.get('checkOut')} · {h.get('nombre') or 'Huésped'}"
+    import payments_mp
+    pref = await payments_mp.create_preference(
+        titulo=titulo, descripcion=desc, monto=monto,
+        external_reference=r["_id"], payer_email=h.get("email") or None,
+    )
+    pago = {
+        "proveedor": "mercadopago", "monto": round(float(monto)), "moneda": "ARS",
+        "estado": "pendiente", "preferenceId": pref["preference_id"],
+        "initPoint": pref["init_point"], "creadoEl": _now(),
+    }
+    await _res().update_one({"_id": r["_id"]}, {"$set": {"pago": pago}})
+    return pago
+
+
 @router.get("/reservations/{rid}")
 async def get_reservation(rid: str):
     r = await _res().find_one({"_id": rid})
@@ -508,25 +591,11 @@ async def create_payment_link(rid: str, body: PaymentLinkBody):
         raise HTTPException(404, "Reserva no encontrada")
     if body.monto is None or body.monto <= 0:
         raise HTTPException(400, "El monto de la seña debe ser mayor a cero.")
-    prop = await _props().find_one({"_id": r.get("propertyId")})
-    h = r.get("huesped") or {}
-    titulo = f"Seña alquiler · {(prop or {}).get('codigo') or ''} {r.get('propertyTitulo') or ''}".strip()
-    desc = body.descripcion or f"{r.get('checkIn')} → {r.get('checkOut')} · {h.get('nombre') or 'Huésped'}"
-    import payments_mp
     try:
-        pref = await payments_mp.create_preference(
-            titulo=titulo, descripcion=desc, monto=body.monto,
-            external_reference=rid, payer_email=h.get("email") or None,
-        )
+        pago = await _create_sena_link(r, body.monto)
     except Exception as e:  # noqa: BLE001
         raise HTTPException(502, f"No se pudo generar el link de pago: {e}")
-    pago = {
-        "proveedor": "mercadopago", "monto": round(float(body.monto)), "moneda": "ARS",
-        "estado": "pendiente", "preferenceId": pref["preference_id"],
-        "initPoint": pref["init_point"], "creadoEl": _now(),
-    }
-    await _res().update_one({"_id": rid}, {"$set": {"pago": pago}})
-    return {"initPoint": pref["init_point"], "preferenceId": pref["preference_id"], "monto": pago["monto"]}
+    return {"initPoint": pago["initPoint"], "preferenceId": pago["preferenceId"], "monto": pago["monto"]}
 
 
 @router.post("/payment-webhook")
@@ -661,8 +730,13 @@ async def public_prereserva(slug: str, body: PrereservaBody):
     p = await _props().find_one({"slug": slug})
     if not p or not p.get("activa", True):
         raise HTTPException(404, "Propiedad no encontrada")
+    if not body.aceptaCondiciones:
+        raise HTTPException(400, "Tenés que leer y aceptar las condiciones para enviar la pre-reserva.")
     await _assert_free(p["_id"], body.checkIn, body.checkOut)
     q = _quote(p, body.checkIn, body.checkOut)
+    minima = int(p.get("estadiaMinima") or 0)
+    if minima and q["noches"] < minima:
+        raise HTTPException(400, f"La estadía mínima en esta propiedad es de {minima} noches.")
     doc = {
         "_id": uuid4().hex, "propertyId": p["_id"], "propertyTitulo": p.get("titulo"),
         "estado": "prereserva", "checkIn": body.checkIn, "checkOut": body.checkOut,
@@ -672,6 +746,7 @@ async def public_prereserva(slug: str, body: PrereservaBody):
             "nombre": body.nombre, "telefono": body.telefono, "email": body.email,
             "dni": body.dni, "huespedes": body.huespedes, "comentario": body.comentario,
         },
+        "condicionesAceptadas": {"aceptado": True, "fecha": _now()},
         "createdAt": _now(),
     }
     await _res().insert_one(doc)

@@ -2,9 +2,10 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, Trash2, Upload, Star, CalendarX2, ExternalLink } from 'lucide-react';
 import { Button, Input } from '@vera/ui';
-import { api, fmtMoney, nightsBetween, ESTADOS, TIPO_MOV, type RentalProperty, type Reservation, type RentalImage, type Movimiento } from './api';
+import { api, fmtMoney, nightsBetween, ESTADOS, displayEstado, TIPO_MOV, type RentalProperty, type Reservation, type RentalImage, type Movimiento, type Occupied } from './api';
 import { RentalCalendar } from './RentalCalendar';
 import { CobrarSena } from './CobrarSena';
+import { ConfirmarReserva } from './ConfirmarReserva';
 import './rentals.css';
 
 const empty: Partial<RentalProperty> = {
@@ -23,11 +24,13 @@ export const RentalWorkspace = () => {
   const [images, setImages] = useState<RentalImage[]>([]);
   const [amenText, setAmenText] = useState('');
   const [owner, setOwner] = useState({ nombre: '', telefono: '', email: '', dni: '', observaciones: '' });
-  const [ocupados, setOcupados] = useState<{ checkIn: string; checkOut: string }[]>([]);
+  const [ocupados, setOcupados] = useState<Occupied[]>([]);
   const [reservas, setReservas] = useState<Reservation[]>([]);
   const [bloqueos, setBloqueos] = useState<Reservation[]>([]);
   const [movs, setMovs] = useState<Movimiento[]>([]);
   const [nm, setNm] = useState({ fecha: '', tipo: 'ingreso', monto: '', descripcion: '' });
+  const [condText, setCondText] = useState('');
+  const [confirming, setConfirming] = useState<Reservation | null>(null);
   const [sel, setSel] = useState<{ checkIn: string | null; checkOut: string | null }>({ checkIn: null, checkOut: null });
   const [flash, setFlash] = useState('');
   const [saving, setSaving] = useState(false);
@@ -40,7 +43,7 @@ export const RentalWorkspace = () => {
     setBloqueos(r.filter((x) => x.estado === 'bloqueo'));
     setOcupados(
       r.filter((x) => ['prereserva', 'confirmada', 'encurso', 'bloqueo'].includes(x.estado))
-        .map((x) => ({ checkIn: x.checkIn, checkOut: x.checkOut })),
+        .map((x) => ({ checkIn: x.checkIn, checkOut: x.checkOut, estado: x.estado })),
     );
   }, []);
 
@@ -67,6 +70,7 @@ export const RentalWorkspace = () => {
     (async () => {
       const p = await api.getProperty(id as string);
       setF(p); setSlug(p.slug); setImages(p.imagenes); setAmenText((p.amenities || []).join(', '));
+      setCondText((p.condiciones || []).join('\n'));
       setOwner({ nombre: '', telefono: '', email: '', dni: '', observaciones: '', ...(p.propietario || {}) });
       await loadRes(p.id);
       await loadMovs(p.id);
@@ -76,7 +80,7 @@ export const RentalWorkspace = () => {
   const save = async () => {
     if (!f.titulo) { setFlash('Poné un título a la propiedad.'); return; }
     setSaving(true);
-    const body = { ...f, amenities: amenText.split(',').map((a) => a.trim()).filter(Boolean), propietario: owner };
+    const body = { ...f, amenities: amenText.split(',').map((a) => a.trim()).filter(Boolean), condiciones: condText.split('\n').map((c) => c.trim()).filter(Boolean), propietario: owner };
     try {
       if (pid) {
         const p = await api.updateProperty(pid, body);
@@ -204,6 +208,24 @@ export const RentalWorkspace = () => {
           <h3 className="rt-ws__sec">Observaciones de la propiedad</h3>
           <label className="rt-field"><span>Notas internas (historial, detalles, lo que necesites)</span>
             <textarea rows={3} value={f.notas || ''} onChange={(e) => set('notas', e.target.value)} data-testid="rt-notas" /></label>
+
+          <h3 className="rt-ws__sec">Condiciones de la reserva</h3>
+          <p className="rt-hint">El huésped las tiene que leer y aceptar antes de enviar la pre-reserva (junto con las condiciones generales de la inmobiliaria).</p>
+          <div className="rt-cond__toggles">
+            <label className="rt-chk"><input type="checkbox" checked={!!f.ropaBlanca} onChange={(e) => set('ropaBlanca', e.target.checked)} data-testid="rt-ropablanca" /><span>Incluye ropa blanca</span></label>
+            <label className="rt-chk"><input type="checkbox" checked={!!f.aceptaMascotas} onChange={(e) => set('aceptaMascotas', e.target.checked)} data-testid="rt-mascotas" /><span>Se aceptan mascotas</span></label>
+          </div>
+          <div className="rt-row3">
+            <Input label="Depósito en garantía" type="number" value={String(f.depositoGarantia ?? '')} onChange={(e) => set('depositoGarantia', Number(e.target.value))} data-testid="rt-deposito" />
+            <Input label="Estadía mínima (noches)" type="number" value={String(f.estadiaMinima ?? '')} onChange={(e) => set('estadiaMinima', Number(e.target.value))} data-testid="rt-estadia-min" />
+            <div />
+          </div>
+          <div className="rt-row2">
+            <Input label="Check-in (horario)" value={f.checkInHora || ''} onChange={(e) => set('checkInHora', e.target.value)} data-testid="rt-checkin-hora" />
+            <Input label="Check-out (horario)" value={f.checkOutHora || ''} onChange={(e) => set('checkOutHora', e.target.value)} data-testid="rt-checkout-hora" />
+          </div>
+          <label className="rt-field"><span>Cláusulas propias (una por línea)</span>
+            <textarea rows={3} value={condText} onChange={(e) => setCondText(e.target.value)} placeholder={'No se permiten fiestas\nSolo grupos familiares\nProhibido fumar'} data-testid="rt-condiciones" /></label>
         </section>
 
         <section className="rt-ws__col">
@@ -228,7 +250,7 @@ export const RentalWorkspace = () => {
           <h3 className="rt-ws__sec">Calendario y bloqueos</h3>
           {!pid ? <p className="rt-hint">Guardá la propiedad para gestionar el calendario.</p> : (
             <>
-              <RentalCalendar ocupados={ocupados} value={sel} onChange={setSel} months={1} />
+              <RentalCalendar ocupados={ocupados} value={sel} onChange={setSel} months={1} legend />
               {sel.checkIn && sel.checkOut && (
                 <div className="rt-blockbar">
                   <span>{sel.checkIn} → {sel.checkOut} ({nightsBetween(sel.checkIn, sel.checkOut)} noches)</span>
@@ -287,7 +309,7 @@ export const RentalWorkspace = () => {
           {reservas.length === 0 ? <p className="rt-hint">Todavía no hay reservas.</p> : (
             <div className="rt-res">
               {reservas.map((r) => {
-                const e = ESTADOS[r.estado] || { label: r.estado, cls: 'rt-b--muted' };
+                const e = displayEstado(r);
                 return (
                   <div className="rt-res__row" key={r.id} data-testid={`rt-wsres-${r.id}`}>
                     <div className="rt-res__main"><strong>{r.huesped.nombre}</strong><span className="rt-res__prop">{r.huesped.telefono} · {r.huesped.huespedes} huésp. · DNI {r.huesped.dni || '—'}</span></div>
@@ -295,7 +317,7 @@ export const RentalWorkspace = () => {
                     <div className="rt-res__meta"><span>{fmtMoney(r.montoEstimado, r.moneda)}</span>{r.origen && <span className="rt-res__origin">{r.origen}</span>}<span className={`rt-b ${e.cls}`}>{e.label}</span></div>
                     <div className="rt-res__acts">
                       {r.estado === 'prereserva' && <>
-                        <button type="button" className="rt-mini rt-mini--ok" onClick={() => changeStatus(r.id, 'confirmada')} data-testid={`rt-wsconfirm-${r.id}`}>Confirmar</button>
+                        <button type="button" className="rt-mini rt-mini--ok" onClick={() => setConfirming(r)} data-testid={`rt-wsconfirm-${r.id}`}>Confirmar</button>
                         <button type="button" className="rt-mini rt-mini--no" onClick={() => changeStatus(r.id, 'cancelada')} data-testid={`rt-wscancel-${r.id}`}>Rechazar</button>
                       </>}
                       {(r.estado === 'confirmada' || r.estado === 'prereserva') && <CobrarSena reserva={r} onUpdated={() => pid && loadRes(pid)} />}
@@ -306,6 +328,10 @@ export const RentalWorkspace = () => {
             </div>
           )}
         </section>
+      )}
+      {confirming && (
+        <ConfirmarReserva reserva={confirming} onClose={() => setConfirming(null)}
+          onConfirmed={async () => { setConfirming(null); if (pid) await loadRes(pid); }} />
       )}
     </div>
   );

@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Palmtree, Plus, Pencil, ExternalLink, Link2, Check, Users, BedDouble, Bath, CheckCircle2, XCircle, Building2, Search, X } from 'lucide-react';
+import { Palmtree, Plus, Pencil, ExternalLink, Link2, Check, Users, BedDouble, Bath, XCircle, Building2, Search, X, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@vera/ui';
-import { api, fmtMoney, ESTADOS, type RentalProperty, type Reservation, type SaleProperty } from './api';
+import { api, fmtMoney, displayEstado, esEsperandoSena, type RentalProperty, type Reservation, type SaleProperty, type RentalSettings } from './api';
 import { CobrarSena } from './CobrarSena';
+import { ConfirmarReserva } from './ConfirmarReserva';
 import './rentals.css';
 
-const Badge = ({ estado }: { estado: string }) => {
-  const e = ESTADOS[estado] || { label: estado, cls: 'rt-b--muted' };
+const Badge = ({ reserva }: { reserva: Reservation }) => {
+  const e = displayEstado(reserva);
   return <span className={`rt-b ${e.cls}`}>{e.label}</span>;
 };
 
@@ -24,6 +25,11 @@ export const AlquileresScreen = () => {
   const [saleQuery, setSaleQuery] = useState('');
   const [importing, setImporting] = useState('');
   const [q, setQ] = useState('');
+  const [confirming, setConfirming] = useState<Reservation | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings] = useState<RentalSettings>({ condicionesGenerales: [], avisoValidez: '' });
+  const [condText, setCondText] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -57,7 +63,24 @@ export const AlquileresScreen = () => {
     catch (e) { alert((e as Error).message); setImporting(''); }
   };
 
-  const filtered = res.filter((r) => (filter ? r.estado === filter : r.estado !== 'bloqueo'));
+  const filtered = res.filter((r) => {
+    if (filter === 'esperando') return esEsperandoSena(r);
+    if (filter) return r.estado === filter;
+    return r.estado !== 'bloqueo';
+  });
+
+  const openSettings = async () => {
+    setShowSettings(true);
+    try { const s = await api.getSettings(); setSettings(s); setCondText((s.condicionesGenerales || []).join('\n')); }
+    catch { /* noop */ }
+  };
+  const saveSettings = async () => {
+    setSavingSettings(true);
+    try {
+      const s = await api.updateSettings({ condicionesGenerales: condText.split('\n').map((c) => c.trim()).filter(Boolean), avisoValidez: settings.avisoValidez });
+      setSettings(s); setShowSettings(false);
+    } finally { setSavingSettings(false); }
+  };
 
   return (
     <div className="vera-screen rt" data-testid="alquileres-screen">
@@ -67,6 +90,9 @@ export const AlquileresScreen = () => {
           <p className="rt__sub">Gestioná tus propiedades de verano, el calendario de disponibilidad y las pre-reservas que entran desde la web.</p>
         </div>
         <div className="rt__head-actions">
+          <Button variant="ghost" size="md" onClick={openSettings} data-testid="rt-settings-open">
+            <SlidersHorizontal size={16} /> Condiciones generales
+          </Button>
           <Button variant="ghost" size="md" onClick={() => window.open('/reservar', '_blank')} data-testid="rt-open-web">
             <ExternalLink size={16} /> Ver web
           </Button>
@@ -142,9 +168,10 @@ export const AlquileresScreen = () => {
       ) : (
         <div data-testid="rt-res-tab">
           <div className="rt__filters">
-            {['', 'prereserva', 'confirmada', 'encurso', 'finalizada', 'cancelada'].map((s) => (
+            {[['', 'Activas'], ['prereserva', 'Pre-reserva'], ['esperando', 'Esperando seña'], ['confirmada', 'Confirmadas'], ['encurso', 'En curso'], ['finalizada', 'Finalizada'], ['cancelada', 'Cancelada']].map(([s, label]) => (
               <button type="button" key={s || 'all'} className={filter === s ? 'sel' : ''} onClick={() => setFilter(s)} data-testid={`rt-filter-${s || 'all'}`}>
-                {s ? ESTADOS[s].label : 'Activas'}
+                {label}
+                {s === 'esperando' && res.filter(esEsperandoSena).length > 0 && <span className="rt-tabbadge">{res.filter(esEsperandoSena).length}</span>}
               </button>
             ))}
           </div>
@@ -160,12 +187,12 @@ export const AlquileresScreen = () => {
                   <div className="rt-res__meta">
                     <span>{fmtMoney(r.montoEstimado, r.moneda)}</span>
                     {r.origen && <span className="rt-res__origin">{r.origen}</span>}
-                    <Badge estado={r.estado} />
+                    <Badge reserva={r} />
                   </div>
                   <div className="rt-res__acts">
                     {r.estado === 'prereserva' && (
                       <>
-                        <button type="button" className="rt-mini rt-mini--ok" onClick={() => changeStatus(r.id, 'confirmada')} data-testid={`rt-confirm-${r.id}`}><CheckCircle2 size={15} /> Confirmar</button>
+                        <button type="button" className="rt-mini rt-mini--ok" onClick={() => setConfirming(r)} data-testid={`rt-confirm-${r.id}`}>Confirmar</button>
                         <button type="button" className="rt-mini rt-mini--no" onClick={() => changeStatus(r.id, 'cancelada')} data-testid={`rt-cancel-${r.id}`}><XCircle size={15} /> Rechazar</button>
                       </>
                     )}
@@ -213,6 +240,28 @@ export const AlquileresScreen = () => {
                     </Button>
                   </div>
                 ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {confirming && (
+        <ConfirmarReserva reserva={confirming} onClose={() => setConfirming(null)}
+          onConfirmed={async () => { setConfirming(null); await load(); }} />
+      )}
+
+      {showSettings && (
+        <div className="rt-modal" data-testid="rt-settings-modal" onClick={() => setShowSettings(false)}>
+          <div className="rt-modal__box" onClick={(e) => e.stopPropagation()}>
+            <div className="rt-modal__head">
+              <h3><SlidersHorizontal size={18} /> Condiciones generales</h3>
+              <button type="button" onClick={() => setShowSettings(false)} data-testid="rt-settings-close"><X size={18} /></button>
+            </div>
+            <p className="rt-modal__sub">Estas condiciones aplican a <strong>todas</strong> las propiedades y se muestran al huésped antes de enviar la pre-reserva, junto con las condiciones propias de cada casa.</p>
+            <label className="rt-field"><span>Condiciones generales (una por línea)</span>
+              <textarea rows={6} value={condText} onChange={(e) => setCondText(e.target.value)} placeholder={'Se requiere seña para confirmar la reserva\nEl saldo se abona al ingresar\nSe cobra depósito en garantía reintegrable'} data-testid="rt-settings-cond" /></label>
+            <div className="rt-modal__foot">
+              <Button variant="ghost" size="md" onClick={() => setShowSettings(false)}>Cancelar</Button>
+              <Button variant="primary" size="md" onClick={saveSettings} disabled={savingSettings} data-testid="rt-settings-save">{savingSettings ? 'Guardando…' : 'Guardar condiciones'}</Button>
             </div>
           </div>
         </div>

@@ -7,34 +7,43 @@ interface Props {
   value: { checkIn: string | null; checkOut: string | null };
   onChange: (v: { checkIn: string | null; checkOut: string | null }) => void;
   months?: number;
+  readOnly?: boolean;
+  legend?: boolean;
+  startDate?: string;
 }
 
 const WD = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'];
 const MES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-/** Calendario de rango estilo Airbnb. Marca noches ocupadas y evita cruzarlas. */
-export const RentalCalendar = ({ ocupados, value, onChange, months = 1 }: Props) => {
+/** Calendario de rango estilo Airbnb. Rojo = reserva, gris = bloqueo manual. */
+export const RentalCalendar = ({ ocupados, value, onChange, months = 1, readOnly = false, legend = false, startDate }: Props) => {
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const [view, setView] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [view, setView] = useState(() => {
+    const base = startDate ? parseISO(startDate) : today;
+    return new Date(base.getFullYear(), base.getMonth(), 1);
+  });
 
-  const blocked = useMemo(() => {
-    const s = new Set<string>();
+  // Mapa fecha -> tipo de ocupación ('reserva' | 'bloqueo').
+  const kind = useMemo(() => {
+    const m = new Map<string, 'reserva' | 'bloqueo'>();
     ocupados.forEach((o) => {
+      const tipo = o.estado === 'bloqueo' ? 'bloqueo' : 'reserva';
       let d = parseISO(o.checkIn); const end = parseISO(o.checkOut);
-      while (d < end) { s.add(iso(d)); d = addDays(d, 1); }
+      while (d < end) { const s = iso(d); if (!(m.get(s) === 'reserva')) m.set(s, tipo); d = addDays(d, 1); }
     });
-    return s;
+    return m;
   }, [ocupados]);
 
   const rangeHasBlocked = (a: string, b: string) => {
     let d = parseISO(a); const end = parseISO(b);
-    while (d < end) { if (blocked.has(iso(d))) return true; d = addDays(d, 1); }
+    while (d < end) { if (kind.has(iso(d))) return true; d = addDays(d, 1); }
     return false;
   };
 
   const click = (day: Date) => {
+    if (readOnly) return;
     const s = iso(day);
-    if (day < today || blocked.has(s)) return;
+    if (day < today || kind.has(s)) return;
     const { checkIn, checkOut } = value;
     if (!checkIn || checkOut || s <= checkIn) { onChange({ checkIn: s, checkOut: null }); return; }
     if (rangeHasBlocked(checkIn, s)) { onChange({ checkIn: s, checkOut: null }); return; }
@@ -58,17 +67,18 @@ export const RentalCalendar = ({ ocupados, value, onChange, months = 1 }: Props)
             if (!day) return <span key={i} className="rt-cal__cell rt-cal__cell--empty" />;
             const s = iso(day);
             const past = day < today;
-            const isBlk = blocked.has(s);
+            const k = kind.get(s);
             const isIn = value.checkIn === s;
             const isOut = value.checkOut === s;
             const inRange = value.checkIn && value.checkOut && s > value.checkIn && s < value.checkOut;
             const cls = ['rt-cal__cell'];
             if (past) cls.push('rt-cal__cell--past');
-            else if (isBlk) cls.push('rt-cal__cell--blocked');
+            else if (k === 'reserva') cls.push('rt-cal__cell--reserva');
+            else if (k === 'bloqueo') cls.push('rt-cal__cell--bloqueo');
             if (isIn || isOut) cls.push('rt-cal__cell--edge');
             if (inRange) cls.push('rt-cal__cell--range');
             return (
-              <button type="button" key={i} className={cls.join(' ')} disabled={past || isBlk}
+              <button type="button" key={i} className={cls.join(' ')} disabled={past || !!k || readOnly}
                 onClick={() => click(day)} data-testid={`rt-day-${s}`}>
                 {day.getDate()}
               </button>
@@ -89,6 +99,13 @@ export const RentalCalendar = ({ ocupados, value, onChange, months = 1 }: Props)
         <button type="button" onClick={() => setView(new Date(view.getFullYear(), view.getMonth() + 1, 1))} data-testid="rt-cal-next"><ChevronRight size={16} /></button>
       </div>
       <div className="rt-cal__months">{list.map(renderMonth)}</div>
+      {legend && (
+        <div className="rt-cal__legend" data-testid="rt-cal-legend">
+          <span><i className="rt-lg rt-lg--reserva" /> Ocupado por reserva</span>
+          <span><i className="rt-lg rt-lg--bloqueo" /> Bloqueo manual</span>
+          <span><i className="rt-lg rt-lg--libre" /> Disponible</span>
+        </div>
+      )}
     </div>
   );
 };

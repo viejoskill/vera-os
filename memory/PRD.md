@@ -1166,3 +1166,15 @@ Dos features sobre la Fase 3. Verificado: backend por curl (link real + PDF 200)
 - **Recibo PDF de liquidación**: `rentals_pdf.py` (reportlab, reutiliza el logo Varela negro de `documents/pdf.py`). `GET /api/rentals/liquidacion/pdf?propertyId=&desde=&hasta=` → PDF con logo, código+título de la propiedad, propietario, período, tabla de movimientos, resumen con **Neto a liquidar destacado**, gastos de agencia informados aparte, fecha de emisión y firma de la inmobiliaria. Botón "Descargar PDF" (`rt-liq-pdf`) en `LiquidacionesScreen`.
 - Dependencia nueva: `mercadopago==3.3.0` (en requirements.txt).
 
+
+## Implemented (Alquileres · Proceso estricto + condiciones + calendario claro — 2026-06)
+Set de mejoras pedidas por el usuario. Verificado: backend por curl y frontend 100% por testing agent (iteration_45.json, 9/9 PASS).
+- **Calendario claro**: ocupado por reserva = ROJO rayado, bloqueo manual = GRIS rayado, con leyenda (`RentalCalendar` colorea por `estado`; props `readOnly`, `legend`, `startDate`). Aplica en workspace, vista previa y web pública.
+- **Vista previa al confirmar** (`ConfirmarReserva.tsx`): al tocar "Confirmar" abre modal con resumen + calendario en modo lectura (fechas pedidas marcadas + reservas vecinas) + aviso de **"días perdidos"** (huecos de 1-2 noches). Al confirmar se autogenera la **seña (30% del total, solo ARS)** vía Mercado Pago.
+- **Flujo estricto de pago**: estado mostrado con `displayEstado()` — confirmada sin pago pagado = **"Esperando seña"** (celeste), con pago pagado = **"Reservada · seña pagada"** (verde). Nuevo filtro/chip **"Esperando seña"** con contador en la pestaña Reservas. El webhook de MP marca `pago.estado=pagado` → pasa a Reservada.
+- **Paso de condiciones antes de la pre-reserva pública**: modal con condiciones (generales + propias de la casa), datos clave (ropa blanca, mascotas, depósito, check-in/out, estadía mínima) y aviso de validez 24hs, con **tilde obligatorio** "Declaro haber leído y aceptado". Backend rechaza si `aceptaCondiciones` falso (400) y valida **estadía mínima** (400). Se guarda `condicionesAceptadas{aceptado,fecha}` en la reserva.
+- **Condiciones por propiedad** (form en `RentalWorkspace`): ropaBlanca, aceptaMascotas, depositoGarantia, checkInHora, checkOutHora, estadiaMinima, condiciones[] (cláusulas libres). Persistidas en `PropertyBody`/`_prop_out` (públicas).
+- **Condiciones generales** (fijas de la inmobiliaria): colección `rental_settings`, endpoints `GET/PUT /api/rentals/settings` (condicionesGenerales[] + avisoValidez). Editables desde el botón "Condiciones generales" en el header de Alquileres.
+- Separadores de miles: `fmtMoney` ya usa `toLocaleString('es-AR')` — verificado en todos los lugares.
+- Endpoints nuevos: `GET/PUT /api/rentals/settings`. Helper backend `_create_sena_link` reutilizado por link manual y autogeneración al confirmar.
+

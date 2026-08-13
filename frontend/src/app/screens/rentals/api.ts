@@ -11,8 +11,11 @@ export interface RentalProperty {
   descSemana?: number; descQuincena?: number; descMes?: number;
   comisionPct?: number; comisionMinima?: number; notas?: string;
   propietario?: { nombre?: string; telefono?: string; email?: string; dni?: string; observaciones?: string };
+  ropaBlanca?: boolean; aceptaMascotas?: boolean; depositoGarantia?: number;
+  checkInHora?: string; checkOutHora?: string; estadiaMinima?: number; condiciones?: string[];
   ocupados?: Occupied[]; descuentos?: { semana: number; quincena: number; mes: number };
 }
+export interface RentalSettings { condicionesGenerales: string[]; avisoValidez: string; }
 export interface Movimiento {
   id: string; propertyId: string; fecha: string; tipo: string; monto: number;
   descripcion?: string; reservaId?: string; createdAt?: string;
@@ -91,6 +94,10 @@ export const api = {
   paymentLink: (rid: string, monto: number, descripcion?: string): Promise<{ initPoint: string; preferenceId: string; monto: number }> =>
     fetch(`${RENTALS_API}/reservations/${rid}/payment-link`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ monto, descripcion }) }).then(json),
   getReservation: (rid: string): Promise<Reservation> => fetch(`${RENTALS_API}/reservations/${rid}`).then(json),
+  calendar: (pid: string): Promise<{ ocupados: Occupied[] }> => fetch(`${RENTALS_API}/properties/${pid}/calendar`).then(json),
+  getSettings: (): Promise<RentalSettings> => fetch(`${RENTALS_API}/settings`).then(json),
+  updateSettings: (body: RentalSettings): Promise<RentalSettings> =>
+    fetch(`${RENTALS_API}/settings`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(json),
   // Público
   publicList: (): Promise<RentalProperty[]> => fetch(`${RENTALS_API}/public/properties`).then(json),
   publicProperty: (slug: string): Promise<RentalProperty> => fetch(`${RENTALS_API}/public/properties/${slug}`).then(json),
@@ -118,3 +125,14 @@ export const ESTADOS: Record<string, { label: string; cls: string }> = {
   cancelada: { label: 'Cancelada', cls: 'rt-b--danger' },
   bloqueo: { label: 'Bloqueo', cls: 'rt-b--muted' },
 };
+
+/** Estado mostrado con la lógica estricta de pago: confirmada = esperando seña hasta que se pague. */
+export const displayEstado = (r: Reservation): { label: string; cls: string } => {
+  if (r.estado === 'confirmada') {
+    if (r.pago?.estado === 'pagado') return { label: 'Reservada · seña pagada', cls: 'rt-b--ok' };
+    return { label: 'Esperando seña', cls: 'rt-b--wait' };
+  }
+  return ESTADOS[r.estado] || { label: r.estado, cls: 'rt-b--muted' };
+};
+
+export const esEsperandoSena = (r: Reservation) => r.estado === 'confirmada' && r.pago?.estado !== 'pagado';

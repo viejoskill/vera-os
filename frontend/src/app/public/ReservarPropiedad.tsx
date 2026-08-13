@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
-import { Users, BedDouble, Bath, MapPin, Check, CheckCircle2, ArrowLeft } from 'lucide-react';
-import { api, fmtMoney, nightsBetween, type RentalProperty } from '@app/screens/rentals/api';
+import { Users, BedDouble, Bath, MapPin, Check, CheckCircle2, ArrowLeft, X, ShieldCheck, PawPrint, BedSingle, Clock, Wallet, AlertCircle } from 'lucide-react';
+import { api, fmtMoney, nightsBetween, type RentalProperty, type RentalSettings } from '@app/screens/rentals/api';
 import { RentalCalendar } from '@app/screens/rentals/RentalCalendar';
 import '@app/screens/rentals/rentals.css';
 
@@ -20,8 +20,12 @@ export const ReservarPropiedad = () => {
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
+  const [settings, setSettings] = useState<RentalSettings>({ condicionesGenerales: [], avisoValidez: '' });
+  const [showCond, setShowCond] = useState(false);
+  const [accepted, setAccepted] = useState(false);
 
   useEffect(() => { if (slug) api.publicProperty(slug).then(setP).catch(() => setNotFound(true)); }, [slug]);
+  useEffect(() => { api.getSettings().then(setSettings).catch(() => {}); }, []);
 
   useEffect(() => {
     if (!slug || !sel.checkIn || !sel.checkOut) { setQuote(null); return; }
@@ -31,15 +35,23 @@ export const ReservarPropiedad = () => {
   const setG2 = (k: keyof typeof g, v: unknown) => setG((s) => ({ ...s, [k]: v }));
   const cover = useMemo(() => (p ? (p.imagenes[gallery] || p.imagenes[0]) : null), [p, gallery]);
 
-  const submit = async () => {
+  const submit = () => {
     if (!slug) return;
     if (!sel.checkIn || !sel.checkOut) { setError('Elegí las fechas en el calendario.'); return; }
     if (!g.nombre || !g.telefono) { setError('Necesitamos tu nombre y teléfono.'); return; }
-    setError(''); setSending(true);
+    if (p?.estadiaMinima && nightsBetween(sel.checkIn, sel.checkOut) < p.estadiaMinima) {
+      setError(`La estadía mínima en esta propiedad es de ${p.estadiaMinima} noches.`); return;
+    }
+    setError(''); setAccepted(false); setShowCond(true);
+  };
+
+  const confirmAndSend = async () => {
+    if (!slug || !sel.checkIn || !sel.checkOut || !accepted) return;
+    setSending(true);
     try {
-      await api.prereserva(slug, { ...g, huespedes: Number(g.huespedes), checkIn: sel.checkIn, checkOut: sel.checkOut, origen });
-      setDone(true);
-    } catch (e) { setError((e as Error).message); }
+      await api.prereserva(slug, { ...g, huespedes: Number(g.huespedes), checkIn: sel.checkIn, checkOut: sel.checkOut, origen, aceptaCondiciones: true });
+      setShowCond(false); setDone(true);
+    } catch (e) { setError((e as Error).message); setShowCond(false); }
     setSending(false);
   };
 
@@ -122,6 +134,45 @@ export const ReservarPropiedad = () => {
           <p className="rt-book__note">No se cobra nada ahora. Confirmamos disponibilidad y coordinamos el pago con vos.</p>
         </aside>
       </div>
+
+      {showCond && p && (
+        <div className="rt-modal" data-testid="rt-cond-modal" onClick={() => setShowCond(false)}>
+          <div className="rt-modal__box rt-cond" onClick={(e) => e.stopPropagation()}>
+            <div className="rt-modal__head">
+              <h3><ShieldCheck size={18} /> Condiciones de la reserva</h3>
+              <button type="button" onClick={() => setShowCond(false)} data-testid="rt-cond-close"><X size={18} /></button>
+            </div>
+            <p className="rt-modal__sub">Leé las condiciones de <strong>{p.titulo}</strong> antes de enviar tu solicitud.</p>
+
+            <ul className="rt-cond__facts">
+              <li><BedSingle size={15} /> {p.ropaBlanca ? 'Incluye ropa blanca' : 'No incluye ropa blanca'}</li>
+              <li><PawPrint size={15} /> {p.aceptaMascotas ? 'Se aceptan mascotas' : 'No se aceptan mascotas'}</li>
+              {p.depositoGarantia ? <li><Wallet size={15} /> Depósito en garantía: {fmtMoney(p.depositoGarantia, p.moneda)}</li> : null}
+              {(p.checkInHora || p.checkOutHora) ? <li><Clock size={15} /> Check-in {p.checkInHora || '—'} · Check-out {p.checkOutHora || '—'}</li> : null}
+              {p.estadiaMinima ? <li><AlertCircle size={15} /> Estadía mínima: {p.estadiaMinima} noches</li> : null}
+            </ul>
+
+            {(p.condiciones?.length || settings.condicionesGenerales.length) ? (
+              <ul className="rt-cond__list" data-testid="rt-cond-list">
+                {[...(settings.condicionesGenerales || []), ...(p.condiciones || [])].map((c, i) => (
+                  <li key={i}><Check size={13} /> {c}</li>
+                ))}
+              </ul>
+            ) : null}
+
+            <div className="rt-cond__notice">{settings.avisoValidez || 'Esta pre-reserva tiene una validez de 24 horas y queda sujeta a confirmación de la inmobiliaria.'}</div>
+
+            <label className="rt-cond__accept" data-testid="rt-cond-accept-wrap">
+              <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} data-testid="rt-cond-accept" />
+              <span>Declaro haber leído y aceptado las condiciones de la reserva.</span>
+            </label>
+
+            <button type="button" className="rt-book__cta" onClick={confirmAndSend} disabled={!accepted || sending} data-testid="rt-cond-confirm">
+              {sending ? 'Enviando…' : 'Confirmar y enviar pre-reserva'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
