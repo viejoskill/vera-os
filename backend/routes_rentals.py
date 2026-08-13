@@ -17,6 +17,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 
 import config as appconfig
+from people.resolver import person_resolver
 from property_repository import property_repository
 from storage_service import get_storage
 
@@ -336,6 +337,19 @@ async def update_status(rid: str, body: StatusBody):
     if body.motivo is not None:
         upd["motivo"] = body.motivo
     await _res().update_one({"_id": rid}, {"$set": upd})
+    # Al confirmar, el huésped queda agendado en Personas como inquilino.
+    if body.estado == "confirmada" and appconfig.supabase_configured():
+        h = r.get("huesped") or {}
+        if h.get("nombre") or h.get("telefono"):
+            ident = {
+                "full_name": h.get("nombre"), "phone": h.get("telefono"),
+                "whatsapp": h.get("telefono"), "email": h.get("email"),
+                "document": h.get("dni"), "role": "inquilino",
+            }
+            try:
+                await person_resolver.resolve({k: v for k, v in ident.items() if v})
+            except Exception:
+                pass
     return _res_out(await _res().find_one({"_id": rid}))
 
 

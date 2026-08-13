@@ -65,6 +65,9 @@ export const AlquileresScreen = () => {
           <p className="rt__sub">Gestioná tus propiedades de verano, el calendario de disponibilidad y las pre-reservas que entran desde la web.</p>
         </div>
         <div className="rt__head-actions">
+          <Button variant="ghost" size="md" onClick={() => window.open('/reservar', '_blank')} data-testid="rt-open-web">
+            <ExternalLink size={16} /> Ver web
+          </Button>
           <Button variant="secondary" size="md" onClick={openImport} data-testid="rt-import-open">
             <Building2 size={16} /> Importar de ventas
           </Button>

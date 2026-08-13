@@ -24,6 +24,7 @@ export const RentalWorkspace = () => {
   const [owner, setOwner] = useState({ nombre: '', telefono: '', email: '', dni: '', observaciones: '' });
   const [ocupados, setOcupados] = useState<{ checkIn: string; checkOut: string }[]>([]);
   const [reservas, setReservas] = useState<Reservation[]>([]);
+  const [bloqueos, setBloqueos] = useState<Reservation[]>([]);
   const [sel, setSel] = useState<{ checkIn: string | null; checkOut: string | null }>({ checkIn: null, checkOut: null });
   const [flash, setFlash] = useState('');
   const [saving, setSaving] = useState(false);
@@ -33,11 +34,18 @@ export const RentalWorkspace = () => {
   const loadRes = useCallback(async (propertyId: string) => {
     const r = await api.listReservations(propertyId);
     setReservas(r.filter((x) => x.estado !== 'bloqueo'));
+    setBloqueos(r.filter((x) => x.estado === 'bloqueo'));
     setOcupados(
       r.filter((x) => ['prereserva', 'confirmada', 'encurso', 'bloqueo'].includes(x.estado))
         .map((x) => ({ checkIn: x.checkIn, checkOut: x.checkOut })),
     );
   }, []);
+
+  const delBlock = async (rid: string) => {
+    if (!pid) return;
+    await api.deleteReservation(rid);
+    await loadRes(pid);
+  };
 
   useEffect(() => {
     if (isNew) return;
@@ -198,6 +206,17 @@ export const RentalWorkspace = () => {
                 </div>
               )}
               <p className="rt-hint">Tocá una fecha de inicio y otra de fin para bloquear (mantenimiento, uso propio, etc.).</p>
+              {bloqueos.length > 0 && (
+                <div className="rt-blocks" data-testid="rt-blocks">
+                  <p className="rt-blocks__title">Fechas bloqueadas</p>
+                  {bloqueos.map((b) => (
+                    <div className="rt-blocks__row" key={b.id} data-testid={`rt-block-${b.id}`}>
+                      <span>{b.checkIn} → {b.checkOut} · {b.noches} noches{b.motivo ? ` · ${b.motivo}` : ''}</span>
+                      <button type="button" onClick={() => delBlock(b.id)} data-testid={`rt-delblock-${b.id}`}><Trash2 size={13} /> Quitar</button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           )}
         </section>

@@ -36,7 +36,25 @@ const queryClient = new QueryClient({
 });
 
 /** VERA OS root: providers + router + shell. */
-export const VeraOS = () => (
+export const VeraOS = () => {
+  // Subdominio de marca para alquileres: sirve SOLO la web pública de reservas,
+  // sin login ni el OS (alquileres.varelapropiedadescde.com.ar).
+  const isRentalsHost = typeof window !== 'undefined' && window.location.hostname.startsWith('alquileres.');
+  if (isRentalsHost) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<ReservarPublico />} />
+            <Route path="/reservar" element={<ReservarPublico />} />
+            <Route path="/reservar/:slug" element={<ReservarPropiedad />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </QueryClientProvider>
+    );
+  }
+  return (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <AuthProvider>
@@ -77,4 +95,5 @@ export const VeraOS = () => (
       </AuthProvider>
     </BrowserRouter>
   </QueryClientProvider>
-);
+  );
+};
