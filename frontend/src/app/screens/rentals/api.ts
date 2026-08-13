@@ -9,9 +9,24 @@ export interface RentalProperty {
   amenities: string[]; moneda: string; precioNoche: number; activa: boolean;
   imagenes: RentalImage[];
   descSemana?: number; descQuincena?: number; descMes?: number;
+  comisionPct?: number; comisionMinima?: number; notas?: string;
   propietario?: { nombre?: string; telefono?: string; email?: string; dni?: string; observaciones?: string };
   ocupados?: Occupied[]; descuentos?: { semana: number; quincena: number; mes: number };
 }
+export interface Movimiento {
+  id: string; propertyId: string; fecha: string; tipo: string; monto: number;
+  descripcion?: string; reservaId?: string; createdAt?: string;
+}
+export interface Liquidacion {
+  propiedad: { id: string; codigo?: string; titulo: string; moneda: string };
+  propietario: { nombre?: string; telefono?: string; email?: string; dni?: string };
+  periodo: { desde: string; hasta: string };
+  ingresos: number; comision: number; gastosPropietario: number; gastosNuestros: number;
+  netoPropietario: number; movimientos: Movimiento[];
+}
+export const TIPO_MOV: Record<string, string> = {
+  ingreso: 'Seña / Ingreso', gasto_prop: 'Gasto propietario', gasto_nuestro: 'Gasto agencia', comision: 'Comisión',
+};
 export interface SaleProperty {
   id: string; titulo: string; direccion: string; localidad: string;
   dormitorios: number; banos: number; fotos: number; cover: string;
@@ -60,6 +75,12 @@ export const api = {
   setStatus: (rid: string, estado: string, motivo?: string): Promise<Reservation> =>
     fetch(`${RENTALS_API}/reservations/${rid}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estado, motivo }) }).then(json),
   deleteReservation: (rid: string) => fetch(`${RENTALS_API}/reservations/${rid}`, { method: 'DELETE' }).then(json),
+  listMovimientos: (pid: string): Promise<Movimiento[]> => fetch(`${RENTALS_API}/properties/${pid}/movimientos`).then(json),
+  createMovimiento: (body: Record<string, unknown>): Promise<Movimiento> =>
+    fetch(`${RENTALS_API}/movimientos`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(json),
+  deleteMovimiento: (mid: string) => fetch(`${RENTALS_API}/movimientos/${mid}`, { method: 'DELETE' }).then(json),
+  liquidacion: (propertyId: string, desde: string, hasta: string): Promise<Liquidacion> =>
+    fetch(`${RENTALS_API}/liquidacion?propertyId=${propertyId}&desde=${desde}&hasta=${hasta}`).then(json),
   // Público
   publicList: (): Promise<RentalProperty[]> => fetch(`${RENTALS_API}/public/properties`).then(json),
   publicProperty: (slug: string): Promise<RentalProperty> => fetch(`${RENTALS_API}/public/properties/${slug}`).then(json),

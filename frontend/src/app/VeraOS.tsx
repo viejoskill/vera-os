@@ -20,6 +20,7 @@ import { TeamScreen } from '@app/screens/TeamScreen';
 import { TasacionesScreen } from '@app/screens/TasacionesScreen';
 import { AlquileresScreen } from '@app/screens/rentals/AlquileresScreen';
 import { RentalWorkspace } from '@app/screens/rentals/RentalWorkspace';
+import { LiquidacionesScreen } from '@app/screens/rentals/LiquidacionesScreen';
 import { PublicListing } from '@app/public/PublicListing';
 import { TasarPublico } from '@app/public/TasarPublico';
 import { ReservarPublico } from '@app/public/ReservarPublico';
@@ -88,6 +89,7 @@ export const VeraOS = () => {
               <Route path="alquileres" element={<AlquileresScreen />} />
               <Route path="alquileres/nueva" element={<RentalWorkspace />} />
               <Route path="alquileres/:id" element={<RentalWorkspace />} />
+              <Route path="liquidaciones" element={<LiquidacionesScreen />} />
               <Route path="*" element={<Navigate to="/hoy" replace />} />
             </Route>
           </Route>

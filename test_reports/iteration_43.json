@@ -1,0 +1,37 @@
+{
+  "summary": "E2E Frontend test of Rentals Phase 3 (Ficha Financiera + Liquidaciones) completed successfully. All flows working: admin login → /hoy, navigation to /alquileres shows CDE002 card, edit opens RentalWorkspace where movimientos can be added (gasto_prop $15.000, fecha 2026-01-15) and deleted via rt-delmov. Liquidaciones screen (admin-only) renders correctly, property selector shows CDE002, and generating liquidacion for 2026-01-01 → 2026-01-31 returns exact expected values.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Liquidaciones / RentalWorkspace movimientos", "issues": ["Los inputs type=date muestran 'mm/dd/yyyy' (formato en-US) en vez de dd/mm/yyyy, aunque toda la UI está en español. Depende del locale del navegador; considerar setear lang='es' o usar un date picker localizado."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "LiquidacionesScreen: al montar hace api.listProperties() y auto-selecciona la primera. OK para admin, pero no muestra estado de carga inicial ni maneja error si listProperties falla.",
+    "RentalWorkspace.addMov: valida fecha y monto, pero no valida que monto > 0 ni tipo válido antes de POST. Backend debería seguir siendo la fuente de verdad.",
+    "Los inputs date en formularios (rt-mov-fecha, rt-liq-desde/hasta) muestran placeholder mm/dd/yyyy — considerar localización explícita para UX en español."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "100%"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (admin)",
+  "seed_data_creation": "No creé seed data adicional. Los datos de prueba (CDE002 + reserva Ana + movimientos) ya existían. Durante el test agregué y luego eliminé 1 movimiento 'Movimiento TEST QA' → estado limpio final.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Login admin qa_varela@vera.test funciona y redirige a /hoy. Propiedad CDE002 (id 6744cf8a907f4a239a7504101c66a2df) tiene 4 movimientos base (comisión 31500, ingreso 315000, gasto_prop 20000, gasto_nuestro 8000) y 1 reserva confirmada de Ana Huésped 2026-01-10→2026-01-17. Liquidación 2026-01-01→2026-01-31 devuelve neto correcto $263.500.",
+  "verification_results": {
+    "login_redirects_to_hoy": true,
+    "alquileres_shows_CDE002": true,
+    "rental_workspace_opens": true,
+    "movimiento_add_visible_in_list": true,
+    "movimiento_delete_removes_row": true,
+    "liquidaciones_screen_admin_accessible": true,
+    "neto_matches_expected_263500": true,
+    "movimientos_listed_in_liquidacion": true,
+    "gastos_agencia_not_deducted": true,
+    "console_errors": "none observed"
+  }
+}

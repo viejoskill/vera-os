@@ -1,5 +1,5 @@
 import { createElement, type ReactNode } from 'react';
-import { Sun, Bot, Building2, Users, GitBranch, FileText, Clapperboard, Blocks, Activity, UserCog, Calculator, Palmtree } from 'lucide-react';
+import { Sun, Bot, Building2, Users, GitBranch, FileText, Clapperboard, Blocks, Activity, UserCog, Calculator, Palmtree, Wallet } from 'lucide-react';
 import { featureFlags } from '@vera/config';
 
 export interface NavRoute {
@@ -67,6 +67,13 @@ export const navRoutes: NavRoute[] = [
     label: 'Alquileres',
     path: '/alquileres',
     icon: createElement(Palmtree, { size: 18 }),
+    enabled: featureFlags.alquileres,
+  },
+  {
+    id: 'liquidaciones',
+    label: 'Liquidaciones',
+    path: '/liquidaciones',
+    icon: createElement(Wallet, { size: 18 }),
     enabled: featureFlags.alquileres,
   },
   {

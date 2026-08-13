@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, Trash2, Upload, Star, CalendarX2, ExternalLink } from 'lucide-react';
 import { Button, Input } from '@vera/ui';
-import { api, fmtMoney, nightsBetween, ESTADOS, type RentalProperty, type Reservation, type RentalImage } from './api';
+import { api, fmtMoney, nightsBetween, ESTADOS, TIPO_MOV, type RentalProperty, type Reservation, type RentalImage, type Movimiento } from './api';
 import { RentalCalendar } from './RentalCalendar';
 import './rentals.css';
 
@@ -25,6 +25,8 @@ export const RentalWorkspace = () => {
   const [ocupados, setOcupados] = useState<{ checkIn: string; checkOut: string }[]>([]);
   const [reservas, setReservas] = useState<Reservation[]>([]);
   const [bloqueos, setBloqueos] = useState<Reservation[]>([]);
+  const [movs, setMovs] = useState<Movimiento[]>([]);
+  const [nm, setNm] = useState({ fecha: '', tipo: 'ingreso', monto: '', descripcion: '' });
   const [sel, setSel] = useState<{ checkIn: string | null; checkOut: string | null }>({ checkIn: null, checkOut: null });
   const [flash, setFlash] = useState('');
   const [saving, setSaving] = useState(false);
@@ -47,6 +49,18 @@ export const RentalWorkspace = () => {
     await loadRes(pid);
   };
 
+  const loadMovs = useCallback(async (propertyId: string) => {
+    setMovs(await api.listMovimientos(propertyId));
+  }, []);
+
+  const addMov = async () => {
+    if (!pid || !nm.fecha || !nm.monto) { setFlash('Completá fecha y monto del movimiento.'); setTimeout(() => setFlash(''), 3000); return; }
+    await api.createMovimiento({ propertyId: pid, fecha: nm.fecha, tipo: nm.tipo, monto: Number(nm.monto), descripcion: nm.descripcion });
+    setNm({ fecha: '', tipo: 'ingreso', monto: '', descripcion: '' });
+    await loadMovs(pid);
+  };
+  const delMov = async (mid: string) => { if (pid) { await api.deleteMovimiento(mid); await loadMovs(pid); } };
+
   useEffect(() => {
     if (isNew) return;
     (async () => {
@@ -54,8 +68,9 @@ export const RentalWorkspace = () => {
       setF(p); setSlug(p.slug); setImages(p.imagenes); setAmenText((p.amenities || []).join(', '));
       setOwner({ nombre: '', telefono: '', email: '', dni: '', observaciones: '', ...(p.propietario || {}) });
       await loadRes(p.id);
+      await loadMovs(p.id);
     })();
-  }, [id, isNew, loadRes]);
+  }, [id, isNew, loadRes, loadMovs]);
 
   const save = async () => {
     if (!f.titulo) { setFlash('Poné un título a la propiedad.'); return; }
@@ -166,6 +181,11 @@ export const RentalWorkspace = () => {
             <Input label="% x quincena (15+)" type="number" value={String(f.descQuincena ?? '')} onChange={(e) => set('descQuincena', Number(e.target.value))} data-testid="rt-desc-quincena" />
             <Input label="% x mes (30+)" type="number" value={String(f.descMes ?? '')} onChange={(e) => set('descMes', Number(e.target.value))} data-testid="rt-desc-mes" />
           </div>
+          <div className="rt-row2">
+            <Input label="Comisión (%)" type="number" value={String(f.comisionPct ?? '')} onChange={(e) => set('comisionPct', Number(e.target.value))} data-testid="rt-comision-pct" />
+            <Input label="Comisión mínima ($)" type="number" value={String(f.comisionMinima ?? '')} onChange={(e) => set('comisionMinima', Number(e.target.value))} data-testid="rt-comision-min" />
+          </div>
+          <p className="rt-hint">La comisión se genera sola al confirmar una reserva (podés editarla en la ficha). Si el % da menos que el mínimo, se usa el mínimo.</p>
           <label className="rt-chk"><input type="checkbox" checked={!!f.activa} onChange={(e) => set('activa', e.target.checked)} data-testid="rt-activa" /><span>Publicada en la web (visible para reservar)</span></label>
 
           <h3 className="rt-ws__sec">Propietario</h3>
@@ -179,6 +199,10 @@ export const RentalWorkspace = () => {
           </div>
           <label className="rt-field"><span>Observaciones (uso interno)</span>
             <textarea rows={2} value={owner.observaciones} onChange={(e) => setOwner((s) => ({ ...s, observaciones: e.target.value }))} data-testid="rt-owner-obs" /></label>
+
+          <h3 className="rt-ws__sec">Observaciones de la propiedad</h3>
+          <label className="rt-field"><span>Notas internas (historial, detalles, lo que necesites)</span>
+            <textarea rows={3} value={f.notas || ''} onChange={(e) => set('notas', e.target.value)} data-testid="rt-notas" /></label>
         </section>
 
         <section className="rt-ws__col">
@@ -226,6 +250,35 @@ export const RentalWorkspace = () => {
           )}
         </section>
       </div>
+
+      {pid && (
+        <section className="rt-ws__full">
+          <h3 className="rt-ws__sec">Ficha financiera</h3>
+          <div className="rt-mov__add" data-testid="rt-mov-add">
+            <input type="date" value={nm.fecha} onChange={(e) => setNm((s) => ({ ...s, fecha: e.target.value }))} data-testid="rt-mov-fecha" />
+            <select value={nm.tipo} onChange={(e) => setNm((s) => ({ ...s, tipo: e.target.value }))} data-testid="rt-mov-tipo">
+              {Object.entries(TIPO_MOV).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+            <input type="number" placeholder="Monto" value={nm.monto} onChange={(e) => setNm((s) => ({ ...s, monto: e.target.value }))} data-testid="rt-mov-monto" />
+            <input placeholder="Descripción" value={nm.descripcion} onChange={(e) => setNm((s) => ({ ...s, descripcion: e.target.value }))} data-testid="rt-mov-desc" />
+            <Button variant="secondary" size="sm" onClick={addMov} data-testid="rt-mov-save">Agregar</Button>
+          </div>
+          {movs.length === 0 ? <p className="rt-hint">Sin movimientos cargados.</p> : (
+            <div className="rt-mov">
+              {movs.map((m) => (
+                <div className={`rt-mov__row rt-mov__row--${m.tipo}`} key={m.id} data-testid={`rt-mov-${m.id}`}>
+                  <span className="rt-mov__fecha">{m.fecha}</span>
+                  <span className="rt-mov__tipo">{TIPO_MOV[m.tipo] || m.tipo}</span>
+                  <span className="rt-mov__desc">{m.descripcion}</span>
+                  <span className="rt-mov__monto">{fmtMoney(m.monto, f.moneda)}</span>
+                  <button type="button" onClick={() => delMov(m.id)} data-testid={`rt-delmov-${m.id}`}><Trash2 size={13} /></button>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="rt-hint">Las liquidaciones al propietario se arman en la sección <strong>Liquidaciones</strong> (menú lateral), eligiendo la propiedad y el período.</p>
+        </section>
+      )}
 
       {pid && (
         <section className="rt-ws__full">

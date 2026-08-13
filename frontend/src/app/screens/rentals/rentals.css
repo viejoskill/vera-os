@@ -263,3 +263,28 @@
 .rt-ok h2 { font-family: 'Playfair Display', serif; color: #fff; }
 .rt-ok p { color: var(--ptext2); }
 .rt-ok svg { color: var(--am); }
+
+/* Ficha financiera + liquidaciones */
+.rt-mov__add { display: grid; grid-template-columns: 150px 160px 130px 1fr auto; gap: 8px; margin-bottom: 14px; align-items: center; }
+.rt-mov__add input, .rt-mov__add select { background: var(--vera-color-surface); border: 1px solid var(--vera-color-border); color: var(--vera-color-text); padding: 9px 11px; border-radius: var(--vera-radius-md, 10px); font: inherit; }
+.rt-mov { display: flex; flex-direction: column; gap: 6px; }
+.rt-mov__row { display: grid; grid-template-columns: 110px 150px 1fr 130px auto; gap: 10px; align-items: center; padding: 9px 14px; background: var(--vera-color-surface); border: 1px solid var(--vera-color-border); border-left: 3px solid var(--vera-color-border); border-radius: var(--vera-radius-md, 10px); font-size: .85rem; }
+.rt-mov__row--ingreso { border-left-color: #4bbf6b; }
+.rt-mov__row--comision { border-left-color: var(--vera-color-primary); }
+.rt-mov__row--gasto_prop { border-left-color: #e0a04b; }
+.rt-mov__row--gasto_nuestro { border-left-color: #6ba0e0; }
+.rt-mov__fecha { color: var(--vera-color-text-secondary); }
+.rt-mov__monto { text-align: right; font-weight: 600; }
+.rt-mov__row button { background: none; border: none; color: #e07575; cursor: pointer; }
+.rt-liq__filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.rt-liq__filters select, .rt-liq__filters input { background: var(--vera-color-surface); border: 1px solid var(--vera-color-border); color: var(--vera-color-text); padding: 10px 12px; border-radius: var(--vera-radius-md, 10px); font: inherit; }
+.rt-liq { background: var(--vera-color-card, var(--vera-color-surface)); border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-lg, 16px); padding: 20px; }
+.rt-liq__head h3 { font-size: 1.15rem; margin-bottom: 4px; }
+.rt-liq__head p { color: var(--vera-color-text-secondary); font-size: .88rem; }
+.rt-liq__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 18px 0; }
+.rt-liq__cell { background: var(--vera-color-surface); border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-md, 12px); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.rt-liq__cell span { font-size: .8rem; color: var(--vera-color-text-secondary); }
+.rt-liq__cell strong { font-size: 1.25rem; }
+.rt-liq__cell--net { background: rgba(214,170,40,.12); border-color: var(--vera-color-primary); }
+.rt-liq__cell--net strong { color: var(--vera-color-primary); }
+@media (max-width: 860px) { .rt-mov__add, .rt-mov__row { grid-template-columns: 1fr 1fr; } }

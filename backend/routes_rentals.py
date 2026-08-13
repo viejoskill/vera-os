@@ -116,9 +116,35 @@ def _prop_out(p: dict, public: bool = False) -> dict:
         out.update({
             "descSemana": p.get("descSemana", 0), "descQuincena": p.get("descQuincena", 0),
             "descMes": p.get("descMes", 0), "createdAt": p.get("createdAt"),
+            "comisionPct": p.get("comisionPct", 0), "comisionMinima": p.get("comisionMinima", 0),
+            "notas": p.get("notas", ""),
             "propietario": p.get("propietario") or {},
         })
     return out
+
+
+def _movs():
+    return _db()["rental_movimientos"]
+
+
+TIPOS_MOV = {"ingreso", "gasto_prop", "gasto_nuestro", "comision"}
+
+
+def _mov_out(m: dict) -> dict:
+    return {
+        "id": m["_id"], "propertyId": m.get("propertyId"), "fecha": m.get("fecha"),
+        "tipo": m.get("tipo"), "monto": m.get("monto"), "descripcion": m.get("descripcion"),
+        "reservaId": m.get("reservaId"), "createdAt": m.get("createdAt"),
+    }
+
+
+class MovimientoBody(BaseModel):
+    propertyId: str
+    fecha: str
+    tipo: str
+    monto: float
+    descripcion: str | None = ""
+    reservaId: str | None = None
 
 
 def _res_out(r: dict) -> dict:
@@ -155,6 +181,9 @@ class PropertyBody(BaseModel):
     descQuincena: float = 0
     descMes: float = 0
     activa: bool = True
+    comisionPct: float = 0
+    comisionMinima: float = 0
+    notas: str | None = ""
     propietario: OwnerBody | None = None
 
 
@@ -368,6 +397,22 @@ async def update_status(rid: str, body: StatusBody):
                 await person_resolver.resolve({k: v for k, v in ident.items() if v})
             except Exception:
                 pass
+    # Genera la comisión automática (editable luego en la ficha).
+    if body.estado == "confirmada":
+        prop = await _props().find_one({"_id": r.get("propertyId")})
+        exists = await _movs().find_one({"reservaId": rid, "tipo": "comision"})
+        if prop and not exists:
+            pct = float(prop.get("comisionPct") or 0)
+            minima = float(prop.get("comisionMinima") or 0)
+            base = float(r.get("montoEstimado") or 0)
+            com = max(round(base * pct / 100), minima)
+            if com > 0:
+                await _movs().insert_one({
+                    "_id": uuid4().hex, "propertyId": r["propertyId"], "reservaId": rid,
+                    "fecha": r.get("checkIn"), "tipo": "comision", "monto": com,
+                    "descripcion": f"Comisión {pct}% · {r.get('huesped', {}).get('nombre', '')}".strip(),
+                    "createdAt": _now(),
+                })
     return _res_out(await _res().find_one({"_id": rid}))
 
 
@@ -380,6 +425,50 @@ async def delete_reservation(rid: str):
 async def property_calendar(pid: str):
     await _get_prop(pid)
     return {"ocupados": await _occupied(pid)}
+
+
+# ------------------------------ Finanzas -------------------------------- #
+@router.get("/properties/{pid}/movimientos")
+async def list_movimientos(pid: str):
+    cur = _movs().find({"propertyId": pid}).sort("fecha", -1)
+    return [_mov_out(m) async for m in cur]
+
+
+@router.post("/movimientos", status_code=201)
+async def create_movimiento(body: MovimientoBody):
+    await _get_prop(body.propertyId)
+    if body.tipo not in TIPOS_MOV:
+        raise HTTPException(400, "Tipo de movimiento inválido.")
+    doc = {**body.model_dump(), "_id": uuid4().hex, "createdAt": _now()}
+    await _movs().insert_one(doc)
+    return _mov_out(doc)
+
+
+@router.delete("/movimientos/{mid}", status_code=204)
+async def delete_movimiento(mid: str):
+    await _movs().delete_one({"_id": mid})
+
+
+@router.get("/liquidacion")
+async def liquidacion(propertyId: str = Query(...), desde: str = Query(...), hasta: str = Query(...)):
+    prop = await _get_prop(propertyId)
+    tot = {"ingreso": 0.0, "gasto_prop": 0.0, "gasto_nuestro": 0.0, "comision": 0.0}
+    movs = []
+    cur = _movs().find({"propertyId": propertyId, "fecha": {"$gte": desde, "$lte": hasta}}).sort("fecha", 1)
+    async for m in cur:
+        t = m.get("tipo")
+        if t in tot:
+            tot[t] += float(m.get("monto") or 0)
+        movs.append(_mov_out(m))
+    neto = round(tot["ingreso"] - tot["comision"] - tot["gasto_prop"])
+    return {
+        "propiedad": {"id": prop["_id"], "codigo": prop.get("codigo"), "titulo": prop.get("titulo"), "moneda": prop.get("moneda", "ARS")},
+        "propietario": prop.get("propietario") or {},
+        "periodo": {"desde": desde, "hasta": hasta},
+        "ingresos": round(tot["ingreso"]), "comision": round(tot["comision"]),
+        "gastosPropietario": round(tot["gasto_prop"]), "gastosNuestros": round(tot["gasto_nuestro"]),
+        "netoPropietario": neto, "movimientos": movs,
+    }
 
 
 # --------------------- Importar desde el CRM de ventas -------------------- #
