@@ -1126,3 +1126,7 @@ Módulo nuevo de rentas de verano estilo Airbnb. Verificado E2E por testing_agen
 - **Funnel ML**: link/QR por propiedad con `?origen=ml` → marca origen 'MercadoLibre' en la reserva (no hay API de import de ML; queda para fase avanzada vía OAuth).
 - **Decisiones del usuario**: propiedades set aparte; solo verano (sin temporadas); precio/noche + descuentos semana/quincena/mes; roles de empleados = fase siguiente (hoy lo usa el admin logueado).
 - **Pendiente/backlog**: login de 2 empleados con acceso restringido (solo Alquileres, sin liquidaciones/config); hardening (unique index anti doble-booking concurrente, rate-limit del endpoint público de pre-reserva).
+
+## Alquileres — Propietario + Importar de Ventas (2026-08)
+- **Datos del propietario** por propiedad de alquiler: `propietario {nombre, telefono, email, dni, observaciones}` en `PropertyBody`, sección "Propietario" en el RentalWorkspace. Se guarda/lee en Mongo, no se expone en la web pública.
+- **Importar del CRM de ventas**: `GET /api/rentals/sale-properties` (lista propiedades de venta desde Supabase, covers con signed URL en paralelo ~3s) + `POST /api/rentals/import/{sale_id}` (crea alquiler prellenado: título/dirección/localidad/dormitorios/baños/descripción, capacidad estimada = dorm×2, **copia las fotos** al path de rentals para que sean independientes de la publicación de venta, queda `activa=false` hasta ponerle precio). UI: botón "Importar de ventas" + modal con buscador en AlquileresScreen. Verificado por curl (30 props, import con 4 fotos copiadas, proxy 200).

@@ -21,6 +21,7 @@ export const RentalWorkspace = () => {
   const [slug, setSlug] = useState('');
   const [images, setImages] = useState<RentalImage[]>([]);
   const [amenText, setAmenText] = useState('');
+  const [owner, setOwner] = useState({ nombre: '', telefono: '', email: '', dni: '', observaciones: '' });
   const [ocupados, setOcupados] = useState<{ checkIn: string; checkOut: string }[]>([]);
   const [reservas, setReservas] = useState<Reservation[]>([]);
   const [sel, setSel] = useState<{ checkIn: string | null; checkOut: string | null }>({ checkIn: null, checkOut: null });
@@ -43,6 +44,7 @@ export const RentalWorkspace = () => {
     (async () => {
       const p = await api.getProperty(id as string);
       setF(p); setSlug(p.slug); setImages(p.imagenes); setAmenText((p.amenities || []).join(', '));
+      setOwner({ nombre: '', telefono: '', email: '', dni: '', observaciones: '', ...(p.propietario || {}) });
       await loadRes(p.id);
     })();
   }, [id, isNew, loadRes]);
@@ -50,7 +52,7 @@ export const RentalWorkspace = () => {
   const save = async () => {
     if (!f.titulo) { setFlash('Poné un título a la propiedad.'); return; }
     setSaving(true);
-    const body = { ...f, amenities: amenText.split(',').map((a) => a.trim()).filter(Boolean) };
+    const body = { ...f, amenities: amenText.split(',').map((a) => a.trim()).filter(Boolean), propietario: owner };
     try {
       if (pid) {
         const p = await api.updateProperty(pid, body);
@@ -152,6 +154,18 @@ export const RentalWorkspace = () => {
             <Input label="% x mes (30+)" type="number" value={String(f.descMes ?? '')} onChange={(e) => set('descMes', Number(e.target.value))} data-testid="rt-desc-mes" />
           </div>
           <label className="rt-chk"><input type="checkbox" checked={!!f.activa} onChange={(e) => set('activa', e.target.checked)} data-testid="rt-activa" /><span>Publicada en la web (visible para reservar)</span></label>
+
+          <h3 className="rt-ws__sec">Propietario</h3>
+          <div className="rt-row2">
+            <Input label="Nombre y apellido" value={owner.nombre} onChange={(e) => setOwner((s) => ({ ...s, nombre: e.target.value }))} data-testid="rt-owner-nombre" />
+            <Input label="Teléfono / WhatsApp" value={owner.telefono} onChange={(e) => setOwner((s) => ({ ...s, telefono: e.target.value }))} data-testid="rt-owner-telefono" />
+          </div>
+          <div className="rt-row2">
+            <Input label="Email" value={owner.email} onChange={(e) => setOwner((s) => ({ ...s, email: e.target.value }))} data-testid="rt-owner-email" />
+            <Input label="DNI / CUIT" value={owner.dni} onChange={(e) => setOwner((s) => ({ ...s, dni: e.target.value }))} data-testid="rt-owner-dni" />
+          </div>
+          <label className="rt-field"><span>Observaciones (uso interno)</span>
+            <textarea rows={2} value={owner.observaciones} onChange={(e) => setOwner((s) => ({ ...s, observaciones: e.target.value }))} data-testid="rt-owner-obs" /></label>
         </section>
 
         <section className="rt-ws__col">

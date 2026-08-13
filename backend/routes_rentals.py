@@ -17,6 +17,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 
 import config as appconfig
+from property_repository import property_repository
 from storage_service import get_storage
 
 router = APIRouter(prefix="/rentals", tags=["rentals"])
@@ -99,6 +100,7 @@ def _prop_out(p: dict, public: bool = False) -> dict:
         out.update({
             "descSemana": p.get("descSemana", 0), "descQuincena": p.get("descQuincena", 0),
             "descMes": p.get("descMes", 0), "createdAt": p.get("createdAt"),
+            "propietario": p.get("propietario") or {},
         })
     return out
 
@@ -114,6 +116,14 @@ def _res_out(r: dict) -> dict:
 
 
 # ------------------------------- Modelos --------------------------------- #
+class OwnerBody(BaseModel):
+    nombre: str | None = ""
+    telefono: str | None = ""
+    email: str | None = ""
+    dni: str | None = ""
+    observaciones: str | None = ""
+
+
 class PropertyBody(BaseModel):
     titulo: str
     direccion: str | None = ""
@@ -129,6 +139,7 @@ class PropertyBody(BaseModel):
     descQuincena: float = 0
     descMes: float = 0
     activa: bool = True
+    propietario: OwnerBody | None = None
 
 
 class ReservationBody(BaseModel):
@@ -337,6 +348,74 @@ async def delete_reservation(rid: str):
 async def property_calendar(pid: str):
     await _get_prop(pid)
     return {"ocupados": await _occupied(pid)}
+
+
+# --------------------- Importar desde el CRM de ventas -------------------- #
+@router.get("/sale-properties")
+async def sale_properties(query: str | None = Query(None)):
+    if not appconfig.supabase_configured():
+        raise HTTPException(503, "CRM de ventas no configurado.")
+    import asyncio
+    rows = await property_repository.list_properties(status=None, query=query)
+
+    async def _cover(r: dict) -> str:
+        imgs = r.get("property_images") or []
+        c = next((i for i in imgs if i.get("is_cover")), None) or (imgs[0] if imgs else None)
+        if not c:
+            return ""
+        try:
+            return await get_storage().signed_url(c["bucket"], c["object_path"], appconfig.SIGNED_URL_TTL_SECONDS)
+        except Exception:
+            return ""
+
+    covers = await asyncio.gather(*[_cover(r) for r in rows])
+    return [{
+        "id": r["id"], "titulo": r.get("title") or "Sin título",
+        "direccion": r.get("address") or "", "localidad": r.get("city") or r.get("neighborhood") or "",
+        "dormitorios": r.get("bedrooms") or 0, "banos": r.get("bathrooms") or 0,
+        "fotos": len(r.get("property_images") or []), "cover": covers[i],
+    } for i, r in enumerate(rows)]
+
+
+@router.post("/import/{sale_id}", status_code=201)
+async def import_from_sale(sale_id: str):
+    if not appconfig.supabase_configured():
+        raise HTTPException(503, "CRM de ventas no configurado.")
+    sp = await property_repository.get(sale_id)
+    if not sp:
+        raise HTTPException(404, "Propiedad de venta no encontrada")
+    from pathlib import Path
+    pid = uuid4().hex
+    bedrooms = int(sp.get("bedrooms") or 0)
+    doc = {
+        "_id": pid, "slug": _slugify(sp.get("title") or "propiedad"),
+        "titulo": sp.get("title") or "Propiedad importada",
+        "direccion": sp.get("address") or "",
+        "localidad": sp.get("city") or sp.get("neighborhood") or "Costa del Este",
+        "descripcion": sp.get("description") or "",
+        "capacidad": max(2, bedrooms * 2) if bedrooms else 2,
+        "dormitorios": bedrooms, "banos": int(sp.get("bathrooms") or 0),
+        "amenities": [], "moneda": "ARS", "precioNoche": 0,
+        "descSemana": 0, "descQuincena": 0, "descMes": 0, "activa": False,
+        "propietario": {}, "imagenes": [], "importadaDe": sale_id, "createdAt": _now(),
+    }
+    imgs = sorted(sp.get("property_images") or [], key=lambda i: i.get("position", 0))
+    for idx, im in enumerate(imgs[:15]):
+        try:
+            data = await get_storage().download(im["bucket"], im["object_path"])
+            ext = Path(im.get("object_path") or "img.jpg").suffix.lower() or ".jpg"
+            img_id = uuid4().hex
+            object_path = f"rentals/{pid}/images/{img_id}{ext}"
+            await get_storage().upload(appconfig.BUCKET_IMAGES, object_path, data, im.get("mime_type") or "image/jpeg")
+            doc["imagenes"].append({
+                "id": img_id, "bucket": appconfig.BUCKET_IMAGES, "object_path": object_path,
+                "position": idx, "isCover": im.get("is_cover", idx == 0),
+                "contentType": im.get("mime_type") or "image/jpeg",
+            })
+        except Exception:
+            continue
+    await _props().insert_one(doc)
+    return _prop_out(doc)
 
 
 # ================================ PÚBLICO =============================== #

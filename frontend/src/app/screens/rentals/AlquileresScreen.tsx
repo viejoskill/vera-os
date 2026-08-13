@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Palmtree, Plus, Pencil, ExternalLink, Link2, Check, Users, BedDouble, Bath, CheckCircle2, XCircle } from 'lucide-react';
+import { Palmtree, Plus, Pencil, ExternalLink, Link2, Check, Users, BedDouble, Bath, CheckCircle2, XCircle, Building2, Search, X } from 'lucide-react';
 import { Button } from '@vera/ui';
-import { api, fmtMoney, ESTADOS, type RentalProperty, type Reservation } from './api';
+import { api, fmtMoney, ESTADOS, type RentalProperty, type Reservation, type SaleProperty } from './api';
 import './rentals.css';
 
 const Badge = ({ estado }: { estado: string }) => {
@@ -18,6 +18,10 @@ export const AlquileresScreen = () => {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState('');
   const [filter, setFilter] = useState('');
+  const [showImport, setShowImport] = useState(false);
+  const [salePropsList, setSalePropsList] = useState<SaleProperty[] | null>(null);
+  const [saleQuery, setSaleQuery] = useState('');
+  const [importing, setImporting] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -37,6 +41,20 @@ export const AlquileresScreen = () => {
     setRes((s) => s.map((x) => (x.id === rid ? { ...x, estado } : x)));
   };
 
+  const openImport = async () => {
+    setShowImport(true); setSalePropsList(null);
+    try { setSalePropsList(await api.saleProperties()); } catch { setSalePropsList([]); }
+  };
+  const searchSale = async () => {
+    setSalePropsList(null);
+    try { setSalePropsList(await api.saleProperties(saleQuery)); } catch { setSalePropsList([]); }
+  };
+  const doImport = async (saleId: string) => {
+    setImporting(saleId);
+    try { const p = await api.importSale(saleId); nav(`/alquileres/${p.id}`); }
+    catch (e) { alert((e as Error).message); setImporting(''); }
+  };
+
   const filtered = res.filter((r) => (filter ? r.estado === filter : r.estado !== 'bloqueo'));
 
   return (
@@ -46,9 +64,14 @@ export const AlquileresScreen = () => {
           <h2 className="rt__title"><Palmtree size={20} /> Alquileres Temporarios</h2>
           <p className="rt__sub">Gestioná tus propiedades de verano, el calendario de disponibilidad y las pre-reservas que entran desde la web.</p>
         </div>
-        <Button variant="primary" size="md" onClick={() => nav('/alquileres/nueva')} data-testid="rt-new-property">
-          <Plus size={16} /> Nueva propiedad
-        </Button>
+        <div className="rt__head-actions">
+          <Button variant="secondary" size="md" onClick={openImport} data-testid="rt-import-open">
+            <Building2 size={16} /> Importar de ventas
+          </Button>
+          <Button variant="primary" size="md" onClick={() => nav('/alquileres/nueva')} data-testid="rt-new-property">
+            <Plus size={16} /> Nueva propiedad
+          </Button>
+        </div>
       </header>
 
       <div className="rt__tabs">
@@ -137,6 +160,39 @@ export const AlquileresScreen = () => {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {showImport && (
+        <div className="rt-modal" data-testid="rt-import-modal" onClick={() => setShowImport(false)}>
+          <div className="rt-modal__box" onClick={(e) => e.stopPropagation()}>
+            <div className="rt-modal__head">
+              <h3><Building2 size={18} /> Importar desde el CRM de ventas</h3>
+              <button type="button" onClick={() => setShowImport(false)} data-testid="rt-import-close"><X size={18} /></button>
+            </div>
+            <p className="rt-modal__sub">Traé una propiedad que ya tenés en venta y se crea como alquiler (fotos y datos incluidos). Queda <strong>oculta</strong> hasta que le pongas precio y la publiques.</p>
+            <div className="rt-modal__search">
+              <input placeholder="Buscar por título, dirección o barrio…" value={saleQuery}
+                onChange={(e) => setSaleQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && searchSale()} data-testid="rt-import-search" />
+              <Button variant="secondary" size="sm" onClick={searchSale}><Search size={15} /> Buscar</Button>
+            </div>
+            <div className="rt-modal__list" data-testid="rt-import-list">
+              {salePropsList === null ? <p className="rt__loading">Cargando propiedades de venta…</p> :
+                salePropsList.length === 0 ? <p className="rt__loading">No se encontraron propiedades.</p> :
+                salePropsList.map((s) => (
+                  <div className="rt-sale" key={s.id} data-testid={`rt-sale-${s.id}`}>
+                    <div className="rt-sale__img" style={s.cover ? { backgroundImage: `url(${s.cover})` } : undefined}>{!s.cover && <Building2 size={20} />}</div>
+                    <div className="rt-sale__info">
+                      <strong>{s.titulo}</strong>
+                      <span>{s.direccion || s.localidad} · {s.dormitorios} dorm · {s.banos} baños · {s.fotos} fotos</span>
+                    </div>
+                    <Button variant="primary" size="sm" onClick={() => doImport(s.id)} disabled={!!importing} data-testid={`rt-import-${s.id}`}>
+                      {importing === s.id ? 'Importando…' : 'Importar'}
+                    </Button>
+                  </div>
+                ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

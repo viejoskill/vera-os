@@ -9,7 +9,12 @@ export interface RentalProperty {
   amenities: string[]; moneda: string; precioNoche: number; activa: boolean;
   imagenes: RentalImage[];
   descSemana?: number; descQuincena?: number; descMes?: number;
+  propietario?: { nombre?: string; telefono?: string; email?: string; dni?: string; observaciones?: string };
   ocupados?: Occupied[]; descuentos?: { semana: number; quincena: number; mes: number };
+}
+export interface SaleProperty {
+  id: string; titulo: string; direccion: string; localidad: string;
+  dormitorios: number; banos: number; fotos: number; cover: string;
 }
 export interface Occupied { checkIn: string; checkOut: string; estado?: string; }
 export interface Reservation {
@@ -35,6 +40,10 @@ export const api = {
   updateProperty: (id: string, body: Partial<RentalProperty>): Promise<RentalProperty> =>
     fetch(`${RENTALS_API}/properties/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(json),
   deleteProperty: (id: string) => fetch(`${RENTALS_API}/properties/${id}`, { method: 'DELETE' }).then(json),
+  saleProperties: (query?: string): Promise<SaleProperty[]> =>
+    fetch(`${RENTALS_API}/sale-properties${query ? `?query=${encodeURIComponent(query)}` : ''}`).then(json),
+  importSale: (saleId: string): Promise<RentalProperty> =>
+    fetch(`${RENTALS_API}/import/${saleId}`, { method: 'POST' }).then(json),
   uploadImage: (id: string, file: File): Promise<RentalImage> => {
     const fd = new FormData(); fd.append('file', file);
     return fetch(`${RENTALS_API}/properties/${id}/images`, { method: 'POST', body: fd }).then(json);
