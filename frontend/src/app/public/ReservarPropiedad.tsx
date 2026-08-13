@@ -74,6 +74,7 @@ export const ReservarPropiedad = () => {
 
         <div className="rt-detail__info">
           <h1>{p.titulo}</h1>
+          {p.codigo && <p className="rt-detail__code" data-testid="rt-detail-code">Cód. {p.codigo}</p>}
           <p className="rt-detail__addr"><MapPin size={15} /> {p.direccion ? `${p.direccion} · ` : ''}{p.localidad}</p>
           <div className="rt-detail__specs">
             <span><Users size={16} /> {p.capacidad} huéspedes</span>

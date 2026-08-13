@@ -121,7 +121,7 @@ export const RentalWorkspace = () => {
       </div>
 
       <header className="rt__head">
-        <h2 className="rt__title">{isNew ? 'Nueva propiedad' : f.titulo}</h2>
+        <h2 className="rt__title">{isNew ? 'Nueva propiedad' : <>{f.codigo && <span className="rt-ws__code">{f.codigo}</span>}{f.titulo}</>}</h2>
         <div className="rt__head-actions">
           {!isNew && <Button variant="ghost" size="sm" onClick={removeProp} data-testid="rt-delete-prop"><Trash2 size={14} /> Eliminar</Button>}
           <Button variant="primary" size="md" onClick={save} disabled={saving} data-testid="rt-save-prop"><Save size={16} /> {saving ? 'Guardando…' : 'Guardar'}</Button>

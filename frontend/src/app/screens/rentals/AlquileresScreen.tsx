@@ -100,6 +100,7 @@ export const AlquileresScreen = () => {
                     <span className={`rt-card__state ${p.activa ? 'on' : 'off'}`}>{p.activa ? 'Publicada' : 'Oculta'}</span>
                   </div>
                   <div className="rt-card__body">
+                    {p.codigo && <span className="rt-card__code" data-testid={`rt-code-${p.id}`}>{p.codigo}</span>}
                     <h3>{p.titulo}</h3>
                     <p className="rt-card__addr">{p.direccion || p.localidad}</p>
                     <div className="rt-card__specs">

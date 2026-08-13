@@ -4,7 +4,7 @@ export const RENTALS_API = `${env.backendUrl}/api/rentals`;
 
 export interface RentalImage { id: string; url: string; isCover: boolean; }
 export interface RentalProperty {
-  id: string; slug: string; titulo: string; direccion?: string; localidad?: string;
+  id: string; slug: string; codigo?: string; titulo: string; direccion?: string; localidad?: string;
   descripcion?: string; capacidad: number; dormitorios: number; banos: number;
   amenities: string[]; moneda: string; precioNoche: number; activa: boolean;
   imagenes: RentalImage[];

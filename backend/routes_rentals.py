@@ -14,10 +14,10 @@ from uuid import uuid4
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import Response
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import ReturnDocument
 from pydantic import BaseModel
 
 import config as appconfig
-from people.resolver import person_resolver
 from property_repository import property_repository
 from storage_service import get_storage
 
@@ -46,6 +46,21 @@ def _res():
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+async def _next_code() -> str:
+    doc = await _db()["rental_counters"].find_one_and_update(
+        {"_id": "codigo"}, {"$inc": {"seq": 1}},
+        upsert=True, return_document=ReturnDocument.AFTER,
+    )
+    return f"CDE{doc['seq']:03d}"
+
+
+async def _ensure_codes() -> None:
+    """Backfill: asigna código a propiedades que aún no lo tienen (más antiguas primero)."""
+    cur = _props().find({"$or": [{"codigo": {"$exists": False}}, {"codigo": None}, {"codigo": ""}]}).sort("createdAt", 1)
+    async for p in cur:
+        await _props().update_one({"_id": p["_id"]}, {"$set": {"codigo": await _next_code()}})
 
 
 def _slugify(text: str) -> str:
@@ -89,7 +104,7 @@ def _img_url(img_id: str) -> str:
 def _prop_out(p: dict, public: bool = False) -> dict:
     imgs = sorted(p.get("imagenes") or [], key=lambda i: i.get("position", 0))
     out = {
-        "id": p["_id"], "slug": p.get("slug"), "titulo": p.get("titulo"),
+        "id": p["_id"], "slug": p.get("slug"), "codigo": p.get("codigo"), "titulo": p.get("titulo"),
         "direccion": p.get("direccion"), "localidad": p.get("localidad"),
         "descripcion": p.get("descripcion"), "capacidad": p.get("capacidad"),
         "dormitorios": p.get("dormitorios"), "banos": p.get("banos"),
@@ -207,6 +222,7 @@ async def _assert_free(property_id: str, check_in: str, check_out: str) -> None:
 # =============================== INTERNO ================================= #
 @router.get("/properties")
 async def list_properties():
+    await _ensure_codes()
     cur = _props().find().sort("createdAt", -1)
     return [_prop_out(p) async for p in cur]
 
@@ -216,6 +232,7 @@ async def create_property(body: PropertyBody):
     doc = body.model_dump()
     doc["_id"] = uuid4().hex
     doc["slug"] = _slugify(body.titulo)
+    doc["codigo"] = await _next_code()
     doc["imagenes"] = []
     doc["createdAt"] = _now()
     await _props().insert_one(doc)
@@ -347,6 +364,7 @@ async def update_status(rid: str, body: StatusBody):
                 "document": h.get("dni"), "role": "inquilino",
             }
             try:
+                from people.resolver import person_resolver
                 await person_resolver.resolve({k: v for k, v in ident.items() if v})
             except Exception:
                 pass
@@ -413,6 +431,7 @@ async def import_from_sale(sale_id: str):
         "descSemana": 0, "descQuincena": 0, "descMes": 0, "activa": False,
         "propietario": {}, "imagenes": [], "importadaDe": sale_id, "createdAt": _now(),
     }
+    doc["codigo"] = await _next_code()
     imgs = sorted(sp.get("property_images") or [], key=lambda i: i.get("position", 0))
     for idx, im in enumerate(imgs[:15]):
         try:
@@ -435,6 +454,7 @@ async def import_from_sale(sale_id: str):
 # ================================ PÚBLICO =============================== #
 @router.get("/public/properties")
 async def public_properties():
+    await _ensure_codes()
     cur = _props().find({"activa": True}).sort("createdAt", -1)
     return [_prop_out(p, public=True) async for p in cur]
 
