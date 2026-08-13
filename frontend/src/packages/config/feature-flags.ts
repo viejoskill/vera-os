@@ -13,6 +13,7 @@ export interface FeatureFlags {
   studio: boolean;
   integraciones: boolean;
   eventLog: boolean;
+  alquileres: boolean;
 }
 
 export const featureFlags: FeatureFlags = {
@@ -25,4 +26,5 @@ export const featureFlags: FeatureFlags = {
   studio: true, // "Studio" — herramienta de contenido de redes, embebida (public/vera-studio.html)
   integraciones: true, // "Integraciones" — Centro de Integraciones (Sprint 05)
   eventLog: true, // "Event Log" — vista técnica del Conversation Event Pipeline (dev/debug)
+  alquileres: true, // "Alquileres Temporarios" — gestión de rentas de verano + web de reservas
 };

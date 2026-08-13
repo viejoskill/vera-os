@@ -1113,3 +1113,16 @@ Se reemplazó por completo el diseño del reporte de tasación que genera `POST 
 - Nota explicativa con ícono sparkle. Pie: "POWERED BY Varela Propiedades / **Sebastián Varela · Asesor Inmobiliario · hace 20 años en Costa del Este**" (firma fija) + co-branding "VERA OS · Real Estate Intelligence" a la derecha. **Sin QR** (decisión del usuario).
 - Modelo `JpgBody` ahora acepta `telefono` y `email` (el frontend ya los enviaba).
 - Assets: usa `backend/assets/brand/varela-logo.png`.
+
+## Implemented (Alquileres Temporarios — Fase 1 — 2026-08)
+Módulo nuevo de rentas de verano estilo Airbnb. Verificado E2E por testing_agent: backend 19/19 pytest, frontend 100%, cero issues.
+- **Backend** (`routes_rentals.py`, prefijo `/api/rentals`, MongoDB colecciones `rental_properties` + `rental_reservations`, ids uuid string):
+  - CRUD propiedades; fotos a Supabase storage (`rentals/{pid}/images/...`) servidas por proxy público `/public/image/{imgId}` (content-type persistido).
+  - Disponibilidad por overlap estricto (fechas contiguas permitidas); cotización `_quote` con descuentos por tramo: 7+ semana, 15+ quincena, 30+ mes (mejor tramo aplicable).
+  - Reservas/pre-reservas + bloqueos manuales (estado 'bloqueo'); overlap → 409; cancelar libera fechas.
+  - Público: listado activas, detalle por slug (+ocupados +descuentos), quote, prereserva (nombre/tel/email/DNI/huéspedes/comentario + origen).
+- **Frontend interno** (`screens/rentals/`): `/alquileres` (tabs Propiedades|Reservas, confirmar/rechazar, link ML con origen), `/alquileres/nueva` y `/:id` (RentalWorkspace: datos, precio+descuentos, fotos, calendario+bloqueos, reservas). Calendario reutilizable `RentalCalendar` (selector de rango, marca ocupados). Nav item "Alquileres" (Palmtree) + feature flag `alquileres`.
+- **Frontend público**: `/reservar` (listado, tema claro Airbnb, logo Varela) y `/reservar/:slug` (galería, specs, amenities, calendario 2 meses, cotización con descuento, form huésped → pre-reserva → pantalla de éxito). Pre-reserva SIEMPRE queda pendiente de confirmación interna.
+- **Funnel ML**: link/QR por propiedad con `?origen=ml` → marca origen 'MercadoLibre' en la reserva (no hay API de import de ML; queda para fase avanzada vía OAuth).
+- **Decisiones del usuario**: propiedades set aparte; solo verano (sin temporadas); precio/noche + descuentos semana/quincena/mes; roles de empleados = fase siguiente (hoy lo usa el admin logueado).
+- **Pendiente/backlog**: login de 2 empleados con acceso restringido (solo Alquileres, sin liquidaciones/config); hardening (unique index anti doble-booking concurrente, rate-limit del endpoint público de pre-reserva).

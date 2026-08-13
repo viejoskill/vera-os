@@ -18,8 +18,12 @@ import { PlaceholderScreen } from '@app/screens/PlaceholderScreen';
 import { StudioScreen } from '@app/screens/StudioScreen';
 import { TeamScreen } from '@app/screens/TeamScreen';
 import { TasacionesScreen } from '@app/screens/TasacionesScreen';
+import { AlquileresScreen } from '@app/screens/rentals/AlquileresScreen';
+import { RentalWorkspace } from '@app/screens/rentals/RentalWorkspace';
 import { PublicListing } from '@app/public/PublicListing';
 import { TasarPublico } from '@app/public/TasarPublico';
+import { ReservarPublico } from '@app/public/ReservarPublico';
+import { ReservarPropiedad } from '@app/public/ReservarPropiedad';
 import { PublicPropertyDetail } from '@app/public/PublicPropertyDetail';
 import { SignScreen } from '@app/public/SignScreen';
 import { AuthProvider } from '@app/auth/AuthProvider';
@@ -41,6 +45,8 @@ export const VeraOS = () => (
           <Route path="/web" element={<PublicListing />} />
           <Route path="/web/:id" element={<PublicPropertyDetail />} />
           <Route path="/tasar" element={<TasarPublico />} />
+          <Route path="/reservar" element={<ReservarPublico />} />
+          <Route path="/reservar/:slug" element={<ReservarPropiedad />} />
           <Route path="/firma/:token" element={<SignScreen />} />
           <Route element={<RequireAuth />}>
             <Route element={<AppLayout />}>
@@ -61,6 +67,9 @@ export const VeraOS = () => (
               <Route path="integraciones" element={<IntegrationsScreen />} />
               <Route path="equipo" element={<TeamScreen />} />
               <Route path="tasaciones" element={<TasacionesScreen />} />
+              <Route path="alquileres" element={<AlquileresScreen />} />
+              <Route path="alquileres/nueva" element={<RentalWorkspace />} />
+              <Route path="alquileres/:id" element={<RentalWorkspace />} />
               <Route path="*" element={<Navigate to="/hoy" replace />} />
             </Route>
           </Route>

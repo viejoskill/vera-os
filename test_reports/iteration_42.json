@@ -1,0 +1,28 @@
+{
+  "summary": "Full E2E test of Alquileres Temporarios (Fase 1). Backend: 19/19 pytest passing (properties CRUD, public listing/slug, quote discount brackets exact cuts 6/7/14/15/29/30, overlap 409, contiguous allowed, block prevents, cancel frees, ML origen integration, calendar endpoint) + manual image upload/proxy/delete via curl. Frontend: login OK, /alquileres loads with tabs and Nueva propiedad button, create property from /alquileres/nueva redirects to workspace, calendar date-range selection and 'Bloquear estas fechas' works and disables days visually with striped pattern, public /reservar lists active properties, /reservar/{slug}?origen=ml loads with calendar (blocked dates disabled), quote total shown correctly ($200.000 for 4 noches @ 50.000 sin desc), guest form + DNI submission shows '¡Pre-reserva enviada!' screen, the pre-reserva appears in admin Reservas tab with origen 'MercadoLibre', Confirmar button changes state to 'Confirmada' correctly.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_rentals.py",
+    "/app/test_reports/pytest/rentals_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "routes_rentals.py: _assert_free is not atomic under concurrency (race between check and insert). For a Costa del Este summer promo this is unlikely to bite but a unique index or transactional upsert would harden it.",
+    "public_image endpoint returns media_type='image/jpeg' hardcoded even if uploaded content_type is png/webp. Consider persisting content_type at upload and reusing it on proxy.",
+    "DELETE /rentals/properties/{pid} also delete_many reservations — this is destructive without a soft-delete or confirmation flag on API; UI does ask window.confirm but API alone has no guard. Acceptable for MVP.",
+    "descuentoPct 0 case: _quote correctly returns 0 when nights < 7 or discount fields missing. Verified via parametric tests.",
+    "Public prereserva endpoint has no rate limiting / captcha; could be spammed from ML link. Consider basic throttling for prod."
+  ],
+  "updated_files": ["/app/backend/tests/test_rentals.py"],
+  "success_rate": { "backend": "100%", "frontend": "100%" },
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (Supabase auth, working)",
+  "seed_data_creation": "Backend pytest creates + deletes its own TEST_ property per test module. Frontend test created 'TEST_ Depto QA E2E' property + 1 confirmed reservation from ML origin, cleaned up via DELETE /api/rentals/properties/{pid} at end.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Módulo /alquileres verificado end-to-end. Todos los data-testid documentados en el request son correctos (rt-day-YYYY-MM-DD, rt-g-*, rt-block, rt-confirm-{id}, rt-tab-props/rt-tab-res, rt-new-property, rt-save-prop, rt-pub-card-{slug}, rt-total, rt-prereserva-ok, rt-filter-{estado}). Nota: el selector [data-testid^='rt-res-'] matchea también 'rt-res-tab' y 'rt-res-list', usar 'div.rt-res__row[data-testid^=rt-res-]' para filas de reservas específicas. Backend limpio: no _id de MongoDB, uuids como _id string. Discount brackets exactos: 6→0%, 7→semana, 15→quincena, 30→mes. Fechas contiguas (co=ci siguiente) permitidas correctamente por _overlap con < estricto."
+}
