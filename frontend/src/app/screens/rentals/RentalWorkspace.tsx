@@ -2,11 +2,13 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, Trash2, Upload, Star, CalendarX2, ExternalLink } from 'lucide-react';
 import { Button, Input } from '@vera/ui';
-import { api, fmtMoney, nightsBetween, ESTADOS, displayEstado, TIPO_MOV, type RentalProperty, type Reservation, type RentalImage, type Movimiento, type Occupied } from './api';
+import { api, fmtMoney, nightsBetween, displayEstado, TIPO_MOV, type RentalProperty, type Reservation, type RentalImage, type Movimiento, type Occupied } from './api';
 import { RentalCalendar } from './RentalCalendar';
 import { CobrarSena } from './CobrarSena';
 import { ConfirmarReserva } from './ConfirmarReserva';
+import { RechazarReserva } from './RechazarReserva';
 import { WhatsappReserva } from './WhatsappReserva';
+import { MoneyInput } from './MoneyInput';
 import './rentals.css';
 
 const empty: Partial<RentalProperty> = {
@@ -32,6 +34,7 @@ export const RentalWorkspace = () => {
   const [nm, setNm] = useState({ fecha: '', tipo: 'ingreso', monto: '', descripcion: '' });
   const [condText, setCondText] = useState('');
   const [confirming, setConfirming] = useState<Reservation | null>(null);
+  const [rejecting, setRejecting] = useState<Reservation | null>(null);
   const [sel, setSel] = useState<{ checkIn: string | null; checkOut: string | null }>({ checkIn: null, checkOut: null });
   const [flash, setFlash] = useState('');
   const [saving, setSaving] = useState(false);
@@ -124,9 +127,10 @@ export const RentalWorkspace = () => {
     } catch (e) { setFlash((e as Error).message); setTimeout(() => setFlash(''), 3500); }
   };
 
-  const changeStatus = async (rid: string, estado: string) => {
-    await api.setStatus(rid, estado);
-    if (pid) await loadRes(pid);
+  const removeReserva = async (rid: string) => {
+    if (!pid || !window.confirm('¿Eliminar esta reserva de la lista? No se puede deshacer.')) return;
+    await api.deleteReservation(rid);
+    await loadRes(pid);
   };
 
   const removeProp = async () => {
@@ -179,7 +183,7 @@ export const RentalWorkspace = () => {
               <select value={f.moneda} onChange={(e) => set('moneda', e.target.value)} data-testid="rt-moneda">
                 <option value="ARS">Pesos (ARS)</option><option value="USD">Dólares (USD)</option>
               </select></label>
-            <Input label="Precio por noche" type="number" value={String(f.precioNoche ?? '')} onChange={(e) => set('precioNoche', Number(e.target.value))} data-testid="rt-precio" />
+            <MoneyInput label="Precio por noche" prefix={f.moneda === 'USD' ? 'USD' : '$'} value={f.precioNoche} onChange={(n) => set('precioNoche', n)} testId="rt-precio" />
           </div>
           <p className="rt-hint">Descuentos automáticos por estadía (el cliente ve el total ya rebajado):</p>
           <div className="rt-row3">
@@ -189,7 +193,7 @@ export const RentalWorkspace = () => {
           </div>
           <div className="rt-row2">
             <Input label="Comisión (%)" type="number" value={String(f.comisionPct ?? '')} onChange={(e) => set('comisionPct', Number(e.target.value))} data-testid="rt-comision-pct" />
-            <Input label="Comisión mínima ($)" type="number" value={String(f.comisionMinima ?? '')} onChange={(e) => set('comisionMinima', Number(e.target.value))} data-testid="rt-comision-min" />
+            <MoneyInput label="Comisión mínima" value={f.comisionMinima} onChange={(n) => set('comisionMinima', n)} testId="rt-comision-min" />
           </div>
           <p className="rt-hint">La comisión se genera sola al confirmar una reserva (podés editarla en la ficha). Si el % da menos que el mínimo, se usa el mínimo.</p>
           <label className="rt-chk"><input type="checkbox" checked={!!f.activa} onChange={(e) => set('activa', e.target.checked)} data-testid="rt-activa" /><span>Publicada en la web (visible para reservar)</span></label>
@@ -217,7 +221,7 @@ export const RentalWorkspace = () => {
             <label className="rt-chk"><input type="checkbox" checked={!!f.aceptaMascotas} onChange={(e) => set('aceptaMascotas', e.target.checked)} data-testid="rt-mascotas" /><span>Se aceptan mascotas</span></label>
           </div>
           <div className="rt-row3">
-            <Input label="Depósito en garantía" type="number" value={String(f.depositoGarantia ?? '')} onChange={(e) => set('depositoGarantia', Number(e.target.value))} data-testid="rt-deposito" />
+            <MoneyInput label="Depósito en garantía" prefix={f.moneda === 'USD' ? 'USD' : '$'} value={f.depositoGarantia} onChange={(n) => set('depositoGarantia', n)} testId="rt-deposito" />
             <Input label="Estadía mínima (noches)" type="number" value={String(f.estadiaMinima ?? '')} onChange={(e) => set('estadiaMinima', Number(e.target.value))} data-testid="rt-estadia-min" />
             <div />
           </div>
@@ -319,10 +323,16 @@ export const RentalWorkspace = () => {
                     <div className="rt-res__acts">
                       {r.estado === 'prereserva' && <>
                         <button type="button" className="rt-mini rt-mini--ok" onClick={() => setConfirming(r)} data-testid={`rt-wsconfirm-${r.id}`}>Confirmar</button>
-                        <button type="button" className="rt-mini rt-mini--no" onClick={() => changeStatus(r.id, 'cancelada')} data-testid={`rt-wscancel-${r.id}`}>Rechazar</button>
+                        <button type="button" className="rt-mini rt-mini--no" onClick={() => setRejecting(r)} data-testid={`rt-wscancel-${r.id}`}>Rechazar</button>
                       </>}
+                      {r.estado === 'confirmada' && (
+                        <button type="button" className="rt-mini rt-mini--no" onClick={() => setRejecting(r)} data-testid={`rt-wscancel-${r.id}`}>Cancelar</button>
+                      )}
                       {(r.estado === 'confirmada' || r.estado === 'prereserva') && <CobrarSena reserva={r} onUpdated={() => pid && loadRes(pid)} />}
                       {r.huesped.telefono && <WhatsappReserva reserva={r} />}
+                      {(r.estado === 'cancelada' || r.estado === 'finalizada') && (
+                        <button type="button" className="rt-mini rt-mini--del" onClick={() => removeReserva(r.id)} data-testid={`rt-wsdelres-${r.id}`}><Trash2 size={13} /> Eliminar</button>
+                      )}
                     </div>
                   </div>
                 );
@@ -334,6 +344,10 @@ export const RentalWorkspace = () => {
       {confirming && (
         <ConfirmarReserva reserva={confirming} onClose={() => setConfirming(null)}
           onConfirmed={async () => { setConfirming(null); if (pid) await loadRes(pid); }} />
+      )}
+      {rejecting && (
+        <RechazarReserva reserva={rejecting} onClose={() => setRejecting(null)}
+          onDone={async () => { setRejecting(null); if (pid) await loadRes(pid); }} />
       )}
     </div>
   );

@@ -121,6 +121,7 @@ export const waLink = (telefono: string, mensaje: string): string => {
 
 /** Mensaje al huésped con datos de la reserva y (si existe) el link de seña. */
 export const mensajeReserva = (r: Reservation): string => {
+  if (r.estado === 'cancelada') return mensajeRechazo(r, r.motivo);
   const nombre = r.huesped?.nombre?.split(' ')[0] || '';
   const l: string[] = [];
   l.push(`¡Hola ${nombre}! 👋 Te escribimos de Inmobiliaria Varela por tu reserva de ${r.propertyTitulo || 'la propiedad'}.`);
@@ -140,6 +141,20 @@ export const mensajeReserva = (r: Reservation): string => {
   }
   l.push('');
   l.push('¡Muchas gracias! 🌴');
+  return l.join('\n');
+};
+
+/** Mensaje de rechazo de una pre-reserva (con motivo opcional). */
+export const mensajeRechazo = (r: Reservation, motivo?: string): string => {
+  const nombre = r.huesped?.nombre?.split(' ')[0] || '';
+  const l: string[] = [];
+  l.push(`¡Hola ${nombre}! 👋 Te escribimos de Inmobiliaria Varela por tu solicitud de reserva de ${r.propertyTitulo || 'la propiedad'}.`);
+  l.push('');
+  l.push(`📅 ${r.checkIn} al ${r.checkOut} (${r.noches} noches)`);
+  l.push('');
+  l.push(motivo ? `Lamentablemente no podemos confirmar esta reserva: ${motivo}` : 'Lamentablemente no podemos confirmar esta reserva para esas fechas.');
+  l.push('');
+  l.push('Si querés, escribinos y buscamos juntos otras fechas o propiedades disponibles. ¡Gracias por contactarnos! 🌴');
   return l.join('\n');
 };
 export const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

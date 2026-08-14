@@ -1,0 +1,41 @@
+{
+  "summary": "Frontend-only validation of the 4 VERA OS rentals improvements: (1) Reject flow with WhatsApp preview + Solo rechazar, (2) Delete cancelled reservations, (3) Confirm preview with amber/red distinction + visible confirm button, (4) Thousands separators in MoneyInput (price/commission/deposit) with persistence. All 4 features work end-to-end. No console errors observed.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "rechazo_whatsapp": {
+      "status": "PASS",
+      "details": "Clicking rt-cancel on Pedro RejectTest opened rt-reject-modal with textarea rt-reject-motivo and live WhatsApp preview rt-reject-preview. Typing 'esas fechas ya están reservadas' correctly updated the preview text ('Lamentablemente no podemos confirmar esta reserva: esas fechas ya están reservadas'). Both rt-reject-only and rt-reject-wa buttons visible. 'Solo rechazar' moved the reservation to Cancelada state."
+    },
+    "eliminar_reserva": {
+      "status": "PASS",
+      "details": "Under 'Cancelada' filter, rt-delres-<id> button appears for Pedro. Native confirm dialog auto-accepted; reservation removed from list (count 1 -> 0)."
+    },
+    "confirmar_ambar_vs_rojo": {
+      "status": "PASS",
+      "details": "rt-confirm-modal for Marta ConfirmTest showed summary (rt-confirm-summary), legend (rt-confirm-legend) with 'Esta pre-reserva' (amber), 'Reserva existente' (red) and 'Bloqueo manual'. Calendar rt-cal--review shows days 1-7 May 2026 with amber bg rgba(224,166,60,0.28) — Marta's pre-reserva displayed in amber, not red. rt-confirm-do button is visible (bbox y=760, viewport h=1000, in-viewport=true). After clicking Confirmar, Marta moved to 'Esperando seña'. Note: Existing reservations (Ana Jan, Carlos Mar, Lucia Apr) are outside the default 2-month window (calendar starts at May per startDate); user can navigate back to see them in red — expected per design.",
+      "notes": "Modal is scrollable (rt-modal__box has overflow-y auto). Button is visible without scrolling at 1600x1000 viewport."
+    },
+    "money_input_separators": {
+      "status": "PASS",
+      "details": "In property edit form (CDE002): rt-precio initial='50.000', rt-comision-min='5.000', rt-deposito='80.000'. Typed '1250000' in rt-deposito → live-formatted to '1.250.000'. Saved via rt-save-prop, reloaded page, value persisted as '1.250.000'. Reverted to '80.000' successfully."
+    }
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Minor: In ConfirmarReserva the calendar starts at reserva.checkIn (startDate) so historical reservations before that month (Ana/Carlos/Lucia) are not visible by default. Users must click the calendar back arrow to verify. Consider defaulting to a range that surfaces the nearest occupied months, or scroll to the closest neighbor.",
+    "MoneyInput uses toLocaleString('es-AR') which is correct for AR thousands separators. Good."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "N/A", "frontend": "100%" },
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml",
+  "seed_data_creation": "None; used pre-existing Pedro RejectTest (deleted at end of test) and Marta ConfirmTest (moved to Esperando seña). Deposito reverted to 80.000.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All four rentals improvements verified working. Pedro RejectTest reservation was deleted during test; Marta ConfirmTest was confirmed and now sits in Esperando seña. If re-running, main agent should re-seed those pre-reservas. Deposit was left at 80.000 (restored)."
+}

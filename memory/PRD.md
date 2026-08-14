@@ -1185,3 +1185,12 @@ Set de mejoras pedidas por el usuario. Verificado: backend por curl y frontend 1
 - DECISIÓN: el usuario NO tiene cuenta de WhatsApp Business/Twilio contratada. El envío 100% automático (server-side, sin intervención) queda como P1 pendiente y requiere contratar Twilio o Meta WhatsApp Cloud API (costo por mensaje + plantillas aprobadas). Mientras tanto, el aviso de nuevas pre-reservas ya llega por la campanita del OS.
 - Verificado: tsc limpio + validación de la generación del link/mensaje. (Cambio chico self-contained, sin testing agent.)
 
+
+## Implemented (Alquileres · Rechazo con WhatsApp + preview ámbar + separadores + eliminar — 2026-06)
+Cuatro mejoras pedidas. Verificado: build de producción (CI=true) OK + testing agent (iteration_46.json, 4/4 PASS 100%).
+- **Rechazo/cancelación con copy de WhatsApp** (`RechazarReserva.tsx`): al Rechazar/Cancelar abre un modal con motivo opcional y **vista previa del mensaje** al huésped; botones "Solo rechazar" y "Rechazar y avisar por WhatsApp" (abre wa.me con el texto). `mensajeRechazo()` en api.ts; `mensajeReserva()` ramifica a rechazo si estado=cancelada.
+- **Vista previa al confirmar sin mezclar colores**: la pre-reserva en revisión se muestra en **ÁMBAR** (`.rt-cal--review`) y las reservas existentes en ROJO; se excluye la propia de `ocupados` (se pasa `otros`). Leyenda propia. Calendario arranca **1 mes antes** (`startDate`) y muestra **3 meses** para ver vecinas previas y siguientes. Modal `.rt-modal__box` ahora `overflow-y:auto` (max-height 88vh) → el botón "Confirmar y generar seña" siempre visible/accesible.
+- **Separadores de miles en inputs de dinero** (`MoneyInput.tsx`, `toLocaleString('es-AR')`): aplicado a precio por noche, comisión mínima y depósito en garantía (formatea mientras se escribe, ej. 1.250.000; persiste el número).
+- **Eliminar reservas** canceladas/finalizadas: botón papelera (`rt-delres` / `rt-wsdelres`) con confirm → `DELETE /api/rentals/reservations/{rid}` → sale de la lista. Mantiene la lista limpia.
+- Componentes nuevos: `RechazarReserva.tsx`, `MoneyInput.tsx`. Prop `className` agregada a `RentalCalendar`.
+

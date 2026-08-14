@@ -10,13 +10,14 @@ interface Props {
   readOnly?: boolean;
   legend?: boolean;
   startDate?: string;
+  className?: string;
 }
 
 const WD = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'];
 const MES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 /** Calendario de rango estilo Airbnb. Rojo = reserva, gris = bloqueo manual. */
-export const RentalCalendar = ({ ocupados, value, onChange, months = 1, readOnly = false, legend = false, startDate }: Props) => {
+export const RentalCalendar = ({ ocupados, value, onChange, months = 1, readOnly = false, legend = false, startDate, className }: Props) => {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const [view, setView] = useState(() => {
     const base = startDate ? parseISO(startDate) : today;
@@ -93,7 +94,7 @@ export const RentalCalendar = ({ ocupados, value, onChange, months = 1, readOnly
   const prevDisabled = view.getFullYear() === today.getFullYear() && view.getMonth() <= today.getMonth();
 
   return (
-    <div className="rt-cal" data-testid="rental-calendar">
+    <div className={`rt-cal${className ? ` ${className}` : ''}`} data-testid="rental-calendar">
       <div className="rt-cal__nav">
         <button type="button" disabled={prevDisabled} onClick={() => setView(new Date(view.getFullYear(), view.getMonth() - 1, 1))} data-testid="rt-cal-prev"><ChevronLeft size={16} /></button>
         <button type="button" onClick={() => setView(new Date(view.getFullYear(), view.getMonth() + 1, 1))} data-testid="rt-cal-next"><ChevronRight size={16} /></button>

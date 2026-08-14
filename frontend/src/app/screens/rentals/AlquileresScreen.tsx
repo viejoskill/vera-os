@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Palmtree, Plus, Pencil, ExternalLink, Link2, Check, Users, BedDouble, Bath, XCircle, Building2, Search, X, SlidersHorizontal } from 'lucide-react';
+import { Palmtree, Plus, Pencil, ExternalLink, Link2, Check, Users, BedDouble, Bath, XCircle, Building2, Search, X, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { Button } from '@vera/ui';
 import { api, fmtMoney, displayEstado, esEsperandoSena, type RentalProperty, type Reservation, type SaleProperty, type RentalSettings } from './api';
 import { CobrarSena } from './CobrarSena';
 import { ConfirmarReserva } from './ConfirmarReserva';
+import { RechazarReserva } from './RechazarReserva';
 import { WhatsappReserva } from './WhatsappReserva';
 import './rentals.css';
 
@@ -27,6 +28,7 @@ export const AlquileresScreen = () => {
   const [importing, setImporting] = useState('');
   const [q, setQ] = useState('');
   const [confirming, setConfirming] = useState<Reservation | null>(null);
+  const [rejecting, setRejecting] = useState<Reservation | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState<RentalSettings>({ condicionesGenerales: [], avisoValidez: '' });
   const [condText, setCondText] = useState('');
@@ -45,9 +47,10 @@ export const AlquileresScreen = () => {
     catch { window.open(url, '_blank'); }
   };
 
-  const changeStatus = async (rid: string, estado: string) => {
-    await api.setStatus(rid, estado);
-    setRes((s) => s.map((x) => (x.id === rid ? { ...x, estado } : x)));
+  const removeReserva = async (rid: string) => {
+    if (!window.confirm('¿Eliminar esta reserva de la lista? No se puede deshacer.')) return;
+    await api.deleteReservation(rid);
+    setRes((s) => s.filter((x) => x.id !== rid));
   };
 
   const openImport = async () => {
@@ -194,14 +197,17 @@ export const AlquileresScreen = () => {
                     {r.estado === 'prereserva' && (
                       <>
                         <button type="button" className="rt-mini rt-mini--ok" onClick={() => setConfirming(r)} data-testid={`rt-confirm-${r.id}`}>Confirmar</button>
-                        <button type="button" className="rt-mini rt-mini--no" onClick={() => changeStatus(r.id, 'cancelada')} data-testid={`rt-cancel-${r.id}`}><XCircle size={15} /> Rechazar</button>
+                        <button type="button" className="rt-mini rt-mini--no" onClick={() => setRejecting(r)} data-testid={`rt-cancel-${r.id}`}><XCircle size={15} /> Rechazar</button>
                       </>
                     )}
                     {r.estado === 'confirmada' && (
-                      <button type="button" className="rt-mini rt-mini--no" onClick={() => changeStatus(r.id, 'cancelada')} data-testid={`rt-cancel-${r.id}`}><XCircle size={15} /> Cancelar</button>
+                      <button type="button" className="rt-mini rt-mini--no" onClick={() => setRejecting(r)} data-testid={`rt-cancel-${r.id}`}><XCircle size={15} /> Cancelar</button>
                     )}
                     {r.huesped.telefono && <WhatsappReserva reserva={r} />}
                     {(r.estado === 'confirmada' || r.estado === 'prereserva') && <CobrarSena reserva={r} onUpdated={load} />}
+                    {(r.estado === 'cancelada' || r.estado === 'finalizada') && (
+                      <button type="button" className="rt-mini rt-mini--del" onClick={() => removeReserva(r.id)} data-testid={`rt-delres-${r.id}`}><Trash2 size={14} /> Eliminar</button>
+                    )}
                   </div>
                   {r.huesped.comentario && <p className="rt-res__note">“{r.huesped.comentario}”</p>}
                 </div>
@@ -246,6 +252,11 @@ export const AlquileresScreen = () => {
       {confirming && (
         <ConfirmarReserva reserva={confirming} onClose={() => setConfirming(null)}
           onConfirmed={async () => { setConfirming(null); await load(); }} />
+      )}
+
+      {rejecting && (
+        <RechazarReserva reserva={rejecting} onClose={() => setRejecting(null)}
+          onDone={async () => { setRejecting(null); await load(); }} />
       )}
 
       {showSettings && (

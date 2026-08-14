@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CalendarCheck, X, AlertTriangle, Users, CheckCircle2 } from 'lucide-react';
 import { Button } from '@vera/ui';
-import { api, fmtMoney, nightsBetween, type Reservation, type Occupied } from './api';
+import { api, fmtMoney, nightsBetween, parseISO, iso, type Reservation, type Occupied } from './api';
 import { RentalCalendar } from './RentalCalendar';
 
 /** Vista previa del calendario al confirmar una reserva, con aviso de "días perdidos". */
@@ -23,6 +23,10 @@ export const ConfirmarReserva = ({ reserva, onConfirmed, onClose }: {
   if (antes) { const g = nightsBetween(antes.checkOut, reserva.checkIn); if (g >= 1 && g <= 2) avisos.push(`Quedan ${g} noche${g > 1 ? 's' : ''} libres antes del check-in (${antes.checkOut} → ${reserva.checkIn}), difíciles de alquilar.`); }
   const despues = otros.filter((o) => o.checkIn >= reserva.checkOut).sort((a, b) => (a.checkIn > b.checkIn ? 1 : -1))[0];
   if (despues) { const g = nightsBetween(reserva.checkOut, despues.checkIn); if (g >= 1 && g <= 2) avisos.push(`Quedan ${g} noche${g > 1 ? 's' : ''} libres después del check-out (${reserva.checkOut} → ${despues.checkIn}), difíciles de alquilar.`); }
+
+  // Arranca un mes antes para que se vean también las reservas del mes previo.
+  const ci = parseISO(reserva.checkIn);
+  const startPrev = iso(new Date(ci.getFullYear(), ci.getMonth() - 1, 1));
 
   const confirmar = async () => {
     setSaving(true);
@@ -51,14 +55,21 @@ export const ConfirmarReserva = ({ reserva, onConfirmed, onClose }: {
           </div>
         )}
 
-        <p className="rt-modal__sub">Verificá las fechas pedidas (marcadas) y las reservas vecinas antes de confirmar:</p>
+        <p className="rt-modal__sub">Verificá las fechas pedidas (en <strong style={{ color: '#e0a63c' }}>ámbar</strong>) y las reservas existentes (en <strong style={{ color: '#e07575' }}>rojo</strong>) antes de confirmar:</p>
         {loading ? <p className="rt__loading">Cargando calendario…</p> : (
-          <RentalCalendar
-            ocupados={ocupados}
-            value={{ checkIn: reserva.checkIn, checkOut: reserva.checkOut }}
-            onChange={() => {}}
-            months={2} readOnly legend startDate={reserva.checkIn}
-          />
+          <>
+            <RentalCalendar
+              ocupados={otros}
+              value={{ checkIn: reserva.checkIn, checkOut: reserva.checkOut }}
+              onChange={() => {}}
+              months={3} readOnly startDate={startPrev} className="rt-cal--review"
+            />
+            <div className="rt-cal__legend" data-testid="rt-confirm-legend">
+              <span><i className="rt-lg rt-lg--review" /> Esta pre-reserva</span>
+              <span><i className="rt-lg rt-lg--reserva" /> Reserva existente</span>
+              <span><i className="rt-lg rt-lg--bloqueo" /> Bloqueo manual</span>
+            </div>
+          </>
         )}
 
         <p className="rt-modal__sub" style={{ marginTop: 12 }}>Al confirmar se genera automáticamente el <strong>link de seña</strong> (Mercado Pago). La reserva queda <strong>“Esperando seña”</strong> hasta que el huésped pague.</p>

@@ -64,7 +64,7 @@
 
 /* Modal importar de ventas */
 .rt-modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; z-index: 60; padding: 20px; }
-.rt-modal__box { background: var(--vera-color-card, var(--vera-color-surface)); border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-lg, 16px); width: 100%; max-width: 620px; max-height: 82vh; display: flex; flex-direction: column; padding: 22px; }
+.rt-modal__box { background: var(--vera-color-card, var(--vera-color-surface)); border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-lg, 16px); width: 100%; max-width: 620px; max-height: 88vh; overflow-y: auto; display: flex; flex-direction: column; padding: 22px; }
 .rt-modal__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .rt-modal__head h3 { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; }
 .rt-modal__head button { background: none; border: none; color: var(--vera-color-text-secondary); cursor: pointer; }
@@ -343,4 +343,20 @@
 /* Botón WhatsApp (click-to-send) */
 .rt-mini--wa { border-color: rgba(37,211,102,.5); color: #25d366; }
 .rt-mini--wa:hover { background: rgba(37,211,102,.12); }
+
+/* Botón eliminar reserva */
+.rt-mini--del { border-color: rgba(210,70,70,.5); color: #e07575; }
+.rt-mini--del:hover { background: rgba(210,70,70,.12); }
+
+/* Vista previa al confirmar: la pre-reserva en ámbar (no se mezcla con las rojas) */
+.rt-cal--review .rt-cal__cell--edge,
+.rt-cal--review .rt-cal__cell--range {
+  background: rgba(224,166,60,.28) !important;
+  border-color: rgba(224,166,60,.7) !important;
+  color: var(--vera-color-text) !important;
+}
+.rt-lg--review { background: rgba(224,166,60,.35); border: 1px solid rgba(224,166,60,.7); }
+
+/* Preview del mensaje de rechazo */
+.rt-reject__preview { white-space: pre-wrap; font: inherit; font-size: .82rem; line-height: 1.5; background: var(--vera-color-surface); border: 1px solid var(--vera-color-border); border-radius: 10px; padding: 12px 14px; color: var(--vera-color-text-secondary); margin: 0 0 16px; max-height: 200px; overflow-y: auto; }
 
