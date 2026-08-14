@@ -15,7 +15,7 @@ export interface RentalProperty {
   checkInHora?: string; checkOutHora?: string; estadiaMinima?: number; condiciones?: string[];
   ocupados?: Occupied[]; descuentos?: { semana: number; quincena: number; mes: number };
 }
-export interface RentalSettings { condicionesGenerales: string[]; avisoValidez: string; }
+export interface RentalSettings { condicionesGenerales: string[]; avisoValidez: string; whatsappAgencia?: string; }
 export interface Movimiento {
   id: string; propertyId: string; fecha: string; tipo: string; monto: number;
   descripcion?: string; reservaId?: string; createdAt?: string;
@@ -42,9 +42,9 @@ export interface SaleProperty {
 }
 export interface Occupied { checkIn: string; checkOut: string; estado?: string; }
 export interface Pago {
-  proveedor?: string; monto?: number; moneda?: string; estado?: string;
+  proveedor?: string; monto?: number; moneda?: string; estado?: string; metodo?: string;
   preferenceId?: string; initPoint?: string; paymentId?: string; mpStatus?: string;
-  creadoEl?: string; pagadoEl?: string | null;
+  creadoEl?: string; pagadoEl?: string | null; comprobante?: { bucket: string; object_path: string } | null;
 }
 export interface Reservation {
   id: string; propertyId: string; propertyTitulo?: string; estado: string;
@@ -101,6 +101,17 @@ export const api = {
   liquidables: (pid: string): Promise<Reservation[]> => fetch(`${RENTALS_API}/properties/${pid}/liquidables`).then(json),
   liquidacionReserva: (rid: string): Promise<LiquidacionReserva> => fetch(`${RENTALS_API}/reservations/${rid}/liquidacion`).then(json),
   liquidacionReservaPdfUrl: (rid: string): string => `${RENTALS_API}/reservations/${rid}/liquidacion/pdf`,
+  verifyPayment: (reservaId: string, paymentId?: string): Promise<{ estado: string; propertyTitulo?: string; checkIn?: string; checkOut?: string; huesped?: string; whatsappAgencia?: string }> =>
+    fetch(`${RENTALS_API}/payment/verify?reservaId=${reservaId}${paymentId ? `&paymentId=${paymentId}` : ''}`).then(json),
+  verificarPago: (rid: string): Promise<Reservation> => fetch(`${RENTALS_API}/reservations/${rid}/verificar-pago`, { method: 'POST' }).then(json),
+  marcarPagada: (rid: string, monto: number, metodo: string, file?: File | null): Promise<Reservation> => {
+    const fd = new FormData();
+    fd.append('monto', String(monto || 0));
+    fd.append('metodo', metodo);
+    if (file) fd.append('file', file);
+    return fetch(`${RENTALS_API}/reservations/${rid}/marcar-pagada`, { method: 'POST', body: fd }).then(json);
+  },
+  comprobanteUrl: (rid: string): string => `${RENTALS_API}/reservations/${rid}/comprobante`,
   paymentLink: (rid: string, monto: number, descripcion?: string): Promise<{ initPoint: string; preferenceId: string; monto: number }> =>
     fetch(`${RENTALS_API}/reservations/${rid}/payment-link`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ monto, descripcion }) }).then(json),
   getReservation: (rid: string): Promise<Reservation> => fetch(`${RENTALS_API}/reservations/${rid}`).then(json),

@@ -70,3 +70,15 @@ async def get_payment(payment_id: str) -> dict:
     if result.get("status", 500) >= 400:
         raise RuntimeError("No se pudo leer el pago en Mercado Pago.")
     return result["response"]
+
+
+async def search_approved_payment(external_reference: str) -> dict | None:
+    """Busca en Mercado Pago un pago por external_reference; prioriza el aprobado."""
+    result = await asyncio.to_thread(
+        lambda: _client().payment().search({"external_reference": external_reference})
+    )
+    results = (result.get("response") or {}).get("results") or []
+    for p in results:
+        if p.get("status") == "approved":
+            return p
+    return results[0] if results else None

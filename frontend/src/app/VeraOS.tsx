@@ -25,6 +25,7 @@ import { PublicListing } from '@app/public/PublicListing';
 import { TasarPublico } from '@app/public/TasarPublico';
 import { ReservarPublico } from '@app/public/ReservarPublico';
 import { ReservarPropiedad } from '@app/public/ReservarPropiedad';
+import { ReservaResultado } from '@app/public/ReservaResultado';
 import { PublicPropertyDetail } from '@app/public/PublicPropertyDetail';
 import { SignScreen } from '@app/public/SignScreen';
 import { AuthProvider } from '@app/auth/AuthProvider';
@@ -49,6 +50,7 @@ export const VeraOS = () => {
             <Route path="/" element={<ReservarPublico />} />
             <Route path="/reservar" element={<ReservarPublico />} />
             <Route path="/reservar/:slug" element={<ReservarPropiedad />} />
+            <Route path="/pago/resultado" element={<ReservaResultado />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
@@ -66,6 +68,7 @@ export const VeraOS = () => {
           <Route path="/tasar" element={<TasarPublico />} />
           <Route path="/reservar" element={<ReservarPublico />} />
           <Route path="/reservar/:slug" element={<ReservarPropiedad />} />
+          <Route path="/pago/resultado" element={<ReservaResultado />} />
           <Route path="/firma/:token" element={<SignScreen />} />
           <Route element={<RequireAuth />}>
             <Route element={<AppLayout />}>

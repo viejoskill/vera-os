@@ -81,7 +81,7 @@ export const AlquileresScreen = () => {
   const saveSettings = async () => {
     setSavingSettings(true);
     try {
-      const s = await api.updateSettings({ condicionesGenerales: condText.split('\n').map((c) => c.trim()).filter(Boolean), avisoValidez: settings.avisoValidez });
+      const s = await api.updateSettings({ condicionesGenerales: condText.split('\n').map((c) => c.trim()).filter(Boolean), avisoValidez: settings.avisoValidez, whatsappAgencia: settings.whatsappAgencia });
       setSettings(s); setShowSettings(false);
     } finally { setSavingSettings(false); }
   };
@@ -269,6 +269,8 @@ export const AlquileresScreen = () => {
             <p className="rt-modal__sub">Estas condiciones aplican a <strong>todas</strong> las propiedades y se muestran al huésped antes de enviar la pre-reserva, junto con las condiciones propias de cada casa.</p>
             <label className="rt-field"><span>Condiciones generales (una por línea)</span>
               <textarea rows={6} value={condText} onChange={(e) => setCondText(e.target.value)} placeholder={'Se requiere seña para confirmar la reserva\nEl saldo se abona al ingresar\nSe cobra depósito en garantía reintegrable'} data-testid="rt-settings-cond" /></label>
+            <label className="rt-field"><span>WhatsApp de la inmobiliaria (para que el huésped avise el pago)</span>
+              <input type="text" value={settings.whatsappAgencia || ''} onChange={(e) => setSettings({ ...settings, whatsappAgencia: e.target.value })} placeholder="Ej.: +54 9 2257 40-4000" data-testid="rt-settings-wa" /></label>
             <div className="rt-modal__foot">
               <Button variant="ghost" size="md" onClick={() => setShowSettings(false)}>Cancelar</Button>
               <Button variant="primary" size="md" onClick={saveSettings} disabled={savingSettings} data-testid="rt-settings-save">{savingSettings ? 'Guardando…' : 'Guardar condiciones'}</Button>

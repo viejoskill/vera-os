@@ -354,6 +354,17 @@
 .rt-mini--wa { border-color: rgba(37,211,102,.5); color: #25d366; }
 .rt-mini--wa:hover { background: rgba(37,211,102,.12); }
 
+/* Página de resultado del pago (huésped) */
+.rt-result { max-width: 520px; margin: 8vh auto; text-align: center; padding: 40px 28px; background: var(--pcard, #26262a); border: 1px solid var(--pborder, rgba(255,255,255,.08)); border-radius: 20px; color: var(--ptext, #f5f5f0); }
+.rt-result h1 { font-family: 'Playfair Display', serif; font-size: 1.8rem; margin: 14px 0 8px; }
+.rt-result p { color: var(--ptext2, #b9b9b2); line-height: 1.6; }
+.rt-result__ok { color: #4bbf6b; }
+.rt-result__err { color: #e07575; }
+.rt-result__pend { color: #d6cc6a; }
+.rt-result__wa { display: inline-flex; align-items: center; gap: 8px; margin-top: 22px; background: #25d366; color: #06331b; font-weight: 600; padding: 12px 22px; border-radius: 999px; text-decoration: none; }
+.rt-result__wa:hover { opacity: .92; }
+.rt-result__back { display: block; margin-top: 16px; color: var(--ptext2, #b9b9b2); font-size: .86rem; }
+
 /* Botón eliminar reserva */
 .rt-mini--del { border-color: rgba(210,70,70,.5); color: #e07575; }
 .rt-mini--del:hover { background: rgba(210,70,70,.12); }

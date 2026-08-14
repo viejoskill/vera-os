@@ -11,7 +11,7 @@ import re
 from datetime import date, datetime, timezone
 from uuid import uuid4
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import Response
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReturnDocument
@@ -255,6 +255,7 @@ class PrereservaBody(BaseModel):
 class SettingsBody(BaseModel):
     condicionesGenerales: list[str] = []
     avisoValidez: str | None = ""
+    whatsappAgencia: str | None = ""
 
 
 AVISO_VALIDEZ = "Esta pre-reserva tiene una validez de 24 horas y queda sujeta a confirmación de la inmobiliaria."
@@ -479,6 +480,7 @@ async def get_settings():
     return {
         "condicionesGenerales": s.get("condicionesGenerales") or [],
         "avisoValidez": s.get("avisoValidez") or AVISO_VALIDEZ,
+        "whatsappAgencia": s.get("whatsappAgencia") or "",
     }
 
 
@@ -489,6 +491,7 @@ async def update_settings(body: SettingsBody):
         {"$set": {
             "condicionesGenerales": [c.strip() for c in body.condicionesGenerales if c.strip()],
             "avisoValidez": (body.avisoValidez or "").strip() or AVISO_VALIDEZ,
+            "whatsappAgencia": (body.whatsappAgencia or "").strip(),
             "updatedAt": _now(),
         }},
         upsert=True,
@@ -683,12 +686,35 @@ async def create_payment_link(rid: str, body: PaymentLinkBody):
     return {"initPoint": pago["initPoint"], "preferenceId": pago["preferenceId"], "monto": pago["monto"]}
 
 
+async def _apply_mp_payment(rid: str, p: dict) -> str:
+    """Aplica el estado de un pago de MP a la reserva. Devuelve el estado resultante."""
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        return "no_encontrada"
+    status = p.get("status")
+    estado = {"approved": "pagado", "rejected": "rechazado", "cancelled": "rechazado"}.get(status, "pendiente")
+    prev = r.get("pago") or {}
+    pago = {**prev, "estado": estado, "metodo": "mercadopago",
+            "paymentId": str(p.get("id") or prev.get("paymentId") or ""), "mpStatus": status,
+            "monto": prev.get("monto") or round(float(p.get("transaction_amount") or 0)),
+            "pagadoEl": _now() if estado == "pagado" else prev.get("pagadoEl")}
+    await _res().update_one({"_id": rid}, {"$set": {"pago": pago}})
+    return estado
+
+
 @router.post("/payment-webhook")
-async def payment_webhook(payload: dict):
-    """Notificación de Mercado Pago. Verifica el pago server-side y actualiza la reserva."""
-    if (payload or {}).get("type") != "payment":
+async def payment_webhook(request: Request):
+    """Notificación de Mercado Pago (webhook v2 por body o IPN por query). Verifica server-side."""
+    payload = {}
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    qp = dict(request.query_params)
+    tipo = (payload.get("type") or payload.get("topic") or qp.get("type") or qp.get("topic") or "")
+    if "payment" not in tipo:
         return {"received": True}
-    payment_id = str(((payload or {}).get("data") or {}).get("id") or "")
+    payment_id = str((payload.get("data") or {}).get("id") or payload.get("id") or qp.get("id") or qp.get("data.id") or "")
     if not payment_id:
         return {"received": True}
     import payments_mp
@@ -697,17 +723,72 @@ async def payment_webhook(payload: dict):
     except Exception:
         return {"received": True}
     rid = p.get("external_reference")
-    if not rid:
-        return {"received": True}
+    if rid:
+        await _apply_mp_payment(rid, p)
+    return {"received": True}
+
+
+@router.get("/payment/verify")
+async def payment_verify(reservaId: str = Query(...), paymentId: str | None = Query(None)):
+    """Verifica el pago contra Mercado Pago y actualiza la reserva. Usado por la página de resultado y el panel."""
+    r = await _res().find_one({"_id": reservaId})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    estado = (r.get("pago") or {}).get("estado") or "pendiente"
+    if estado != "pagado" and appconfig.mp_configured():
+        import payments_mp
+        try:
+            p = await payments_mp.get_payment(paymentId) if paymentId else await payments_mp.search_approved_payment(reservaId)
+            if p and (p.get("external_reference") in (None, reservaId)):
+                estado = await _apply_mp_payment(reservaId, p)
+        except Exception:
+            pass
+    s = await _settings().find_one({"_id": "global"}) or {}
+    return {
+        "estado": estado, "propertyTitulo": r.get("propertyTitulo"),
+        "checkIn": r.get("checkIn"), "checkOut": r.get("checkOut"),
+        "huesped": (r.get("huesped") or {}).get("nombre"),
+        "whatsappAgencia": s.get("whatsappAgencia") or "",
+    }
+
+
+@router.post("/reservations/{rid}/verificar-pago")
+async def verificar_pago(rid: str):
+    data = await payment_verify(reservaId=rid)
+    r = await _res().find_one({"_id": rid})
+    return _res_out(r)
+
+
+@router.post("/reservations/{rid}/marcar-pagada")
+async def marcar_pagada(rid: str, monto: float = Form(0), metodo: str = Form("manual"), file: UploadFile | None = File(None)):
+    """Marca la seña como pagada a mano (transferencia/efectivo), con comprobante opcional."""
     r = await _res().find_one({"_id": rid})
     if not r:
-        return {"received": True}
-    status = p.get("status")
-    estado = {"approved": "pagado", "rejected": "rechazado", "cancelled": "rechazado"}.get(status, "pendiente")
-    pago = {**(r.get("pago") or {}), "estado": estado, "paymentId": payment_id,
-            "mpStatus": status, "pagadoEl": _now() if estado == "pagado" else None}
+        raise HTTPException(404, "Reserva no encontrada")
+    prev = r.get("pago") or {}
+    comp = prev.get("comprobante")
+    if file is not None and appconfig.supabase_configured():
+        from pathlib import Path
+        ext = Path(file.filename or "comp.jpg").suffix.lower() or ".jpg"
+        obj = f"rentals/{r.get('propertyId')}/comprobantes/{uuid4().hex}{ext}"
+        content = await file.read()
+        await get_storage().upload(appconfig.BUCKET_IMAGES, obj, content, file.content_type or "image/jpeg")
+        comp = {"bucket": appconfig.BUCKET_IMAGES, "object_path": obj, "contentType": file.content_type or "image/jpeg"}
+    monto_final = round(float(monto)) if monto else (prev.get("monto") or 0)
+    pago = {**prev, "estado": "pagado", "metodo": metodo, "monto": monto_final,
+            "moneda": "ARS", "comprobante": comp, "pagadoEl": _now()}
     await _res().update_one({"_id": rid}, {"$set": {"pago": pago}})
-    return {"received": True}
+    return _res_out(await _res().find_one({"_id": rid}))
+
+
+@router.get("/reservations/{rid}/comprobante")
+async def get_comprobante(rid: str):
+    r = await _res().find_one({"_id": rid})
+    comp = ((r or {}).get("pago") or {}).get("comprobante")
+    if not comp:
+        raise HTTPException(404, "Sin comprobante")
+    data = await get_storage().download(comp["bucket"], comp["object_path"])
+    return Response(content=data, media_type=comp.get("contentType", "image/jpeg"))
 
 
 # --------------------- Importar desde el CRM de ventas -------------------- #

@@ -1,0 +1,19 @@
+{
+  "summary": "Frontend testing for VERA OS Alquileres — payment bug fix & new payment flow. All 8 scenarios PASSED with no console/page errors: (1) Login qa_varela + navigate to Reservas ok. (2) Marcar pagada a mano for Marta (c87b12...): modal opened, filled monto=40000, metodo=Transferencia, saved -> chip 'Seña pagada · $ 40.000 (transferencia)' with recibo icon; state changed to 'Reservada · seña pagada'. (3) Verificar pago for Lucia (10e91a...): request executed, no console errors, reserva remains 'Esperando seña' as expected. (4) Carlos (61c7b6...) shows chip 'Seña pagada · $ 30.000 (transferencia)' with rt-recibo icon; Ana Huésped chip 'Seña pagada · $ 94.500' also visible. (5) Settings modal opens (rt-settings-modal), rt-settings-wa pre-filled '2257404000', save works without errors. (6) Public /pago/resultado?external_reference=<Carlos>: renders '¡Pago recibido!' with pago-wa href = https://wa.me/5492257404000?text=... (correct 549+2257404000 prefix) and pago-volver link. (7) Public /pago/resultado?external_reference=<Lucia>: shows 'Estamos confirmando tu pago' state without errors. All data-testids present as specified.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "100%"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml",
+  "seed_data_creation": "Marta ConfirmTest (c87b12d9047340e0bab43324ce0878b4) was changed by test: now marked pagada via transferencia $40.000. Other reservations unchanged.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Marta reservation is now in 'Reservada · seña pagada' state after this test run ($40.000 transferencia, no comprobante attached). If retesting the 'Marcar pagada' modal, use another 'Esperando seña' reservation or reseed. Public payment result route /pago/resultado works with external_reference query param, using data-testid pago-resultado / pago-wa / pago-volver."
+}
