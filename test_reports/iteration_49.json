@@ -1,0 +1,25 @@
+{
+  "summary": "Frontend-only regression for VERA OS Alquileres: notification bell panel fix (position:fixed), reserva_proxima reminder, visible 'Recibo PDF' button, mark-all-read and outside-click close. All 4 scenarios PASSED.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "1_notif_panel_visible": "PASS - Panel opens fully visible at box {x:1560, y:60, w:340, h:756}, well within viewport 1920x1080. Not clipped by topbar overflow:hidden anymore (position:fixed working).",
+    "2_reserva_proxima_notification": "PASS - Item 'Reserva próxima' with text 'Check-in en 2 días (16/08/2026) · Reserva Proxima Test · CASA DE PRUEBA — Costa del Este (borrar)' visible in panel. Click navigates to /alquileres correctly.",
+    "3_recibo_pdf_button": "PASS - In Reservas tab (rt-tab-res), 3 clear buttons with text 'Recibo PDF' visible (data-testid rt-recibo-<id>) for Marta ConfirmTest, Carlos Test and Ana Huésped. All are <A> tags with href pointing to /api/rentals/reservations/<id>/recibo-sena (correct endpoint).",
+    "4_mark_all_and_outside_close": "PASS - POST /api/notifications/read-all returned 200. Clicking outside panel closes it (panel.is_visible()=False after outside click)."
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped as requested)", "frontend": "100%"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml",
+  "seed_data_creation": "None; used pre-existing reservations (Reserva Proxima Test, Carlos Test, Ana Huésped, Marta ConfirmTest).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Sprint fix validated end-to-end via preview URL. NotificationBell panel now escapes topbar overflow (position:fixed at top:60,right:20 approx). Reserva próxima reminder is created idempotently by backend on GET /api/notifications. Recibo PDF button renders as visible labelled anchor (data-testid rt-recibo-<reservationId>) in CobrarSena screen for reservations with seña pagada."
+}

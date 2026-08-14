@@ -8,6 +8,10 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 @router.get("")
 async def list_notifications():
+    try:
+        await notifications.sync_rental_reminders()
+    except Exception:
+        pass
     items = await notifications.list_recent()
     unread = await notifications.unread_count()
     return {"items": items, "unread": unread}

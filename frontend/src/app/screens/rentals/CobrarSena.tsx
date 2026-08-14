@@ -40,11 +40,13 @@ export const CobrarSena = ({ reserva, onUpdated }: { reserva: Reservation; onUpd
 
   if (pago?.estado === 'pagado') {
     return (
-      <span className="rt-pay rt-pay--ok" data-testid={`rt-pay-ok-${reserva.id}`}>
-        <Check size={13} /> Seña pagada · {fmtMoney(pago.monto || 0, 'ARS')}{pago.metodo && pago.metodo !== 'mercadopago' ? ` (${pago.metodo})` : ''}
-        {pago.comprobante && <a className="rt-pay__ic" href={api.comprobanteUrl(reserva.id)} target="_blank" rel="noreferrer" title="Ver comprobante" data-testid={`rt-comprobante-${reserva.id}`}><Paperclip size={13} /></a>}
-        <a className="rt-pay__ic" href={api.reciboSenaUrl(reserva.id)} target="_blank" rel="noreferrer" title="Descargar recibo de seña" data-testid={`rt-recibo-${reserva.id}`}><FileDown size={13} /></a>
-      </span>
+      <>
+        <span className="rt-pay rt-pay--ok" data-testid={`rt-pay-ok-${reserva.id}`}>
+          <Check size={13} /> Seña pagada · {fmtMoney(pago.monto || 0, 'ARS')}{pago.metodo && pago.metodo !== 'mercadopago' ? ` (${pago.metodo})` : ''}
+          {pago.comprobante && <a className="rt-pay__ic" href={api.comprobanteUrl(reserva.id)} target="_blank" rel="noreferrer" title="Ver comprobante" data-testid={`rt-comprobante-${reserva.id}`}><Paperclip size={13} /></a>}
+        </span>
+        <a className="rt-mini rt-mini--pay" href={api.reciboSenaUrl(reserva.id)} target="_blank" rel="noreferrer" data-testid={`rt-recibo-${reserva.id}`}><FileDown size={14} /> Recibo PDF</a>
+      </>
     );
   }
 

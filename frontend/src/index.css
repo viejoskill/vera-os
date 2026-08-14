@@ -7867,9 +7867,12 @@ p {
   display: inline-flex; align-items: center; justify-content: center;
 }
 .vera-notif__panel {
-  position: absolute; right: 0; top: calc(100% + 8px); width: 340px; max-height: 440px; overflow-y: auto;
+  position: fixed; right: 20px; top: 60px; width: 340px; max-height: 70vh; overflow-y: auto;
   background: var(--vera-color-cards); border: 1px solid var(--vera-color-border);
-  border-radius: var(--vera-radius-lg); box-shadow: 0 12px 32px rgba(0,0,0,0.35); z-index: 80;
+  border-radius: var(--vera-radius-lg); box-shadow: 0 12px 32px rgba(0,0,0,0.35); z-index: 200;
+}
+@media (max-width: 480px) {
+  .vera-notif__panel { right: 12px; left: 12px; width: auto; top: 58px; }
 }
 .vera-notif__head {
   display: flex; align-items: center; justify-content: space-between; padding: 12px 14px;

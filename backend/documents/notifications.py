@@ -58,3 +58,35 @@ async def mark_read(notification_id: str) -> None:
 
 async def mark_all_read() -> None:
     await _col().update_many({"read": False}, {"$set": {"read": True}})
+
+
+async def sync_rental_reminders() -> None:
+    """Crea recordatorios de reservas con check-in en las próximas 72hs (una vez por reserva)."""
+    from datetime import date, timedelta
+
+    _col()  # asegura cliente
+    col = _client[config.DB_NAME]["rental_reservations"]  # type: ignore[index]
+    hoy = date.today()
+    limite = hoy + timedelta(days=3)
+    cur = col.find({"estado": {"$in": ["confirmada", "encurso"]}})
+    async for r in cur:
+        ci = r.get("checkIn")
+        try:
+            d = date.fromisoformat(ci)
+        except Exception:
+            continue
+        if not (hoy <= d <= limite):
+            continue
+        key = f"reserva_proxima:{r['_id']}"
+        if await _col().find_one({"documentId": key}):
+            continue
+        dias = (d - hoy).days
+        cuando = "hoy" if dias == 0 else ("mañana" if dias == 1 else f"en {dias} días")
+        nombre = (r.get("huesped") or {}).get("nombre", "Huésped")
+        fecha_txt = f"{ci[8:10]}/{ci[5:7]}/{ci[0:4]}"
+        await create(
+            type="reserva_proxima",
+            title="Reserva próxima",
+            message=f"Check-in {cuando} ({fecha_txt}) · {nombre} · {r.get('propertyTitulo', '')}".strip(),
+            document_id=key, link="/alquileres",
+        )

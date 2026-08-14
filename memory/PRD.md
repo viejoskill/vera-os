@@ -1217,3 +1217,10 @@ Fix del bug "la seña no pasa de Esperando seña" (dependía solo del webhook) +
 - **WhatsApp de la inmobiliaria** configurable en "Condiciones generales" (`settings.whatsappAgencia`, seteado a 2257404000). `payments_mp.search_approved_payment()` agregado.
 - ⚠️ PRODUCCIÓN: para que MP redirija al huésped a `/pago/resultado` en veraosvarela.com, el entorno de producción debe tener `PUBLIC_APP_URL=https://veraosvarela.com`. Aunque falle el redirect/webhook, el admin/empleado destraba con "Verificar pago" o "Marcar pagada". Requiere redeploy.
 
+
+## Implemented (Campanita fix + recordatorios de reservas próximas + recibo visible — 2026-06)
+Verificado: backend curl + frontend 100% (iteration_49.json, 4/4).
+- **Fix campanita**: el panel de notificaciones quedaba cortado porque `.vera-topbar` tiene `overflow:hidden` (para el halo). Se cambió `.vera-notif__panel` a `position: fixed` (arriba a la derecha, z-index 200) → ya no lo recorta el topbar. Media query para mobile.
+- **Recordatorios de reservas próximas**: `documents/notifications.py` → `sync_rental_reminders()` crea un aviso `reserva_proxima` (idempotente por `documentId=reserva_proxima:<rid>`) para reservas confirmadas/en curso con **check-in dentro de las próximas 72hs** (mensaje "Check-in en X días (dd/mm/yyyy) · huésped · propiedad", link `/alquileres`). Se dispara on-demand en `GET /api/notifications` (la campanita hace polling cada 20s), sin cron. Ícono `CalendarClock` en la campanita para ese tipo.
+- **Recibo PDF visible**: en `CobrarSena`, el recibo pasó de iconito a botón con texto **"Recibo PDF"** (rt-recibo). Aparece cuando la seña está pagada.
+
