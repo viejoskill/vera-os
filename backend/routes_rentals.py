@@ -699,6 +699,13 @@ async def _apply_mp_payment(rid: str, p: dict) -> str:
             "monto": prev.get("monto") or round(float(p.get("transaction_amount") or 0)),
             "pagadoEl": _now() if estado == "pagado" else prev.get("pagadoEl")}
     await _res().update_one({"_id": rid}, {"$set": {"pago": pago}})
+    if estado == "pagado" and prev.get("estado") != "pagado":
+        try:
+            from documents import notifications
+            await notifications.notify_sena_pagada(reserva_id=rid, nombre=(r.get("huesped") or {}).get("nombre", "Huésped"),
+                                                   monto=pago.get("monto"), propiedad=r.get("propertyTitulo", ""))
+        except Exception:
+            pass
     return estado
 
 
@@ -778,6 +785,13 @@ async def marcar_pagada(rid: str, monto: float = Form(0), metodo: str = Form("ma
     pago = {**prev, "estado": "pagado", "metodo": metodo, "monto": monto_final,
             "moneda": "ARS", "comprobante": comp, "pagadoEl": _now()}
     await _res().update_one({"_id": rid}, {"$set": {"pago": pago}})
+    if prev.get("estado") != "pagado":
+        try:
+            from documents import notifications
+            await notifications.notify_sena_pagada(reserva_id=rid, nombre=(r.get("huesped") or {}).get("nombre", "Huésped"),
+                                                   monto=monto_final, propiedad=r.get("propertyTitulo", ""))
+        except Exception:
+            pass
     return _res_out(await _res().find_one({"_id": rid}))
 
 

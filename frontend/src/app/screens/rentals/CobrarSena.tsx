@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { CreditCard, Copy, Check, ExternalLink, RefreshCw, X, FileDown, RefreshCcw, BadgeCheck, Paperclip } from 'lucide-react';
+import { CreditCard, Copy, Check, ExternalLink, RefreshCw, X, FileDown, RefreshCcw, BadgeCheck, Paperclip, MessageCircle } from 'lucide-react';
 import { Button } from '@vera/ui';
-import { api, fmtMoney, type Reservation } from './api';
+import { api, fmtMoney, waLink, mensajeRecibo, type Reservation } from './api';
 
 export const CobrarSena = ({ reserva, onUpdated }: { reserva: Reservation; onUpdated?: () => void }) => {
   const pago = reserva.pago;
@@ -46,6 +46,9 @@ export const CobrarSena = ({ reserva, onUpdated }: { reserva: Reservation; onUpd
           {pago.comprobante && <a className="rt-pay__ic" href={api.comprobanteUrl(reserva.id)} target="_blank" rel="noreferrer" title="Ver comprobante" data-testid={`rt-comprobante-${reserva.id}`}><Paperclip size={13} /></a>}
         </span>
         <a className="rt-mini rt-mini--pay" href={api.reciboSenaUrl(reserva.id)} target="_blank" rel="noreferrer" data-testid={`rt-recibo-${reserva.id}`}><FileDown size={14} /> Recibo PDF</a>
+        {reserva.huesped?.telefono && (
+          <a className="rt-mini rt-mini--wa" href={waLink(reserva.huesped.telefono, mensajeRecibo(reserva, api.reciboSenaUrl(reserva.id)))} target="_blank" rel="noreferrer" data-testid={`rt-recibo-wa-${reserva.id}`}><MessageCircle size={14} /> Recibo x WhatsApp</a>
+        )}
       </>
     );
   }

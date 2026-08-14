@@ -173,6 +173,15 @@ export const mensajeReserva = (r: Reservation): string => {
   return l.join('\n');
 };
 
+/** Mensaje al huésped compartiendo el link del recibo de seña. */
+export const mensajeRecibo = (r: Reservation, reciboUrl: string): string => {
+  const nombre = r.huesped?.nombre?.split(' ')[0] || '';
+  return [
+    `¡Hola ${nombre}! 👋 Te compartimos el recibo de la seña de tu reserva de ${r.propertyTitulo || 'la propiedad'}.`,
+    '', `📎 ${reciboUrl}`, '', 'Cualquier duda escribinos. ¡Gracias! 🌴',
+  ].join('\n');
+};
+
 /** Mensaje de rechazo de una pre-reserva (con motivo opcional). */
 export const mensajeRechazo = (r: Reservation, motivo?: string): string => {
   const nombre = r.huesped?.nombre?.split(' ')[0] || '';

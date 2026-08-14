@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, FileSignature, CalendarClock } from 'lucide-react';
+import { Bell, Check, FileSignature, CalendarClock, BadgeCheck, Wallet } from 'lucide-react';
 import { useNotifications, useNotificationActions } from '@app/hooks/useNotifications';
 
 /** Campanita de notificaciones in-app de VERA (aviso nativo, sin proveedores). */
@@ -59,7 +59,10 @@ export const NotificationBell = () => {
                 onClick={() => openItem(n.id, n.link)}
                 data-testid={`notif-item-${n.id}`}
               >
-                {n.type === 'reserva_proxima' ? <CalendarClock size={16} className="vera-notif__ic" /> : <FileSignature size={16} className="vera-notif__ic" />}
+                {n.type === 'reserva_proxima' || n.type === 'reserva_hoy' ? <CalendarClock size={16} className="vera-notif__ic" />
+                  : n.type === 'sena_pagada' ? <BadgeCheck size={16} className="vera-notif__ic" />
+                  : n.type === 'saldo_pendiente' ? <Wallet size={16} className="vera-notif__ic" />
+                  : <FileSignature size={16} className="vera-notif__ic" />}
                 <div className="vera-notif__body">
                   <span className="vera-notif__title">{n.title}</span>
                   <span className="vera-notif__msg">{n.message}</span>

@@ -1224,3 +1224,12 @@ Verificado: backend curl + frontend 100% (iteration_49.json, 4/4).
 - **Recordatorios de reservas próximas**: `documents/notifications.py` → `sync_rental_reminders()` crea un aviso `reserva_proxima` (idempotente por `documentId=reserva_proxima:<rid>`) para reservas confirmadas/en curso con **check-in dentro de las próximas 72hs** (mensaje "Check-in en X días (dd/mm/yyyy) · huésped · propiedad", link `/alquileres`). Se dispara on-demand en `GET /api/notifications` (la campanita hace polling cada 20s), sin cron. Ícono `CalendarClock` en la campanita para ese tipo.
 - **Recibo PDF visible**: en `CobrarSena`, el recibo pasó de iconito a botón con texto **"Recibo PDF"** (rt-recibo). Aparece cuando la seña está pagada.
 
+
+## Implemented (Alquileres · 4 avisos/recibo — 2026-06)
+Verificado: backend curl (los 4 avisos se generan correctos) + tsc + build de producción OK. UI nueva sigue patrones ya testeados.
+- **Segundo aviso (check-in del día)**: además del de 72hs, `sync_rental_reminders()` crea `reserva_hoy:<rid>` cuando el check-in es hoy ("Hoy ingresa {huésped} · {propiedad}").
+- **Aviso de seña acreditada**: al marcar/verificar un pago como pagado (webhook, verify o marcar-pagada) se crea `sena_pagada:<rid>` en la campanita ("{huésped} pagó la seña de $X · {propiedad}"), una sola vez. `notify_sena_pagada()` en notifications.py, llamado desde `_apply_mp_payment` y `marcar_pagada`.
+- **Recordatorio de saldo pendiente**: para reservas con seña pagada, saldo > 0 y check-in dentro de 5 días → `saldo_pendiente:<rid>` ("Cobrar saldo de {huésped}: $X al ingresar ({fecha})").
+- **Recibo por WhatsApp**: en `CobrarSena` (seña pagada) botón "Recibo x WhatsApp" (rt-recibo-wa) que abre wa.me al huésped con el link del recibo PDF (`mensajeRecibo()` en api.ts).
+- Íconos de campanita por tipo: CalendarClock (reserva_proxima/reserva_hoy), BadgeCheck (sena_pagada), Wallet (saldo_pendiente).
+
