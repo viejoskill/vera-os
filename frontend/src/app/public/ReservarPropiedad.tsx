@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { Users, BedDouble, Bath, MapPin, Check, CheckCircle2, ArrowLeft, X, ShieldCheck, PawPrint, BedSingle, Clock, Wallet, AlertCircle } from 'lucide-react';
-import { api, fmtMoney, nightsBetween, type RentalProperty, type RentalSettings } from '@app/screens/rentals/api';
+import { api, fmtMoney, fmtDate, nightsBetween, type RentalProperty, type RentalSettings } from '@app/screens/rentals/api';
 import { RentalCalendar } from '@app/screens/rentals/RentalCalendar';
 import '@app/screens/rentals/rentals.css';
 
@@ -61,7 +61,7 @@ export const ReservarPropiedad = () => {
   if (done) return (
     <div className="rt-pub rt-pub--center" data-testid="rt-prereserva-ok">
       <div className="rt-ok"><CheckCircle2 size={44} /><h2>¡Pre-reserva enviada!</h2>
-        <p>Recibimos tu solicitud para <strong>{p.titulo}</strong> del <strong>{sel.checkIn}</strong> al <strong>{sel.checkOut}</strong>.</p>
+        <p>Recibimos tu solicitud para <strong>{p.titulo}</strong> del <strong>{fmtDate(sel.checkIn)}</strong> al <strong>{fmtDate(sel.checkOut)}</strong>.</p>
         <p>Un asesor de Varela te va a contactar para <strong>confirmar la disponibilidad</strong> y coordinar el pago. ¡Gracias!</p>
         <Link to="/reservar" className="rt-pub__back"><ArrowLeft size={15} /> Ver otras propiedades</Link>
       </div>

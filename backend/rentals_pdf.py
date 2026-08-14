@@ -32,6 +32,14 @@ def _fmt(n, moneda="ARS") -> str:
     return f"USD {s}" if moneda == "USD" else f"$ {s}"
 
 
+def _fd(s) -> str:
+    """YYYY-MM-DD -> DD/MM/YYYY (deja el valor tal cual si no matchea)."""
+    if not s or not isinstance(s, str) or s.count("-") != 2:
+        return s or ""
+    y, m, d = s.split("-")
+    return f"{d}/{m}/{y}"
+
+
 def _styles():
     ss = getSampleStyleSheet()
     return {
@@ -86,21 +94,26 @@ def build_liquidacion_pdf(data: dict) -> bytes:
     linea = dueno.get("nombre") or "—"
     extra = " · ".join(x for x in [dueno.get("telefono"), dueno.get("email"), (f"DNI {dueno.get('dni')}" if dueno.get("dni") else None)] if x)
     story.append(Paragraph(f"<b>{linea}</b>" + (f"<br/>{extra}" if extra else ""), st["body"]))
-    story.append(Paragraph("Período", st["sec"]))
-    story.append(Paragraph(f"{per.get('desde')} → {per.get('hasta')}", st["body"]))
+    h = data.get("huesped") or {}
+    if h.get("nombre"):
+        story.append(Paragraph("Huésped", st["sec"]))
+        hx = " · ".join(x for x in [h.get("telefono"), (f"DNI {h.get('dni')}" if h.get("dni") else None)] if x)
+        story.append(Paragraph(f"<b>{h.get('nombre')}</b>" + (f"<br/>{hx}" if hx else ""), st["body"]))
+    story.append(Paragraph("Estadía" if h.get("nombre") else "Período", st["sec"]))
+    story.append(Paragraph(f"{_fd(per.get('desde'))} → {_fd(per.get('hasta'))}", st["body"]))
 
     # Detalle de movimientos
     story.append(Paragraph("Detalle de movimientos", st["sec"]))
     rows = [["Fecha", "Concepto", "Descripción", "Monto"]]
     for m in data.get("movimientos") or []:
         rows.append([
-            m.get("fecha") or "",
+            _fd(m.get("fecha")),
             TIPO_LABEL.get(m.get("tipo"), m.get("tipo") or ""),
             (m.get("descripcion") or "")[:60],
             _fmt(m.get("monto"), mon),
         ])
     if len(rows) == 1:
-        rows.append(["—", "Sin movimientos en el período", "", ""])
+        rows.append(["—", "Sin movimientos", "", ""])
     t = Table(rows, colWidths=[2.5 * cm, 3.5 * cm, 6.5 * cm, 3 * cm])
     t.setStyle(TableStyle([
         ("FONT", (0, 0), (-1, 0), "Helvetica-Bold", 9),
@@ -198,7 +211,7 @@ def build_recibo_sena_pdf(data: dict) -> bytes:
     story.append(Paragraph("Propiedad", st["sec"]))
     story.append(Paragraph(f"<b>{cod}</b> · {prop.get('titulo') or '—'}", st["body"]))
     story.append(Paragraph("Estadía", st["sec"]))
-    story.append(Paragraph(f"{data.get('checkIn')} → {data.get('checkOut')} · {data.get('noches')} noches", st["body"]))
+    story.append(Paragraph(f"{_fd(data.get('checkIn'))} → {_fd(data.get('checkOut'))} · {data.get('noches')} noches", st["body"]))
 
     story.append(Paragraph("Detalle", st["sec"]))
     filas = [["Total de la reserva", _fmt(data.get("montoEstimado"), mon)],

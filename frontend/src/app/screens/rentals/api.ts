@@ -27,6 +27,12 @@ export interface Liquidacion {
   ingresos: number; comision: number; gastosPropietario: number; gastosNuestros: number;
   netoPropietario: number; movimientos: Movimiento[];
 }
+export interface LiquidacionReserva extends Liquidacion {
+  reserva: { id: string; checkIn: string; checkOut: string; noches: number };
+  huesped: { nombre?: string; telefono?: string; dni?: string };
+  pago: Pago;
+  alquiler: number;
+}
 export const TIPO_MOV: Record<string, string> = {
   ingreso: 'Seña / Ingreso', gasto_prop: 'Gasto propietario', gasto_nuestro: 'Gasto agencia', comision: 'Comisión',
 };
@@ -92,6 +98,9 @@ export const api = {
   liquidacionPdfUrl: (propertyId: string, desde: string, hasta: string): string =>
     `${RENTALS_API}/liquidacion/pdf?propertyId=${propertyId}&desde=${desde}&hasta=${hasta}`,
   reciboSenaUrl: (rid: string): string => `${RENTALS_API}/reservations/${rid}/recibo-sena`,
+  liquidables: (pid: string): Promise<Reservation[]> => fetch(`${RENTALS_API}/properties/${pid}/liquidables`).then(json),
+  liquidacionReserva: (rid: string): Promise<LiquidacionReserva> => fetch(`${RENTALS_API}/reservations/${rid}/liquidacion`).then(json),
+  liquidacionReservaPdfUrl: (rid: string): string => `${RENTALS_API}/reservations/${rid}/liquidacion/pdf`,
   paymentLink: (rid: string, monto: number, descripcion?: string): Promise<{ initPoint: string; preferenceId: string; monto: number }> =>
     fetch(`${RENTALS_API}/reservations/${rid}/payment-link`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ monto, descripcion }) }).then(json),
   getReservation: (rid: string): Promise<Reservation> => fetch(`${RENTALS_API}/reservations/${rid}`).then(json),
@@ -114,6 +123,14 @@ export const fmtMoney = (n: number, moneda = 'ARS') => {
   return moneda === 'USD' ? `USD ${s}` : `$ ${s}`;
 };
 
+/** 'YYYY-MM-DD' -> 'DD/MM/YYYY' (día/mes/año). Deja el valor si no matchea. */
+export const fmtDate = (s?: string | null): string => {
+  if (!s || typeof s !== 'string') return '';
+  const p = s.split('-');
+  if (p.length !== 3) return s;
+  return `${p[2]}/${p[1]}/${p[0]}`;
+};
+
 /** Link wa.me con mensaje pre-escrito (click-to-send desde el WhatsApp del usuario). */
 export const waLink = (telefono: string, mensaje: string): string => {
   const num = (telefono || '').replace(/\D/g, '');
@@ -127,7 +144,7 @@ export const mensajeReserva = (r: Reservation): string => {
   const l: string[] = [];
   l.push(`¡Hola ${nombre}! 👋 Te escribimos de Inmobiliaria Varela por tu reserva de ${r.propertyTitulo || 'la propiedad'}.`);
   l.push('');
-  l.push(`📅 ${r.checkIn} al ${r.checkOut} (${r.noches} noches)`);
+  l.push(`📅 ${fmtDate(r.checkIn)} al ${fmtDate(r.checkOut)} (${r.noches} noches)`);
   l.push(`💰 Total estimado: ${fmtMoney(r.montoEstimado, r.moneda)}`);
   if (r.pago?.initPoint && r.pago.estado !== 'pagado') {
     l.push('');
@@ -151,7 +168,7 @@ export const mensajeRechazo = (r: Reservation, motivo?: string): string => {
   const l: string[] = [];
   l.push(`¡Hola ${nombre}! 👋 Te escribimos de Inmobiliaria Varela por tu solicitud de reserva de ${r.propertyTitulo || 'la propiedad'}.`);
   l.push('');
-  l.push(`📅 ${r.checkIn} al ${r.checkOut} (${r.noches} noches)`);
+  l.push(`📅 ${fmtDate(r.checkIn)} al ${fmtDate(r.checkOut)} (${r.noches} noches)`);
   l.push('');
   l.push(motivo ? `Lamentablemente no podemos confirmar esta reserva: ${motivo}` : 'Lamentablemente no podemos confirmar esta reserva para esas fechas.');
   l.push('');

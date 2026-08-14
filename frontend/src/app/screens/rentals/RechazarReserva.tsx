@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { XCircle, X, MessageCircle } from 'lucide-react';
 import { Button } from '@vera/ui';
-import { api, mensajeRechazo, waLink, type Reservation } from './api';
+import { api, mensajeRechazo, waLink, fmtDate, type Reservation } from './api';
 
 /** Modal para rechazar/cancelar una reserva y avisarle al huésped por WhatsApp. */
 export const RechazarReserva = ({ reserva, onDone, onClose }: {
@@ -28,7 +28,7 @@ export const RechazarReserva = ({ reserva, onDone, onClose }: {
           <h3><XCircle size={18} /> {esConfirmada ? 'Cancelar reserva' : 'Rechazar pre-reserva'}</h3>
           <button type="button" onClick={onClose} data-testid={`rt-reject-close-${reserva.id}`}><X size={18} /></button>
         </div>
-        <p className="rt-modal__sub"><strong>{reserva.huesped?.nombre}</strong> · {reserva.checkIn} → {reserva.checkOut} ({reserva.noches} noches)</p>
+        <p className="rt-modal__sub"><strong>{reserva.huesped?.nombre}</strong> · {fmtDate(reserva.checkIn)} → {fmtDate(reserva.checkOut)} ({reserva.noches} noches)</p>
 
         <label className="rt-field"><span>Motivo (opcional — se incluye en el WhatsApp)</span>
           <textarea rows={2} value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ej.: esas fechas ya están reservadas" data-testid={`rt-reject-motivo-${reserva.id}`} /></label>

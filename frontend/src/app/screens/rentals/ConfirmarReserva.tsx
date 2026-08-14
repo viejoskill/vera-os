@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CalendarCheck, X, AlertTriangle, Users, CheckCircle2 } from 'lucide-react';
 import { Button } from '@vera/ui';
-import { api, fmtMoney, nightsBetween, parseISO, iso, type Reservation, type Occupied } from './api';
+import { api, fmtMoney, fmtDate, nightsBetween, parseISO, iso, type Reservation, type Occupied } from './api';
 import { RentalCalendar } from './RentalCalendar';
 
 /** Vista previa del calendario al confirmar una reserva, con aviso de "días perdidos". */
@@ -20,9 +20,9 @@ export const ConfirmarReserva = ({ reserva, onConfirmed, onClose }: {
   const otros = ocupados.filter((o) => !(o.checkIn === reserva.checkIn && o.checkOut === reserva.checkOut));
   const avisos: string[] = [];
   const antes = otros.filter((o) => o.checkOut <= reserva.checkIn).sort((a, b) => (a.checkOut < b.checkOut ? 1 : -1))[0];
-  if (antes) { const g = nightsBetween(antes.checkOut, reserva.checkIn); if (g >= 1 && g <= 2) avisos.push(`Quedan ${g} noche${g > 1 ? 's' : ''} libres antes del check-in (${antes.checkOut} → ${reserva.checkIn}), difíciles de alquilar.`); }
+  if (antes) { const g = nightsBetween(antes.checkOut, reserva.checkIn); if (g >= 1 && g <= 2) avisos.push(`Quedan ${g} noche${g > 1 ? 's' : ''} libres antes del check-in (${fmtDate(antes.checkOut)} → ${fmtDate(reserva.checkIn)}), difíciles de alquilar.`); }
   const despues = otros.filter((o) => o.checkIn >= reserva.checkOut).sort((a, b) => (a.checkIn > b.checkIn ? 1 : -1))[0];
-  if (despues) { const g = nightsBetween(reserva.checkOut, despues.checkIn); if (g >= 1 && g <= 2) avisos.push(`Quedan ${g} noche${g > 1 ? 's' : ''} libres después del check-out (${reserva.checkOut} → ${despues.checkIn}), difíciles de alquilar.`); }
+  if (despues) { const g = nightsBetween(reserva.checkOut, despues.checkIn); if (g >= 1 && g <= 2) avisos.push(`Quedan ${g} noche${g > 1 ? 's' : ''} libres después del check-out (${fmtDate(reserva.checkOut)} → ${fmtDate(despues.checkIn)}), difíciles de alquilar.`); }
 
   // Arranca un mes antes para que se vean también las reservas del mes previo.
   const ci = parseISO(reserva.checkIn);
@@ -44,7 +44,7 @@ export const ConfirmarReserva = ({ reserva, onConfirmed, onClose }: {
 
         <div className="rt-confirm__summary" data-testid="rt-confirm-summary">
           <div><strong>{reserva.huesped.nombre || 'Sin nombre'}</strong> · <Users size={13} /> {reserva.huesped.huespedes || 1} huéspedes</div>
-          <div>{reserva.checkIn} → {reserva.checkOut} · <strong>{reserva.noches} noches</strong></div>
+          <div>{fmtDate(reserva.checkIn)} → {fmtDate(reserva.checkOut)} · <strong>{reserva.noches} noches</strong></div>
           <div>Total estimado: <strong>{fmtMoney(reserva.montoEstimado, reserva.moneda)}</strong></div>
         </div>
 

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, Trash2, Upload, Star, CalendarX2, ExternalLink } from 'lucide-react';
 import { Button, Input } from '@vera/ui';
-import { api, fmtMoney, nightsBetween, displayEstado, TIPO_MOV, type RentalProperty, type Reservation, type RentalImage, type Movimiento, type Occupied } from './api';
+import { api, fmtMoney, fmtDate, nightsBetween, displayEstado, TIPO_MOV, type RentalProperty, type Reservation, type RentalImage, type Movimiento, type Occupied } from './api';
 import { RentalCalendar } from './RentalCalendar';
 import { CobrarSena } from './CobrarSena';
 import { ConfirmarReserva } from './ConfirmarReserva';
@@ -258,7 +258,7 @@ export const RentalWorkspace = () => {
               <RentalCalendar ocupados={ocupados} value={sel} onChange={setSel} months={1} legend />
               {sel.checkIn && sel.checkOut && (
                 <div className="rt-blockbar">
-                  <span>{sel.checkIn} → {sel.checkOut} ({nightsBetween(sel.checkIn, sel.checkOut)} noches)</span>
+                  <span>{fmtDate(sel.checkIn)} → {fmtDate(sel.checkOut)} ({nightsBetween(sel.checkIn, sel.checkOut)} noches)</span>
                   <Button variant="secondary" size="sm" onClick={blockRange} data-testid="rt-block"><CalendarX2 size={14} /> Bloquear estas fechas</Button>
                 </div>
               )}
@@ -268,7 +268,7 @@ export const RentalWorkspace = () => {
                   <p className="rt-blocks__title">Fechas bloqueadas</p>
                   {bloqueos.map((b) => (
                     <div className="rt-blocks__row" key={b.id} data-testid={`rt-block-${b.id}`}>
-                      <span>{b.checkIn} → {b.checkOut} · {b.noches} noches{b.motivo ? ` · ${b.motivo}` : ''}</span>
+                      <span>{fmtDate(b.checkIn)} → {fmtDate(b.checkOut)} · {b.noches} noches{b.motivo ? ` · ${b.motivo}` : ''}</span>
                       <button type="button" onClick={() => delBlock(b.id)} data-testid={`rt-delblock-${b.id}`}><Trash2 size={13} /> Quitar</button>
                     </div>
                   ))}
@@ -295,7 +295,7 @@ export const RentalWorkspace = () => {
             <div className="rt-mov">
               {movs.map((m) => (
                 <div className={`rt-mov__row rt-mov__row--${m.tipo}`} key={m.id} data-testid={`rt-mov-${m.id}`}>
-                  <span className="rt-mov__fecha">{m.fecha}</span>
+                  <span className="rt-mov__fecha">{fmtDate(m.fecha)}</span>
                   <span className="rt-mov__tipo">{TIPO_MOV[m.tipo] || m.tipo}</span>
                   <span className="rt-mov__desc">{m.descripcion}</span>
                   <span className="rt-mov__monto">{fmtMoney(m.monto, f.moneda)}</span>
@@ -318,7 +318,7 @@ export const RentalWorkspace = () => {
                 return (
                   <div className="rt-res__row" key={r.id} data-testid={`rt-wsres-${r.id}`}>
                     <div className="rt-res__main"><strong>{r.huesped.nombre}</strong><span className="rt-res__prop">{r.huesped.telefono} · {r.huesped.huespedes} huésp. · DNI {r.huesped.dni || '—'}</span></div>
-                    <div className="rt-res__dates">{r.checkIn} → {r.checkOut} · {r.noches} noches</div>
+                    <div className="rt-res__dates">{fmtDate(r.checkIn)} → {fmtDate(r.checkOut)} · {r.noches} noches</div>
                     <div className="rt-res__meta"><span>{fmtMoney(r.montoEstimado, r.moneda)}</span>{r.origen && <span className="rt-res__origin">{r.origen}</span>}<span className={`rt-b ${e.cls}`}>{e.label}</span></div>
                     <div className="rt-res__acts">
                       {r.estado === 'prereserva' && <>

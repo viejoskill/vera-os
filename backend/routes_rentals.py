@@ -553,6 +553,66 @@ async def liquidacion_pdf(propertyId: str = Query(...), desde: str = Query(...),
     )
 
 
+# ---------------- Liquidación por reserva efectuada (seña pagada) --------- #
+@router.get("/properties/{pid}/liquidables")
+async def liquidables(pid: str):
+    """Reservas efectuadas (seña pagada) de una propiedad, para liquidar al propietario."""
+    await _get_prop(pid)
+    cur = _res().find({"propertyId": pid, "pago.estado": "pagado"})
+    out = [_res_out(r) async for r in cur]
+    out.sort(key=lambda r: (r.get("pago") or {}).get("pagadoEl") or r.get("checkIn") or "", reverse=True)
+    return out
+
+
+async def _liquidacion_reserva(rid: str) -> dict:
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    prop = await _get_prop(r.get("propertyId"))
+    mon = r.get("moneda", "ARS")
+    tot = {"ingreso": 0.0, "gasto_prop": 0.0, "gasto_nuestro": 0.0, "comision": 0.0}
+    movs = []
+    cur = _movs().find({"reservaId": rid}).sort("fecha", 1)
+    async for m in cur:
+        t = m.get("tipo")
+        if t in tot:
+            tot[t] += float(m.get("monto") or 0)
+        movs.append(_mov_out(m))
+    alquiler = float(r.get("montoEstimado") or 0)
+    ingresos = round(alquiler + tot["ingreso"])
+    neto = round(ingresos - tot["comision"] - tot["gasto_prop"])
+    h = r.get("huesped") or {}
+    return {
+        "reserva": {"id": r["_id"], "checkIn": r.get("checkIn"), "checkOut": r.get("checkOut"), "noches": r.get("noches")},
+        "huesped": h, "pago": r.get("pago") or {},
+        "propiedad": {"id": prop["_id"], "codigo": prop.get("codigo"), "titulo": prop.get("titulo"), "moneda": mon},
+        "propietario": prop.get("propietario") or {},
+        "periodo": {"desde": r.get("checkIn"), "hasta": r.get("checkOut")},
+        "alquiler": round(alquiler),
+        "ingresos": ingresos, "comision": round(tot["comision"]),
+        "gastosPropietario": round(tot["gasto_prop"]), "gastosNuestros": round(tot["gasto_nuestro"]),
+        "netoPropietario": neto, "movimientos": movs,
+    }
+
+
+@router.get("/reservations/{rid}/liquidacion")
+async def liquidacion_reserva(rid: str):
+    return await _liquidacion_reserva(rid)
+
+
+@router.get("/reservations/{rid}/liquidacion/pdf")
+async def liquidacion_reserva_pdf(rid: str):
+    data = await _liquidacion_reserva(rid)
+    from rentals_pdf import build_liquidacion_pdf
+    pdf = build_liquidacion_pdf(data)
+    cod = data["propiedad"].get("codigo") or "liquidacion"
+    nombre = (data.get("huesped") or {}).get("nombre", "reserva").split(" ")[0]
+    return Response(
+        content=pdf, media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="Liquidacion-{cod}-{nombre}.pdf"'},
+    )
+
+
 # ------------------------------ Pagos (Mercado Pago) --------------------- #
 async def _create_sena_link(r: dict, monto: float) -> dict:
     """Crea la preference de la seña en Mercado Pago y la guarda en la reserva."""

@@ -1,0 +1,39 @@
+{
+  "summary": "Frontend UI validated for VERA OS Alquileres module - Liquidaciones por reserva flow and dd/mm/yyyy date formatting across all text sections. All acceptance criteria PASSED.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "login_admin": "PASS - qa_varela@vera.test logged in successfully; sidebar shows Liquidaciones item.",
+    "liquidaciones_screen_loads": "PASS - /liquidaciones renders with data-testid=liquidaciones-screen.",
+    "property_selector_CDE002": "PASS - rt-liq-prop shows 'CDE002 · CASA DE PRUEBA — Costa del Este (borrar)'.",
+    "reservas_efectuadas_list": "PASS - Only Ana Huésped appears in rt-liq-reservas (Seña $94.500, $315.000). Marta/Carlos/Lucia/Sofia correctly excluded.",
+    "date_format_in_list": "PASS - dates shown as '10/01/2026 → 17/01/2026 · 7 noches' (no ISO).",
+    "liquidacion_detail": "PASS - rt-liq-result shows propiedad, huésped Ana Huésped, estadía 10/01/2026 → 17/01/2026, Alquiler $315.000, −Comisión $31.500, −Gastos propietario $15.000, Neto $268.500. rt-liq-pdf button present.",
+    "add_movimiento_gasto_prop": "PASS - Added gasto_prop 10.000 TEST_gasto. Neto recalculated from $268.500 → $258.500 (decreased by exactly 10.000). Movement date shown as dd/mm/yyyy (14/08/2026).",
+    "delete_movimiento": "PASS - Delete via rt-liqdelmov-<id> removes row and Neto returns to $268.500.",
+    "back_button": "PASS - rt-liq-back returns to rt-liq-reservas list.",
+    "date_format_reservas_tab": "PASS - Alquileres → rt-tab-res shows all dates as dd/mm/yyyy (10/01/2026 → 17/01/2026, 01/03/2026, 01/04/2026, etc.). No ISO 2026-01-10 found.",
+    "confirm_preview": "PASS - rt-confirm-summary shows '10/07/2026 → 15/07/2026 · 5 noches'.",
+    "reject_modal": "PASS - rt-reject-modal shows 'Sofia PreviewTest · 10/07/2026 → 15/07/2026 (5 noches)' and WhatsApp preview '📅 10/07/2026 al 15/07/2026 (5 noches)'.",
+    "property_edit_ficha": "PASS - CDE002 edit page has 18 dd/mm/yyyy date occurrences and 0 ISO dates. Ficha financiera section detected.",
+    "console_errors": "None observed during flows."
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "LiquidacionesScreen.tsx (121 lines) - clean, well-structured, uses fmtDate consistently.",
+    "Movement 'nuevo' state resets after addMov - good UX. Date defaults to HOY.",
+    "Consider disabling addMov button while pending (avoid double-click), minor UX polish only."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100%"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml",
+  "seed_data_creation": "None (used existing Ana Huésped reserva on CDE002).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend was already curl-verified by main agent. UI 100% validated in iteration_47 for: (1) Liquidaciones por reserva efectuada flow (list liquidables, open detail, add/delete movimientos with recalculation, PDF button, back), and (2) dd/mm/yyyy date format in Liquidaciones lists/detail, Reservas tab, Reject modal + WA preview, Confirm preview, and Property edit ficha. All ISO YYYY-MM-DD occurrences in rendered text have been eliminated (native type=date inputs excluded as expected)."
+}

@@ -293,6 +293,16 @@
 /* Liquidación: header con acción */
 .rt-liq__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 
+/* Liquidación: listado de reservas efectuadas para elegir */
+.rt-liq__list { display: grid; gap: 10px; margin-top: 8px; }
+.rt-liq__resitem { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; text-align: left; padding: 14px 16px; background: var(--vera-color-surface); border: 1px solid var(--vera-color-border); border-radius: 12px; cursor: pointer; transition: border-color .15s, background .15s; }
+.rt-liq__resitem:hover { border-color: var(--vera-color-primary, #d6cc6a); background: var(--vera-color-card, var(--vera-color-surface)); }
+.rt-liq__resmain { display: flex; flex-direction: column; gap: 3px; }
+.rt-liq__resmain strong { font-size: .98rem; }
+.rt-liq__resmain span { font-size: .82rem; color: var(--vera-color-text-secondary); display: inline-flex; align-items: center; gap: 6px; }
+.rt-liq__resmeta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.rt-liq__resmeta strong { font-size: 1rem; }
+
 /* Cobro de seña (Mercado Pago) */
 .rt-mini--pay { border-color: rgba(0,158,227,.55); color: #4ab3e6; }
 .rt-mini--pay:hover { background: rgba(0,158,227,.1); }

@@ -1201,3 +1201,10 @@ Cuatro mejoras pedidas. Verificado: build de producción (CI=true) OK + testing 
 - Verificado por curl + extracción de texto del PDF (Ana Huésped: seña $94.500, total $315.000, saldo $220.500, PAGADA ✓). Cambio self-contained, tsc limpio.
 - Helper `_brand()` extraído en `rentals_pdf.py` para el encabezado de marca reutilizable.
 
+
+## Implemented (Alquileres · Liquidación por reserva efectuada + formato de fecha dd/mm/yyyy — 2026-06)
+Dos correcciones pedidas. Verificado: backend por curl + PDF, frontend 100% (iteration_47.json), build de producción OK.
+- **Liquidación por reserva efectuada**: `LiquidacionesScreen` reescrita. Flujo: elegir propiedad → lista de **reservas con seña PAGADA** (`GET /properties/{pid}/liquidables`, filtra `pago.estado='pagado'`) → elegir una → detalle `GET /reservations/{rid}/liquidacion`: alquiler (montoEstimado) + ingresos extra − comisión − gastos del propietario = **neto**. El admin puede **agregar/eliminar** gastos/comisión (movimientos ligados a `reservaId`) y el neto recalcula. Descarga PDF `GET /reservations/{rid}/liquidacion/pdf` (con datos del huésped). "Reserva efectuada" = seña pagada; se ordenan por fecha de pago de la seña. Los gastos siguen siendo manuales por movimiento. Se mantiene el endpoint viejo de liquidación por rango de fechas (`/liquidacion`) pero la UI ahora es por reserva.
+- **Formato de fecha dd/mm/yyyy** (día/mes/año) en TODO el texto renderizado: helper `fmtDate()` en api.ts (YYYY-MM-DD → DD/MM/YYYY). Aplicado en AlquileresScreen, RentalWorkspace (reservas + ficha financiera), LiquidacionesScreen, ConfirmarReserva (resumen + avisos), RechazarReserva (+ preview WhatsApp), ReservarPropiedad (éxito), mensajes de WhatsApp (`mensajeReserva`/`mensajeRechazo`) y PDFs (`rentals_pdf.py` helper `_fd()`). Los inputs `type=date` nativos quedan en formato del navegador (no controlable).
+- Tipos nuevos: `LiquidacionReserva`. Métodos api: `liquidables`, `liquidacionReserva`, `liquidacionReservaPdfUrl`.
+

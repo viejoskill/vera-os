@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Palmtree, Plus, Pencil, ExternalLink, Link2, Check, Users, BedDouble, Bath, XCircle, Building2, Search, X, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { Button } from '@vera/ui';
-import { api, fmtMoney, displayEstado, esEsperandoSena, type RentalProperty, type Reservation, type SaleProperty, type RentalSettings } from './api';
+import { api, fmtMoney, fmtDate, displayEstado, esEsperandoSena, type RentalProperty, type Reservation, type SaleProperty, type RentalSettings } from './api';
 import { CobrarSena } from './CobrarSena';
 import { ConfirmarReserva } from './ConfirmarReserva';
 import { RechazarReserva } from './RechazarReserva';
@@ -187,7 +187,7 @@ export const AlquileresScreen = () => {
                     <strong>{r.huesped.nombre || 'Sin nombre'}</strong>
                     <span className="rt-res__prop">{r.propertyTitulo}</span>
                   </div>
-                  <div className="rt-res__dates">{r.checkIn} → {r.checkOut} · {r.noches} noches</div>
+                  <div className="rt-res__dates">{fmtDate(r.checkIn)} → {fmtDate(r.checkOut)} · {r.noches} noches</div>
                   <div className="rt-res__meta">
                     <span>{fmtMoney(r.montoEstimado, r.moneda)}</span>
                     {r.origen && <span className="rt-res__origin">{r.origen}</span>}
