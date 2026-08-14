@@ -1233,3 +1233,10 @@ Verificado: backend curl (los 4 avisos se generan correctos) + tsc + build de pr
 - **Recibo por WhatsApp**: en `CobrarSena` (seña pagada) botón "Recibo x WhatsApp" (rt-recibo-wa) que abre wa.me al huésped con el link del recibo PDF (`mensajeRecibo()` en api.ts).
 - Íconos de campanita por tipo: CalendarClock (reserva_proxima/reserva_hoy), BadgeCheck (sena_pagada), Wallet (saldo_pendiente).
 
+
+## Implemented (Alquileres · Comprobantes de pago en la ficha — 2026-06)
+Verificado: backend curl (CRUD OK) + frontend (iteration_50.json, funcional 100%; bug UX de auto-cierre del modal corregido).
+- Cada reserva puede tener **varios comprobantes** (recibos/transferencias) adjuntos. Componente `Comprobantes.tsx` (botón "Comprobantes (n)" + modal para subir/ver/borrar), usado en AlquileresScreen (pestaña Reservas) y RentalWorkspace (reservas de la propiedad).
+- Backend: `POST /reservations/{rid}/comprobantes` (multipart, append a lista en Supabase), `GET /reservations/{rid}/comprobantes/{cid}` (sirve el archivo), `DELETE .../{cid}`. `_res_out` incluye `comprobantes:[{id,nombre,fecha}]`. El comprobante subido en "Marcar pagada" también se agrega a la lista.
+- Fix UX: el modal ya no se cierra tras cada subida/borrado (el componente maneja estado local; el padre se sincroniza solo al cerrar el modal).
+

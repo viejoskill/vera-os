@@ -1,0 +1,41 @@
+{
+  "summary": "Frontend E2E de la nueva feature 'Comprobantes de pago' en Alquileres (VERA OS). Todos los escenarios funcionales pasan (subir múltiples PNG+PDF, ver, descargar, borrar, contador, y botón visible tanto en la pestaña Reservas como en la ficha de propiedad CDE002 → 'Reservas de esta propiedad'). Se detectó un bug UX: el modal de Comprobantes se cierra automáticamente después de cada subida y cada borrado, obligando al usuario a reabrirlo.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "Comprobantes modal (Alquileres → Reservas)",
+        "issue": "El modal se cierra automáticamente tras cada subida (POST /comprobantes 201) y tras cada eliminación (DELETE 204). El usuario debe reabrir el modal para ver el archivo recién subido o para subir un segundo comprobante. Rompe el flujo 'subir varios comprobantes en la misma sesión'.",
+        "selector": "[data-testid=rt-comps-modal-<rid>]",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "1_login_and_tab": "PASS - Login qa_varela@vera.test OK; /alquileres carga; click rt-tab-res muestra 7 reservas cada una con botón rt-comps-btn-<id>.",
+    "2_open_modal": "PASS - Click en botón abre rt-comps-modal-<id> (visible). Muestra 'Todavía no hay comprobantes cargados' cuando lista vacía.",
+    "3_upload_png": "PASS - set_input_files sobre rt-comps-file-<id> con test_comp.png dispara POST /api/rentals/reservations/<rid>/comprobantes → 201. Aparece rt-comp-<cid> con nombre 'test_comp.png' y fecha '14/08/2026'. Contador del botón cambia a 'Comprobantes (1)'.",
+    "4_upload_multiple_pdf": "PASS (con caveat UX) - Segundo archivo PDF también se sube y se ve. Contador llega a 'Comprobantes (2)' y ambas filas rt-comp-<cid> visibles al reabrir modal. CAVEAT: El modal se cierra tras la primera subida, hubo que reabrir para hacer la segunda.",
+    "5_view_link": "PASS - href de la fila apunta a /api/rentals/reservations/<rid>/comprobantes/<cid>. fetch() responde 200 con content-type image/png. target=_blank correcto.",
+    "6_delete_comprobante": "PASS - Botón papelera rt-comp-del-<cid> con window.confirm; al aceptar dispara DELETE 204, la fila desaparece y el contador baja de (2) a (1). CAVEAT: el modal se cierra tras el delete también.",
+    "7_property_card": "PASS - En pestaña Propiedades, click 'Editar' en tarjeta CDE002 (CASA DE PRUEBA — Costa del Este) abre la ficha; sección 'Reservas de esta propiedad' lista las 7 reservas, cada una con su propio botón rt-comps-btn-<id> (contadores replicados: 2 con '(1)' + 5 sin count)."
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Bug UX: Evitar que el modal de Comprobantes se cierre después de subir/borrar. Causa raíz: en AlquileresScreen.tsx (líneas 38-42), load() hace setLoading(true) y renderiza '<p>Cargando…</p>' (línea 123), lo que DESMONTA la lista de reservas y por ende cada <Comprobantes/> con su estado local open=true. Al terminar la recarga se remonta un <Comprobantes/> nuevo con open=false. Sugerencias: (a) no setear setLoading(true) en refresh silencioso (usar un flag 'refreshing' separado sin cambiar el render principal), o (b) que <Comprobantes/> reciba y controle 'open' desde el parent, o (c) actualizar reservas in-place sin unmount (setRes primero, sin mostrar 'Cargando…'). Los onUpdated={load} en CobrarSena y Confirmar/Rechazar tienen el mismo comportamiento pero allí el modal sí lo controla el parent."
+  ],
+  "critical_code_review_comments": [
+    "AlquileresScreen.load() re-setea loading=true en cada refresh y desmonta la lista; esto rompe cualquier UI local con estado (Comprobantes.open). Preferir refresco optimista o loading no-bloqueante.",
+    "Comprobantes.tsx guarda una copia local de comps (useState(reserva.comprobantes||[])) que no se sincroniza si la prop cambia después del primer render. Al reabrir el modal en un remount se re-hidrata, pero si el modal permaneciera abierto y el parent hiciera onUpdated externo, los datos podrían quedar desactualizados. Considerar useEffect para sincronizar con reserva.comprobantes."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped por request)", "frontend": "95% (funcional 100%; 1 bug UX de auto-cierre del modal)"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml",
+  "seed_data_creation": "Se agregaron 2 comprobantes de prueba en reservas del entorno (uno en reserva 3a5bf7d3… 'Ingreso Hoy' y uno en 2e38203b… 'Reserva Proxima Test'). El delete removió el png; queda test_comp.pdf. Archivos usados: /app/tests/assets/test_comp.png y /app/tests/assets/test_comp.pdf (persistentes).",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "La API de comprobantes (POST multipart, GET, DELETE) está 100% ok (201/200/204 verificados). El único issue es UX: el modal se cierra por el remount forzado por setLoading(true) en AlquileresScreen.load(). Ya está reproducible en reservas 2e38203b y 3a5bf7d3 que quedan con comprobantes de prueba.",
+  "rca of the issue": "Modal se cierra tras subir/borrar → AlquileresScreen.tsx L39 hace setLoading(true) en onUpdated=load(). El render L123 (loading ? 'Cargando…' : ...) desmonta rt-res-list y todos los <Comprobantes/> (cuyo open es useState local). Al terminar load(), se remonta con open=false. Reproducción: abrir modal Comprobantes, subir archivo; el modal desaparece de la pantalla aunque el contador del botón sí se actualiza. Mitigación sugerida: (a) usar un flag isRefreshing sin bloquear el render, o (b) elevar el estado open al parent, o (c) refrescar in-place sin loading=true."
+}

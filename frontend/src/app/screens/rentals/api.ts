@@ -50,6 +50,7 @@ export interface Reservation {
   id: string; propertyId: string; propertyTitulo?: string; estado: string;
   checkIn: string; checkOut: string; noches: number; montoEstimado: number; moneda: string;
   origen?: string; motivo?: string; createdAt?: string; pago?: Pago | null;
+  comprobantes?: { id: string; nombre?: string; fecha?: string }[];
   huesped: { nombre?: string; telefono?: string; email?: string; dni?: string; huespedes?: number; comentario?: string };
 }
 
@@ -112,6 +113,12 @@ export const api = {
     return fetch(`${RENTALS_API}/reservations/${rid}/marcar-pagada`, { method: 'POST', body: fd }).then(json);
   },
   comprobanteUrl: (rid: string): string => `${RENTALS_API}/reservations/${rid}/comprobante`,
+  comprobanteItemUrl: (rid: string, cid: string): string => `${RENTALS_API}/reservations/${rid}/comprobantes/${cid}`,
+  addComprobante: (rid: string, file: File): Promise<Reservation> => {
+    const fd = new FormData(); fd.append('file', file);
+    return fetch(`${RENTALS_API}/reservations/${rid}/comprobantes`, { method: 'POST', body: fd }).then(json);
+  },
+  deleteComprobante: (rid: string, cid: string) => fetch(`${RENTALS_API}/reservations/${rid}/comprobantes/${cid}`, { method: 'DELETE' }).then(json),
   paymentLink: (rid: string, monto: number, descripcion?: string): Promise<{ initPoint: string; preferenceId: string; monto: number }> =>
     fetch(`${RENTALS_API}/reservations/${rid}/payment-link`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ monto, descripcion }) }).then(json),
   getReservation: (rid: string): Promise<Reservation> => fetch(`${RENTALS_API}/reservations/${rid}`).then(json),

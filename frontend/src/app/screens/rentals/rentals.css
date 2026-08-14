@@ -369,6 +369,14 @@
 .rt-mini--del { border-color: rgba(210,70,70,.5); color: #e07575; }
 .rt-mini--del:hover { background: rgba(210,70,70,.12); }
 
+/* Comprobantes de pago */
+.rt-comps__list { display: grid; gap: 8px; margin: 6px 0 14px; }
+.rt-comps__row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; background: var(--vera-color-surface); border: 1px solid var(--vera-color-border); border-radius: 10px; }
+.rt-comps__link { display: inline-flex; align-items: center; gap: 8px; color: var(--vera-color-text); text-decoration: none; font-size: .85rem; flex: 1; }
+.rt-comps__link span { color: var(--vera-color-text-secondary); font-size: .75rem; margin-left: auto; }
+.rt-comps__link:hover { color: var(--vera-color-primary, #d6cc6a); }
+.rt-comps__del { background: none; border: none; color: #e07575; cursor: pointer; padding: 2px; }
+
 /* Vista previa al confirmar: la pre-reserva en ámbar (no se mezcla con las rojas) */
 .rt-cal--review .rt-cal__cell--edge,
 .rt-cal--review .rt-cal__cell--range {

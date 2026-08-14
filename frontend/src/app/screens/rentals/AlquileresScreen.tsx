@@ -7,6 +7,7 @@ import { CobrarSena } from './CobrarSena';
 import { ConfirmarReserva } from './ConfirmarReserva';
 import { RechazarReserva } from './RechazarReserva';
 import { WhatsappReserva } from './WhatsappReserva';
+import { Comprobantes } from './Comprobantes';
 import './rentals.css';
 
 const Badge = ({ reserva }: { reserva: Reservation }) => {
@@ -205,6 +206,7 @@ export const AlquileresScreen = () => {
                     )}
                     {r.huesped.telefono && <WhatsappReserva reserva={r} />}
                     {(r.estado === 'confirmada' || r.estado === 'prereserva') && <CobrarSena reserva={r} onUpdated={load} />}
+                    <Comprobantes reserva={r} onUpdated={load} />
                     {(r.estado === 'cancelada' || r.estado === 'finalizada') && (
                       <button type="button" className="rt-mini rt-mini--del" onClick={() => removeReserva(r.id)} data-testid={`rt-delres-${r.id}`}><Trash2 size={14} /> Eliminar</button>
                     )}

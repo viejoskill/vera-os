@@ -167,6 +167,7 @@ def _res_out(r: dict) -> dict:
         "origen": r.get("origen"), "motivo": r.get("motivo"),
         "huesped": r.get("huesped") or {}, "createdAt": r.get("createdAt"),
         "pago": r.get("pago"),
+        "comprobantes": [{"id": c["id"], "nombre": c.get("nombre"), "fecha": c.get("fecha")} for c in (r.get("comprobantes") or [])],
     }
 
 
@@ -774,6 +775,7 @@ async def marcar_pagada(rid: str, monto: float = Form(0), metodo: str = Form("ma
         raise HTTPException(404, "Reserva no encontrada")
     prev = r.get("pago") or {}
     comp = prev.get("comprobante")
+    push_comp = None
     if file is not None and appconfig.supabase_configured():
         from pathlib import Path
         ext = Path(file.filename or "comp.jpg").suffix.lower() or ".jpg"
@@ -781,10 +783,14 @@ async def marcar_pagada(rid: str, monto: float = Form(0), metodo: str = Form("ma
         content = await file.read()
         await get_storage().upload(appconfig.BUCKET_IMAGES, obj, content, file.content_type or "image/jpeg")
         comp = {"bucket": appconfig.BUCKET_IMAGES, "object_path": obj, "contentType": file.content_type or "image/jpeg"}
+        push_comp = {"id": uuid4().hex, **comp, "nombre": file.filename or "comprobante seña", "fecha": _now()}
     monto_final = round(float(monto)) if monto else (prev.get("monto") or 0)
     pago = {**prev, "estado": "pagado", "metodo": metodo, "monto": monto_final,
             "moneda": "ARS", "comprobante": comp, "pagadoEl": _now()}
-    await _res().update_one({"_id": rid}, {"$set": {"pago": pago}})
+    upd: dict = {"$set": {"pago": pago}}
+    if push_comp:
+        upd["$push"] = {"comprobantes": push_comp}
+    await _res().update_one({"_id": rid}, upd)
     if prev.get("estado") != "pagado":
         try:
             from documents import notifications
@@ -803,6 +809,41 @@ async def get_comprobante(rid: str):
         raise HTTPException(404, "Sin comprobante")
     data = await get_storage().download(comp["bucket"], comp["object_path"])
     return Response(content=data, media_type=comp.get("contentType", "image/jpeg"))
+
+
+@router.post("/reservations/{rid}/comprobantes", status_code=201)
+async def add_comprobante(rid: str, file: UploadFile = File(...)):
+    """Adjunta un comprobante (recibo/transferencia) a la ficha de la reserva."""
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    if not appconfig.supabase_configured():
+        raise HTTPException(503, "Almacenamiento no configurado.")
+    from pathlib import Path
+    ext = Path(file.filename or "comp.jpg").suffix.lower() or ".jpg"
+    obj = f"rentals/{r.get('propertyId')}/comprobantes/{uuid4().hex}{ext}"
+    content = await file.read()
+    await get_storage().upload(appconfig.BUCKET_IMAGES, obj, content, file.content_type or "image/jpeg")
+    comp = {"id": uuid4().hex, "bucket": appconfig.BUCKET_IMAGES, "object_path": obj,
+            "contentType": file.content_type or "image/jpeg", "nombre": file.filename or "comprobante", "fecha": _now()}
+    await _res().update_one({"_id": rid}, {"$push": {"comprobantes": comp}})
+    return _res_out(await _res().find_one({"_id": rid}))
+
+
+@router.get("/reservations/{rid}/comprobantes/{cid}")
+async def get_comprobante_item(rid: str, cid: str):
+    r = await _res().find_one({"_id": rid})
+    comp = next((c for c in ((r or {}).get("comprobantes") or []) if c.get("id") == cid), None)
+    if not comp:
+        raise HTTPException(404, "Comprobante no encontrado")
+    data = await get_storage().download(comp["bucket"], comp["object_path"])
+    return Response(content=data, media_type=comp.get("contentType", "image/jpeg"))
+
+
+@router.delete("/reservations/{rid}/comprobantes/{cid}", status_code=204)
+async def delete_comprobante_item(rid: str, cid: str):
+    await _res().update_one({"_id": rid}, {"$pull": {"comprobantes": {"id": cid}}})
+    return None
 
 
 # --------------------- Importar desde el CRM de ventas -------------------- #
