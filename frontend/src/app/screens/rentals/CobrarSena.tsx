@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CreditCard, Copy, Check, ExternalLink, RefreshCw, X } from 'lucide-react';
+import { CreditCard, Copy, Check, ExternalLink, RefreshCw, X, FileDown } from 'lucide-react';
 import { Button } from '@vera/ui';
 import { api, fmtMoney, type Reservation } from './api';
 
@@ -32,7 +32,12 @@ export const CobrarSena = ({ reserva, onUpdated }: { reserva: Reservation; onUpd
   };
 
   if (pago?.estado === 'pagado') {
-    return <span className="rt-pay rt-pay--ok" data-testid={`rt-pay-ok-${reserva.id}`}><Check size={13} /> Seña pagada · {fmtMoney(pago.monto || 0, 'ARS')}</span>;
+    return (
+      <span className="rt-pay rt-pay--ok" data-testid={`rt-pay-ok-${reserva.id}`}>
+        <Check size={13} /> Seña pagada · {fmtMoney(pago.monto || 0, 'ARS')}
+        <a className="rt-pay__ic" href={api.reciboSenaUrl(reserva.id)} target="_blank" rel="noreferrer" title="Descargar recibo de seña" data-testid={`rt-recibo-${reserva.id}`}><FileDown size={13} /></a>
+      </span>
+    );
   }
 
   if (pago?.initPoint && (pago.estado === 'pendiente' || pago.estado === 'rechazado')) {

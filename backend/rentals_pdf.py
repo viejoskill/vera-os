@@ -152,3 +152,90 @@ def build_liquidacion_pdf(data: dict) -> bytes:
                             title=f"Liquidación {cod}")
     doc.build(story)
     return buf.getvalue()
+
+
+
+def _brand(story, st):
+    logo = _black_logo_bytes()
+    if logo:
+        try:
+            img = Image(io.BytesIO(logo), width=3.4 * cm, height=1.2 * cm, kind="proportional")
+            img.hAlign = "LEFT"
+            story.append(img)
+        except Exception:  # noqa: BLE001
+            story.append(Paragraph("VARELA <font color='#888888'>PROPIEDADES</font>", st["brand"]))
+    else:
+        story.append(Paragraph("VARELA <font color='#888888'>PROPIEDADES</font>", st["brand"]))
+    story.append(Spacer(1, 0.15 * cm))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor("#d8d8d8"), spaceAfter=12))
+
+
+def build_recibo_sena_pdf(data: dict) -> bytes:
+    """Recibo de la seña para enviarle al huésped."""
+    st = _styles()
+    prop = data.get("propiedad") or {}
+    h = data.get("huesped") or {}
+    pago = data.get("pago") or {}
+    mon = data.get("moneda", "ARS")
+    cod = prop.get("codigo") or ""
+    pagada = pago.get("estado") == "pagado"
+
+    story: list = []
+    _brand(story, st)
+    story.append(Paragraph("Recibo de seña", st["h1"]))
+    emitido = datetime.now(timezone.utc).astimezone().strftime("%d/%m/%Y")
+    story.append(Paragraph(f"Emitido el {emitido}", st["sub"]))
+    story.append(Spacer(1, 0.4 * cm))
+
+    quien = h.get("nombre") or "—"
+    if h.get("dni"):
+        quien += f" (DNI {h.get('dni')})"
+    story.append(Paragraph(
+        f"Recibimos de <b>{quien}</b> la suma de <b>{_fmt(pago.get('monto'), 'ARS')}</b> "
+        "en concepto de <b>seña</b> por la siguiente reserva:", st["body"]))
+    story.append(Spacer(1, 0.2 * cm))
+
+    story.append(Paragraph("Propiedad", st["sec"]))
+    story.append(Paragraph(f"<b>{cod}</b> · {prop.get('titulo') or '—'}", st["body"]))
+    story.append(Paragraph("Estadía", st["sec"]))
+    story.append(Paragraph(f"{data.get('checkIn')} → {data.get('checkOut')} · {data.get('noches')} noches", st["body"]))
+
+    story.append(Paragraph("Detalle", st["sec"]))
+    filas = [["Total de la reserva", _fmt(data.get("montoEstimado"), mon)],
+             ["Seña abonada", _fmt(pago.get("monto"), "ARS")]]
+    if mon == "ARS":
+        saldo = round(float(data.get("montoEstimado") or 0) - float(pago.get("monto") or 0))
+        filas.append(["Saldo pendiente (al ingreso)", _fmt(saldo, "ARS")])
+    t = Table(filas, colWidths=[11.5 * cm, 4 * cm])
+    t.setStyle(TableStyle([
+        ("FONT", (0, 0), (-1, -1), "Helvetica", 10),
+        ("FONT", (0, 1), (-1, 1), "Helvetica-Bold", 11),
+        ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+        ("LINEBELOW", (0, 0), (-1, -2), 0.3, colors.HexColor("#eeeeee")),
+        ("BACKGROUND", (0, 1), (-1, 1), colors.HexColor("#f6f6e8")),
+        ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8), ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+    ]))
+    story.append(t)
+    story.append(Spacer(1, 0.3 * cm))
+
+    medio = "Mercado Pago"
+    if pago.get("paymentId"):
+        medio += f" · operación {pago.get('paymentId')}"
+    estado_txt = "PAGADA ✓" if pagada else "PENDIENTE DE ACREDITACIÓN"
+    story.append(Paragraph(f"Medio de pago: {medio}", st["small"]))
+    story.append(Paragraph(f"Estado de la seña: <b>{estado_txt}</b>", st["small"]))
+    if mon != "ARS":
+        story.append(Paragraph("El saldo se coordina con la inmobiliaria al momento del ingreso.", st["small"]))
+
+    story.append(Spacer(1, 1.4 * cm))
+    story.append(Paragraph("____________________________________", st["body"]))
+    story.append(Paragraph("<b>INMOBILIARIA VARELA COSTA DEL ESTE</b>", st["body"]))
+    story.append(Paragraph("Jorge Oscar Varela · Mat. T°III F°103 N°865", st["small"]))
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=2 * cm, bottomMargin=2 * cm,
+                            leftMargin=2.2 * cm, rightMargin=2.2 * cm,
+                            title=f"Recibo seña {cod}")
+    doc.build(story)
+    return buf.getvalue()

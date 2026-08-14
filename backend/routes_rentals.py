@@ -582,6 +582,31 @@ async def get_reservation(rid: str):
     return _res_out(r)
 
 
+@router.get("/reservations/{rid}/recibo-sena")
+async def recibo_sena(rid: str):
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    pago = r.get("pago") or {}
+    if not pago.get("monto"):
+        raise HTTPException(400, "La reserva no tiene una seña registrada.")
+    prop = await _props().find_one({"_id": r.get("propertyId")})
+    from rentals_pdf import build_recibo_sena_pdf
+    data = {
+        "propiedad": {"codigo": (prop or {}).get("codigo"), "titulo": r.get("propertyTitulo") or (prop or {}).get("titulo")},
+        "huesped": r.get("huesped") or {}, "pago": pago, "moneda": r.get("moneda", "ARS"),
+        "checkIn": r.get("checkIn"), "checkOut": r.get("checkOut"),
+        "noches": r.get("noches"), "montoEstimado": r.get("montoEstimado"),
+    }
+    pdf = build_recibo_sena_pdf(data)
+    cod = data["propiedad"].get("codigo") or "reserva"
+    nombre = (r.get("huesped") or {}).get("nombre", "huesped").split(" ")[0]
+    return Response(
+        content=pdf, media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="Recibo-sena-{cod}-{nombre}.pdf"'},
+    )
+
+
 @router.post("/reservations/{rid}/payment-link", status_code=201)
 async def create_payment_link(rid: str, body: PaymentLinkBody):
     if not appconfig.mp_configured():

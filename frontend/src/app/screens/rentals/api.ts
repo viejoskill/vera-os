@@ -91,6 +91,7 @@ export const api = {
     fetch(`${RENTALS_API}/liquidacion?propertyId=${propertyId}&desde=${desde}&hasta=${hasta}`).then(json),
   liquidacionPdfUrl: (propertyId: string, desde: string, hasta: string): string =>
     `${RENTALS_API}/liquidacion/pdf?propertyId=${propertyId}&desde=${desde}&hasta=${hasta}`,
+  reciboSenaUrl: (rid: string): string => `${RENTALS_API}/reservations/${rid}/recibo-sena`,
   paymentLink: (rid: string, monto: number, descripcion?: string): Promise<{ initPoint: string; preferenceId: string; monto: number }> =>
     fetch(`${RENTALS_API}/reservations/${rid}/payment-link`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ monto, descripcion }) }).then(json),
   getReservation: (rid: string): Promise<Reservation> => fetch(`${RENTALS_API}/reservations/${rid}`).then(json),

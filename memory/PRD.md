@@ -1194,3 +1194,10 @@ Cuatro mejoras pedidas. Verificado: build de producción (CI=true) OK + testing 
 - **Eliminar reservas** canceladas/finalizadas: botón papelera (`rt-delres` / `rt-wsdelres`) con confirm → `DELETE /api/rentals/reservations/{rid}` → sale de la lista. Mantiene la lista limpia.
 - Componentes nuevos: `RechazarReserva.tsx`, `MoneyInput.tsx`. Prop `className` agregada a `RentalCalendar`.
 
+
+## Implemented (Alquileres · Recibo de seña al huésped — 2026-06)
+- **Recibo PDF de la seña** para enviarle al huésped. `build_recibo_sena_pdf()` en `rentals_pdf.py` (reportlab + logo Varela). Muestra: título "Recibo de seña", fecha de emisión, nombre + DNI del huésped, monto de la seña, propiedad (código+título), estadía, total de la reserva, **saldo pendiente** (solo si la reserva es en ARS = total − seña), medio de pago (Mercado Pago + id de operación), estado (PAGADA ✓ / PENDIENTE) y firma de la inmobiliaria.
+- Endpoint `GET /api/rentals/reservations/{rid}/recibo-sena` (requiere que exista una seña con monto). Botón de descarga (ícono `FileDown`, testid `rt-recibo-<id>`) en `CobrarSena.tsx` que aparece cuando la seña está **pagada**.
+- Verificado por curl + extracción de texto del PDF (Ana Huésped: seña $94.500, total $315.000, saldo $220.500, PAGADA ✓). Cambio self-contained, tsc limpio.
+- Helper `_brand()` extraído en `rentals_pdf.py` para el encabezado de marca reutilizable.
+
