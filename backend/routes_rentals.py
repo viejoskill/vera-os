@@ -247,6 +247,24 @@ class BlockBody(BaseModel):
     motivo: str | None = "Bloqueo manual"
 
 
+class ManualReservationBody(BaseModel):
+    propertyId: str
+    nombre: str
+    telefono: str | None = ""
+    email: str | None = ""
+    dni: str | None = ""
+    huespedes: int = 1
+    comentario: str | None = ""
+    checkIn: str
+    checkOut: str
+    montoTotal: float | None = None
+    senaMonto: float = 0
+    senaTenedor: str = "nosotros"   # nosotros | dueno | ninguno
+    senaMetodo: str = "efectivo"    # efectivo | transferencia | mercadopago | otro
+    senaPagada: bool = True
+    origen: str = "Manual"
+
+
 class StatusBody(BaseModel):
     estado: str
     motivo: str | None = None
@@ -425,6 +443,79 @@ async def create_block(body: BlockBody):
     }
     await _res().insert_one(doc)
     return _res_out(doc)
+
+
+async def _register_inquilino(h: dict) -> None:
+    """Agenda al huésped en Personas como inquilino (best-effort)."""
+    if not appconfig.supabase_configured():
+        return
+    if not (h.get("nombre") or h.get("telefono")):
+        return
+    ident = {
+        "full_name": h.get("nombre"), "phone": h.get("telefono"),
+        "whatsapp": h.get("telefono"), "email": h.get("email"),
+        "document": h.get("dni"), "role": "inquilino",
+    }
+    try:
+        from people.resolver import person_resolver
+        await person_resolver.resolve({k: v for k, v in ident.items() if v})
+    except Exception:
+        pass
+
+
+async def _gen_comision(rid: str, r: dict) -> None:
+    """Genera la comisión automática de una reserva (idempotente)."""
+    prop = await _props().find_one({"_id": r.get("propertyId")})
+    exists = await _movs().find_one({"reservaId": rid, "tipo": "comision"})
+    if not prop or exists:
+        return
+    pct = float(prop.get("comisionPct") or 0)
+    minima = float(prop.get("comisionMinima") or 0)
+    base = float(r.get("montoEstimado") or 0)
+    com = max(round(base * pct / 100), minima)
+    if com > 0:
+        await _movs().insert_one({
+            "_id": uuid4().hex, "propertyId": r["propertyId"], "reservaId": rid,
+            "fecha": r.get("checkIn"), "tipo": "comision", "monto": com,
+            "descripcion": f"Comisión {pct}% · {r.get('huesped', {}).get('nombre', '')}".strip(),
+            "createdAt": _now(),
+        })
+
+
+@router.post("/reservations/manual", status_code=201)
+async def create_manual_reservation(body: ManualReservationBody):
+    """Alta manual de una reserva ya confirmada (dueño reservó / huésped en el mostrador).
+    Permite registrar la seña en poder del dueño y dejar el saldo para cobrar al ingresar."""
+    prop = await _get_prop(body.propertyId)
+    await _assert_free(body.propertyId, body.checkIn, body.checkOut)
+    q = _quote(prop, body.checkIn, body.checkOut)
+    total = round(float(body.montoTotal)) if body.montoTotal is not None else q["total"]
+    moneda = prop.get("moneda", "ARS")
+    rid = uuid4().hex
+    doc: dict = {
+        "_id": rid, "propertyId": body.propertyId, "propertyTitulo": prop.get("titulo"),
+        "estado": "confirmada", "checkIn": body.checkIn, "checkOut": body.checkOut,
+        "noches": q["noches"], "montoEstimado": total, "moneda": moneda, "origen": body.origen,
+        "huesped": {
+            "nombre": body.nombre, "telefono": body.telefono, "email": body.email,
+            "dni": body.dni, "huespedes": body.huespedes, "comentario": body.comentario,
+        },
+        "createdAt": _now(),
+    }
+    sena = round(float(body.senaMonto or 0))
+    if body.senaTenedor != "ninguno" and sena > 0:
+        if body.senaTenedor == "dueno":
+            doc["pago"] = {"estado": "pagado", "monto": sena, "moneda": moneda,
+                           "metodo": "dueño", "tenedor": "dueno", "pagadoEl": _now()}
+        else:
+            pagada = bool(body.senaPagada)
+            doc["pago"] = {"estado": "pagado" if pagada else "pendiente", "monto": sena, "moneda": moneda,
+                           "metodo": body.senaMetodo, "tenedor": "nosotros",
+                           "pagadoEl": _now() if pagada else None}
+    await _res().insert_one(doc)
+    await _gen_comision(rid, doc)
+    await _register_inquilino(doc["huesped"])
+    return _res_out(await _res().find_one({"_id": rid}))
 
 
 @router.patch("/reservations/{rid}")
@@ -905,6 +996,33 @@ async def delete_saldo(rid: str, sid: str):
             await _res().update_one({"_id": rid}, {"$pull": {"comprobantes": {"id": saldo["comprobanteId"]}}})
     await _res().update_one({"_id": rid}, {"$pull": {"saldos": {"id": sid}}})
     return None
+
+
+@router.get("/reservations/{rid}/saldos/{sid}/recibo")
+async def recibo_saldo(rid: str, sid: str):
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    saldo = next((s for s in (r.get("saldos") or []) if s.get("id") == sid), None)
+    if not saldo:
+        raise HTTPException(404, "Cobro de saldo no encontrado")
+    prop = await _props().find_one({"_id": r.get("propertyId")})
+    calc = _pagos_calc(r)
+    from rentals_pdf import build_recibo_saldo_pdf
+    data = {
+        "propiedad": {"codigo": (prop or {}).get("codigo"), "titulo": r.get("propertyTitulo") or (prop or {}).get("titulo")},
+        "huesped": r.get("huesped") or {}, "moneda": r.get("moneda", "ARS"),
+        "checkIn": r.get("checkIn"), "checkOut": r.get("checkOut"), "noches": r.get("noches"),
+        "montoEstimado": r.get("montoEstimado"), "saldo": saldo,
+        "totalCobrado": calc["totalCobrado"], "saldoPendiente": calc["saldoPendiente"],
+    }
+    pdf = build_recibo_saldo_pdf(data)
+    cod = data["propiedad"].get("codigo") or "reserva"
+    nombre = (r.get("huesped") or {}).get("nombre", "huesped").split(" ")[0]
+    return Response(
+        content=pdf, media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="Recibo-saldo-{cod}-{nombre}.pdf"'},
+    )
 
 
 # --------------------- Importar desde el CRM de ventas -------------------- #

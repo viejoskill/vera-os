@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Trash2, Upload, Star, CalendarX2, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Upload, Star, CalendarX2, ExternalLink, UserPlus } from 'lucide-react';
 import { Button, Input } from '@vera/ui';
 import { api, fmtMoney, fmtDate, nightsBetween, displayEstado, TIPO_MOV, type RentalProperty, type Reservation, type RentalImage, type Movimiento, type Occupied } from './api';
 import { RentalCalendar } from './RentalCalendar';
@@ -10,6 +10,7 @@ import { RechazarReserva } from './RechazarReserva';
 import { WhatsappReserva } from './WhatsappReserva';
 import { Comprobantes } from './Comprobantes';
 import { CobrarSaldo } from './CobrarSaldo';
+import { ReservaManual } from './ReservaManual';
 import { ReservaSemaforo } from './Semaforo';
 import { AvisoPendientes } from './AvisoPendientes';
 import { MoneyInput } from './MoneyInput';
@@ -39,6 +40,7 @@ export const RentalWorkspace = () => {
   const [condText, setCondText] = useState('');
   const [confirming, setConfirming] = useState<Reservation | null>(null);
   const [rejecting, setRejecting] = useState<Reservation | null>(null);
+  const [showManual, setShowManual] = useState(false);
   const [sel, setSel] = useState<{ checkIn: string | null; checkOut: string | null }>({ checkIn: null, checkOut: null });
   const [flash, setFlash] = useState('');
   const [saving, setSaving] = useState(false);
@@ -314,7 +316,10 @@ export const RentalWorkspace = () => {
 
       {pid && (
         <section className="rt-ws__full">
-          <h3 className="rt-ws__sec">Reservas de esta propiedad</h3>
+          <div className="rt-ws__sechead">
+            <h3 className="rt-ws__sec">Reservas de esta propiedad</h3>
+            <Button variant="secondary" size="sm" onClick={() => setShowManual(true)} data-testid="rt-manual-open"><UserPlus size={14} /> Reserva manual</Button>
+          </div>
           <AvisoPendientes reservas={reservas} />
           {reservas.length === 0 ? <p className="rt-hint">Todavía no hay reservas.</p> : (
             <div className="rt-res">
@@ -355,6 +360,13 @@ export const RentalWorkspace = () => {
       {rejecting && (
         <RechazarReserva reserva={rejecting} onClose={() => setRejecting(null)}
           onDone={async () => { setRejecting(null); if (pid) await loadRes(pid); }} />
+      )}
+      {showManual && pid && (
+        <ReservaManual
+          property={{ ...(f as RentalProperty), id: pid, slug }}
+          onClose={() => setShowManual(false)}
+          onCreated={async () => { setShowManual(false); if (pid) await loadRes(pid); }}
+        />
       )}
     </div>
   );

@@ -42,7 +42,7 @@ export interface SaleProperty {
 }
 export interface Occupied { checkIn: string; checkOut: string; estado?: string; }
 export interface Pago {
-  proveedor?: string; monto?: number; moneda?: string; estado?: string; metodo?: string;
+  proveedor?: string; monto?: number; moneda?: string; estado?: string; metodo?: string; tenedor?: string;
   preferenceId?: string; initPoint?: string; paymentId?: string; mpStatus?: string;
   creadoEl?: string; pagadoEl?: string | null; comprobante?: { bucket: string; object_path: string } | null;
 }
@@ -130,6 +130,9 @@ export const api = {
     return fetch(`${RENTALS_API}/reservations/${rid}/cobrar-saldo`, { method: 'POST', body: fd }).then(json);
   },
   deleteSaldo: (rid: string, sid: string) => fetch(`${RENTALS_API}/reservations/${rid}/saldos/${sid}`, { method: 'DELETE' }).then(json),
+  reciboSaldoUrl: (rid: string, sid: string): string => `${RENTALS_API}/reservations/${rid}/saldos/${sid}/recibo`,
+  createManualReservation: (body: Record<string, unknown>): Promise<Reservation> =>
+    fetch(`${RENTALS_API}/reservations/manual`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(json),
   paymentLink: (rid: string, monto: number, descripcion?: string): Promise<{ initPoint: string; preferenceId: string; monto: number }> =>
     fetch(`${RENTALS_API}/reservations/${rid}/payment-link`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ monto, descripcion }) }).then(json),
   getReservation: (rid: string): Promise<Reservation> => fetch(`${RENTALS_API}/reservations/${rid}`).then(json),

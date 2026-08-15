@@ -444,3 +444,15 @@
 .rt-saldo__del { display: inline-flex; background: none; border: none; color: inherit; cursor: pointer; padding: 1px; opacity: .65; }
 .rt-saldo__del:hover { opacity: 1; color: #e07575; }
 
+
+/* ===== Reserva manual ===== */
+.rt-ws__sechead { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.rt-manual__sec { font-size: .82rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--vera-color-primary); margin: 18px 0 6px; }
+.rt-manual__chk { align-self: end; padding-bottom: 10px; }
+.rt-manual__resumen {
+  display: flex; flex-wrap: wrap; gap: 18px; padding: 12px 14px; margin: 14px 0 4px;
+  border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-md, 10px);
+  background: var(--vera-color-surface); font-size: .88rem; color: var(--vera-color-text-secondary);
+}
+.rt-manual__resumen strong { color: var(--vera-color-text); }
+

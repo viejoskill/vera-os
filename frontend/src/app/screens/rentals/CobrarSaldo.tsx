@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Wallet, X, Check, Trash2, Paperclip } from 'lucide-react';
+import { Wallet, X, Check, Trash2, Paperclip, FileDown } from 'lucide-react';
 import { Button } from '@vera/ui';
 import { api, fmtMoney, fmtDate, saldoPendiente, senaAsegurada, type Reservation } from './api';
 
@@ -36,6 +36,7 @@ export const CobrarSaldo = ({ reserva, onUpdated }: { reserva: Reservation; onUp
           {saldos.map((s) => (
             <span key={s.id} className="rt-saldo__chip" data-testid={`rt-saldo-item-${s.id}`}>
               {fmtMoney(s.monto, reserva.moneda)} · {METODO_LABEL[s.metodo] || s.metodo}{s.fecha ? ` · ${fmtDate(s.fecha)}` : ''}
+              <a className="rt-saldo__ic" href={api.reciboSaldoUrl(reserva.id, s.id)} target="_blank" rel="noreferrer" title="Recibo PDF" data-testid={`rt-saldo-recibo-${s.id}`}><FileDown size={12} /></a>
               {s.comprobanteId && (
                 <a className="rt-saldo__ic" href={api.comprobanteItemUrl(reserva.id, s.comprobanteId)} target="_blank" rel="noreferrer" title="Ver comprobante" data-testid={`rt-saldo-comp-${s.id}`}><Paperclip size={12} /></a>
               )}

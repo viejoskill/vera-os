@@ -39,6 +39,14 @@ export const CobrarSena = ({ reserva, onUpdated }: { reserva: Reservation; onUpd
   };
 
   if (pago?.estado === 'pagado') {
+    const esDueno = pago.tenedor === 'dueno' || pago.metodo === 'dueño';
+    if (esDueno) {
+      return (
+        <span className="rt-pay rt-pay--ok" data-testid={`rt-pay-dueno-${reserva.id}`}>
+          <Check size={13} /> Seña en poder del dueño · {fmtMoney(pago.monto || 0, 'ARS')}
+        </span>
+      );
+    }
     return (
       <>
         <span className="rt-pay rt-pay--ok" data-testid={`rt-pay-ok-${reserva.id}`}>

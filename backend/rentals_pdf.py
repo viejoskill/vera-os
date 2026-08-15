@@ -252,3 +252,69 @@ def build_recibo_sena_pdf(data: dict) -> bytes:
                             title=f"Recibo seña {cod}")
     doc.build(story)
     return buf.getvalue()
+
+
+METODO_LABEL = {"efectivo": "Efectivo", "transferencia": "Transferencia", "mercadopago": "Mercado Pago", "otro": "Otro", "dueño": "En poder del propietario"}
+
+
+def build_recibo_saldo_pdf(data: dict) -> bytes:
+    """Recibo de un cobro de saldo para enviarle al huésped."""
+    st = _styles()
+    prop = data.get("propiedad") or {}
+    h = data.get("huesped") or {}
+    saldo = data.get("saldo") or {}
+    mon = data.get("moneda", "ARS")
+    cod = prop.get("codigo") or ""
+
+    story: list = []
+    _brand(story, st)
+    story.append(Paragraph("Recibo de saldo", st["h1"]))
+    emitido = datetime.now(timezone.utc).astimezone().strftime("%d/%m/%Y")
+    story.append(Paragraph(f"Emitido el {emitido}", st["sub"]))
+    story.append(Spacer(1, 0.4 * cm))
+
+    quien = h.get("nombre") or "—"
+    if h.get("dni"):
+        quien += f" (DNI {h.get('dni')})"
+    story.append(Paragraph(
+        f"Recibimos de <b>{quien}</b> la suma de <b>{_fmt(saldo.get('monto'), mon)}</b> "
+        "en concepto de <b>pago de saldo</b> por la siguiente reserva:", st["body"]))
+    story.append(Spacer(1, 0.2 * cm))
+
+    story.append(Paragraph("Propiedad", st["sec"]))
+    story.append(Paragraph(f"<b>{cod}</b> · {prop.get('titulo') or '—'}", st["body"]))
+    story.append(Paragraph("Estadía", st["sec"]))
+    story.append(Paragraph(f"{_fd(data.get('checkIn'))} → {_fd(data.get('checkOut'))} · {data.get('noches')} noches", st["body"]))
+
+    story.append(Paragraph("Detalle", st["sec"]))
+    filas = [["Total de la reserva", _fmt(data.get("montoEstimado"), mon)],
+             ["Total cobrado a la fecha", _fmt(data.get("totalCobrado"), mon)],
+             ["Este pago (saldo)", _fmt(saldo.get("monto"), mon)],
+             ["Saldo pendiente", _fmt(data.get("saldoPendiente"), mon)]]
+    t = Table(filas, colWidths=[11.5 * cm, 4 * cm])
+    t.setStyle(TableStyle([
+        ("FONT", (0, 0), (-1, -1), "Helvetica", 10),
+        ("FONT", (0, 2), (-1, 2), "Helvetica-Bold", 11),
+        ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+        ("LINEBELOW", (0, 0), (-1, -2), 0.3, colors.HexColor("#eeeeee")),
+        ("BACKGROUND", (0, 2), (-1, 2), colors.HexColor("#f6f6e8")),
+        ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8), ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+    ]))
+    story.append(t)
+    story.append(Spacer(1, 0.3 * cm))
+
+    story.append(Paragraph(f"Medio de pago: {METODO_LABEL.get(saldo.get('metodo'), saldo.get('metodo') or '—')}", st["small"]))
+    story.append(Paragraph(f"Fecha del cobro: {_fd(saldo.get('fecha'))}", st["small"]))
+
+    story.append(Spacer(1, 1.4 * cm))
+    story.append(Paragraph("____________________________________", st["body"]))
+    story.append(Paragraph("<b>INMOBILIARIA VARELA COSTA DEL ESTE</b>", st["body"]))
+    story.append(Paragraph("Jorge Oscar Varela · Mat. T°III F°103 N°865", st["small"]))
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=2 * cm, bottomMargin=2 * cm,
+                            leftMargin=2.2 * cm, rightMargin=2.2 * cm,
+                            title=f"Recibo saldo {cod}")
+    doc.build(story)
+    return buf.getvalue()
