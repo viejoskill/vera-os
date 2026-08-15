@@ -684,7 +684,14 @@ async def _liquidacion_reserva(rid: str) -> dict:
     mon = r.get("moneda", "ARS")
     tot = {"ingreso": 0.0, "gasto_prop": 0.0, "gasto_nuestro": 0.0, "comision": 0.0}
     movs = []
-    cur = _movs().find({"reservaId": rid}).sort("fecha", 1)
+    # Imputamos los movimientos atados a la reserva + los gastos de la Ficha financiera
+    # de la propiedad (sin reserva) que caen dentro de las fechas de la estadía.
+    ci, co = r.get("checkIn"), r.get("checkOut")
+    query = {"$or": [
+        {"reservaId": rid},
+        {"propertyId": r.get("propertyId"), "reservaId": None, "fecha": {"$gte": ci, "$lte": co}},
+    ]}
+    cur = _movs().find(query).sort("fecha", 1)
     async for m in cur:
         t = m.get("tipo")
         if t in tot:

@@ -1280,3 +1280,8 @@ Dos features pedidas por el usuario. Verificadas E2E (curl + extracción de text
 - **Reservas**: calendario y bloqueos + lista de reservas + botón "Reserva manual" + aviso de pendientes. Badge rojo con cantidad de pre-reservas en la solapa.
 - **Ficha financiera**: movimientos.
 - Solapas Reservas/Financiera muestran hint "Guardá la propiedad…" si es nueva (sin pid). CSS: `.rt-ws__pane`.
+
+## Correcciones (2026-08): recibo de saldo + gastos en liquidación
+- **Bug recibo de saldo (fix):** `CobrarSaldo.tsx` ocultaba la lista de cobros (con sus recibos PDF) cuando el saldo llegaba a $0. Ahora la lista de cobros y sus recibos quedan SIEMPRE visibles, además del chip "Saldo cobrado". Verificado por screenshot + recibo PDF HTTP 200.
+- **Bug gastos no imputados (fix):** `_liquidacion_reserva` (backend) solo miraba movimientos con `reservaId == rid`. Los gastos cargados en la Ficha financiera de la propiedad no tienen reservaId, así que no aparecían. Ahora la query imputa: movimientos atados a la reserva **+** movimientos de la propiedad sin reserva (`reservaId: None`) cuya `fecha` cae dentro de la estadía [checkIn, checkOut]. Verificado por curl: gasto_prop 08-17 dentro de estadía 08-16→08-20 se imputa (neto baja); gasto 09-01 fuera se excluye.
+- **finalizada:** una reserva pasa a Finalizadas **automáticamente cuando pasa la fecha de check-out** (derivado por fecha en `reservaBucket`). No hay estado manual. (Pendiente opcional: botón "Marcar finalizada" para cerrar antes de tiempo.)

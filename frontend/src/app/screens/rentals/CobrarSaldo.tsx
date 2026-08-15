@@ -15,36 +15,38 @@ export const CobrarSaldo = ({ reserva, onUpdated }: { reserva: Reservation; onUp
   const pend = saldoPendiente(reserva);
   const saldos = reserva.saldos || [];
 
-  if (pend <= 0) {
-    return (
-      <span className="rt-pay rt-pay--ok" data-testid={`rt-saldo-ok-${reserva.id}`}>
-        <Check size={13} /> Saldo cobrado · total {fmtMoney(reserva.montoEstimado, reserva.moneda)}
-      </span>
-    );
-  }
+  const lista = saldos.length > 0 && (
+    <span className="rt-saldo__list" data-testid={`rt-saldo-list-${reserva.id}`}>
+      {saldos.map((s) => (
+        <span key={s.id} className="rt-saldo__chip" data-testid={`rt-saldo-item-${s.id}`}>
+          {fmtMoney(s.monto, reserva.moneda)} · {METODO_LABEL[s.metodo] || s.metodo}{s.fecha ? ` · ${fmtDate(s.fecha)}` : ''}
+          <a className="rt-saldo__ic" href={api.reciboSaldoUrl(reserva.id, s.id)} target="_blank" rel="noreferrer" title="Recibo PDF" data-testid={`rt-saldo-recibo-${s.id}`}><FileDown size={12} /></a>
+          {s.comprobanteId && (
+            <a className="rt-saldo__ic" href={api.comprobanteItemUrl(reserva.id, s.comprobanteId)} target="_blank" rel="noreferrer" title="Ver comprobante" data-testid={`rt-saldo-comp-${s.id}`}><Paperclip size={12} /></a>
+          )}
+          <button type="button" className="rt-saldo__del" onClick={async () => { await api.deleteSaldo(reserva.id, s.id); onUpdated?.(); }} title="Quitar" data-testid={`rt-saldo-del-${s.id}`}><Trash2 size={11} /></button>
+        </span>
+      ))}
+    </span>
+  );
 
   return (
     <>
-      <span className="rt-pay rt-pay--pend" data-testid={`rt-saldo-pend-${reserva.id}`}>
-        <Wallet size={13} /> Saldo pendiente · {fmtMoney(pend, reserva.moneda)}
-      </span>
-      <button type="button" className="rt-mini rt-mini--pay" onClick={() => setOpen(true)} data-testid={`rt-saldo-btn-${reserva.id}`}>
-        <Wallet size={14} /> Cobrar saldo
-      </button>
-      {saldos.length > 0 && (
-        <span className="rt-saldo__list" data-testid={`rt-saldo-list-${reserva.id}`}>
-          {saldos.map((s) => (
-            <span key={s.id} className="rt-saldo__chip" data-testid={`rt-saldo-item-${s.id}`}>
-              {fmtMoney(s.monto, reserva.moneda)} · {METODO_LABEL[s.metodo] || s.metodo}{s.fecha ? ` · ${fmtDate(s.fecha)}` : ''}
-              <a className="rt-saldo__ic" href={api.reciboSaldoUrl(reserva.id, s.id)} target="_blank" rel="noreferrer" title="Recibo PDF" data-testid={`rt-saldo-recibo-${s.id}`}><FileDown size={12} /></a>
-              {s.comprobanteId && (
-                <a className="rt-saldo__ic" href={api.comprobanteItemUrl(reserva.id, s.comprobanteId)} target="_blank" rel="noreferrer" title="Ver comprobante" data-testid={`rt-saldo-comp-${s.id}`}><Paperclip size={12} /></a>
-              )}
-              <button type="button" className="rt-saldo__del" onClick={async () => { await api.deleteSaldo(reserva.id, s.id); onUpdated?.(); }} title="Quitar" data-testid={`rt-saldo-del-${s.id}`}><Trash2 size={11} /></button>
-            </span>
-          ))}
+      {pend <= 0 ? (
+        <span className="rt-pay rt-pay--ok" data-testid={`rt-saldo-ok-${reserva.id}`}>
+          <Check size={13} /> Saldo cobrado · total {fmtMoney(reserva.montoEstimado, reserva.moneda)}
         </span>
+      ) : (
+        <>
+          <span className="rt-pay rt-pay--pend" data-testid={`rt-saldo-pend-${reserva.id}`}>
+            <Wallet size={13} /> Saldo pendiente · {fmtMoney(pend, reserva.moneda)}
+          </span>
+          <button type="button" className="rt-mini rt-mini--pay" onClick={() => setOpen(true)} data-testid={`rt-saldo-btn-${reserva.id}`}>
+            <Wallet size={14} /> Cobrar saldo
+          </button>
+        </>
       )}
+      {lista}
       {open && (
         <SaldoModal
           reserva={reserva}
