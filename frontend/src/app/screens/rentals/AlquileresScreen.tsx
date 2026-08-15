@@ -57,6 +57,17 @@ export const AlquileresScreen = () => {
     setRes((s) => s.filter((x) => x.id !== rid));
   };
 
+  const finalizarReserva = async (rid: string) => {
+    if (!window.confirm('¿Marcar esta reserva como finalizada? Saldrá de "Confirmadas" y quedará en "Finalizadas".')) return;
+    await api.setStatus(rid, 'finalizada');
+    await load();
+  };
+
+  const reabrirReserva = async (rid: string) => {
+    await api.setStatus(rid, 'confirmada');
+    await load();
+  };
+
   const openImport = async () => {
     setShowImport(true); setSalePropsList(null);
     try { setSalePropsList(await api.saleProperties()); } catch { setSalePropsList([]); }
@@ -215,6 +226,12 @@ export const AlquileresScreen = () => {
                     {r.estado === 'confirmada' && <CobrarSena reserva={r} onUpdated={load} />}
                     <CobrarSaldo reserva={r} onUpdated={load} />
                     <Comprobantes reserva={r} onUpdated={load} />
+                    {r.estado === 'confirmada' && (
+                      <button type="button" className="rt-mini" onClick={() => finalizarReserva(r.id)} data-testid={`rt-finalizar-${r.id}`}>Finalizar</button>
+                    )}
+                    {r.estado === 'finalizada' && (
+                      <button type="button" className="rt-mini" onClick={() => reabrirReserva(r.id)} data-testid={`rt-reabrir-${r.id}`}>Reabrir</button>
+                    )}
                     {(r.estado === 'cancelada' || r.estado === 'finalizada') && (
                       <button type="button" className="rt-mini rt-mini--del" onClick={() => removeReserva(r.id)} data-testid={`rt-delres-${r.id}`}><Trash2 size={14} /> Eliminar</button>
                     )}

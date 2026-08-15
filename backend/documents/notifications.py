@@ -102,11 +102,13 @@ async def sync_rental_reminders() -> None:
                                message=f"Hoy ingresa {nombre} · {titulo}".strip(), link="/alquileres")
         # 4) Recordatorio de saldo pendiente (seña pagada + saldo > 0, hasta 5 días antes)
         if pago.get("estado") == "pagado" and 0 <= dias <= 5 and r.get("moneda", "ARS") == "ARS":
-            saldo = round(float(r.get("montoEstimado") or 0) - float(pago.get("monto") or 0))
+            saldos_cobrados = sum(float(s.get("monto") or 0) for s in (r.get("saldos") or []))
+            saldo = round(float(r.get("montoEstimado") or 0) - float(pago.get("monto") or 0) - saldos_cobrados)
             if saldo > 0:
+                cuando = "hoy" if dias == 0 else ("mañana" if dias == 1 else f"en {dias} días")
                 await _create_once(key=f"saldo_pendiente:{rid}", type="saldo_pendiente",
                                    title="Saldo pendiente",
-                                   message=f"Cobrar saldo de {nombre}: {_money(saldo)} al ingresar ({fecha_txt})", link="/alquileres")
+                                   message=f"Cobrar saldo de {nombre}: {_money(saldo)} · ingresa {cuando} ({fecha_txt})", link="/alquileres")
 
 
 async def notify_sena_pagada(*, reserva_id: str, nombre: str, monto, propiedad: str) -> None:

@@ -36,7 +36,7 @@ export const RentalWorkspace = () => {
   const [reservas, setReservas] = useState<Reservation[]>([]);
   const [bloqueos, setBloqueos] = useState<Reservation[]>([]);
   const [movs, setMovs] = useState<Movimiento[]>([]);
-  const [nm, setNm] = useState({ fecha: '', tipo: 'ingreso', monto: '', descripcion: '' });
+  const [nm, setNm] = useState({ fecha: '', tipo: 'ingreso', monto: '', descripcion: '', reservaId: '' });
   const [condText, setCondText] = useState('');
   const [confirming, setConfirming] = useState<Reservation | null>(null);
   const [rejecting, setRejecting] = useState<Reservation | null>(null);
@@ -70,8 +70,8 @@ export const RentalWorkspace = () => {
 
   const addMov = async () => {
     if (!pid || !nm.fecha || !nm.monto) { setFlash('Completá fecha y monto del movimiento.'); setTimeout(() => setFlash(''), 3000); return; }
-    await api.createMovimiento({ propertyId: pid, fecha: nm.fecha, tipo: nm.tipo, monto: Number(nm.monto), descripcion: nm.descripcion });
-    setNm({ fecha: '', tipo: 'ingreso', monto: '', descripcion: '' });
+    await api.createMovimiento({ propertyId: pid, fecha: nm.fecha, tipo: nm.tipo, monto: Number(nm.monto), descripcion: nm.descripcion, reservaId: nm.reservaId || null });
+    setNm({ fecha: '', tipo: 'ingreso', monto: '', descripcion: '', reservaId: '' });
     await loadMovs(pid);
   };
   const delMov = async (mid: string) => { if (pid) { await api.deleteMovimiento(mid); await loadMovs(pid); } };
@@ -137,6 +137,18 @@ export const RentalWorkspace = () => {
   const removeReserva = async (rid: string) => {
     if (!pid || !window.confirm('¿Eliminar esta reserva de la lista? No se puede deshacer.')) return;
     await api.deleteReservation(rid);
+    await loadRes(pid);
+  };
+
+  const finalizarReserva = async (rid: string) => {
+    if (!pid || !window.confirm('¿Marcar esta reserva como finalizada? Saldrá de "Confirmadas" y quedará en "Finalizadas".')) return;
+    await api.setStatus(rid, 'finalizada');
+    await loadRes(pid);
+  };
+
+  const reabrirReserva = async (rid: string) => {
+    if (!pid) return;
+    await api.setStatus(rid, 'confirmada');
     await loadRes(pid);
   };
 
@@ -336,6 +348,12 @@ export const RentalWorkspace = () => {
                           <CobrarSaldo reserva={r} onUpdated={() => pid && loadRes(pid)} />
                           {r.huesped.telefono && <WhatsappReserva reserva={r} />}
                           <Comprobantes reserva={r} onUpdated={() => pid && loadRes(pid)} />
+                          {r.estado === 'confirmada' && (
+                            <button type="button" className="rt-mini" onClick={() => finalizarReserva(r.id)} data-testid={`rt-wsfinalizar-${r.id}`}>Finalizar</button>
+                          )}
+                          {r.estado === 'finalizada' && (
+                            <button type="button" className="rt-mini" onClick={() => reabrirReserva(r.id)} data-testid={`rt-wsreabrir-${r.id}`}>Reabrir</button>
+                          )}
                           {(r.estado === 'cancelada' || r.estado === 'finalizada') && (
                             <button type="button" className="rt-mini rt-mini--del" onClick={() => removeReserva(r.id)} data-testid={`rt-wsdelres-${r.id}`}><Trash2 size={13} /> Eliminar</button>
                           )}
@@ -361,19 +379,27 @@ export const RentalWorkspace = () => {
               </select>
               <input type="number" placeholder="Monto" value={nm.monto} onChange={(e) => setNm((s) => ({ ...s, monto: e.target.value }))} data-testid="rt-mov-monto" />
               <input placeholder="Descripción" value={nm.descripcion} onChange={(e) => setNm((s) => ({ ...s, descripcion: e.target.value }))} data-testid="rt-mov-desc" />
+              <select value={nm.reservaId} onChange={(e) => setNm((s) => ({ ...s, reservaId: e.target.value }))} data-testid="rt-mov-reserva" title="Imputar a una reserva (opcional)">
+                <option value="">Sin reserva (general)</option>
+                {reservas.map((r) => <option key={r.id} value={r.id}>{r.huesped.nombre || 'Reserva'} · {fmtDate(r.checkIn)}</option>)}
+              </select>
               <Button variant="secondary" size="sm" onClick={addMov} data-testid="rt-mov-save">Agregar</Button>
             </div>
+            <p className="rt-hint">Podés dejar el gasto como <strong>general</strong> de la propiedad o <strong>imputarlo a una reserva</strong>. En la liquidación por reserva se suman los movimientos imputados y, además, los gastos generales que caigan dentro de las fechas de la estadía.</p>
             {movs.length === 0 ? <p className="rt-hint">Sin movimientos cargados.</p> : (
               <div className="rt-mov">
-                {movs.map((m) => (
+                {movs.map((m) => {
+                  const res = m.reservaId ? reservas.find((r) => r.id === m.reservaId) : null;
+                  return (
                   <div className={`rt-mov__row rt-mov__row--${m.tipo}`} key={m.id} data-testid={`rt-mov-${m.id}`}>
                     <span className="rt-mov__fecha">{fmtDate(m.fecha)}</span>
                     <span className="rt-mov__tipo">{TIPO_MOV[m.tipo] || m.tipo}</span>
-                    <span className="rt-mov__desc">{m.descripcion}</span>
+                    <span className="rt-mov__desc">{m.descripcion}{res && <span className="rt-mov__imput" data-testid={`rt-mov-imput-${m.id}`}>↳ {res.huesped.nombre || 'reserva'}</span>}</span>
                     <span className="rt-mov__monto">{fmtMoney(m.monto, f.moneda)}</span>
                     <button type="button" onClick={() => delMov(m.id)} data-testid={`rt-delmov-${m.id}`}><Trash2 size={13} /></button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             <p className="rt-hint">Las liquidaciones al propietario se arman en la sección <strong>Liquidaciones</strong> (menú lateral), eligiendo la propiedad y el período.</p>

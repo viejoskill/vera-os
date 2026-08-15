@@ -523,12 +523,16 @@ async def update_status(rid: str, body: StatusBody):
     r = await _res().find_one({"_id": rid})
     if not r:
         raise HTTPException(404, "Reserva no encontrada")
+    prev_estado = r.get("estado")
+    # La confirmación "real" (con sus efectos) ocurre al pasar de pre-reserva a confirmada.
+    # Reabrir una reserva (finalizada/en curso → confirmada) NO debe regenerar seña ni comisión.
+    es_confirmacion_inicial = body.estado == "confirmada" and prev_estado == "prereserva"
     upd = {"estado": body.estado, "updatedAt": _now()}
     if body.motivo is not None:
         upd["motivo"] = body.motivo
     await _res().update_one({"_id": rid}, {"$set": upd})
     # Al confirmar, el huésped queda agendado en Personas como inquilino.
-    if body.estado == "confirmada" and appconfig.supabase_configured():
+    if es_confirmacion_inicial and appconfig.supabase_configured():
         h = r.get("huesped") or {}
         if h.get("nombre") or h.get("telefono"):
             ident = {
@@ -542,7 +546,7 @@ async def update_status(rid: str, body: StatusBody):
             except Exception:
                 pass
     # Genera la comisión automática (editable luego en la ficha).
-    if body.estado == "confirmada":
+    if es_confirmacion_inicial:
         prop = await _props().find_one({"_id": r.get("propertyId")})
         exists = await _movs().find_one({"reservaId": rid, "tipo": "comision"})
         if prop and not exists:
@@ -558,10 +562,12 @@ async def update_status(rid: str, body: StatusBody):
                     "createdAt": _now(),
                 })
     # Al confirmar, genera automáticamente el link de seña (30% del total, solo ARS).
-    if body.estado == "confirmada" and appconfig.mp_configured():
+    # Nunca si ya hay seña pagada o link generado.
+    if es_confirmacion_inicial and appconfig.mp_configured():
         r2 = await _res().find_one({"_id": rid})
         pago_prev = (r2 or {}).get("pago") or {}
-        if r2 and r2.get("moneda", "ARS") == "ARS" and not pago_prev.get("initPoint"):
+        ya_tiene_pago = pago_prev.get("initPoint") or pago_prev.get("estado") == "pagado"
+        if r2 and r2.get("moneda", "ARS") == "ARS" and not ya_tiene_pago:
             sena = round(float(r2.get("montoEstimado") or 0) * 0.3)
             if sena > 0:
                 try:
