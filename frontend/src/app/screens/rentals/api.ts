@@ -46,11 +46,13 @@ export interface Pago {
   preferenceId?: string; initPoint?: string; paymentId?: string; mpStatus?: string;
   creadoEl?: string; pagadoEl?: string | null; comprobante?: { bucket: string; object_path: string } | null;
 }
+export interface SaldoCobro { id: string; monto: number; metodo: string; fecha?: string; comprobanteId?: string | null; }
 export interface Reservation {
   id: string; propertyId: string; propertyTitulo?: string; estado: string;
   checkIn: string; checkOut: string; noches: number; montoEstimado: number; moneda: string;
   origen?: string; motivo?: string; createdAt?: string; pago?: Pago | null;
   comprobantes?: { id: string; nombre?: string; fecha?: string }[];
+  saldos?: SaldoCobro[]; saldoPendiente?: number; totalCobrado?: number;
   huesped: { nombre?: string; telefono?: string; email?: string; dni?: string; huespedes?: number; comentario?: string };
 }
 
@@ -119,6 +121,15 @@ export const api = {
     return fetch(`${RENTALS_API}/reservations/${rid}/comprobantes`, { method: 'POST', body: fd }).then(json);
   },
   deleteComprobante: (rid: string, cid: string) => fetch(`${RENTALS_API}/reservations/${rid}/comprobantes/${cid}`, { method: 'DELETE' }).then(json),
+  cobrarSaldo: (rid: string, monto: number, metodo: string, fecha?: string, file?: File | null): Promise<Reservation> => {
+    const fd = new FormData();
+    fd.append('monto', String(monto || 0));
+    fd.append('metodo', metodo);
+    if (fecha) fd.append('fecha', fecha);
+    if (file) fd.append('file', file);
+    return fetch(`${RENTALS_API}/reservations/${rid}/cobrar-saldo`, { method: 'POST', body: fd }).then(json);
+  },
+  deleteSaldo: (rid: string, sid: string) => fetch(`${RENTALS_API}/reservations/${rid}/saldos/${sid}`, { method: 'DELETE' }).then(json),
   paymentLink: (rid: string, monto: number, descripcion?: string): Promise<{ initPoint: string; preferenceId: string; monto: number }> =>
     fetch(`${RENTALS_API}/reservations/${rid}/payment-link`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ monto, descripcion }) }).then(json),
   getReservation: (rid: string): Promise<Reservation> => fetch(`${RENTALS_API}/reservations/${rid}`).then(json),
@@ -241,6 +252,23 @@ export const daysUntil = (checkIn?: string): number | null => {
 export const senaAsegurada = (r: Reservation): boolean =>
   ['confirmada', 'encurso', 'finalizada'].includes(r.estado) && r.pago?.estado === 'pagado';
 
+/** Saldo pendiente de cobro (total - seña pagada - saldos cobrados). */
+export const saldoPendiente = (r: Reservation): number => {
+  if (typeof r.saldoPendiente === 'number') return r.saldoPendiente;
+  const total = r.montoEstimado || 0;
+  const sena = r.pago?.estado === 'pagado' ? (r.pago?.monto || 0) : 0;
+  const saldos = (r.saldos || []).reduce((a, s) => a + (s.monto || 0), 0);
+  return Math.max(0, total - sena - saldos);
+};
+
+/** Total ya cobrado (seña + saldos). */
+export const totalCobrado = (r: Reservation): number => {
+  if (typeof r.totalCobrado === 'number') return r.totalCobrado;
+  const sena = r.pago?.estado === 'pagado' ? (r.pago?.monto || 0) : 0;
+  const saldos = (r.saldos || []).reduce((a, s) => a + (s.monto || 0), 0);
+  return sena + saldos;
+};
+
 export interface ProcesoPaso { key: string; label: string; done: boolean; }
 export interface ProcesoReserva {
   pasos: ProcesoPaso[];
@@ -250,7 +278,7 @@ export interface ProcesoReserva {
   dias: number | null;
 }
 
-/** Semáforo interno: qué pasos del proceso están hechos y qué falta. */
+/** Semáforo interno: qué pasos del proceso de cobro están hechos y qué falta. */
 export const procesoReserva = (r: Reservation): ProcesoReserva => {
   const dias = daysUntil(r.checkIn);
   if (r.estado === 'cancelada' || r.estado === 'bloqueo') {
@@ -258,26 +286,26 @@ export const procesoReserva = (r: Reservation): ProcesoReserva => {
   }
   const confirmada = ['confirmada', 'encurso', 'finalizada'].includes(r.estado);
   const senaPagada = r.pago?.estado === 'pagado';
-  const tieneComprobante = (r.comprobantes?.length ?? 0) > 0 || !!r.pago?.comprobante;
+  const saldoCobrado = senaPagada && saldoPendiente(r) <= 0;
   const pasos: ProcesoPaso[] = [
     { key: 'confirmada', label: 'Confirmar reserva', done: confirmada },
     { key: 'sena', label: 'Cobrar la seña', done: senaPagada },
-    { key: 'comprobante', label: 'Cargar comprobante', done: tieneComprobante },
+    { key: 'saldo', label: 'Cobrar el saldo', done: saldoCobrado },
   ];
   const completo = pasos.every((p) => p.done);
   const primeraFalta = pasos.find((p) => !p.done);
-  const falta = r.estado === 'finalizada' ? null : primeraFalta ? primeraFalta.label : null;
+  const falta = primeraFalta ? primeraFalta.label : null;
   let nivel: ProcesoReserva['nivel'] = 'atencion';
-  if (completo || r.estado === 'finalizada') nivel = 'ok';
-  else if (!senaAsegurada(r) && dias !== null && dias <= 7) nivel = 'urgente';
+  if (completo) nivel = 'ok';
+  else if (dias !== null && dias <= 7) nivel = 'urgente';
   return { pasos, nivel, falta, completo, dias };
 };
 
-/** Reservas con la seña sin asegurar y check-in cercano (para el aviso general). */
+/** Reservas con el proceso de cobro incompleto y check-in cercano (para el aviso general). */
 export const reservasPendientesProximas = (res: Reservation[], dentroDeDias = 15): Reservation[] =>
   res
     .filter((r) => !['cancelada', 'bloqueo', 'finalizada'].includes(r.estado))
-    .filter((r) => !senaAsegurada(r))
+    .filter((r) => !procesoReserva(r).completo)
     .filter((r) => { const d = daysUntil(r.checkIn); return d !== null && d >= 0 && d <= dentroDeDias; })
     .sort((a, b) => (daysUntil(a.checkIn) ?? 999) - (daysUntil(b.checkIn) ?? 999));
 

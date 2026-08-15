@@ -159,7 +159,21 @@ class MovimientoBody(BaseModel):
     reservaId: str | None = None
 
 
+def _pagos_calc(r: dict) -> dict:
+    """Suma cobrada (seña + saldos) y saldo pendiente de una reserva."""
+    total = float(r.get("montoEstimado") or 0)
+    pago = r.get("pago") or {}
+    sena = float(pago.get("monto") or 0) if pago.get("estado") == "pagado" else 0.0
+    saldos = sum(float(s.get("monto") or 0) for s in (r.get("saldos") or []))
+    cobrado = sena + saldos
+    return {
+        "senaCobrada": round(sena), "saldosCobrado": round(saldos),
+        "totalCobrado": round(cobrado), "saldoPendiente": round(max(0.0, total - cobrado)),
+    }
+
+
 def _res_out(r: dict) -> dict:
+    calc = _pagos_calc(r)
     return {
         "id": r["_id"], "propertyId": r.get("propertyId"), "propertyTitulo": r.get("propertyTitulo"),
         "estado": r.get("estado"), "checkIn": r.get("checkIn"), "checkOut": r.get("checkOut"),
@@ -168,6 +182,9 @@ def _res_out(r: dict) -> dict:
         "huesped": r.get("huesped") or {}, "createdAt": r.get("createdAt"),
         "pago": r.get("pago"),
         "comprobantes": [{"id": c["id"], "nombre": c.get("nombre"), "fecha": c.get("fecha")} for c in (r.get("comprobantes") or [])],
+        "saldos": [{"id": s["id"], "monto": s.get("monto"), "metodo": s.get("metodo"),
+                    "fecha": s.get("fecha"), "comprobanteId": s.get("comprobanteId")} for s in (r.get("saldos") or [])],
+        "saldoPendiente": calc["saldoPendiente"], "totalCobrado": calc["totalCobrado"],
     }
 
 
@@ -843,6 +860,50 @@ async def get_comprobante_item(rid: str, cid: str):
 @router.delete("/reservations/{rid}/comprobantes/{cid}", status_code=204)
 async def delete_comprobante_item(rid: str, cid: str):
     await _res().update_one({"_id": rid}, {"$pull": {"comprobantes": {"id": cid}}})
+    return None
+
+
+@router.post("/reservations/{rid}/cobrar-saldo")
+async def cobrar_saldo(
+    rid: str,
+    monto: float = Form(...),
+    metodo: str = Form("efectivo"),
+    fecha: str | None = Form(None),
+    file: UploadFile | None = File(None),
+):
+    """Registra un cobro de saldo (efectivo/transferencia/otro), el día antes o al ingresar. Comprobante opcional."""
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    if not monto or float(monto) <= 0:
+        raise HTTPException(400, "El monto del saldo cobrado debe ser mayor a cero.")
+    comprobante_id = None
+    push: dict = {}
+    if file is not None and appconfig.supabase_configured():
+        from pathlib import Path
+        ext = Path(file.filename or "comp.jpg").suffix.lower() or ".jpg"
+        obj = f"rentals/{r.get('propertyId')}/comprobantes/{uuid4().hex}{ext}"
+        content = await file.read()
+        await get_storage().upload(appconfig.BUCKET_IMAGES, obj, content, file.content_type or "image/jpeg")
+        comprobante_id = uuid4().hex
+        push["comprobantes"] = {"id": comprobante_id, "bucket": appconfig.BUCKET_IMAGES, "object_path": obj,
+                                "contentType": file.content_type or "image/jpeg",
+                                "nombre": file.filename or "comprobante saldo", "fecha": _now()}
+    saldo = {"id": uuid4().hex, "monto": round(float(monto)), "metodo": metodo,
+             "fecha": fecha or date.today().isoformat(), "comprobanteId": comprobante_id, "createdAt": _now()}
+    push["saldos"] = saldo
+    await _res().update_one({"_id": rid}, {"$push": push})
+    return _res_out(await _res().find_one({"_id": rid}))
+
+
+@router.delete("/reservations/{rid}/saldos/{sid}", status_code=204)
+async def delete_saldo(rid: str, sid: str):
+    r = await _res().find_one({"_id": rid})
+    if r:
+        saldo = next((s for s in (r.get("saldos") or []) if s.get("id") == sid), None)
+        if saldo and saldo.get("comprobanteId"):
+            await _res().update_one({"_id": rid}, {"$pull": {"comprobantes": {"id": saldo["comprobanteId"]}}})
+    await _res().update_one({"_id": rid}, {"$pull": {"saldos": {"id": sid}}})
     return None
 
 

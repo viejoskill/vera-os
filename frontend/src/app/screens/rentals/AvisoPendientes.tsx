@@ -11,7 +11,7 @@ export const AvisoPendientes = ({ reservas, onVer }: { reservas: Reservation[]; 
       <div className="rt-aviso__head">
         <AlertTriangle size={18} />
         <strong data-testid="rt-aviso-count">
-          {pend.length} reserva{pend.length > 1 ? 's' : ''} próxima{pend.length > 1 ? 's' : ''} con la seña pendiente
+          {pend.length} reserva{pend.length > 1 ? 's' : ''} próxima{pend.length > 1 ? 's' : ''} con pagos pendientes
         </strong>
       </div>
       <ul className="rt-aviso__list">

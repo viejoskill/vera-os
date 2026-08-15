@@ -9,6 +9,7 @@ import { ConfirmarReserva } from './ConfirmarReserva';
 import { RechazarReserva } from './RechazarReserva';
 import { WhatsappReserva } from './WhatsappReserva';
 import { Comprobantes } from './Comprobantes';
+import { CobrarSaldo } from './CobrarSaldo';
 import { ReservaSemaforo } from './Semaforo';
 import { AvisoPendientes } from './AvisoPendientes';
 import { MoneyInput } from './MoneyInput';
@@ -333,6 +334,7 @@ export const RentalWorkspace = () => {
                         <button type="button" className="rt-mini rt-mini--no" onClick={() => setRejecting(r)} data-testid={`rt-wscancel-${r.id}`}>Cancelar</button>
                       )}
                       {r.estado === 'confirmada' && <CobrarSena reserva={r} onUpdated={() => pid && loadRes(pid)} />}
+                      <CobrarSaldo reserva={r} onUpdated={() => pid && loadRes(pid)} />
                       {r.huesped.telefono && <WhatsappReserva reserva={r} />}
                       <Comprobantes reserva={r} onUpdated={() => pid && loadRes(pid)} />
                       {(r.estado === 'cancelada' || r.estado === 'finalizada') && (

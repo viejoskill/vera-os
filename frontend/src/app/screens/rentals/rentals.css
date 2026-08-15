@@ -430,3 +430,15 @@
 .rt-sem--urgent { color: #e58080; }
 .rt-sem--muted { color: var(--vera-color-text-secondary); }
 
+
+/* ===== Chips de saldo cobrado ===== */
+.rt-saldo__list { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.rt-saldo__chip {
+  display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; padding: 4px 8px;
+  border-radius: 999px; border: 1px solid rgba(70,160,90,.4); color: #7bd39a; background: rgba(70,160,90,.08);
+}
+.rt-saldo__ic { display: inline-flex; color: inherit; text-decoration: none; padding: 1px; }
+.rt-saldo__ic:hover { opacity: .7; }
+.rt-saldo__del { display: inline-flex; background: none; border: none; color: inherit; cursor: pointer; padding: 1px; opacity: .65; }
+.rt-saldo__del:hover { opacity: 1; color: #e07575; }
+
