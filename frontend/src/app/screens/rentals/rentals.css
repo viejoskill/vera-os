@@ -389,3 +389,44 @@
 /* Preview del mensaje de rechazo */
 .rt-reject__preview { white-space: pre-wrap; font: inherit; font-size: .82rem; line-height: 1.5; background: var(--vera-color-surface); border: 1px solid var(--vera-color-border); border-radius: 10px; padding: 12px 14px; color: var(--vera-color-text-secondary); margin: 0 0 16px; max-height: 200px; overflow-y: auto; }
 
+
+/* ===== Aviso general de reservas próximas con seña pendiente ===== */
+.rt-aviso {
+  background: rgba(214, 170, 40, .10); border: 1px solid rgba(214, 170, 40, .40);
+  border-radius: var(--vera-radius-md, 12px); padding: 14px 16px; margin: 0 0 20px;
+}
+.rt-aviso.is-urgent { background: rgba(200, 80, 80, .10); border-color: rgba(200, 80, 80, .45); }
+.rt-aviso__head { display: flex; align-items: center; gap: 8px; color: #e3b93c; font-size: .92rem; margin-bottom: 10px; }
+.rt-aviso.is-urgent .rt-aviso__head { color: #e58080; }
+.rt-aviso__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.rt-aviso__row {
+  display: grid; grid-template-columns: 130px 1.4fr 100px 1.1fr auto; gap: 12px; align-items: center;
+  padding: 9px 12px; border-radius: 10px; background: var(--vera-color-surface);
+  border: 1px solid var(--vera-color-border); font-size: .85rem; transition: border-color 160ms ease, transform 160ms ease;
+}
+.rt-aviso__row.is-clickable { cursor: pointer; }
+.rt-aviso__row.is-clickable:hover { border-color: var(--vera-color-primary); transform: translateX(2px); }
+.rt-aviso__when { font-weight: 700; color: #e3b93c; white-space: nowrap; }
+.rt-aviso__when.is-urgent { color: #e58080; }
+.rt-aviso__nom { display: flex; flex-direction: column; min-width: 0; }
+.rt-aviso__nom strong { color: var(--vera-color-text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rt-aviso__nom em { color: var(--vera-color-text-secondary); font-style: normal; font-size: .78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rt-aviso__dates { color: var(--vera-color-text-secondary); white-space: nowrap; }
+.rt-aviso__falta { color: var(--vera-color-text); font-weight: 500; }
+.rt-aviso__chev { color: var(--vera-color-text-secondary); }
+@media (max-width: 760px) {
+  .rt-aviso__row { grid-template-columns: 1fr; gap: 3px; }
+  .rt-aviso__chev { display: none; }
+}
+
+/* ===== Semáforo interno del proceso de reserva ===== */
+.rt-sem { display: inline-flex; align-items: center; gap: 8px; font-size: .78rem; }
+.rt-sem__dots { display: inline-flex; gap: 4px; }
+.rt-sem__dot { width: 9px; height: 9px; border-radius: 999px; border: 1.5px solid currentColor; opacity: .5; }
+.rt-sem__dot.is-done { background: currentColor; opacity: 1; }
+.rt-sem__txt { font-weight: 600; white-space: nowrap; }
+.rt-sem--ok { color: #4bbf6b; }
+.rt-sem--warn { color: #e3b93c; }
+.rt-sem--urgent { color: #e58080; }
+.rt-sem--muted { color: var(--vera-color-text-secondary); }
+

@@ -226,3 +226,66 @@ export const displayEstado = (r: Reservation): { label: string; cls: string } =>
 };
 
 export const esEsperandoSena = (r: Reservation) => r.estado === 'confirmada' && r.pago?.estado !== 'pagado';
+
+// ---- Semáforo del proceso de reserva ----
+
+/** Días hasta el check-in (0 = hoy, negativo = ya empezó). null si no hay fecha. */
+export const daysUntil = (checkIn?: string): number | null => {
+  if (!checkIn) return null;
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const ci = parseISO(checkIn); ci.setHours(0, 0, 0, 0);
+  return Math.round((ci.getTime() - hoy.getTime()) / 86400000);
+};
+
+/** La plata está asegurada: reserva confirmada + seña pagada. */
+export const senaAsegurada = (r: Reservation): boolean =>
+  ['confirmada', 'encurso', 'finalizada'].includes(r.estado) && r.pago?.estado === 'pagado';
+
+export interface ProcesoPaso { key: string; label: string; done: boolean; }
+export interface ProcesoReserva {
+  pasos: ProcesoPaso[];
+  nivel: 'ok' | 'atencion' | 'urgente' | 'neutro';
+  falta: string | null;
+  completo: boolean;
+  dias: number | null;
+}
+
+/** Semáforo interno: qué pasos del proceso están hechos y qué falta. */
+export const procesoReserva = (r: Reservation): ProcesoReserva => {
+  const dias = daysUntil(r.checkIn);
+  if (r.estado === 'cancelada' || r.estado === 'bloqueo') {
+    return { pasos: [], nivel: 'neutro', falta: null, completo: false, dias };
+  }
+  const confirmada = ['confirmada', 'encurso', 'finalizada'].includes(r.estado);
+  const senaPagada = r.pago?.estado === 'pagado';
+  const tieneComprobante = (r.comprobantes?.length ?? 0) > 0 || !!r.pago?.comprobante;
+  const pasos: ProcesoPaso[] = [
+    { key: 'confirmada', label: 'Confirmar reserva', done: confirmada },
+    { key: 'sena', label: 'Cobrar la seña', done: senaPagada },
+    { key: 'comprobante', label: 'Cargar comprobante', done: tieneComprobante },
+  ];
+  const completo = pasos.every((p) => p.done);
+  const primeraFalta = pasos.find((p) => !p.done);
+  const falta = r.estado === 'finalizada' ? null : primeraFalta ? primeraFalta.label : null;
+  let nivel: ProcesoReserva['nivel'] = 'atencion';
+  if (completo || r.estado === 'finalizada') nivel = 'ok';
+  else if (!senaAsegurada(r) && dias !== null && dias <= 7) nivel = 'urgente';
+  return { pasos, nivel, falta, completo, dias };
+};
+
+/** Reservas con la seña sin asegurar y check-in cercano (para el aviso general). */
+export const reservasPendientesProximas = (res: Reservation[], dentroDeDias = 15): Reservation[] =>
+  res
+    .filter((r) => !['cancelada', 'bloqueo', 'finalizada'].includes(r.estado))
+    .filter((r) => !senaAsegurada(r))
+    .filter((r) => { const d = daysUntil(r.checkIn); return d !== null && d >= 0 && d <= dentroDeDias; })
+    .sort((a, b) => (daysUntil(a.checkIn) ?? 999) - (daysUntil(b.checkIn) ?? 999));
+
+/** Texto corto de cuánto falta para el check-in. */
+export const diasTexto = (dias: number | null): string => {
+  if (dias === null) return '';
+  if (dias < 0) return 'En curso';
+  if (dias === 0) return 'Ingresa hoy';
+  if (dias === 1) return 'Ingresa mañana';
+  return `Faltan ${dias} días`;
+};

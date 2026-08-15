@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Check, FileSignature, CalendarClock, BadgeCheck, Wallet } from 'lucide-react';
 import { useNotifications, useNotificationActions } from '@app/hooks/useNotifications';
@@ -9,13 +11,16 @@ export const NotificationBell = () => {
   const { markRead, markAll } = useNotificationActions();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const unread = data?.unread ?? 0;
   const items = data?.items ?? [];
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (ref.current?.contains(t) || panelRef.current?.contains(t)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
@@ -40,8 +45,8 @@ export const NotificationBell = () => {
         {unread > 0 && <span className="vera-notif__dot" data-testid="notif-badge">{unread}</span>}
       </button>
 
-      {open && (
-        <div className="vera-notif__panel" data-testid="notif-panel">
+      {open && (createPortal(
+        <div className="vera-notif__panel" data-testid="notif-panel" ref={panelRef}>
           <div className="vera-notif__head">
             <span>Notificaciones</span>
             {unread > 0 && (
@@ -71,8 +76,10 @@ export const NotificationBell = () => {
               </li>
             ))}
           </ul>
-        </div>
-      )}
+        </div>,
+        document.body,
+      ) as ReactNode)}
     </div>
   );
 };
+

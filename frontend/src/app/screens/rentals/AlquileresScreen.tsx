@@ -8,6 +8,8 @@ import { ConfirmarReserva } from './ConfirmarReserva';
 import { RechazarReserva } from './RechazarReserva';
 import { WhatsappReserva } from './WhatsappReserva';
 import { Comprobantes } from './Comprobantes';
+import { AvisoPendientes } from './AvisoPendientes';
+import { ReservaSemaforo } from './Semaforo';
 import './rentals.css';
 
 const Badge = ({ reserva }: { reserva: Reservation }) => {
@@ -110,6 +112,8 @@ export const AlquileresScreen = () => {
         </div>
       </header>
 
+      <AvisoPendientes reservas={res} onVer={() => setTab('res')} />
+
       <div className="rt__tabs">
         <button type="button" className={tab === 'props' ? 'sel' : ''} onClick={() => setTab('props')} data-testid="rt-tab-props">Propiedades ({props.length})</button>
         <button type="button" className={tab === 'res' ? 'sel' : ''} onClick={() => setTab('res')} data-testid="rt-tab-res">
@@ -193,6 +197,7 @@ export const AlquileresScreen = () => {
                     <span>{fmtMoney(r.montoEstimado, r.moneda)}</span>
                     {r.origen && <span className="rt-res__origin">{r.origen}</span>}
                     <Badge reserva={r} />
+                    <ReservaSemaforo reserva={r} />
                   </div>
                   <div className="rt-res__acts">
                     {r.estado === 'prereserva' && (
