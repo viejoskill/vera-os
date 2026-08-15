@@ -26,7 +26,7 @@ router = APIRouter(prefix="/rentals", tags=["rentals"])
 _client: AsyncIOMotorClient | None = None
 
 # Estados que ocupan fechas en el calendario.
-OCUPA = {"prereserva", "confirmada", "encurso", "bloqueo"}
+OCUPA = {"prereserva", "confirmada", "encurso", "finalizada", "bloqueo"}
 
 
 def _db():

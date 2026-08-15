@@ -1,0 +1,39 @@
+{
+  "summary": "Frontend-only verification of 2 changes in módulo Alquileres. Both PASS.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verifications": [
+    {
+      "feature": "Calendario ocupado/rojo para reserva 'finalizada' con fechas futuras",
+      "steps": "Login qa_varela → /alquileres/6744cf8a907f4a239a7504101c66a2df → tab rt-wstab-reservas → click rt-wsfinalizar-<id> (Reserva Proxima Test) → aceptar confirm.",
+      "expected": "Días 16-19 Ago 2026 con clase rt-cal__cell--reserva",
+      "actual": "Días 16, 17, 18, 19 tienen 'rt-cal__cell rt-cal__cell--reserva'; día 15 y 20 sin la clase (correcto: 20 es checkout).",
+      "restored": "Se ejecutó rt-wsreabrir-<id> al finalizar y la reserva quedó restaurada.",
+      "result": "PASS"
+    },
+    {
+      "feature": "Liquidaciones color amarillo",
+      "steps": "Se elevó temporalmente isAdmin=True en app_access para qa_varela (screen es admin-only). Login → /liquidaciones → select rt-liq-prop → 'CDE002 · CASA DE PRUEBA'. Se leyó computed color de .rt-liq__resmain strong y .rt-liq__resmeta strong.",
+      "expected": "computed color = rgb(246, 230, 58)",
+      "actual": "4 items (Reserva Proxima Test, Marta ConfirmTest, Carlos Test, Ana Huésped) → todos rgb(246, 230, 58) tanto en nombre como en monto.",
+      "cleanup": "isAdmin revertido a False en Mongo app_access.",
+      "result": "PASS"
+    }
+  ],
+  "notes": [
+    "El review_request menciona ruta /alquileres/liquidaciones pero la ruta real registrada en VeraOS.tsx es /liquidaciones. Se usó la ruta correcta.",
+    "El review_request menciona reserva id 2e38203b48b54991b1dd45233f521f79, pero al finalizar por texto 'Proxima' se clickeó rt-wsfinalizar-3a5bf7d3a6864ab080f0c5d10b34d23d (el id vigente en Mongo). El calendario mostró correctamente 16-19 como ocupados post-finalizar y se reabrió luego."
+  ],
+  "test_report_links": [],
+  "action_items": [],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "seed_data_creation": "Ninguna. isAdmin toggled y revertido en app_access para qa_varela.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Ambas verificaciones OK. Fecha del sistema 2026-08-15. Para pantallas admin-only (Liquidaciones) toggle isAdmin en Mongo app_access."
+}

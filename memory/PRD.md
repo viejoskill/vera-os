@@ -1322,3 +1322,8 @@ Las 4 mejoras sobre documentos + monto de limpieza editable. Verificado por curl
 
 ## Ajuste UX calendario compacto (2026-08)
 El calendario de la propiedad (tab Reservas del RentalWorkspace) pasó de 1 mes gigante (celdas enormes, obligaba a scrollear para ver reservas) a **3 meses juntos** y compactos. `RentalCalendar` con `months={3}` + `className="rt-cal--compact"`. CSS `.rt-cal--compact`: celdas height 30px (sin aspect-ratio), meses min-width 196px, gaps chicos, y padding-top en `.rt-cal__months` para que la navegación ‹ › no tape los títulos. Verificado por screenshot (3 meses lado a lado, lista de reservas visible sin bajar). Solo CSS + prop, sin backend.
+
+## Fix (2026-08): calendario finalizada + colores Liquidaciones
+- **BUG calendario (fix):** `OCUPA` (routes_rentals.py) ahora incluye `'finalizada'`. Antes una reserva finalizada quedaba fuera de las fechas ocupadas y no se pintaba roja (ni bloqueaba disponibilidad). Ahora las finalizadas con fechas futuras se ven ocupadas/rojas en el calendario. Verificado por testing_agent (iteration_51: días 16-19 con rt-cal__cell--reserva, PASS).
+- **Colores Liquidaciones:** `.rt-liq__resmain strong` (nombre) y `.rt-liq__resmeta strong` (monto) ahora en `var(--vera-color-primary)` (amarillo). Verificado por testing_agent (rgb(246,230,58), PASS).
+- Nota: pantalla Liquidaciones es admin-only; su ruta real es `/liquidaciones` (no `/alquileres/liquidaciones`).
