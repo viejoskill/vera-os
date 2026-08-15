@@ -210,7 +210,7 @@ export const AlquileresScreen = () => {
                       <button type="button" className="rt-mini rt-mini--no" onClick={() => setRejecting(r)} data-testid={`rt-cancel-${r.id}`}><XCircle size={15} /> Cancelar</button>
                     )}
                     {r.huesped.telefono && <WhatsappReserva reserva={r} />}
-                    {(r.estado === 'confirmada' || r.estado === 'prereserva') && <CobrarSena reserva={r} onUpdated={load} />}
+                    {r.estado === 'confirmada' && <CobrarSena reserva={r} onUpdated={load} />}
                     <Comprobantes reserva={r} onUpdated={load} />
                     {(r.estado === 'cancelada' || r.estado === 'finalizada') && (
                       <button type="button" className="rt-mini rt-mini--del" onClick={() => removeReserva(r.id)} data-testid={`rt-delres-${r.id}`}><Trash2 size={14} /> Eliminar</button>

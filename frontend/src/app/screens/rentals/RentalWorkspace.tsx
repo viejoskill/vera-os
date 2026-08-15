@@ -332,7 +332,7 @@ export const RentalWorkspace = () => {
                       {r.estado === 'confirmada' && (
                         <button type="button" className="rt-mini rt-mini--no" onClick={() => setRejecting(r)} data-testid={`rt-wscancel-${r.id}`}>Cancelar</button>
                       )}
-                      {(r.estado === 'confirmada' || r.estado === 'prereserva') && <CobrarSena reserva={r} onUpdated={() => pid && loadRes(pid)} />}
+                      {r.estado === 'confirmada' && <CobrarSena reserva={r} onUpdated={() => pid && loadRes(pid)} />}
                       {r.huesped.telefono && <WhatsappReserva reserva={r} />}
                       <Comprobantes reserva={r} onUpdated={() => pid && loadRes(pid)} />
                       {(r.estado === 'cancelada' || r.estado === 'finalizada') && (
