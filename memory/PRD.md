@@ -1319,3 +1319,6 @@ Las 4 mejoras sobre documentos + monto de limpieza editable. Verificado por curl
 ## Ajuste visual + vista previa de recibos (2026-08)
 - **Color:** el nombre del huésped (`.rt-res__main strong`) y el monto (`.rt-res__monto`, nueva clase) ahora usan `var(--vera-color-primary)` (amarillo) para mayor visibilidad, en la lista de reservas de AlquileresScreen y RentalWorkspace.
 - **Vista previa en todos los recibos:** recibo de seña (`CobrarSena`) y recibo de saldo (`CobrarSaldo`) ahora abren el modal `DocPreview` (iframe + Descargar PDF + Enviar por WhatsApp), igual que Reserva/Contrato. Backend: `recibo-sena` y `saldos/{sid}/recibo` reciben `dl` (inline por defecto, `?dl=1` fuerza descarga).
+
+## Ajuste UX calendario compacto (2026-08)
+El calendario de la propiedad (tab Reservas del RentalWorkspace) pasó de 1 mes gigante (celdas enormes, obligaba a scrollear para ver reservas) a **3 meses juntos** y compactos. `RentalCalendar` con `months={3}` + `className="rt-cal--compact"`. CSS `.rt-cal--compact`: celdas height 30px (sin aspect-ratio), meses min-width 196px, gaps chicos, y padding-top en `.rt-cal__months` para que la navegación ‹ › no tape los títulos. Verificado por screenshot (3 meses lado a lado, lista de reservas visible sin bajar). Solo CSS + prop, sin backend.

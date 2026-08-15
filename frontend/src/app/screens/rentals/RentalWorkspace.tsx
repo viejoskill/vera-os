@@ -304,7 +304,7 @@ export const RentalWorkspace = () => {
           <>
             <section className="rt-ws__full">
               <h3 className="rt-ws__sec">Calendario y bloqueos</h3>
-              <RentalCalendar ocupados={ocupados} value={sel} onChange={setSel} months={1} legend />
+              <RentalCalendar ocupados={ocupados} value={sel} onChange={setSel} months={3} legend className="rt-cal--compact" />
               {sel.checkIn && sel.checkOut && (
                 <div className="rt-blockbar">
                   <span>{fmtDate(sel.checkIn)} → {fmtDate(sel.checkOut)} ({nightsBetween(sel.checkIn, sel.checkOut)} noches)</span>

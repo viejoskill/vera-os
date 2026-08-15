@@ -329,6 +329,12 @@
 
 /* Leyenda del calendario */
 .rt-cal__legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; font-size: .78rem; color: var(--vera-color-text-secondary); }
+.rt-cal--compact .rt-cal__months { gap: 14px; padding-top: 34px; }
+.rt-cal--compact .rt-cal__month { min-width: 196px; }
+.rt-cal--compact .rt-cal__mtitle { font-size: .84rem; margin-bottom: 6px; }
+.rt-cal--compact .rt-cal__wd span { font-size: .64rem; padding-bottom: 2px; }
+.rt-cal--compact .rt-cal__wd, .rt-cal--compact .rt-cal__grid { gap: 2px; }
+.rt-cal--compact .rt-cal__cell { aspect-ratio: auto; height: 30px; font-size: .76rem; border-radius: 6px; }
 .rt-cal__legend span { display: inline-flex; align-items: center; gap: 6px; }
 .rt-lg { width: 16px; height: 16px; border-radius: 4px; display: inline-block; }
 .rt-lg--reserva { background: repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(210,70,70,.6) 3px, rgba(210,70,70,.6) 5px); border: 1px solid rgba(210,70,70,.4); }
