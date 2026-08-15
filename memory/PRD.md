@@ -1326,4 +1326,7 @@ El calendario de la propiedad (tab Reservas del RentalWorkspace) pasó de 1 mes 
 ## Fix (2026-08): calendario finalizada + colores Liquidaciones
 - **BUG calendario (fix):** `OCUPA` (routes_rentals.py) ahora incluye `'finalizada'`. Antes una reserva finalizada quedaba fuera de las fechas ocupadas y no se pintaba roja (ni bloqueaba disponibilidad). Ahora las finalizadas con fechas futuras se ven ocupadas/rojas en el calendario. Verificado por testing_agent (iteration_51: días 16-19 con rt-cal__cell--reserva, PASS).
 - **Colores Liquidaciones:** `.rt-liq__resmain strong` (nombre) y `.rt-liq__resmeta strong` (monto) ahora en `var(--vera-color-primary)` (amarillo). Verificado por testing_agent (rgb(246,230,58), PASS).
-- Nota: pantalla Liquidaciones es admin-only; su ruta real es `/liquidaciones` (no `/alquileres/liquidaciones`).
+- Nota: pantalla Liquidaciones es admin-only; ruta /liquidaciones.
+
+## Fix REAL calendario finalizada (2026-08)
+- El fix del backend (OCUPA) NO alcanzaba: RentalWorkspace.tsx (línea ~58) armaba `ocupados` en el CLIENTE filtrando `["prereserva","confirmada","encurso","bloqueo"]` (SIN finalizada). Se agregó "finalizada" a ese filtro del frontend. Verificado por screenshot: reserva Finalizada futura ahora se pinta roja (rt-cal__cell--reserva). Requiere REDEPLOY para producción.

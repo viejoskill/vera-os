@@ -55,7 +55,7 @@ export const RentalWorkspace = () => {
     setReservas(r.filter((x) => x.estado !== 'bloqueo'));
     setBloqueos(r.filter((x) => x.estado === 'bloqueo'));
     setOcupados(
-      r.filter((x) => ['prereserva', 'confirmada', 'encurso', 'bloqueo'].includes(x.estado))
+      r.filter((x) => ['prereserva', 'confirmada', 'encurso', 'finalizada', 'bloqueo'].includes(x.estado))
         .map((x) => ({ checkIn: x.checkIn, checkOut: x.checkOut, estado: x.estado })),
     );
   }, []);
