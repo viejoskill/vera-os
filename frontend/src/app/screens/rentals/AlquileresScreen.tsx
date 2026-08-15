@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Palmtree, Plus, Pencil, ExternalLink, Link2, Check, Users, BedDouble, Bath, XCircle, Building2, Search, X, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { Button } from '@vera/ui';
-import { api, fmtMoney, fmtDate, displayEstado, esEsperandoSena, type RentalProperty, type Reservation, type SaleProperty, type RentalSettings } from './api';
+import { api, fmtMoney, fmtDate, displayEstado, reservaBucket, type RentalProperty, type Reservation, type SaleProperty, type RentalSettings } from './api';
 import { CobrarSena } from './CobrarSena';
 import { ConfirmarReserva } from './ConfirmarReserva';
 import { RechazarReserva } from './RechazarReserva';
@@ -25,7 +25,7 @@ export const AlquileresScreen = () => {
   const [res, setRes] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState('');
-  const [filter, setFilter] = useState('');
+  const [filter, setFilter] = useState('confirmada');
   const [showImport, setShowImport] = useState(false);
   const [salePropsList, setSalePropsList] = useState<SaleProperty[] | null>(null);
   const [saleQuery, setSaleQuery] = useState('');
@@ -71,11 +71,8 @@ export const AlquileresScreen = () => {
     catch (e) { alert((e as Error).message); setImporting(''); }
   };
 
-  const filtered = res.filter((r) => {
-    if (filter === 'esperando') return esEsperandoSena(r);
-    if (filter) return r.estado === filter;
-    return r.estado !== 'bloqueo';
-  });
+  const filtered = res.filter((r) => reservaBucket(r) === filter);
+  const countBucket = (b: string) => res.filter((r) => reservaBucket(r) === b).length;
 
   const openSettings = async () => {
     setShowSettings(true);
@@ -178,14 +175,18 @@ export const AlquileresScreen = () => {
       ) : (
         <div data-testid="rt-res-tab">
           <div className="rt__filters">
-            {[['', 'Activas'], ['prereserva', 'Pre-reserva'], ['esperando', 'Esperando seña'], ['confirmada', 'Confirmadas'], ['encurso', 'En curso'], ['finalizada', 'Finalizada'], ['cancelada', 'Cancelada']].map(([s, label]) => (
-              <button type="button" key={s || 'all'} className={filter === s ? 'sel' : ''} onClick={() => setFilter(s)} data-testid={`rt-filter-${s || 'all'}`}>
-                {label}
-                {s === 'esperando' && res.filter(esEsperandoSena).length > 0 && <span className="rt-tabbadge">{res.filter(esEsperandoSena).length}</span>}
-              </button>
-            ))}
+            {([['prereserva', 'Pre-reservas'], ['esperando', 'Esperando seña'], ['confirmada', 'Confirmadas'], ['finalizada', 'Finalizadas'], ['cancelada', 'Canceladas']] as [string, string][]).map(([s, label]) => {
+              const n = countBucket(s);
+              const alerta = s === 'prereserva' || s === 'esperando';
+              return (
+                <button type="button" key={s} className={filter === s ? 'sel' : ''} onClick={() => setFilter(s)} data-testid={`rt-filter-${s}`}>
+                  {label}
+                  {n > 0 && <span className={alerta ? 'rt-tabbadge' : 'rt-tabcount'} data-testid={`rt-count-${s}`}>{n}</span>}
+                </button>
+              );
+            })}
           </div>
-          {filtered.length === 0 ? <p className="rt__loading">Sin reservas en este estado.</p> : (
+          {filtered.length === 0 ? <p className="rt__loading">No hay reservas en esta solapa.</p> : (
             <div className="rt-res" data-testid="rt-res-list">
               {filtered.map((r) => (
                 <div className="rt-res__row" key={r.id} data-testid={`rt-res-${r.id}`}>

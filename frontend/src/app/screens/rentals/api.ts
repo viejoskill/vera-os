@@ -238,6 +238,20 @@ export const displayEstado = (r: Reservation): { label: string; cls: string } =>
 
 export const esEsperandoSena = (r: Reservation) => r.estado === 'confirmada' && r.pago?.estado !== 'pagado';
 
+/** Solapa (bucket) a la que pertenece una reserva. Cada reserva cae en UNA sola. */
+export type ReservaBucket = 'prereserva' | 'esperando' | 'confirmada' | 'finalizada' | 'cancelada' | 'otro';
+export const reservaBucket = (r: Reservation): ReservaBucket => {
+  if (r.estado === 'cancelada') return 'cancelada';
+  if (r.estado === 'bloqueo') return 'otro';
+  if (r.estado === 'prereserva') return 'prereserva';
+  // confirmada / encurso / finalizada
+  const outDays = daysUntil(r.checkOut);
+  const finalizada = r.estado === 'finalizada' || (outDays !== null && outDays < 0);
+  if (finalizada) return 'finalizada';
+  if (r.pago?.estado === 'pagado') return 'confirmada';
+  return 'esperando';
+};
+
 // ---- Semáforo del proceso de reserva ----
 
 /** Días hasta el check-in (0 = hoy, negativo = ya empezó). null si no hay fecha. */

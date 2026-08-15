@@ -13,6 +13,8 @@
 }
 .rt__tabs button.sel, .rt__filters button.sel { background: var(--vera-color-primary); color: var(--vera-color-primary-foreground); border-color: var(--vera-color-primary); font-weight: 600; }
 .rt-tabbadge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 8px; font-size: .72rem; font-weight: 700; border-radius: 999px; background: #e0533a; color: #fff; }
+.rt-tabcount { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 8px; font-size: .72rem; font-weight: 700; border-radius: 999px; background: var(--vera-color-border); color: var(--vera-color-text-secondary); }
+
 .rt__searchbar { display: flex; align-items: center; gap: 8px; background: var(--vera-color-surface); border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-pill, 999px); padding: 8px 16px; margin-bottom: 16px; max-width: 460px; color: var(--vera-color-text-secondary); }
 .rt__searchbar input { flex: 1; background: none; border: none; outline: none; color: var(--vera-color-text); font: inherit; }
 

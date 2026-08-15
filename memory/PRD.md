@@ -1257,3 +1257,10 @@ Flujo de cobro del saldo (lo que resta tras la seña), pensado para: cliente que
 - **Frontend (`CobrarSaldo.tsx`):** se muestra solo cuando la seña está asegurada (confirmada + seña pagada). Si hay saldo pendiente → chip "Saldo pendiente · $X" + botón "Cobrar saldo" (modal con monto prellenado, medio de pago, fecha editable, comprobante opcional) + chips de cada cobro (monto·medio·fecha, ver comprobante, borrar). Si saldo = 0 → chip verde "Saldo cobrado". Integrado en AlquileresScreen y RentalWorkspace.
 - **Semáforo actualizado:** los 3 pasos ahora son Confirmar reserva → Cobrar la seña → **Cobrar el saldo** (se reemplazó el paso "Cargar comprobante"). `completo` = las 3 hechas. Helpers nuevos en `api.ts`: `saldoPendiente`, `totalCobrado`.
 - **Aviso general** ahora usa `!procesoReserva(r).completo` (antes `!senaAsegurada`), así también surface reservas con saldo pendiente y check-in cercano. Título → "con pagos pendientes".
+
+## Ajuste UX solapas de Reservas (2026-08): menos es más
+Reorganización de la pestaña Reservas para que cada reserva aparezca en la solapa que le corresponde (evita el "todo junto" de Activas). Verificado por screenshot. Sin cambios de backend.
+- **Solapas:** Pre-reservas · Esperando seña · Confirmadas · Finalizadas · Canceladas. Eliminadas **Activas** (mezclaba estados) y **En curso** (estado `encurso` nunca se asigna en el backend → solapa muerta).
+- **Clasificación única** (`reservaBucket(r)` en `api.ts`): cancelada→Canceladas; prereserva→Pre-reservas; confirmada con check-out pasado (o estado finalizada)→Finalizadas; confirmada+seña pagada→Confirmadas; confirmada sin seña→Esperando seña. **Finalizadas se deriva por fecha de check-out** (mantiene la lista de Confirmadas limpia, sin depender de una transición de estado que no existe).
+- **Contadores:** badge ROJO (`rt-tabbadge`) en Pre-reservas y Esperando seña (acción pendiente); badge gris (`rt-tabcount`) en las demás con count>0. Solapa por defecto: Confirmadas.
+- `AlquileresScreen.tsx`: filtro por bucket + `countBucket()`. El badge del tab superior "Reservas" sigue mostrando la cantidad de pre-reservas.
