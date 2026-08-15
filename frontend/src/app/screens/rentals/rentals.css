@@ -85,6 +85,7 @@
 .rt__back button, .rt__weblink { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; color: var(--vera-color-text-secondary); cursor: pointer; font: inherit; font-size: .86rem; text-decoration: none; }
 .rt__weblink:hover, .rt__back button:hover { color: var(--vera-color-primary); }
 .rt-ws { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.rt-ws__pane { max-width: 640px; }
 .rt-ws__full { margin-top: 24px; }
 .rt-ws__sec { font-size: .82rem; text-transform: uppercase; letter-spacing: .05em; color: var(--vera-color-text-secondary); margin: 20px 0 12px; }
 .rt-ws__col > .rt-ws__sec:first-child { margin-top: 0; }

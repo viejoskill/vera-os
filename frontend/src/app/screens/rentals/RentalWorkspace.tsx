@@ -41,6 +41,7 @@ export const RentalWorkspace = () => {
   const [confirming, setConfirming] = useState<Reservation | null>(null);
   const [rejecting, setRejecting] = useState<Reservation | null>(null);
   const [showManual, setShowManual] = useState(false);
+  const [wsTab, setWsTab] = useState('datos');
   const [sel, setSel] = useState<{ checkIn: string | null; checkOut: string | null }>({ checkIn: null, checkOut: null });
   const [flash, setFlash] = useState('');
   const [saving, setSaving] = useState(false);
@@ -165,24 +166,84 @@ export const RentalWorkspace = () => {
         </div>
       )}
 
-      <div className="rt-ws">
-        <section className="rt-ws__col">
-          <h3 className="rt-ws__sec">Datos de la propiedad</h3>
-          <Input label="Título" value={f.titulo || ''} onChange={(e) => set('titulo', e.target.value)} data-testid="rt-titulo" />
-          <div className="rt-row2">
-            <Input label="Dirección" value={f.direccion || ''} onChange={(e) => set('direccion', e.target.value)} data-testid="rt-direccion" />
-            <Input label="Localidad" value={f.localidad || ''} onChange={(e) => set('localidad', e.target.value)} data-testid="rt-localidad" />
-          </div>
-          <label className="rt-field"><span>Descripción</span>
-            <textarea rows={4} value={f.descripcion || ''} onChange={(e) => set('descripcion', e.target.value)} data-testid="rt-descripcion" /></label>
-          <div className="rt-row3">
-            <Input label="Capacidad (huéspedes)" type="number" value={String(f.capacidad ?? '')} onChange={(e) => set('capacidad', Number(e.target.value))} data-testid="rt-capacidad" />
-            <Input label="Dormitorios" type="number" value={String(f.dormitorios ?? '')} onChange={(e) => set('dormitorios', Number(e.target.value))} data-testid="rt-dormitorios" />
-            <Input label="Baños" type="number" value={String(f.banos ?? '')} onChange={(e) => set('banos', Number(e.target.value))} data-testid="rt-banos" />
-          </div>
-          <label className="rt-field"><span>Amenities (separados por coma)</span>
-            <input value={amenText} onChange={(e) => setAmenText(e.target.value)} placeholder="Wifi, Parrilla, Cochera, Pileta" data-testid="rt-amenities" /></label>
+      <div className="rt__tabs" data-testid="rt-ws-tabs">
+        {(([['datos', 'Datos de la propiedad'], ['precios', 'Precios'], ['propietario', 'Propietario'], ['reservas', 'Reservas'], ['financiera', 'Ficha financiera']]) as [string, string][]).map(([t, label]) => {
+          const prereservas = reservas.filter((r) => r.estado === 'prereserva').length;
+          return (
+            <button type="button" key={t} className={wsTab === t ? 'sel' : ''} onClick={() => setWsTab(t)} data-testid={`rt-wstab-${t}`}>
+              {label}
+              {t === 'reservas' && prereservas > 0 && <span className="rt-tabbadge">{prereservas}</span>}
+            </button>
+          );
+        })}
+      </div>
 
+      {wsTab === 'datos' && (
+        <div className="rt-ws">
+          <section className="rt-ws__col">
+            <h3 className="rt-ws__sec">Datos de la propiedad</h3>
+            <Input label="Título" value={f.titulo || ''} onChange={(e) => set('titulo', e.target.value)} data-testid="rt-titulo" />
+            <div className="rt-row2">
+              <Input label="Dirección" value={f.direccion || ''} onChange={(e) => set('direccion', e.target.value)} data-testid="rt-direccion" />
+              <Input label="Localidad" value={f.localidad || ''} onChange={(e) => set('localidad', e.target.value)} data-testid="rt-localidad" />
+            </div>
+            <label className="rt-field"><span>Descripción</span>
+              <textarea rows={4} value={f.descripcion || ''} onChange={(e) => set('descripcion', e.target.value)} data-testid="rt-descripcion" /></label>
+            <div className="rt-row3">
+              <Input label="Capacidad (huéspedes)" type="number" value={String(f.capacidad ?? '')} onChange={(e) => set('capacidad', Number(e.target.value))} data-testid="rt-capacidad" />
+              <Input label="Dormitorios" type="number" value={String(f.dormitorios ?? '')} onChange={(e) => set('dormitorios', Number(e.target.value))} data-testid="rt-dormitorios" />
+              <Input label="Baños" type="number" value={String(f.banos ?? '')} onChange={(e) => set('banos', Number(e.target.value))} data-testid="rt-banos" />
+            </div>
+            <label className="rt-field"><span>Amenities (separados por coma)</span>
+              <input value={amenText} onChange={(e) => setAmenText(e.target.value)} placeholder="Wifi, Parrilla, Cochera, Pileta" data-testid="rt-amenities" /></label>
+
+            <h3 className="rt-ws__sec">Observaciones de la propiedad</h3>
+            <label className="rt-field"><span>Notas internas (historial, detalles, lo que necesites)</span>
+              <textarea rows={3} value={f.notas || ''} onChange={(e) => set('notas', e.target.value)} data-testid="rt-notas" /></label>
+
+            <h3 className="rt-ws__sec">Condiciones de la reserva</h3>
+            <p className="rt-hint">El huésped las tiene que leer y aceptar antes de enviar la pre-reserva (junto con las condiciones generales de la inmobiliaria).</p>
+            <div className="rt-cond__toggles">
+              <label className="rt-chk"><input type="checkbox" checked={!!f.ropaBlanca} onChange={(e) => set('ropaBlanca', e.target.checked)} data-testid="rt-ropablanca" /><span>Incluye ropa blanca</span></label>
+              <label className="rt-chk"><input type="checkbox" checked={!!f.aceptaMascotas} onChange={(e) => set('aceptaMascotas', e.target.checked)} data-testid="rt-mascotas" /><span>Se aceptan mascotas</span></label>
+            </div>
+            <div className="rt-row3">
+              <MoneyInput label="Depósito en garantía" prefix={f.moneda === 'USD' ? 'USD' : '$'} value={f.depositoGarantia} onChange={(n) => set('depositoGarantia', n)} testId="rt-deposito" />
+              <Input label="Estadía mínima (noches)" type="number" value={String(f.estadiaMinima ?? '')} onChange={(e) => set('estadiaMinima', Number(e.target.value))} data-testid="rt-estadia-min" />
+              <div />
+            </div>
+            <div className="rt-row2">
+              <Input label="Check-in (horario)" value={f.checkInHora || ''} onChange={(e) => set('checkInHora', e.target.value)} data-testid="rt-checkin-hora" />
+              <Input label="Check-out (horario)" value={f.checkOutHora || ''} onChange={(e) => set('checkOutHora', e.target.value)} data-testid="rt-checkout-hora" />
+            </div>
+            <label className="rt-field"><span>Cláusulas propias (una por línea)</span>
+              <textarea rows={3} value={condText} onChange={(e) => setCondText(e.target.value)} placeholder={'No se permiten fiestas\nSolo grupos familiares\nProhibido fumar'} data-testid="rt-condiciones" /></label>
+          </section>
+
+          <section className="rt-ws__col">
+            <h3 className="rt-ws__sec">Fotos</h3>
+            {!pid ? <p className="rt-hint">Guardá la propiedad para poder subir fotos.</p> : (
+              <>
+                <label className="rt-upload" data-testid="rt-upload">
+                  <Upload size={16} /> Subir fotos
+                  <input type="file" accept="image/*" multiple onChange={onUpload} hidden />
+                </label>
+                <div className="rt-thumbs">
+                  {images.map((im) => (
+                    <div className="rt-thumb" key={im.id} style={{ backgroundImage: `url(${im.url})` }} data-testid={`rt-thumb-${im.id}`}>
+                      {im.isCover && <span className="rt-thumb__cover"><Star size={12} /> Portada</span>}
+                      <button type="button" onClick={() => delImage(im.id)} data-testid={`rt-delimg-${im.id}`}><Trash2 size={13} /></button>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </section>
+        </div>
+      )}
+
+      {wsTab === 'precios' && (
+        <section className="rt-ws__full rt-ws__pane">
           <h3 className="rt-ws__sec">Precios · verano</h3>
           <div className="rt-row2">
             <label className="rt-field"><span>Moneda</span>
@@ -203,7 +264,11 @@ export const RentalWorkspace = () => {
           </div>
           <p className="rt-hint">La comisión se genera sola al confirmar una reserva (podés editarla en la ficha). Si el % da menos que el mínimo, se usa el mínimo.</p>
           <label className="rt-chk"><input type="checkbox" checked={!!f.activa} onChange={(e) => set('activa', e.target.checked)} data-testid="rt-activa" /><span>Publicada en la web (visible para reservar)</span></label>
+        </section>
+      )}
 
+      {wsTab === 'propietario' && (
+        <section className="rt-ws__full rt-ws__pane">
           <h3 className="rt-ws__sec">Propietario</h3>
           <div className="rt-row2">
             <Input label="Nombre y apellido" value={owner.nombre} onChange={(e) => setOwner((s) => ({ ...s, nombre: e.target.value }))} data-testid="rt-owner-nombre" />
@@ -215,52 +280,14 @@ export const RentalWorkspace = () => {
           </div>
           <label className="rt-field"><span>Observaciones (uso interno)</span>
             <textarea rows={2} value={owner.observaciones} onChange={(e) => setOwner((s) => ({ ...s, observaciones: e.target.value }))} data-testid="rt-owner-obs" /></label>
-
-          <h3 className="rt-ws__sec">Observaciones de la propiedad</h3>
-          <label className="rt-field"><span>Notas internas (historial, detalles, lo que necesites)</span>
-            <textarea rows={3} value={f.notas || ''} onChange={(e) => set('notas', e.target.value)} data-testid="rt-notas" /></label>
-
-          <h3 className="rt-ws__sec">Condiciones de la reserva</h3>
-          <p className="rt-hint">El huésped las tiene que leer y aceptar antes de enviar la pre-reserva (junto con las condiciones generales de la inmobiliaria).</p>
-          <div className="rt-cond__toggles">
-            <label className="rt-chk"><input type="checkbox" checked={!!f.ropaBlanca} onChange={(e) => set('ropaBlanca', e.target.checked)} data-testid="rt-ropablanca" /><span>Incluye ropa blanca</span></label>
-            <label className="rt-chk"><input type="checkbox" checked={!!f.aceptaMascotas} onChange={(e) => set('aceptaMascotas', e.target.checked)} data-testid="rt-mascotas" /><span>Se aceptan mascotas</span></label>
-          </div>
-          <div className="rt-row3">
-            <MoneyInput label="Depósito en garantía" prefix={f.moneda === 'USD' ? 'USD' : '$'} value={f.depositoGarantia} onChange={(n) => set('depositoGarantia', n)} testId="rt-deposito" />
-            <Input label="Estadía mínima (noches)" type="number" value={String(f.estadiaMinima ?? '')} onChange={(e) => set('estadiaMinima', Number(e.target.value))} data-testid="rt-estadia-min" />
-            <div />
-          </div>
-          <div className="rt-row2">
-            <Input label="Check-in (horario)" value={f.checkInHora || ''} onChange={(e) => set('checkInHora', e.target.value)} data-testid="rt-checkin-hora" />
-            <Input label="Check-out (horario)" value={f.checkOutHora || ''} onChange={(e) => set('checkOutHora', e.target.value)} data-testid="rt-checkout-hora" />
-          </div>
-          <label className="rt-field"><span>Cláusulas propias (una por línea)</span>
-            <textarea rows={3} value={condText} onChange={(e) => setCondText(e.target.value)} placeholder={'No se permiten fiestas\nSolo grupos familiares\nProhibido fumar'} data-testid="rt-condiciones" /></label>
         </section>
+      )}
 
-        <section className="rt-ws__col">
-          <h3 className="rt-ws__sec">Fotos</h3>
-          {!pid ? <p className="rt-hint">Guardá la propiedad para poder subir fotos.</p> : (
-            <>
-              <label className="rt-upload" data-testid="rt-upload">
-                <Upload size={16} /> Subir fotos
-                <input type="file" accept="image/*" multiple onChange={onUpload} hidden />
-              </label>
-              <div className="rt-thumbs">
-                {images.map((im) => (
-                  <div className="rt-thumb" key={im.id} style={{ backgroundImage: `url(${im.url})` }} data-testid={`rt-thumb-${im.id}`}>
-                    {im.isCover && <span className="rt-thumb__cover"><Star size={12} /> Portada</span>}
-                    <button type="button" onClick={() => delImage(im.id)} data-testid={`rt-delimg-${im.id}`}><Trash2 size={13} /></button>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          <h3 className="rt-ws__sec">Calendario y bloqueos</h3>
-          {!pid ? <p className="rt-hint">Guardá la propiedad para gestionar el calendario.</p> : (
-            <>
+      {wsTab === 'reservas' && (
+        !pid ? <p className="rt-hint">Guardá la propiedad para gestionar el calendario y las reservas.</p> : (
+          <>
+            <section className="rt-ws__full">
+              <h3 className="rt-ws__sec">Calendario y bloqueos</h3>
               <RentalCalendar ocupados={ocupados} value={sel} onChange={setSel} months={1} legend />
               {sel.checkIn && sel.checkOut && (
                 <div className="rt-blockbar">
@@ -280,78 +307,78 @@ export const RentalWorkspace = () => {
                   ))}
                 </div>
               )}
-            </>
-          )}
-        </section>
-      </div>
+            </section>
 
-      {pid && (
-        <section className="rt-ws__full">
-          <h3 className="rt-ws__sec">Ficha financiera</h3>
-          <div className="rt-mov__add" data-testid="rt-mov-add">
-            <input type="date" value={nm.fecha} onChange={(e) => setNm((s) => ({ ...s, fecha: e.target.value }))} data-testid="rt-mov-fecha" />
-            <select value={nm.tipo} onChange={(e) => setNm((s) => ({ ...s, tipo: e.target.value }))} data-testid="rt-mov-tipo">
-              {Object.entries(TIPO_MOV).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
-            <input type="number" placeholder="Monto" value={nm.monto} onChange={(e) => setNm((s) => ({ ...s, monto: e.target.value }))} data-testid="rt-mov-monto" />
-            <input placeholder="Descripción" value={nm.descripcion} onChange={(e) => setNm((s) => ({ ...s, descripcion: e.target.value }))} data-testid="rt-mov-desc" />
-            <Button variant="secondary" size="sm" onClick={addMov} data-testid="rt-mov-save">Agregar</Button>
-          </div>
-          {movs.length === 0 ? <p className="rt-hint">Sin movimientos cargados.</p> : (
-            <div className="rt-mov">
-              {movs.map((m) => (
-                <div className={`rt-mov__row rt-mov__row--${m.tipo}`} key={m.id} data-testid={`rt-mov-${m.id}`}>
-                  <span className="rt-mov__fecha">{fmtDate(m.fecha)}</span>
-                  <span className="rt-mov__tipo">{TIPO_MOV[m.tipo] || m.tipo}</span>
-                  <span className="rt-mov__desc">{m.descripcion}</span>
-                  <span className="rt-mov__monto">{fmtMoney(m.monto, f.moneda)}</span>
-                  <button type="button" onClick={() => delMov(m.id)} data-testid={`rt-delmov-${m.id}`}><Trash2 size={13} /></button>
+            <section className="rt-ws__full">
+              <div className="rt-ws__sechead">
+                <h3 className="rt-ws__sec">Reservas de esta propiedad</h3>
+                <Button variant="secondary" size="sm" onClick={() => setShowManual(true)} data-testid="rt-manual-open"><UserPlus size={14} /> Reserva manual</Button>
+              </div>
+              <AvisoPendientes reservas={reservas} />
+              {reservas.length === 0 ? <p className="rt-hint">Todavía no hay reservas.</p> : (
+                <div className="rt-res">
+                  {reservas.map((r) => {
+                    const e = displayEstado(r);
+                    return (
+                      <div className="rt-res__row" key={r.id} data-testid={`rt-wsres-${r.id}`}>
+                        <div className="rt-res__main"><strong>{r.huesped.nombre}</strong><span className="rt-res__prop">{r.huesped.telefono} · {r.huesped.huespedes} huésp. · DNI {r.huesped.dni || '—'}</span></div>
+                        <div className="rt-res__dates">{fmtDate(r.checkIn)} → {fmtDate(r.checkOut)} · {r.noches} noches</div>
+                        <div className="rt-res__meta"><span>{fmtMoney(r.montoEstimado, r.moneda)}</span>{r.origen && <span className="rt-res__origin">{r.origen}</span>}<span className={`rt-b ${e.cls}`}>{e.label}</span><ReservaSemaforo reserva={r} /></div>
+                        <div className="rt-res__acts">
+                          {r.estado === 'prereserva' && <>
+                            <button type="button" className="rt-mini rt-mini--ok" onClick={() => setConfirming(r)} data-testid={`rt-wsconfirm-${r.id}`}>Confirmar</button>
+                            <button type="button" className="rt-mini rt-mini--no" onClick={() => setRejecting(r)} data-testid={`rt-wscancel-${r.id}`}>Rechazar</button>
+                          </>}
+                          {r.estado === 'confirmada' && (
+                            <button type="button" className="rt-mini rt-mini--no" onClick={() => setRejecting(r)} data-testid={`rt-wscancel-${r.id}`}>Cancelar</button>
+                          )}
+                          {r.estado === 'confirmada' && <CobrarSena reserva={r} onUpdated={() => pid && loadRes(pid)} />}
+                          <CobrarSaldo reserva={r} onUpdated={() => pid && loadRes(pid)} />
+                          {r.huesped.telefono && <WhatsappReserva reserva={r} />}
+                          <Comprobantes reserva={r} onUpdated={() => pid && loadRes(pid)} />
+                          {(r.estado === 'cancelada' || r.estado === 'finalizada') && (
+                            <button type="button" className="rt-mini rt-mini--del" onClick={() => removeReserva(r.id)} data-testid={`rt-wsdelres-${r.id}`}><Trash2 size={13} /> Eliminar</button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-          )}
-          <p className="rt-hint">Las liquidaciones al propietario se arman en la sección <strong>Liquidaciones</strong> (menú lateral), eligiendo la propiedad y el período.</p>
-        </section>
+              )}
+            </section>
+          </>
+        )
       )}
 
-      {pid && (
-        <section className="rt-ws__full">
-          <div className="rt-ws__sechead">
-            <h3 className="rt-ws__sec">Reservas de esta propiedad</h3>
-            <Button variant="secondary" size="sm" onClick={() => setShowManual(true)} data-testid="rt-manual-open"><UserPlus size={14} /> Reserva manual</Button>
-          </div>
-          <AvisoPendientes reservas={reservas} />
-          {reservas.length === 0 ? <p className="rt-hint">Todavía no hay reservas.</p> : (
-            <div className="rt-res">
-              {reservas.map((r) => {
-                const e = displayEstado(r);
-                return (
-                  <div className="rt-res__row" key={r.id} data-testid={`rt-wsres-${r.id}`}>
-                    <div className="rt-res__main"><strong>{r.huesped.nombre}</strong><span className="rt-res__prop">{r.huesped.telefono} · {r.huesped.huespedes} huésp. · DNI {r.huesped.dni || '—'}</span></div>
-                    <div className="rt-res__dates">{fmtDate(r.checkIn)} → {fmtDate(r.checkOut)} · {r.noches} noches</div>
-                    <div className="rt-res__meta"><span>{fmtMoney(r.montoEstimado, r.moneda)}</span>{r.origen && <span className="rt-res__origin">{r.origen}</span>}<span className={`rt-b ${e.cls}`}>{e.label}</span><ReservaSemaforo reserva={r} /></div>
-                    <div className="rt-res__acts">
-                      {r.estado === 'prereserva' && <>
-                        <button type="button" className="rt-mini rt-mini--ok" onClick={() => setConfirming(r)} data-testid={`rt-wsconfirm-${r.id}`}>Confirmar</button>
-                        <button type="button" className="rt-mini rt-mini--no" onClick={() => setRejecting(r)} data-testid={`rt-wscancel-${r.id}`}>Rechazar</button>
-                      </>}
-                      {r.estado === 'confirmada' && (
-                        <button type="button" className="rt-mini rt-mini--no" onClick={() => setRejecting(r)} data-testid={`rt-wscancel-${r.id}`}>Cancelar</button>
-                      )}
-                      {r.estado === 'confirmada' && <CobrarSena reserva={r} onUpdated={() => pid && loadRes(pid)} />}
-                      <CobrarSaldo reserva={r} onUpdated={() => pid && loadRes(pid)} />
-                      {r.huesped.telefono && <WhatsappReserva reserva={r} />}
-                      <Comprobantes reserva={r} onUpdated={() => pid && loadRes(pid)} />
-                      {(r.estado === 'cancelada' || r.estado === 'finalizada') && (
-                        <button type="button" className="rt-mini rt-mini--del" onClick={() => removeReserva(r.id)} data-testid={`rt-wsdelres-${r.id}`}><Trash2 size={13} /> Eliminar</button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+      {wsTab === 'financiera' && (
+        !pid ? <p className="rt-hint">Guardá la propiedad para cargar la ficha financiera.</p> : (
+          <section className="rt-ws__full">
+            <h3 className="rt-ws__sec">Ficha financiera</h3>
+            <div className="rt-mov__add" data-testid="rt-mov-add">
+              <input type="date" value={nm.fecha} onChange={(e) => setNm((s) => ({ ...s, fecha: e.target.value }))} data-testid="rt-mov-fecha" />
+              <select value={nm.tipo} onChange={(e) => setNm((s) => ({ ...s, tipo: e.target.value }))} data-testid="rt-mov-tipo">
+                {Object.entries(TIPO_MOV).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+              <input type="number" placeholder="Monto" value={nm.monto} onChange={(e) => setNm((s) => ({ ...s, monto: e.target.value }))} data-testid="rt-mov-monto" />
+              <input placeholder="Descripción" value={nm.descripcion} onChange={(e) => setNm((s) => ({ ...s, descripcion: e.target.value }))} data-testid="rt-mov-desc" />
+              <Button variant="secondary" size="sm" onClick={addMov} data-testid="rt-mov-save">Agregar</Button>
             </div>
-          )}
-        </section>
+            {movs.length === 0 ? <p className="rt-hint">Sin movimientos cargados.</p> : (
+              <div className="rt-mov">
+                {movs.map((m) => (
+                  <div className={`rt-mov__row rt-mov__row--${m.tipo}`} key={m.id} data-testid={`rt-mov-${m.id}`}>
+                    <span className="rt-mov__fecha">{fmtDate(m.fecha)}</span>
+                    <span className="rt-mov__tipo">{TIPO_MOV[m.tipo] || m.tipo}</span>
+                    <span className="rt-mov__desc">{m.descripcion}</span>
+                    <span className="rt-mov__monto">{fmtMoney(m.monto, f.moneda)}</span>
+                    <button type="button" onClick={() => delMov(m.id)} data-testid={`rt-delmov-${m.id}`}><Trash2 size={13} /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="rt-hint">Las liquidaciones al propietario se arman en la sección <strong>Liquidaciones</strong> (menú lateral), eligiendo la propiedad y el período.</p>
+          </section>
+        )
       )}
       {confirming && (
         <ConfirmarReserva reserva={confirming} onClose={() => setConfirming(null)}

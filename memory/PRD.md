@@ -1271,3 +1271,12 @@ Dos features pedidas por el usuario. Verificadas E2E (curl + extracción de text
 - **Reserva manual (`ReservaManual.tsx` + `POST /reservations/manual`):** alta de reserva **ya confirmada** para 3 casos: la hiciste vos, la trajo el dueño (voucher), o walk-in en el mostrador. Modelo `ManualReservationBody`: datos del huésped, fechas, montoTotal, seña {monto, tenedor: nosotros|dueno|ninguno, metodo, pagada}. Si `tenedor=dueno` → `pago={estado:pagado, metodo:'dueño', tenedor:'dueno'}` (seña en poder del dueño, nosotros cobramos el saldo). Genera comisión automática (`_gen_comision`) y registra al huésped en Personas (`_register_inquilino`); NO genera link de Mercado Pago. El modal autocompleta el total desde la tarifa (`api.quote`) y muestra resumen Total/Seña/Saldo en vivo. Botón "Reserva manual" en la sección Reservas del `RentalWorkspace`.
 - **`Pago.tenedor`** ('nosotros'|'dueno') agregado al modelo. `CobrarSena.tsx` muestra "Seña en poder del dueño · $X" (sin botones de recibo) cuando `tenedor=dueno`. El semáforo y `saldoPendiente` funcionan igual (seña pagada por el dueño cuenta como paso hecho; el saldo queda para cobrar).
 - Verificado: reserva manual con seña dueño ($720k, seña $216k → saldo $504k), cobro de saldo en efectivo → saldo 0, recibo PDF (HTTP 200, contenido correcto), comisión $72k (10%) generada.
+
+## Ajuste UX Workspace de propiedad por solapas (2026-08)
+`RentalWorkspace.tsx` pasó de un scroll único muy largo a **5 solapas** (estado `wsTab`, default 'datos'): **Datos de la propiedad · Precios · Propietario · Reservas · Ficha financiera**. Verificado por screenshot (cada solapa muestra su contenido, el resto se oculta). Solo reorganización de render; estado del formulario y `save()` sin cambios (Guardar queda en el header y persiste todo desde cualquier solapa).
+- **Datos**: layout 2 columnas — izq: datos de la propiedad + observaciones + condiciones de la reserva; der: fotos.
+- **Precios**: precios/verano/descuentos/comisión/publicada (panel `rt-ws__pane`, max-width 640px).
+- **Propietario**: datos del dueño.
+- **Reservas**: calendario y bloqueos + lista de reservas + botón "Reserva manual" + aviso de pendientes. Badge rojo con cantidad de pre-reservas en la solapa.
+- **Ficha financiera**: movimientos.
+- Solapas Reservas/Financiera muestran hint "Guardá la propiedad…" si es nueva (sin pid). CSS: `.rt-ws__pane`.
