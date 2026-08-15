@@ -1,37 +1,48 @@
-import { FileText, FileSignature, MessageCircle } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, FileSignature } from 'lucide-react';
 import { api, waLink, senaAsegurada, type Reservation } from './api';
+import { DocPreview } from './DocPreview';
 
 const msgDoc = (r: Reservation, tipo: string, url: string) =>
   `Hola ${r.huesped?.nombre || ''}! Te enviamos tu ${tipo} de Inmobiliaria Varela. Podés descargarlo acá: ${url}`;
 
-/** Descarga y envío de documentos: Reserva (al formalizar la seña) y Contrato (para firmar en el ingreso). */
+/** Botones de documentos (Reserva / Contrato) con vista previa, descarga y envío por WhatsApp. */
 export const DocsReserva = ({ reserva }: { reserva: Reservation }) => {
+  const [open, setOpen] = useState<'reserva' | 'contrato' | null>(null);
   const confirmada = ['confirmada', 'encurso', 'finalizada'].includes(reserva.estado);
   if (!confirmada) return null;
   const tel = reserva.huesped?.telefono;
   const reservaUrl = api.documentoReservaUrl(reserva.id);
   const contratoUrl = api.documentoContratoUrl(reserva.id);
+
   return (
     <>
       {senaAsegurada(reserva) && (
-        <>
-          <a className="rt-mini rt-mini--doc" href={reservaUrl} target="_blank" rel="noreferrer" data-testid={`rt-doc-reserva-${reserva.id}`} title="Documento de reserva (PDF)">
-            <FileText size={14} /> Reserva PDF{reserva.nroReserva ? ` N°${reserva.nroReserva}` : ''}
-          </a>
-          {tel && (
-            <a className="rt-mini rt-mini--wa" href={waLink(tel, msgDoc(reserva, 'reserva', reservaUrl))} target="_blank" rel="noreferrer" data-testid={`rt-doc-reserva-wa-${reserva.id}`} title="Enviar reserva por WhatsApp">
-              <MessageCircle size={14} /> Reserva x WhatsApp
-            </a>
-          )}
-        </>
+        <button type="button" className="rt-mini rt-mini--doc" onClick={() => setOpen('reserva')} data-testid={`rt-doc-reserva-${reserva.id}`} title="Ver documento de reserva">
+          <FileText size={14} /> Reserva{reserva.nroReserva ? ` N°${reserva.nroReserva}` : ''}
+        </button>
       )}
-      <a className="rt-mini rt-mini--doc" href={contratoUrl} target="_blank" rel="noreferrer" data-testid={`rt-doc-contrato-${reserva.id}`} title="Contrato de locación (PDF)">
-        <FileSignature size={14} /> Contrato PDF{reserva.nroContrato ? ` N°${reserva.nroContrato}` : ''}
-      </a>
-      {tel && (
-        <a className="rt-mini rt-mini--wa" href={waLink(tel, msgDoc(reserva, 'contrato', contratoUrl))} target="_blank" rel="noreferrer" data-testid={`rt-doc-contrato-wa-${reserva.id}`} title="Enviar contrato por WhatsApp">
-          <MessageCircle size={14} /> Contrato x WhatsApp
-        </a>
+      <button type="button" className="rt-mini rt-mini--doc" onClick={() => setOpen('contrato')} data-testid={`rt-doc-contrato-${reserva.id}`} title="Ver contrato de locación">
+        <FileSignature size={14} /> Contrato{reserva.nroContrato ? ` N°${reserva.nroContrato}` : ''}
+      </button>
+
+      {open === 'reserva' && (
+        <DocPreview
+          title={`Reserva de alquiler${reserva.nroReserva ? ` · N°${reserva.nroReserva}` : ''}`}
+          previewUrl={reservaUrl}
+          downloadUrl={`${reservaUrl}?dl=1`}
+          waHref={tel ? waLink(tel, msgDoc(reserva, 'reserva', reservaUrl)) : undefined}
+          onClose={() => setOpen(null)}
+        />
+      )}
+      {open === 'contrato' && (
+        <DocPreview
+          title={`Contrato de locación${reserva.nroContrato ? ` · N°${reserva.nroContrato}` : ''}`}
+          previewUrl={contratoUrl}
+          downloadUrl={`${contratoUrl}?dl=1`}
+          waHref={tel ? waLink(tel, msgDoc(reserva, 'contrato', contratoUrl)) : undefined}
+          onClose={() => setOpen(null)}
+        />
       )}
     </>
   );

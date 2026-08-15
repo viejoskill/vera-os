@@ -1076,7 +1076,7 @@ def _doc_prop(prop: dict, r: dict) -> dict:
 
 
 @router.get("/reservations/{rid}/documento/reserva")
-async def documento_reserva(rid: str):
+async def documento_reserva(rid: str, dl: int = 0):
     r = await _res().find_one({"_id": rid})
     if not r:
         raise HTTPException(404, "Reserva no encontrada")
@@ -1093,12 +1093,13 @@ async def documento_reserva(rid: str):
         "depositoGarantia": (prop or {}).get("depositoGarantia") or 0, "saldoPendiente": calc["saldoPendiente"],
     }
     pdf = build_reserva_pdf(data)
+    disp = "attachment" if dl else "inline"
     return Response(content=pdf, media_type="application/pdf",
-                    headers={"Content-Disposition": f'attachment; filename="Reserva-{nro}.pdf"'})
+                    headers={"Content-Disposition": f'{disp}; filename="Reserva-{nro}.pdf"'})
 
 
 @router.get("/reservations/{rid}/documento/contrato")
-async def documento_contrato(rid: str):
+async def documento_contrato(rid: str, dl: int = 0):
     r = await _res().find_one({"_id": rid})
     if not r:
         raise HTTPException(404, "Reserva no encontrada")
@@ -1112,8 +1113,9 @@ async def documento_contrato(rid: str):
         "depositoGarantia": (prop or {}).get("depositoGarantia") or 0,
     }
     pdf = build_contrato_pdf(data)
+    disp = "attachment" if dl else "inline"
     return Response(content=pdf, media_type="application/pdf",
-                    headers={"Content-Disposition": f'attachment; filename="Contrato-{nro}.pdf"'})
+                    headers={"Content-Disposition": f'{disp}; filename="Contrato-{nro}.pdf"'})
 
 
 # --------------------- Importar desde el CRM de ventas -------------------- #

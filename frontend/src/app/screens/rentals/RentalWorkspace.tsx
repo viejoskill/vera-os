@@ -42,6 +42,7 @@ export const RentalWorkspace = () => {
   const [confirming, setConfirming] = useState<Reservation | null>(null);
   const [rejecting, setRejecting] = useState<Reservation | null>(null);
   const [showManual, setShowManual] = useState(false);
+  const [manualDates, setManualDates] = useState<{ ci: string; co: string } | null>(null);
   const [wsTab, setWsTab] = useState('datos');
   const [sel, setSel] = useState<{ checkIn: string | null; checkOut: string | null }>({ checkIn: null, checkOut: null });
   const [flash, setFlash] = useState('');
@@ -307,6 +308,7 @@ export const RentalWorkspace = () => {
               {sel.checkIn && sel.checkOut && (
                 <div className="rt-blockbar">
                   <span>{fmtDate(sel.checkIn)} → {fmtDate(sel.checkOut)} ({nightsBetween(sel.checkIn, sel.checkOut)} noches)</span>
+                  <Button variant="primary" size="sm" onClick={() => { setManualDates({ ci: sel.checkIn!, co: sel.checkOut! }); setShowManual(true); }} data-testid="rt-reservar-fechas"><UserPlus size={14} /> Reservar estas fechas</Button>
                   <Button variant="secondary" size="sm" onClick={blockRange} data-testid="rt-block"><CalendarX2 size={14} /> Bloquear estas fechas</Button>
                 </div>
               )}
@@ -327,7 +329,7 @@ export const RentalWorkspace = () => {
             <section className="rt-ws__full">
               <div className="rt-ws__sechead">
                 <h3 className="rt-ws__sec">Reservas de esta propiedad</h3>
-                <Button variant="secondary" size="sm" onClick={() => setShowManual(true)} data-testid="rt-manual-open"><UserPlus size={14} /> Reserva manual</Button>
+                <Button variant="secondary" size="sm" onClick={() => { setManualDates(null); setShowManual(true); }} data-testid="rt-manual-open"><UserPlus size={14} /> Reserva manual</Button>
               </div>
               <AvisoPendientes reservas={reservas} />
               {reservas.length === 0 ? <p className="rt-hint">Todavía no hay reservas.</p> : (
@@ -421,8 +423,10 @@ export const RentalWorkspace = () => {
       {showManual && pid && (
         <ReservaManual
           property={{ ...(f as RentalProperty), id: pid, slug }}
-          onClose={() => setShowManual(false)}
-          onCreated={async () => { setShowManual(false); if (pid) await loadRes(pid); }}
+          initialCheckIn={manualDates?.ci}
+          initialCheckOut={manualDates?.co}
+          onClose={() => { setShowManual(false); setManualDates(null); }}
+          onCreated={async () => { setShowManual(false); setManualDates(null); if (pid) await loadRes(pid); }}
         />
       )}
     </div>

@@ -372,14 +372,14 @@ def pesos_en_letras(n) -> str:
 
 
 # ===== Datos de la inmobiliaria =====
-LOCADOR_NOMBRE = "ADMINISTRACION VARELA"
+LOCADOR_NOMBRE = "INMOBILIARIA VARELA"
 LOCADOR_DOM = "Av. Interbalnearia 162, Costa del Este, Pdo. de la Costa"
-WEB = "www.varelapropiedades.com.ar"
+WHATSAPP = "2257 40 4000"
 
 
 def _doc_header(story, st, titulo: str, numero: str | None = None):
     _brand(story, st)
-    story.append(Paragraph(f"{LOCADOR_NOMBRE} · {LOCADOR_DOM} · {WEB}", st["small"]))
+    story.append(Paragraph(f"{LOCADOR_NOMBRE} · {LOCADOR_DOM} · WhatsApp {WHATSAPP}", st["small"]))
     story.append(Spacer(1, 0.2 * cm))
     story.append(Paragraph(titulo, st["h1"]))
     if numero:
@@ -493,7 +493,7 @@ def build_reserva_pdf(data: dict) -> bytes:
                                 ("TOPPADDING", (0, 1), (-1, 1), 2)]))
     story.append(firmas)
     story.append(Spacer(1, 0.3 * cm))
-    story.append(Paragraph(WEB, st["sub"]))
+    story.append(Paragraph(f"{LOCADOR_NOMBRE} · WhatsApp {WHATSAPP}", st["sub"]))
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=1.8 * cm, bottomMargin=1.8 * cm,
@@ -574,7 +574,7 @@ def build_contrato_pdf(data: dict) -> bytes:
                            "llaves o cerraduras, será responsable de los gastos ocasionados."),
         ("DECIMA SEGUNDA", "EL LOCADOR no será responsable por desperfectos que se produzcan por culpa y/o negligencia de EL LOCATARIO, "
                            "ni por hechos de terceros, ni por daños por robo o hurto que EL LOCATARIO pudiera sufrir."),
-        ("DECIMA TERCERA", "La Administración Varela tomará las medidas necesarias para resolver los imprevistos que surjan en la propiedad "
+        ("DECIMA TERCERA", "INMOBILIARIA VARELA tomará las medidas necesarias para resolver los imprevistos que surjan en la propiedad "
                            "durante la estadía, según los tiempos razonables de las empresas tercerizadas para la resolución del conflicto."),
     ]
     for titulo, texto in clausulas:
@@ -594,7 +594,7 @@ def build_contrato_pdf(data: dict) -> bytes:
                                 ("FONT", (0, 2), (0, 2), "Helvetica", 8)]))
     story.append(firmas)
     story.append(Spacer(1, 0.25 * cm))
-    story.append(Paragraph(WEB, st["sub"]))
+    story.append(Paragraph(f"{LOCADOR_NOMBRE} · WhatsApp {WHATSAPP}", st["sub"]))
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=1.7 * cm, bottomMargin=1.7 * cm,

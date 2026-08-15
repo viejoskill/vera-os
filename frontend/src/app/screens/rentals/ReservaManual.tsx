@@ -4,8 +4,9 @@ import { Button, Input } from '@vera/ui';
 import { api, fmtMoney, nightsBetween, type RentalProperty } from './api';
 
 /** Alta manual de una reserva ya confirmada (dueño reservó / huésped en el mostrador). */
-export const ReservaManual = ({ property, onClose, onCreated }: {
+export const ReservaManual = ({ property, onClose, onCreated, initialCheckIn, initialCheckOut }: {
   property: RentalProperty; onClose: () => void; onCreated: () => void;
+  initialCheckIn?: string; initialCheckOut?: string;
 }) => {
   const mon = property.moneda || 'ARS';
   const [nombre, setNombre] = useState('');
@@ -16,8 +17,8 @@ export const ReservaManual = ({ property, onClose, onCreated }: {
   const [localidad, setLocalidad] = useState('');
   const [huespedes, setHuespedes] = useState('2');
   const [comentario, setComentario] = useState('');
-  const [checkIn, setCheckIn] = useState('');
-  const [checkOut, setCheckOut] = useState('');
+  const [checkIn, setCheckIn] = useState(initialCheckIn || '');
+  const [checkOut, setCheckOut] = useState(initialCheckOut || '');
   const [montoTotal, setMontoTotal] = useState('');
   const [totalTocado, setTotalTocado] = useState(false);
   const [senaTenedor, setSenaTenedor] = useState('nosotros');

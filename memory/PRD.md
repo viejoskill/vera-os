@@ -1310,3 +1310,8 @@ Las 4 mejoras sobre documentos + monto de limpieza editable. Verificado por curl
 - **Monto de limpieza editable:** nuevo campo `limpieza` por propiedad (Condiciones). Se usa en la reserva y en el contrato. Si = 0 → defaults $40.000 (reserva) / $50.000 (contrato).
 - **Logo y membrete en el PDF:** `_doc_header` agrega el membrete bajo el logo Varela: "ADMINISTRACION VARELA · Av. Interbalnearia 162, Costa del Este, Pdo. de la Costa · www.varelapropiedades.com.ar" en ambos documentos.
 - Verificado: limpieza $99.000 y penalidad $333.000 configuradas → aparecen en los PDFs; domicilio+localidad separados; membrete presente.
+
+## Ajustes documentos + vista previa + reserva desde calendario (2026-08)
+- **Membrete actualizado (ambos documentos):** "ADMINISTRACION VARELA" → **"INMOBILIARIA VARELA"** en TODO el contrato (encabezado, LOCADOR en cuerpo y firma). Se quitó la página web. El encabezado ahora muestra: "INMOBILIARIA VARELA · Av. Interbalnearia 162, Costa del Este, Pdo. de la Costa · WhatsApp 2257 40 4000". Verificado por extracción del PDF.
+- **Vista previa de PDF (`DocPreview.tsx`):** los botones "Reserva"/"Contrato" (`DocsReserva`) ahora abren un modal con iframe que muestra el PDF dentro de la app, con botones "Descargar PDF" y "Enviar por WhatsApp". Backend: endpoints de documento sirven `inline` por defecto y `attachment` con `?dl=1` (nuevo query param `dl`).
+- **Reserva manual desde el calendario:** en el calendario (tab Reservas del RentalWorkspace), al seleccionar un rango aparece "Reservar estas fechas" (además de "Bloquear estas fechas") que abre `ReservaManual` con las fechas precargadas (`initialCheckIn`/`initialCheckOut`). El botón "Reserva manual" del header abre el modal sin fechas.
