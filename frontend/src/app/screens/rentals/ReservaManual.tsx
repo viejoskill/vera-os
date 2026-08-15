@@ -12,6 +12,7 @@ export const ReservaManual = ({ property, onClose, onCreated }: {
   const [telefono, setTelefono] = useState('');
   const [email, setEmail] = useState('');
   const [dni, setDni] = useState('');
+  const [domicilio, setDomicilio] = useState('');
   const [huespedes, setHuespedes] = useState('2');
   const [comentario, setComentario] = useState('');
   const [checkIn, setCheckIn] = useState('');
@@ -49,7 +50,7 @@ export const ReservaManual = ({ property, onClose, onCreated }: {
     try {
       await api.createManualReservation({
         propertyId: property.id, nombre, telefono, email, dni,
-        huespedes: Number(huespedes) || 1, comentario,
+        huespedes: Number(huespedes) || 1, comentario, domicilio,
         checkIn, checkOut, montoTotal: total,
         senaMonto: sena, senaTenedor, senaMetodo, senaPagada,
         origen: 'Manual',
@@ -79,6 +80,7 @@ export const ReservaManual = ({ property, onClose, onCreated }: {
           <Input label="DNI" value={dni} onChange={(e) => setDni(e.target.value)} data-testid="rt-manual-dni" />
           <Input label="Huéspedes" type="number" value={huespedes} onChange={(e) => setHuespedes(e.target.value)} data-testid="rt-manual-huespedes" />
         </div>
+        <Input label="Domicilio (para la reserva y el contrato)" value={domicilio} onChange={(e) => setDomicilio(e.target.value)} data-testid="rt-manual-domicilio" />
 
         <h4 className="rt-manual__sec">Estadía</h4>
         <div className="rt-row2">

@@ -9,6 +9,7 @@ import { RechazarReserva } from './RechazarReserva';
 import { WhatsappReserva } from './WhatsappReserva';
 import { Comprobantes } from './Comprobantes';
 import { CobrarSaldo } from './CobrarSaldo';
+import { DocsReserva } from './DocsReserva';
 import { AvisoPendientes } from './AvisoPendientes';
 import { ReservaSemaforo } from './Semaforo';
 import './rentals.css';
@@ -225,6 +226,7 @@ export const AlquileresScreen = () => {
                     {r.huesped.telefono && <WhatsappReserva reserva={r} />}
                     {r.estado === 'confirmada' && <CobrarSena reserva={r} onUpdated={load} />}
                     <CobrarSaldo reserva={r} onUpdated={load} />
+                    <DocsReserva reserva={r} />
                     <Comprobantes reserva={r} onUpdated={load} />
                     {r.estado === 'confirmada' && (
                       <button type="button" className="rt-mini" onClick={() => finalizarReserva(r.id)} data-testid={`rt-finalizar-${r.id}`}>Finalizar</button>

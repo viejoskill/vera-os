@@ -185,6 +185,7 @@ def _res_out(r: dict) -> dict:
         "saldos": [{"id": s["id"], "monto": s.get("monto"), "metodo": s.get("metodo"),
                     "fecha": s.get("fecha"), "comprobanteId": s.get("comprobanteId")} for s in (r.get("saldos") or [])],
         "saldoPendiente": calc["saldoPendiente"], "totalCobrado": calc["totalCobrado"],
+        "nroReserva": r.get("nroReserva"), "nroContrato": r.get("nroContrato"),
     }
 
 
@@ -253,6 +254,7 @@ class ManualReservationBody(BaseModel):
     telefono: str | None = ""
     email: str | None = ""
     dni: str | None = ""
+    domicilio: str | None = ""
     huespedes: int = 1
     comentario: str | None = ""
     checkIn: str
@@ -498,7 +500,7 @@ async def create_manual_reservation(body: ManualReservationBody):
         "noches": q["noches"], "montoEstimado": total, "moneda": moneda, "origen": body.origen,
         "huesped": {
             "nombre": body.nombre, "telefono": body.telefono, "email": body.email,
-            "dni": body.dni, "huespedes": body.huespedes, "comentario": body.comentario,
+            "dni": body.dni, "domicilio": body.domicilio, "huespedes": body.huespedes, "comentario": body.comentario,
         },
         "createdAt": _now(),
     }
@@ -1036,6 +1038,76 @@ async def recibo_saldo(rid: str, sid: str):
         content=pdf, media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="Recibo-saldo-{cod}-{nombre}.pdf"'},
     )
+
+
+async def _next_numero(tipo: str) -> int:
+    """Numeración secuencial por tipo de documento. Contrato arranca después de 3435."""
+    from pymongo import ReturnDocument
+    base = {"contrato": 3435, "reserva": 0}.get(tipo, 0)
+    doc = await _db()["rental_counters"].find_one_and_update(
+        {"_id": tipo}, {"$inc": {"seq": 1}, "$setOnInsert": {"base": base}},
+        upsert=True, return_document=ReturnDocument.AFTER)
+    return int(doc.get("base", base)) + int(doc.get("seq", 0))
+
+
+async def _assign_numero(rid: str, r: dict, campo: str, tipo: str) -> int:
+    if r.get(campo):
+        return r[campo]
+    n = await _next_numero(tipo)
+    await _res().update_one({"_id": rid}, {"$set": {campo: n}})
+    return n
+
+
+def _doc_prop(prop: dict, r: dict) -> dict:
+    prop = prop or {}
+    return {
+        "codigo": prop.get("codigo"), "titulo": r.get("propertyTitulo") or prop.get("titulo"),
+        "direccion": prop.get("direccion"), "localidad": prop.get("localidad"),
+        "checkInHora": prop.get("checkInHora"), "checkOutHora": prop.get("checkOutHora"),
+        "capacidad": prop.get("capacidad"), "aceptaMascotas": prop.get("aceptaMascotas"),
+        "ropaBlanca": prop.get("ropaBlanca"), "tipo": prop.get("tipo"), "dormitorios": prop.get("dormitorios"),
+    }
+
+
+@router.get("/reservations/{rid}/documento/reserva")
+async def documento_reserva(rid: str):
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    prop = await _props().find_one({"_id": r.get("propertyId")})
+    nro = await _assign_numero(rid, r, "nroReserva", "reserva")
+    calc = _pagos_calc(r)
+    pago = r.get("pago") or {}
+    sena = float(pago.get("monto") or 0) if pago.get("estado") == "pagado" else 0.0
+    from rentals_pdf import build_reserva_pdf
+    data = {
+        "nroReserva": nro, "propiedad": _doc_prop(prop, r), "huesped": r.get("huesped") or {},
+        "moneda": r.get("moneda", "ARS"), "checkIn": r.get("checkIn"), "checkOut": r.get("checkOut"),
+        "noches": r.get("noches"), "montoEstimado": r.get("montoEstimado"), "sena": sena,
+        "depositoGarantia": (prop or {}).get("depositoGarantia") or 0, "saldoPendiente": calc["saldoPendiente"],
+    }
+    pdf = build_reserva_pdf(data)
+    return Response(content=pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="Reserva-{nro}.pdf"'})
+
+
+@router.get("/reservations/{rid}/documento/contrato")
+async def documento_contrato(rid: str):
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    prop = await _props().find_one({"_id": r.get("propertyId")})
+    nro = await _assign_numero(rid, r, "nroContrato", "contrato")
+    from rentals_pdf import build_contrato_pdf
+    data = {
+        "nroContrato": nro, "propiedad": _doc_prop(prop, r), "huesped": r.get("huesped") or {},
+        "moneda": r.get("moneda", "ARS"), "checkIn": r.get("checkIn"), "checkOut": r.get("checkOut"),
+        "noches": r.get("noches"), "montoEstimado": r.get("montoEstimado"),
+        "depositoGarantia": (prop or {}).get("depositoGarantia") or 0,
+    }
+    pdf = build_contrato_pdf(data)
+    return Response(content=pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="Contrato-{nro}.pdf"'})
 
 
 # --------------------- Importar desde el CRM de ventas -------------------- #

@@ -53,7 +53,8 @@ export interface Reservation {
   origen?: string; motivo?: string; createdAt?: string; pago?: Pago | null;
   comprobantes?: { id: string; nombre?: string; fecha?: string }[];
   saldos?: SaldoCobro[]; saldoPendiente?: number; totalCobrado?: number;
-  huesped: { nombre?: string; telefono?: string; email?: string; dni?: string; huespedes?: number; comentario?: string };
+  nroReserva?: number | null; nroContrato?: number | null;
+  huesped: { nombre?: string; telefono?: string; email?: string; dni?: string; domicilio?: string; huespedes?: number; comentario?: string };
 }
 
 const json = async (r: Response) => {
@@ -131,6 +132,8 @@ export const api = {
   },
   deleteSaldo: (rid: string, sid: string) => fetch(`${RENTALS_API}/reservations/${rid}/saldos/${sid}`, { method: 'DELETE' }).then(json),
   reciboSaldoUrl: (rid: string, sid: string): string => `${RENTALS_API}/reservations/${rid}/saldos/${sid}/recibo`,
+  documentoReservaUrl: (rid: string): string => `${RENTALS_API}/reservations/${rid}/documento/reserva`,
+  documentoContratoUrl: (rid: string): string => `${RENTALS_API}/reservations/${rid}/documento/contrato`,
   createManualReservation: (body: Record<string, unknown>): Promise<Reservation> =>
     fetch(`${RENTALS_API}/reservations/manual`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(json),
   paymentLink: (rid: string, monto: number, descripcion?: string): Promise<{ initPoint: string; preferenceId: string; monto: number }> =>

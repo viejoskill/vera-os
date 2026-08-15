@@ -10,6 +10,7 @@ import { RechazarReserva } from './RechazarReserva';
 import { WhatsappReserva } from './WhatsappReserva';
 import { Comprobantes } from './Comprobantes';
 import { CobrarSaldo } from './CobrarSaldo';
+import { DocsReserva } from './DocsReserva';
 import { ReservaManual } from './ReservaManual';
 import { ReservaSemaforo } from './Semaforo';
 import { AvisoPendientes } from './AvisoPendientes';
@@ -347,6 +348,7 @@ export const RentalWorkspace = () => {
                           {r.estado === 'confirmada' && <CobrarSena reserva={r} onUpdated={() => pid && loadRes(pid)} />}
                           <CobrarSaldo reserva={r} onUpdated={() => pid && loadRes(pid)} />
                           {r.huesped.telefono && <WhatsappReserva reserva={r} />}
+                          <DocsReserva reserva={r} />
                           <Comprobantes reserva={r} onUpdated={() => pid && loadRes(pid)} />
                           {r.estado === 'confirmada' && (
                             <button type="button" className="rt-mini" onClick={() => finalizarReserva(r.id)} data-testid={`rt-wsfinalizar-${r.id}`}>Finalizar</button>

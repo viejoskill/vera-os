@@ -309,6 +309,8 @@
 
 /* Cobro de seña (Mercado Pago) */
 .rt-mini--pay { border-color: rgba(0,158,227,.55); color: #4ab3e6; }
+.rt-mini--doc { border-color: rgba(150,130,220,.55); color: #b3a0e6; }
+.rt-mini--doc:hover { background: rgba(150,130,220,.12); }
 .rt-mini--pay:hover { background: rgba(0,158,227,.1); }
 .rt-pay { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--vera-color-border); }
 .rt-pay--ok { border-color: rgba(70,160,90,.5); color: #4bbf6b; background: rgba(70,160,90,.1); }
