@@ -379,6 +379,8 @@ WEB = "www.varelapropiedades.com.ar"
 
 def _doc_header(story, st, titulo: str, numero: str | None = None):
     _brand(story, st)
+    story.append(Paragraph(f"{LOCADOR_NOMBRE} · {LOCADOR_DOM} · {WEB}", st["small"]))
+    story.append(Spacer(1, 0.2 * cm))
     story.append(Paragraph(titulo, st["h1"]))
     if numero:
         story.append(Paragraph(numero, st["sub"]))
@@ -411,12 +413,14 @@ def build_reserva_pdf(data: dict) -> bytes:
     _doc_header(story, st, "Reserva de alquiler temporario", f"Reserva N° {nro}" if nro else None)
 
     dom = h.get("domicilio") or ""
+    loc_h = h.get("localidad") or ""
     tel = h.get("telefono") or ""
     email = h.get("email") or ""
+    limpieza = float(prop.get("limpieza") or 0) or 40000
     story.append(Paragraph(
         f"Recibimos del Señor/a <b>{h.get('nombre') or '________'}</b>, DNI N° {_num_or_blank(h.get('dni'))}, "
-        f"con domicilio legal y a todos los efectos en {dom or '________________'}, Tel {tel or '________'} "
-        f"Email {email or '________'}, la suma de PESOS <b>{pesos_en_letras(sena)}</b> ({_fmt(sena, mon)}), "
+        f"con domicilio legal y a todos los efectos en {dom or '________________'} de la localidad de {loc_h or '________'}, "
+        f"Tel {tel or '________'} Email {email or '________'}, la suma de PESOS <b>{pesos_en_letras(sena)}</b> ({_fmt(sena, mon)}), "
         f"en concepto de RESERVA POR ALQUILER TEMPORARIO de la vivienda <b>{prop.get('codigo') or ''}</b> "
         f"ubicada en {prop.get('direccion') or '________'} de la localidad de {prop.get('localidad') or 'COSTA DEL ESTE'}, "
         f"siendo el valor total del mismo la cantidad de PESOS <b>{pesos_en_letras(total)}</b> ({_fmt(total, mon)}) "
@@ -459,7 +463,7 @@ def build_reserva_pdf(data: dict) -> bytes:
         "• Luz: a cargo del Propietario", small))
     story.append(Paragraph(
         "• Limpieza: LA PROPIEDAD SE ENTREGA LIMPIA Y EN ÓPTIMAS CONDICIONES. SI EN LA DEVOLUCIÓN NO SE "
-        "ENCONTRARA EN EL MISMO ESTADO SE COBRARÁ UN ADICIONAL DE $ 40.000 EN CONCEPTO DE LIMPIEZA Y "
+        f"ENCONTRARA EN EL MISMO ESTADO SE COBRARÁ UN ADICIONAL DE {_fmt(limpieza, mon)} EN CONCEPTO DE LIMPIEZA Y "
         "PRODUCTOS DE LIMPIEZA.", small))
     story.append(Paragraph(f"• {ropa}", small))
     story.append(Paragraph(
@@ -510,7 +514,8 @@ def build_contrato_pdf(data: dict) -> bytes:
     total = float(data.get("montoEstimado") or 0)
     deposito = float(data.get("depositoGarantia") or 0)
     noches = int(data.get("noches") or 1) or 1
-    penalidad = round(total / noches)
+    penalidad = float(prop.get("penalidadDiaria") or 0) or round(total / noches)
+    limpieza = float(prop.get("limpieza") or 0) or 50000
     pax = prop.get("capacidad") or "____"
     tipo = prop.get("tipo") or "vivienda"
     dorm = prop.get("dormitorios")
@@ -520,9 +525,11 @@ def build_contrato_pdf(data: dict) -> bytes:
     _doc_header(story, st, "Contrato de locación temporaria", f"CONTRATO N° {nro}" if nro else None)
 
     dom = h.get("domicilio") or "________________"
+    loc_h = h.get("localidad") or ""
+    dom_full = f"{dom}" + (f", {loc_h}" if loc_h else "")
     story.append(Paragraph(
         f"Entre <b>{LOCADOR_NOMBRE}</b>, con domicilio en {LOCADOR_DOM}, en adelante EL LOCADOR, y el Señor/a "
-        f"<b>{h.get('nombre') or '________'}</b>, DNI N° {_num_or_blank(h.get('dni'))}, con domicilio en {dom}, "
+        f"<b>{h.get('nombre') or '________'}</b>, DNI N° {_num_or_blank(h.get('dni'))}, con domicilio en {dom_full}, "
         "en adelante EL LOCATARIO, convienen en celebrar el presente CONTRATO DE LOCACIÓN TEMPORARIA CON FINES "
         "DE VERANEO, TURISMO Y ESPARCIMIENTO, que se regirá por las siguientes cláusulas.", just))
 
@@ -543,7 +550,7 @@ def build_contrato_pdf(data: dict) -> bytes:
         ("CUARTA", f"EL LOCADOR entrega la propiedad en perfecto estado de uso y conservación, con todos sus ambientes limpios. "
                    f"EL LOCATARIO se obliga a devolverla en el mismo estado, salvo el desgaste natural del buen uso. Al finalizar, "
                    f"se realizará una revisión de la propiedad y del mobiliario; lo faltante o deteriorado deberá reponerse o abonarse "
-                   f"a precio de plaza, abonando además la suma de $ 50.000 por la limpieza si no se encontrara en perfecto estado. "
+                   f"a precio de plaza, abonando además la suma de {_fmt(limpieza, mon)} por la limpieza si no se encontrara en perfecto estado. "
                    f"En garantía del fiel cumplimiento, EL LOCATARIO deposita en la Oficina interviniente la suma de {_fmt(deposito, mon)}, "
                    "importe que será devuelto al finalizar el contrato una vez abonadas las facturas pendientes (si las hubiere). "
                    "El depósito se devuelve en la misma moneda e importe entregados al ingreso."),

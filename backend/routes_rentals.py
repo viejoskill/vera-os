@@ -115,6 +115,8 @@ def _prop_out(p: dict, public: bool = False) -> dict:
         "ropaBlanca": p.get("ropaBlanca", False),
         "aceptaMascotas": p.get("aceptaMascotas", False),
         "depositoGarantia": p.get("depositoGarantia", 0),
+        "penalidadDiaria": p.get("penalidadDiaria", 0),
+        "limpieza": p.get("limpieza", 0),
         "checkInHora": p.get("checkInHora", ""),
         "checkOutHora": p.get("checkOutHora", ""),
         "estadiaMinima": p.get("estadiaMinima", 0),
@@ -220,6 +222,8 @@ class PropertyBody(BaseModel):
     ropaBlanca: bool = False
     aceptaMascotas: bool = False
     depositoGarantia: float = 0
+    penalidadDiaria: float = 0
+    limpieza: float = 0
     checkInHora: str | None = ""
     checkOutHora: str | None = ""
     estadiaMinima: int = 0
@@ -255,6 +259,7 @@ class ManualReservationBody(BaseModel):
     email: str | None = ""
     dni: str | None = ""
     domicilio: str | None = ""
+    localidad: str | None = ""
     huespedes: int = 1
     comentario: str | None = ""
     checkIn: str
@@ -500,7 +505,7 @@ async def create_manual_reservation(body: ManualReservationBody):
         "noches": q["noches"], "montoEstimado": total, "moneda": moneda, "origen": body.origen,
         "huesped": {
             "nombre": body.nombre, "telefono": body.telefono, "email": body.email,
-            "dni": body.dni, "domicilio": body.domicilio, "huespedes": body.huespedes, "comentario": body.comentario,
+            "dni": body.dni, "domicilio": body.domicilio, "localidad": body.localidad, "huespedes": body.huespedes, "comentario": body.comentario,
         },
         "createdAt": _now(),
     }
@@ -1066,6 +1071,7 @@ def _doc_prop(prop: dict, r: dict) -> dict:
         "checkInHora": prop.get("checkInHora"), "checkOutHora": prop.get("checkOutHora"),
         "capacidad": prop.get("capacidad"), "aceptaMascotas": prop.get("aceptaMascotas"),
         "ropaBlanca": prop.get("ropaBlanca"), "tipo": prop.get("tipo"), "dormitorios": prop.get("dormitorios"),
+        "penalidadDiaria": prop.get("penalidadDiaria") or 0, "limpieza": prop.get("limpieza") or 0,
     }
 
 

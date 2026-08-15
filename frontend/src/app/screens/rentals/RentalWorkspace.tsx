@@ -223,12 +223,14 @@ export const RentalWorkspace = () => {
             <div className="rt-row3">
               <MoneyInput label="Depósito en garantía" prefix={f.moneda === 'USD' ? 'USD' : '$'} value={f.depositoGarantia} onChange={(n) => set('depositoGarantia', n)} testId="rt-deposito" />
               <Input label="Estadía mínima (noches)" type="number" value={String(f.estadiaMinima ?? '')} onChange={(e) => set('estadiaMinima', Number(e.target.value))} data-testid="rt-estadia-min" />
-              <div />
+              <MoneyInput label="Adicional limpieza" prefix={f.moneda === 'USD' ? 'USD' : '$'} value={f.limpieza} onChange={(n) => set('limpieza', n)} testId="rt-limpieza" />
             </div>
-            <div className="rt-row2">
+            <div className="rt-row3">
               <Input label="Check-in (horario)" value={f.checkInHora || ''} onChange={(e) => set('checkInHora', e.target.value)} data-testid="rt-checkin-hora" />
               <Input label="Check-out (horario)" value={f.checkOutHora || ''} onChange={(e) => set('checkOutHora', e.target.value)} data-testid="rt-checkout-hora" />
+              <MoneyInput label="Penalidad diaria (contrato)" prefix={f.moneda === 'USD' ? 'USD' : '$'} value={f.penalidadDiaria} onChange={(n) => set('penalidadDiaria', n)} testId="rt-penalidad" />
             </div>
+            <p className="rt-hint">La limpieza y la penalidad diaria se usan en el documento de reserva y en el contrato. Si las dejás en cero, se usan valores por defecto ($40.000 / $50.000 limpieza y una noche de penalidad).</p>
             <label className="rt-field"><span>Cláusulas propias (una por línea)</span>
               <textarea rows={3} value={condText} onChange={(e) => setCondText(e.target.value)} placeholder={'No se permiten fiestas\nSolo grupos familiares\nProhibido fumar'} data-testid="rt-condiciones" /></label>
           </section>

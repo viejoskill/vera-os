@@ -12,6 +12,7 @@ export interface RentalProperty {
   comisionPct?: number; comisionMinima?: number; notas?: string;
   propietario?: { nombre?: string; telefono?: string; email?: string; dni?: string; observaciones?: string };
   ropaBlanca?: boolean; aceptaMascotas?: boolean; depositoGarantia?: number;
+  penalidadDiaria?: number; limpieza?: number;
   checkInHora?: string; checkOutHora?: string; estadiaMinima?: number; condiciones?: string[];
   ocupados?: Occupied[]; descuentos?: { semana: number; quincena: number; mes: number };
 }
@@ -54,7 +55,7 @@ export interface Reservation {
   comprobantes?: { id: string; nombre?: string; fecha?: string }[];
   saldos?: SaldoCobro[]; saldoPendiente?: number; totalCobrado?: number;
   nroReserva?: number | null; nroContrato?: number | null;
-  huesped: { nombre?: string; telefono?: string; email?: string; dni?: string; domicilio?: string; huespedes?: number; comentario?: string };
+  huesped: { nombre?: string; telefono?: string; email?: string; dni?: string; domicilio?: string; localidad?: string; huespedes?: number; comentario?: string };
 }
 
 const json = async (r: Response) => {

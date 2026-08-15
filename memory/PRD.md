@@ -1301,3 +1301,12 @@ Dos documentos legales generados en PDF a partir de la reserva, con numeración 
 - **Conversor a letras:** `pesos_en_letras()` en rentals_pdf.py (enteros, español). Verificado (1.225.000 → "UN MILLON DOSCIENTOS VEINTICINCO MIL").
 - **Endpoints:** `GET /reservations/{rid}/documento/reserva` y `.../documento/contrato`. Front: `DocsReserva.tsx` (botones "Reserva PDF N°x" / "Contrato PDF N°x") en las acciones de la reserva (AlquileresScreen + RentalWorkspace). Se agregó `domicilio` al huésped y al alta manual (`ReservaManual`), para completar los documentos.
 - Montos de limpieza ($40.000 reserva / $50.000 contrato) hardcodeados según los modelos del usuario; base de numeración de contrato = 3435. Ajustables si el usuario lo pide.
+
+## Implemented (Sprint "Docs v2: config + envío + membrete" — 2026-08)
+Las 4 mejoras sobre documentos + monto de limpieza editable. Verificado por curl + extracción de PDFs + screenshot. `tsc` limpio, datos de prueba reseteados.
+- **Domicilio y localidad separados:** `huesped.domicilio` + `huesped.localidad`. Campos separados en el alta manual (`ReservaManual`). Aparecen separados en Reserva ("...en {domicilio} de la localidad de {localidad}") y en el Contrato.
+- **Enviar Reserva/Contrato por WhatsApp:** `DocsReserva.tsx` suma botones "Reserva x WhatsApp" y "Contrato x WhatsApp" (click-to-send con `waLink`, mensaje con la URL absoluta del PDF, público por GET).
+- **Depósito y penalidad configurables por propiedad:** `PropertyBody`/`_prop_out` + form (tab Datos → Condiciones): `depositoGarantia` (ya existía) + nuevo `penalidadDiaria` (cláusula PRIMERA del contrato). Si penalidad = 0 → default: una noche (montoEstimado/noches).
+- **Monto de limpieza editable:** nuevo campo `limpieza` por propiedad (Condiciones). Se usa en la reserva y en el contrato. Si = 0 → defaults $40.000 (reserva) / $50.000 (contrato).
+- **Logo y membrete en el PDF:** `_doc_header` agrega el membrete bajo el logo Varela: "ADMINISTRACION VARELA · Av. Interbalnearia 162, Costa del Este, Pdo. de la Costa · www.varelapropiedades.com.ar" en ambos documentos.
+- Verificado: limpieza $99.000 y penalidad $333.000 configuradas → aparecen en los PDFs; domicilio+localidad separados; membrete presente.
