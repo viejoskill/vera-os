@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Wallet, X, Check, Trash2, Paperclip, FileDown } from 'lucide-react';
 import { Button } from '@vera/ui';
-import { api, fmtMoney, fmtDate, saldoPendiente, senaAsegurada, type Reservation } from './api';
+import { api, fmtMoney, fmtDate, waLink, saldoPendiente, senaAsegurada, type Reservation } from './api';
+import { DocPreview } from './DocPreview';
 
 const METODO_LABEL: Record<string, string> = {
   transferencia: 'Transferencia', efectivo: 'Efectivo', otro: 'Otro',
@@ -10,17 +11,19 @@ const METODO_LABEL: Record<string, string> = {
 /** Cobro de saldo: se muestra recién cuando la seña está asegurada (confirmada + seña pagada). */
 export const CobrarSaldo = ({ reserva, onUpdated }: { reserva: Reservation; onUpdated?: () => void }) => {
   const [open, setOpen] = useState(false);
+  const [reciboSid, setReciboSid] = useState<string | null>(null);
   if (!senaAsegurada(reserva)) return null;
 
   const pend = saldoPendiente(reserva);
   const saldos = reserva.saldos || [];
+  const tel = reserva.huesped?.telefono;
 
   const lista = saldos.length > 0 && (
     <span className="rt-saldo__list" data-testid={`rt-saldo-list-${reserva.id}`}>
       {saldos.map((s) => (
         <span key={s.id} className="rt-saldo__chip" data-testid={`rt-saldo-item-${s.id}`}>
           {fmtMoney(s.monto, reserva.moneda)} · {METODO_LABEL[s.metodo] || s.metodo}{s.fecha ? ` · ${fmtDate(s.fecha)}` : ''}
-          <a className="rt-saldo__ic" href={api.reciboSaldoUrl(reserva.id, s.id)} target="_blank" rel="noreferrer" title="Recibo PDF" data-testid={`rt-saldo-recibo-${s.id}`}><FileDown size={12} /></a>
+          <button type="button" className="rt-saldo__ic" onClick={() => setReciboSid(s.id)} title="Ver recibo" data-testid={`rt-saldo-recibo-${s.id}`}><FileDown size={12} /></button>
           {s.comprobanteId && (
             <a className="rt-saldo__ic" href={api.comprobanteItemUrl(reserva.id, s.comprobanteId)} target="_blank" rel="noreferrer" title="Ver comprobante" data-testid={`rt-saldo-comp-${s.id}`}><Paperclip size={12} /></a>
           )}
@@ -47,6 +50,15 @@ export const CobrarSaldo = ({ reserva, onUpdated }: { reserva: Reservation; onUp
         </>
       )}
       {lista}
+      {reciboSid && (
+        <DocPreview
+          title="Recibo de saldo"
+          previewUrl={api.reciboSaldoUrl(reserva.id, reciboSid)}
+          downloadUrl={`${api.reciboSaldoUrl(reserva.id, reciboSid)}?dl=1`}
+          waHref={tel ? waLink(tel, `Hola ${reserva.huesped?.nombre || ''}! Te enviamos el recibo de tu pago de saldo (Inmobiliaria Varela): ${api.reciboSaldoUrl(reserva.id, reciboSid)}`) : undefined}
+          onClose={() => setReciboSid(null)}
+        />
+      )}
       {open && (
         <SaldoModal
           reserva={reserva}

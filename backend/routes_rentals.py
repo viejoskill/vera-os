@@ -775,7 +775,7 @@ async def get_reservation(rid: str):
 
 
 @router.get("/reservations/{rid}/recibo-sena")
-async def recibo_sena(rid: str):
+async def recibo_sena(rid: str, dl: int = 0):
     r = await _res().find_one({"_id": rid})
     if not r:
         raise HTTPException(404, "Reserva no encontrada")
@@ -793,9 +793,10 @@ async def recibo_sena(rid: str):
     pdf = build_recibo_sena_pdf(data)
     cod = data["propiedad"].get("codigo") or "reserva"
     nombre = (r.get("huesped") or {}).get("nombre", "huesped").split(" ")[0]
+    disp = "attachment" if dl else "inline"
     return Response(
         content=pdf, media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="Recibo-sena-{cod}-{nombre}.pdf"'},
+        headers={"Content-Disposition": f'{disp}; filename="Recibo-sena-{cod}-{nombre}.pdf"'},
     )
 
 
@@ -1019,7 +1020,7 @@ async def delete_saldo(rid: str, sid: str):
 
 
 @router.get("/reservations/{rid}/saldos/{sid}/recibo")
-async def recibo_saldo(rid: str, sid: str):
+async def recibo_saldo(rid: str, sid: str, dl: int = 0):
     r = await _res().find_one({"_id": rid})
     if not r:
         raise HTTPException(404, "Reserva no encontrada")
@@ -1039,9 +1040,10 @@ async def recibo_saldo(rid: str, sid: str):
     pdf = build_recibo_saldo_pdf(data)
     cod = data["propiedad"].get("codigo") or "reserva"
     nombre = (r.get("huesped") or {}).get("nombre", "huesped").split(" ")[0]
+    disp = "attachment" if dl else "inline"
     return Response(
         content=pdf, media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="Recibo-saldo-{cod}-{nombre}.pdf"'},
+        headers={"Content-Disposition": f'{disp}; filename="Recibo-saldo-{cod}-{nombre}.pdf"'},
     )
 
 

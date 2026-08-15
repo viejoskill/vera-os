@@ -340,7 +340,7 @@ export const RentalWorkspace = () => {
                       <div className="rt-res__row" key={r.id} data-testid={`rt-wsres-${r.id}`}>
                         <div className="rt-res__main"><strong>{r.huesped.nombre}</strong><span className="rt-res__prop">{r.huesped.telefono} · {r.huesped.huespedes} huésp. · DNI {r.huesped.dni || '—'}</span></div>
                         <div className="rt-res__dates">{fmtDate(r.checkIn)} → {fmtDate(r.checkOut)} · {r.noches} noches</div>
-                        <div className="rt-res__meta"><span>{fmtMoney(r.montoEstimado, r.moneda)}</span>{r.origen && <span className="rt-res__origin">{r.origen}</span>}<span className={`rt-b ${e.cls}`}>{e.label}</span><ReservaSemaforo reserva={r} /></div>
+                        <div className="rt-res__meta"><span className="rt-res__monto">{fmtMoney(r.montoEstimado, r.moneda)}</span>{r.origen && <span className="rt-res__origin">{r.origen}</span>}<span className={`rt-b ${e.cls}`}>{e.label}</span><ReservaSemaforo reserva={r} /></div>
                         <div className="rt-res__acts">
                           {r.estado === 'prereserva' && <>
                             <button type="button" className="rt-mini rt-mini--ok" onClick={() => setConfirming(r)} data-testid={`rt-wsconfirm-${r.id}`}>Confirmar</button>

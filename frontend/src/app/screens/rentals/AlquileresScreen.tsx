@@ -208,7 +208,7 @@ export const AlquileresScreen = () => {
                   </div>
                   <div className="rt-res__dates">{fmtDate(r.checkIn)} → {fmtDate(r.checkOut)} · {r.noches} noches</div>
                   <div className="rt-res__meta">
-                    <span>{fmtMoney(r.montoEstimado, r.moneda)}</span>
+                    <span className="rt-res__monto">{fmtMoney(r.montoEstimado, r.moneda)}</span>
                     {r.origen && <span className="rt-res__origin">{r.origen}</span>}
                     <Badge reserva={r} />
                     <ReservaSemaforo reserva={r} />

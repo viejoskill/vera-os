@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CreditCard, Copy, Check, ExternalLink, RefreshCw, X, FileDown, RefreshCcw, BadgeCheck, Paperclip, MessageCircle } from 'lucide-react';
 import { Button } from '@vera/ui';
 import { api, fmtMoney, waLink, mensajeRecibo, type Reservation } from './api';
+import { DocPreview } from './DocPreview';
 
 export const CobrarSena = ({ reserva, onUpdated }: { reserva: Reservation; onUpdated?: () => void }) => {
   const pago = reserva.pago;
@@ -14,6 +15,7 @@ export const CobrarSena = ({ reserva, onUpdated }: { reserva: Reservation; onUpd
   const [copied, setCopied] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
+  const [reciboOpen, setReciboOpen] = useState(false);
 
   const generar = async () => {
     const n = Number(monto);
@@ -53,9 +55,15 @@ export const CobrarSena = ({ reserva, onUpdated }: { reserva: Reservation; onUpd
           <Check size={13} /> Seña pagada · {fmtMoney(pago.monto || 0, 'ARS')}{pago.metodo && pago.metodo !== 'mercadopago' ? ` (${pago.metodo})` : ''}
           {pago.comprobante && <a className="rt-pay__ic" href={api.comprobanteUrl(reserva.id)} target="_blank" rel="noreferrer" title="Ver comprobante" data-testid={`rt-comprobante-${reserva.id}`}><Paperclip size={13} /></a>}
         </span>
-        <a className="rt-mini rt-mini--pay" href={api.reciboSenaUrl(reserva.id)} target="_blank" rel="noreferrer" data-testid={`rt-recibo-${reserva.id}`}><FileDown size={14} /> Recibo PDF</a>
-        {reserva.huesped?.telefono && (
-          <a className="rt-mini rt-mini--wa" href={waLink(reserva.huesped.telefono, mensajeRecibo(reserva, api.reciboSenaUrl(reserva.id)))} target="_blank" rel="noreferrer" data-testid={`rt-recibo-wa-${reserva.id}`}><MessageCircle size={14} /> Recibo x WhatsApp</a>
+        <button type="button" className="rt-mini rt-mini--doc" onClick={() => setReciboOpen(true)} data-testid={`rt-recibo-${reserva.id}`}><FileDown size={14} /> Recibo seña</button>
+        {reciboOpen && (
+          <DocPreview
+            title="Recibo de seña"
+            previewUrl={api.reciboSenaUrl(reserva.id)}
+            downloadUrl={`${api.reciboSenaUrl(reserva.id)}?dl=1`}
+            waHref={reserva.huesped?.telefono ? waLink(reserva.huesped.telefono, mensajeRecibo(reserva, api.reciboSenaUrl(reserva.id))) : undefined}
+            onClose={() => setReciboOpen(false)}
+          />
         )}
       </>
     );
