@@ -34,6 +34,7 @@ import { DocumentacionSection } from './DocumentacionSection';
 import { ExpressSection } from './ExpressSection';
 import { StatsSection } from './StatsSection';
 import { HealthScoreSection } from './HealthScoreSection';
+import { SaleCommissionSection } from './SaleCommissionSection';
 
 interface ToastState {
   message: string;
@@ -440,6 +441,14 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
               </button>
             ))}
           </div>
+        )}
+
+        {!isNew && detail && (currentStatus === 'reserved' || currentStatus === 'sold') && (
+          <SaleCommissionSection
+            propertyId={propertyId}
+            propertyLabel={[detail.code, detail.title].filter(Boolean).join(' · ')}
+            status={currentStatus}
+          />
         )}
 
         <div className="vera-workspace__progress" data-testid="workspace-progress">

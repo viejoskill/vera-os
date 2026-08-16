@@ -151,3 +151,12 @@ Verificado 100% (iteration_40): backend 7/7 pytest (`test_documents_sprint4_5.py
 - Frontend Contabilidad: panel naranja "X en comisiones de venta por confirmar" bajo las tarjetas (`.cont__pending`). Las confirmadas aparecen en la tabla como ingreso "Comisión venta" (origen venta, no borrable desde ahí).
 - Decisiones usuario: 1a (cargar desde Operaciones), 2a (naranja no suma, se muestra aparte), 3 (verde al ganar / descartar al perder).
 - Verificado E2E: backend curl (reserva→pendiente sin sumar, ganada→suma US$5000, perdida→descarta) + UI (cargar comisión desde tarjeta, chip naranja, panel "por confirmar" en Contabilidad). Datos de prueba eliminados, admin QA revertido.
+
+## 2026-06-16 · Comisión de venta: RE-anclada a la PROPIEDAD (corrección de rumbo)
+- Motivo: el usuario reportó que Operaciones (leads/oportunidades) está en cero — su pipeline de eventos no se alimenta de acciones reales. La comisión enganchada a oportunidades no servía.
+- Nuevo anclaje: la comisión de venta se guarda por `propertyId` (propiedad de venta en Propiedades/Supabase) y su estado se deriva del `status` de la propiedad: `sold`→confirmada (verde, suma en Contabilidad), `reserved`→reserva (naranja, "por confirmar", no suma), otro→descartada (se borra).
+- Backend `routes_contabilidad.py`: `venta_comisiones` re-keyed por propertyId. Endpoints `GET /ventas`, `GET /ventas/by-property/{id}`, `POST /ventas` (upsert por propertyId), `DELETE /ventas/by-property/{id}`. Resumen mira el status vía `property_repository` (mapa una sola vez); fija `fechaConfirmada` la primera vez que se ve vendida.
+- Frontend: nuevo `SaleCommissionSection.tsx` en la ficha de propiedad (PropertyWorkspace), debajo de la barra de estado, visible cuando Reservada/Vendida. Chip naranja/verde + cargar/editar/quitar. Estilos `.vera-salecom*` en index.css.
+- Revertido: se quitó la UI de comisión de OperacionesScreen y el hook de sincronización en routes_core.py.
+- Verificado E2E con datos reales: propiedad reservada VAR-517024 → pendiente US$6000 (no suma); propiedad vendida VAR-432272 → ingreso US$9000 (suma como "Comisión venta"). Screenshot de la ficha con el panel naranja. Datos de prueba eliminados, admin QA revertido.
+- ⚠️ El usuario ve la app DESPLEGADA (veraosvarela.com); debe REDEPLOYAR para tener este cambio.

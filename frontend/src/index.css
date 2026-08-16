@@ -7174,21 +7174,27 @@ p {
 .vera-ops__dot-sep { opacity: .5; }
 .vera-ops__card-btn { align-self: flex-start; padding-left: 0 !important; color: var(--vera-color-primary) !important; }
 
-/* Comisión de venta en la tarjeta de oportunidad */
-.vera-ops__com { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; padding-top: 6px; border-top: 1px dashed var(--vera-color-border); }
-.vera-ops__com-chip { display: inline-flex; align-items: center; gap: 5px; font-size: .72rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
-.vera-ops__com-chip--reserva { background: rgba(224,150,40,.16); color: #e0962a; border: 1px solid rgba(224,150,40,.4); }
-.vera-ops__com-chip--confirmada { background: rgba(70,160,90,.18); color: #4bbf6b; border: 1px solid rgba(70,160,90,.4); }
-.vera-ops__com-add { display: inline-flex; align-items: center; gap: 5px; background: none; border: 1px dashed rgba(224,150,40,.5); color: #e0962a; font: inherit; font-size: .72rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; cursor: pointer; transition: background-color .15s ease; }
-.vera-ops__com-add:hover { background: rgba(224,150,40,.1); }
-.vera-ops__com-edit, .vera-ops__com-del { background: none; border: none; color: var(--vera-color-text-secondary); cursor: pointer; padding: 2px; display: inline-flex; opacity: .6; }
-.vera-ops__com-edit:hover, .vera-ops__com-del:hover { opacity: 1; }
-.vera-ops__com-form { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--vera-color-border); }
-.vera-ops__com-form select, .vera-ops__com-form input { background: var(--vera-color-bg); border: 1px solid var(--vera-color-border); color: var(--vera-color-text); border-radius: 7px; padding: 5px 7px; font: inherit; font-size: .74rem; }
-.vera-ops__com-form input { width: 92px; }
-.vera-ops__com-form select { width: 66px; }
-.vera-ops__com-save { background: var(--vera-color-primary); border: none; color: #1c1c1e; font-weight: 700; font-size: .72rem; padding: 5px 10px; border-radius: 7px; cursor: pointer; }
-.vera-ops__com-cancel { background: none; border: none; color: var(--vera-color-text-secondary); cursor: pointer; font-size: .72rem; }
+/* Comisión de la venta en la ficha de la propiedad */
+.vera-salecom { border: 1px solid; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
+.vera-salecom--reserved { background: rgba(224,150,40,.08); border-color: rgba(224,150,40,.35); }
+.vera-salecom--sold { background: rgba(70,160,90,.08); border-color: rgba(70,160,90,.35); }
+.vera-salecom__head { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: .92rem; margin-bottom: 10px; }
+.vera-salecom--reserved .vera-salecom__head { color: #e0962a; }
+.vera-salecom--sold .vera-salecom__head { color: #4bbf6b; }
+.vera-salecom__body { display: flex; flex-direction: column; gap: 8px; }
+.vera-salecom__chip { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; font-weight: 700; padding: 4px 12px; border-radius: 999px; }
+.vera-salecom__chip--reserved { background: rgba(224,150,40,.16); color: #e0962a; }
+.vera-salecom__chip--sold { background: rgba(70,160,90,.18); color: #4bbf6b; }
+.vera-salecom__note { font-size: .8rem; color: var(--vera-color-text-secondary); margin: 0; }
+.vera-salecom__actions { display: flex; gap: 8px; }
+.vera-salecom__mini { display: inline-flex; align-items: center; gap: 5px; background: none; border: 1px solid var(--vera-color-border); color: var(--vera-color-text-secondary); font: inherit; font-size: .78rem; padding: 5px 11px; border-radius: 8px; cursor: pointer; }
+.vera-salecom__mini:hover { color: var(--vera-color-text); }
+.vera-salecom__mini--del:hover { color: #e07575; border-color: rgba(200,80,80,.4); }
+.vera-salecom__form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.vera-salecom__form select, .vera-salecom__form input { background: var(--vera-color-bg); border: 1px solid var(--vera-color-border); color: var(--vera-color-text); border-radius: 8px; padding: 7px 10px; font: inherit; font-size: .84rem; }
+.vera-salecom__form select { width: 80px; }
+.vera-salecom__form input { flex: 1; min-width: 160px; }
+.vera-salecom__save { display: inline-flex; align-items: center; gap: 6px; background: var(--vera-color-primary); border: none; color: #1c1c1e; font-weight: 700; font-size: .82rem; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
 
 
 .vera-ops__stage { display: flex; flex-direction: column; gap: 6px; }

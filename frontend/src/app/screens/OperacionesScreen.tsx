@@ -1,16 +1,13 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Users, Flame, GitBranch, CheckSquare, MessageCircle, RefreshCw,
-  ArrowRight, Check, Building2, Clock, DollarSign, Pencil, Trash2, Plus,
+  ArrowRight, Check, Building2, Clock,
 } from 'lucide-react';
 import { env } from '@vera/config';
 import { Button, Badge } from '@vera/ui';
 
 const API = `${env.backendUrl}/api/core`;
-const CONTA = `${env.backendUrl}/api/contabilidad`;
-const fmtM = (n: number, m = 'USD') => `${m === 'USD' ? 'US$' : '$'} ${Math.round(n || 0).toLocaleString('es-AR')}`;
 const getJson = async (path: string) => {
   const r = await fetch(`${API}${path}`);
   if (!r.ok) throw new Error(`${path} ${r.status}`);
@@ -22,55 +19,6 @@ interface Opp { id: string; personId: string; personName: string; propertyId: st
 interface Task { id: string; personId: string; personName: string; title: string; type: string; propertyLabel: string; }
 interface Activity { id: string; at: string; type: string; label: string; personId: string | null; personName: string; source: string; }
 interface Kpis { personas: number; leadsActivos: number; oportunidadesAbiertas: number; tareasPendientes: number; conversacionesHoy: number; }
-interface Venta { id: string; personId: string; propertyId: string; moneda: string; monto: number; estado: string; }
-
-/** Comisión de venta enganchada a una oportunidad. Naranja mientras está reservada,
- * verde cuando la oportunidad se gana. Sólo se muestra desde la etapa "Reserva". */
-const OppCommission = ({ opp, venta, onSave, onDelete }: {
-  opp: Opp; venta?: Venta;
-  onSave: (opp: Opp, data: { moneda: string; monto: number }) => void;
-  onDelete: (v: Venta) => void;
-}) => {
-  const [editing, setEditing] = useState(false);
-  const [moneda, setMoneda] = useState(venta?.moneda || 'USD');
-  const [monto, setMonto] = useState(venta ? String(venta.monto) : '');
-  const show = opp.stage === 'reserva' || opp.stage === 'ganada';
-  if (!show && !venta) return null;
-  const save = () => { if (!monto) return; onSave(opp, { moneda, monto: Number(monto) }); setEditing(false); };
-
-  if (editing) {
-    return (
-      <div className="vera-ops__com-form" data-testid={`opp-com-form-${opp.id}`}>
-        <select value={moneda} onChange={(e) => setMoneda(e.target.value)} data-testid={`opp-com-moneda-${opp.id}`}>
-          <option value="USD">USD</option><option value="ARS">ARS</option>
-        </select>
-        <input type="number" placeholder="Comisión" value={monto} autoFocus onChange={(e) => setMonto(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false); }} data-testid={`opp-com-monto-${opp.id}`} />
-        <button type="button" className="vera-ops__com-save" onClick={save} data-testid={`opp-com-save-${opp.id}`}>Guardar</button>
-        <button type="button" className="vera-ops__com-cancel" onClick={() => setEditing(false)}>Cancelar</button>
-      </div>
-    );
-  }
-  if (venta) {
-    const conf = venta.estado === 'confirmada';
-    return (
-      <div className="vera-ops__com">
-        <span className={`vera-ops__com-chip vera-ops__com-chip--${conf ? 'confirmada' : 'reserva'}`} data-testid={`opp-com-chip-${opp.id}`}>
-          <DollarSign size={12} /> {fmtM(venta.monto, venta.moneda)} · {conf ? 'confirmada' : 'reservada'}
-        </span>
-        <button type="button" className="vera-ops__com-edit" onClick={() => setEditing(true)} data-testid={`opp-com-edit-${opp.id}`}><Pencil size={12} /></button>
-        <button type="button" className="vera-ops__com-del" onClick={() => onDelete(venta)} data-testid={`opp-com-del-${opp.id}`}><Trash2 size={12} /></button>
-      </div>
-    );
-  }
-  return (
-    <div className="vera-ops__com">
-      <button type="button" className="vera-ops__com-add" onClick={() => setEditing(true)} data-testid={`opp-com-add-${opp.id}`}>
-        <Plus size={12} /> Cargar comisión
-      </button>
-    </div>
-  );
-};
 
 const LEAD_STATUS: Record<string, string> = {
   nuevo: 'Nuevo', contactado: 'Contactado', calificado: 'Calificado', convertido: 'Convertido', perdido: 'Perdido',
@@ -113,21 +61,6 @@ export const OperacionesScreen = () => {
   const { data: oppsRes } = useQuery<{ opportunities: Opp[] }>({ queryKey: ['ops', 'opps'], queryFn: () => getJson('/opportunities'), ...opts });
   const { data: tasksRes } = useQuery<{ tasks: Task[] }>({ queryKey: ['ops', 'tasks'], queryFn: () => getJson('/tasks?status=pendiente'), ...opts });
   const { data: actRes, isFetching, isLoading: actLoading, refetch } = useQuery<{ activity: Activity[] }>({ queryKey: ['ops', 'activity'], queryFn: () => getJson('/activity?limit=40'), ...opts });
-  const { data: ventasRes } = useQuery<Venta[]>({ queryKey: ['ops', 'ventas'], queryFn: () => fetch(`${CONTA}/ventas`).then((r) => r.json()), ...opts });
-
-  const saveVenta = useMutation({
-    mutationFn: (body: Record<string, unknown>) => fetch(`${CONTA}/ventas`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['ops', 'ventas'] }),
-  });
-  const delVenta = useMutation({
-    mutationFn: (id: string) => fetch(`${CONTA}/ventas/${id}`, { method: 'DELETE' }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['ops', 'ventas'] }),
-  });
-  const ventaMap: Record<string, Venta> = {};
-  (ventasRes ?? []).forEach((v) => { ventaMap[`${v.personId}__${v.propertyId}`] = v; });
-  const handleSaveVenta = (opp: Opp, data: { moneda: string; monto: number }) =>
-    saveVenta.mutate({ personId: opp.personId, propertyId: opp.propertyId, propertyLabel: opp.propertyLabel, personName: opp.personName, ...data });
-  const handleDelVenta = (v: Venta) => delVenta.mutate(v.id);
 
   const complete = useMutation({
     mutationFn: (id: string) => fetch(`${API}/tasks/${id}`, {
@@ -210,7 +143,6 @@ export const OperacionesScreen = () => {
                         <span className="vera-ops__card-name">{o.personName || 'Sin nombre'}</span>
                       </div>
                       <div className="vera-ops__card-meta"><Building2 size={12} /> {o.propertyLabel || 'Propiedad'}</div>
-                      <OppCommission opp={o} venta={ventaMap[`${o.personId}__${o.propertyId}`]} onSave={handleSaveVenta} onDelete={handleDelVenta} />
                       {o.propertyId && (
                         <Button variant="ghost" size="sm" className="vera-ops__card-btn" data-testid={`opp-abrir-propiedad-${o.id}`}
                           onClick={() => navigate(`/propiedades/${o.propertyId}`)}>
