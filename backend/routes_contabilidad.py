@@ -50,6 +50,31 @@ def _cats():
     return _db()["contabilidad_categorias"]
 
 
+def _rec():
+    return _db()["contabilidad_recurrentes"]
+
+
+def _pad(n: int) -> str:
+    return f"{int(n):02d}"
+
+
+def _rango_meses(desde: str, hasta: str, cap: int = 25) -> list[str]:
+    """Lista de meses 'YYYY-MM' entre desde y hasta (inclusive), acotada a los `cap` más recientes."""
+    try:
+        y, m = (int(x) for x in desde.split("-")[:2])
+        y2, m2 = (int(x) for x in hasta.split("-")[:2])
+    except Exception:
+        return []
+    out: list[str] = []
+    while (y, m) <= (y2, m2) and len(out) < 400:
+        out.append(f"{y}-{_pad(m)}")
+        m += 1
+        if m > 12:
+            m = 1
+            y += 1
+    return out[-cap:] if len(out) > cap else out
+
+
 def _movs():
     return _db()["rental_movimientos"]
 
@@ -81,12 +106,31 @@ class CategoryBody(BaseModel):
     tipo: str  # "ingreso" | "gasto"
 
 
+class RecurrenteBody(BaseModel):
+    tipo: str = "gasto"  # "ingreso" | "gasto"
+    categoria: str
+    moneda: str = "ARS"
+    monto: float
+    descripcion: str | None = ""
+    diaMes: int = 1
+    desde: str  # YYYY-MM (mes en que empieza a aplicarse)
+    activo: bool = True
+
+
+class RecurrentePatch(BaseModel):
+    monto: float | None = None
+    descripcion: str | None = None
+    diaMes: int | None = None
+    activo: bool | None = None
+
+
 def _entry_out(d: dict) -> dict:
     return {
         "id": d["_id"], "fecha": d.get("fecha"), "tipo": d.get("tipo"),
         "categoria": d.get("categoria"), "moneda": d.get("moneda", "ARS"),
         "monto": d.get("monto"), "descripcion": d.get("descripcion", ""),
-        "origen": "manual", "createdAt": d.get("createdAt"),
+        "origen": "manual", "recurrente": bool(d.get("recurrenteId")),
+        "createdAt": d.get("createdAt"),
     }
 
 
@@ -127,6 +171,83 @@ async def add_categoria(body: CategoryBody):
 @router.delete("/categorias/{cid}", status_code=204)
 async def del_categoria(cid: str):
     await _cats().delete_one({"_id": cid})
+
+
+# ------------------------- Gastos/ingresos fijos ------------------------ #
+def _rec_out(r: dict) -> dict:
+    return {
+        "id": r["_id"], "tipo": r.get("tipo"), "categoria": r.get("categoria"),
+        "moneda": r.get("moneda", "ARS"), "monto": r.get("monto"),
+        "descripcion": r.get("descripcion", ""), "diaMes": r.get("diaMes", 1),
+        "desde": r.get("desde"), "activo": bool(r.get("activo", True)),
+    }
+
+
+async def _materializar_recurrentes() -> None:
+    """Crea (idempotente) los movimientos de los ítems fijos activos, desde su mes
+    de inicio hasta el mes actual. No re-genera un mes ya generado aunque el
+    usuario lo haya borrado (respeta la edición manual)."""
+    now = datetime.now(timezone.utc)
+    mes_actual = f"{now.year}-{_pad(now.month)}"
+    async for rec in _rec().find({"activo": True}):
+        generados = set(rec.get("generadosMeses") or [])
+        meses = _rango_meses(rec.get("desde") or mes_actual, mes_actual, cap=25)
+        nuevos = []
+        for mk in meses:
+            if mk in generados:
+                continue
+            dia = min(max(int(rec.get("diaMes") or 1), 1), 28)
+            await _col().insert_one({
+                "_id": uuid4().hex, "fecha": f"{mk}-{_pad(dia)}", "tipo": rec.get("tipo", "gasto"),
+                "categoria": rec.get("categoria") or "Otros", "moneda": _norm_moneda(rec.get("moneda")),
+                "monto": round(float(rec.get("monto") or 0)), "descripcion": rec.get("descripcion") or "",
+                "recurrenteId": rec["_id"], "mes": mk, "createdAt": _now(),
+            })
+            nuevos.append(mk)
+        if nuevos:
+            await _rec().update_one({"_id": rec["_id"]}, {"$addToSet": {"generadosMeses": {"$each": nuevos}}})
+
+
+@router.get("/recurrentes")
+async def list_recurrentes():
+    return [_rec_out(r) async for r in _rec().find({}).sort("createdAt", -1)]
+
+
+@router.post("/recurrentes", status_code=201)
+async def create_recurrente(body: RecurrenteBody):
+    if body.tipo not in ("ingreso", "gasto"):
+        raise HTTPException(400, "Tipo inválido")
+    if not (body.categoria or "").strip():
+        raise HTTPException(400, "Categoría requerida")
+    doc = {
+        "_id": uuid4().hex, "tipo": body.tipo, "categoria": body.categoria.strip(),
+        "moneda": _norm_moneda(body.moneda), "monto": round(float(body.monto or 0)),
+        "descripcion": (body.descripcion or "").strip(), "diaMes": min(max(int(body.diaMes or 1), 1), 28),
+        "desde": (body.desde or "")[:7], "activo": body.activo, "generadosMeses": [],
+        "createdAt": _now(),
+    }
+    await _rec().insert_one(doc)
+    await _materializar_recurrentes()
+    return _rec_out(doc)
+
+
+@router.patch("/recurrentes/{rid}")
+async def patch_recurrente(rid: str, body: RecurrentePatch):
+    upd = {k: v for k, v in body.model_dump().items() if v is not None}
+    if "diaMes" in upd:
+        upd["diaMes"] = min(max(int(upd["diaMes"]), 1), 28)
+    if upd:
+        await _rec().update_one({"_id": rid}, {"$set": upd})
+    if upd.get("activo"):
+        await _materializar_recurrentes()
+    doc = await _rec().find_one({"_id": rid})
+    return _rec_out(doc) if doc else {}
+
+
+@router.delete("/recurrentes/{rid}", status_code=204)
+async def delete_recurrente(rid: str):
+    """Borra la plantilla fija. Los movimientos ya generados se conservan."""
+    await _rec().delete_one({"_id": rid})
 
 
 # ------------------------------ Movimientos ----------------------------- #
@@ -206,6 +327,7 @@ async def _reservas_moneda_map(reserva_ids: set[str]) -> dict[str, str]:
 
 @router.get("/resumen")
 async def resumen(desde: str = Query(...), hasta: str = Query(...)):
+    await _materializar_recurrentes()
     monedas: dict[str, dict] = {}
     # Serie mensual: {mesKey: {ARS:{ingresos,gastos}, USD:{...}}}
     mensual: dict[str, dict] = {}
@@ -230,6 +352,7 @@ async def resumen(desde: str = Query(...), hasta: str = Query(...)):
             "id": mv["_id"], "fecha": mv.get("fecha"), "tipo": "ingreso",
             "categoria": CAT_COMISION_ALQ, "moneda": moneda, "monto": round(monto),
             "descripcion": mv.get("descripcion", ""), "origen": "alquiler",
+            "recurrente": False,
         })
 
     # 2) Movimientos manuales de contabilidad.
