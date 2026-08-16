@@ -1066,7 +1066,7 @@ const MODOS_IA = {
   },
   airbnb: {
     label:"Airbnb / Interiores", etiqueta:"Interior optimizado con IA",
-    prompt:"Mejorar esta fotografia de interior para real estate estilo Airbnb de manera MUY SUTIL y natural, como una edicion profesional discreta y no un cambio drastico: mas luminosa, limpia y acogedora pero conservando el aspecto real de la foto. Mantener EXACTAMENTE iguales la arquitectura, la distribucion, los muebles fijos, los materiales, las texturas, las proporciones y el angulo de camara. Aumentar la luminosidad y la claridad de forma LEVE y natural, con luz suave y bien balanceada; equilibrar los blancos para dar sensacion de limpieza y aire fresco, sin blanquear de mas ni quemar las zonas claras. Potenciar de forma sutil la luz natural que entra por las ventanas. Cuando detectes veladores, lamparas de mesa, lamparas de pie, apliques de pared o cualquier artefacto de iluminacion, encenderlos con una luz calida y realista, con un brillo suave y creible en cada uno, integrado naturalmente a la escena. Si las ventanas, persianas o cortinas estan cerradas, mostrarlas apenas abiertas dejando entrar una luz exterior clara y agradable y una vista natural y coherente. Quitar unicamente objetos sueltos, desorden, cables visibles, ropa, basura y elementos personales que no correspondan, dejando el ambiente ordenado. Realzar los colores de forma natural y mejorar levemente nitidez y contraste, con acabado fotorrealista de fotografia de interiores profesional. EVITAR ESTRICTAMENTE: cambios drasticos o exagerados, cambiar la arquitectura, mover, quitar o agregar muebles nuevos, alterar materiales, texturas o proporciones, cambiar el angulo de camara; sobresaturacion, HDR excesivo, reflejos irreales, iluminacion artificial exagerada o artefactos generados por IA. El resultado debe verse natural, apenas mejorado, limpio y totalmente realista."
+    prompt:"Transformar esta fotografia de interior en una imagen de real estate premium estilo Airbnb: luminosa, limpia, acogedora y con aire fresco. Mantener EXACTAMENTE iguales la arquitectura, la distribucion, los muebles fijos, los materiales, las texturas, las proporciones y el angulo de camara. Aumentar la luminosidad y la claridad de forma natural con luz suave y bien balanceada; equilibrar y blanquear los blancos para dar sensacion de pureza y limpieza, sin quemar las zonas claras. Encender de forma sutil las luces del ambiente y potenciar la luz natural que entra por las ventanas. Si las ventanas, persianas o cortinas estan cerradas, mostrarlas abiertas dejando entrar luz exterior clara y agradable y una vista natural y coherente a traves de ellas. Quitar unicamente objetos sueltos, desorden, cables visibles, ropa, basura y elementos personales que no correspondan, dejando el ambiente ordenado y despejado. Realzar los colores de forma natural, mejorar nitidez y contraste con acabado fotorrealista de fotografia de interiores profesional. EVITAR ESTRICTAMENTE: cambiar la arquitectura, mover, quitar o agregar muebles nuevos, alterar materiales, texturas o proporciones, cambiar el angulo de camara; sobresaturacion, HDR excesivo, reflejos irreales, iluminacion artificial exagerada o artefactos generados por IA. El resultado debe verse natural, luminoso, limpio y totalmente realista."
   }
 };
 const FORMAS_LOTE = {
@@ -1341,7 +1341,11 @@ async function generarEdicionIA(f, modo, statusId){
     const blob = await imagenABlob(f.img);
     const fd = new FormData();
     fd.append("model","gpt-image-2");
-    fd.append("prompt", cfg.prompt);
+    let promptFinal = cfg.prompt;
+    if(f.notaIA && f.notaIA.trim()){
+      promptFinal += " Indicacion adicional y PRIORITARIA del usuario para esta foto (cumplirla si o si, de forma fotorrealista y sin alterar el resto de la escena): " + f.notaIA.trim() + ".";
+    }
+    fd.append("prompt", promptFinal);
     fd.append("size","1536x1024");
     fd.append("quality","high");
     fd.append("image[]", blob, "foto.jpg");
@@ -2690,6 +2694,8 @@ function fDrawEditor(){
           </div>
         </div>
       </div>
+      <label style="margin-top:10px">Indicaci&oacute;n puntual para la IA <span class="opt">(opcional &mdash; ej: sacar la rueda de bici y la mesa apoyada contra la pared)</span></label>
+      <input type="text" id="fNotaIA" value="${(f.notaIA||'').replace(/"/g,'&quot;')}" placeholder="Ej: quitar la bicicleta y la mesa apoyada">
       <label style="margin-top:10px">Editar con IA <span class="opt">(opcional)</span></label>
       <div class="tabs" id="fVista">
         <button type="button" class="tab ${f.vista==="original"?"sel":""}" data-vista="original">Foto original</button>
@@ -2706,6 +2712,7 @@ function fDrawEditor(){
       </div>
     </div>`;
   $("fPreset").addEventListener("change", e=>{ f.preset = e.target.value; fRender(); });
+  var _notaEl = $("fNotaIA"); if(_notaEl) _notaEl.addEventListener("input", e=>{ f.notaIA = e.target.value; });
   $("fIzq").onclick = ()=>{ const i=fCur; if(i>0){ [editorFotos[i-1],editorFotos[i]]=[editorFotos[i],editorFotos[i-1]]; fCur=i-1; fDrawTabs(); fRender(); } };
   $("fDer").onclick = ()=>{ const i=fCur; if(i<editorFotos.length-1){ [editorFotos[i+1],editorFotos[i]]=[editorFotos[i],editorFotos[i+1]]; fCur=i+1; fDrawTabs(); fRender(); } };
   $("fDel").onclick = ()=>{ editorFotos.splice(fCur,1); fCur=Math.max(0,fCur-1); fDrawTabs(); fDrawEditor(); fRender(); };
