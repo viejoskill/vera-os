@@ -130,6 +130,19 @@ async def update_opportunity(opportunity_id: str, payload: OpportunityUpdate):
     updated = await store.update_opportunity_by_id(opportunity_id, payload.stage)
     if updated is None:
         raise HTTPException(404, "Oportunidad no encontrada.")
+    # Sincroniza la comisión de venta enganchada (si existe) con la etapa.
+    try:
+        from datetime import datetime, timezone
+        vc = store._db()["venta_comisiones"]
+        key = {"personId": updated.get("person_id"), "propertyId": updated.get("property_id")}
+        if payload.stage == "perdida":
+            await vc.delete_one(key)
+        elif payload.stage == "ganada":
+            await vc.update_one(key, {"$set": {"fechaConfirmada": datetime.now(timezone.utc).date().isoformat()}})
+        else:
+            await vc.update_one(key, {"$unset": {"fechaConfirmada": ""}})
+    except Exception:  # noqa: BLE001
+        pass
     return store._shape_opp(updated)
 
 

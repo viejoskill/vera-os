@@ -7174,6 +7174,23 @@ p {
 .vera-ops__dot-sep { opacity: .5; }
 .vera-ops__card-btn { align-self: flex-start; padding-left: 0 !important; color: var(--vera-color-primary) !important; }
 
+/* Comisión de venta en la tarjeta de oportunidad */
+.vera-ops__com { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; padding-top: 6px; border-top: 1px dashed var(--vera-color-border); }
+.vera-ops__com-chip { display: inline-flex; align-items: center; gap: 5px; font-size: .72rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
+.vera-ops__com-chip--reserva { background: rgba(224,150,40,.16); color: #e0962a; border: 1px solid rgba(224,150,40,.4); }
+.vera-ops__com-chip--confirmada { background: rgba(70,160,90,.18); color: #4bbf6b; border: 1px solid rgba(70,160,90,.4); }
+.vera-ops__com-add { display: inline-flex; align-items: center; gap: 5px; background: none; border: 1px dashed rgba(224,150,40,.5); color: #e0962a; font: inherit; font-size: .72rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; cursor: pointer; transition: background-color .15s ease; }
+.vera-ops__com-add:hover { background: rgba(224,150,40,.1); }
+.vera-ops__com-edit, .vera-ops__com-del { background: none; border: none; color: var(--vera-color-text-secondary); cursor: pointer; padding: 2px; display: inline-flex; opacity: .6; }
+.vera-ops__com-edit:hover, .vera-ops__com-del:hover { opacity: 1; }
+.vera-ops__com-form { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--vera-color-border); }
+.vera-ops__com-form select, .vera-ops__com-form input { background: var(--vera-color-bg); border: 1px solid var(--vera-color-border); color: var(--vera-color-text); border-radius: 7px; padding: 5px 7px; font: inherit; font-size: .74rem; }
+.vera-ops__com-form input { width: 92px; }
+.vera-ops__com-form select { width: 66px; }
+.vera-ops__com-save { background: var(--vera-color-primary); border: none; color: #1c1c1e; font-weight: 700; font-size: .72rem; padding: 5px 10px; border-radius: 7px; cursor: pointer; }
+.vera-ops__com-cancel { background: none; border: none; color: var(--vera-color-text-secondary); cursor: pointer; font-size: .72rem; }
+
+
 .vera-ops__stage { display: flex; flex-direction: column; gap: 6px; }
 .vera-ops__stage-head {
   display: flex; align-items: center; justify-content: space-between;

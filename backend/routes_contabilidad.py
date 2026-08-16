@@ -54,6 +54,19 @@ def _rec():
     return _db()["contabilidad_recurrentes"]
 
 
+def _ventas():
+    return _db()["venta_comisiones"]
+
+
+def _opps():
+    return _db()["opportunities"]
+
+
+async def _opp_stage(person_id: str, property_id: str) -> str | None:
+    o = await _opps().find_one({"person_id": person_id, "property_id": property_id})
+    return o.get("stage") if o else None
+
+
 def _pad(n: int) -> str:
     return f"{int(n):02d}"
 
@@ -286,9 +299,78 @@ async def delete_movimiento(mid: str):
     await _col().delete_one({"_id": mid})
 
 
+# --------------------- Comisiones de venta (Operaciones) ---------------- #
+class VentaComisionBody(BaseModel):
+    personId: str
+    propertyId: str
+    propertyLabel: str | None = ""
+    personName: str | None = ""
+    moneda: str = "USD"
+    monto: float
+    descripcion: str | None = ""
+
+
+def _estado_venta(stage: str | None) -> str:
+    if stage == "ganada":
+        return "confirmada"
+    if stage == "perdida":
+        return "perdida"
+    return "reserva"
+
+
+async def _venta_out(d: dict) -> dict:
+    stage = await _opp_stage(d.get("personId"), d.get("propertyId"))
+    return {
+        "id": d["_id"], "personId": d.get("personId"), "propertyId": d.get("propertyId"),
+        "propertyLabel": d.get("propertyLabel", ""), "personName": d.get("personName", ""),
+        "moneda": _norm_moneda(d.get("moneda")), "monto": d.get("monto"),
+        "descripcion": d.get("descripcion", ""), "estado": _estado_venta(stage), "stage": stage,
+        "fechaConfirmada": d.get("fechaConfirmada"), "createdAt": d.get("createdAt"),
+    }
+
+
+@router.get("/ventas")
+async def list_ventas():
+    out = []
+    async for d in _ventas().find({}).sort("createdAt", -1):
+        v = await _venta_out(d)
+        if v["estado"] == "perdida":
+            # La operación se cayó: se descarta la comisión.
+            await _ventas().delete_one({"_id": d["_id"]})
+            continue
+        out.append(v)
+    return out
+
+
+@router.post("/ventas", status_code=201)
+async def upsert_venta(body: VentaComisionBody):
+    if not body.personId or not body.propertyId:
+        raise HTTPException(400, "Falta la persona o la propiedad de la oportunidad")
+    key = {"personId": body.personId, "propertyId": body.propertyId}
+    await _ventas().update_one(
+        key,
+        {
+            "$set": {
+                "propertyLabel": body.propertyLabel or "", "personName": body.personName or "",
+                "moneda": _norm_moneda(body.moneda), "monto": round(float(body.monto or 0)),
+                "descripcion": (body.descripcion or "").strip(), "updatedAt": _now(),
+            },
+            "$setOnInsert": {"_id": uuid4().hex, "createdAt": _now(), **key},
+        },
+        upsert=True,
+    )
+    doc = await _ventas().find_one(key)
+    return await _venta_out(doc)
+
+
+@router.delete("/ventas/{vid}", status_code=204)
+async def delete_venta(vid: str):
+    await _ventas().delete_one({"_id": vid})
+
+
 # -------------------------------- Resumen ------------------------------- #
 def _blank_cur() -> dict:
-    return {"ingresos": 0.0, "gastos": 0.0, "neto": 0.0,
+    return {"ingresos": 0.0, "gastos": 0.0, "neto": 0.0, "ventasPendientes": 0.0,
             "ingresosPorCat": {}, "gastosPorCat": {}}
 
 
@@ -365,11 +447,46 @@ async def resumen(desde: str = Query(...), hasta: str = Query(...)):
         _mensual(_mes_key(d.get("fecha")), moneda, tipo, monto)
         detalle.append(_entry_out(d))
 
+    # 3) Comisiones de venta (enganchadas a oportunidades de Operaciones).
+    #    Confirmadas (oportunidad "ganada") suman como ingreso; reservadas quedan
+    #    "por confirmar" (no suman). Perdidas se descartan.
+    pendientes_list = []
+    async for d in _ventas().find({}):
+        stage = await _opp_stage(d.get("personId"), d.get("propertyId"))
+        est = _estado_venta(stage)
+        if est == "perdida":
+            await _ventas().delete_one({"_id": d["_id"]})
+            continue
+        moneda = _norm_moneda(d.get("moneda"))
+        monto = float(d.get("monto") or 0)
+        etiqueta = (d.get("propertyLabel") or "").strip()
+        if d.get("personName"):
+            etiqueta = f"{etiqueta} · {d['personName']}".strip(" ·")
+        if est == "confirmada":
+            fecha = d.get("fechaConfirmada") or (d.get("createdAt") or "")[:10]
+            if desde <= fecha <= hasta:
+                _add(monedas, moneda, "ingreso", "Comisión venta", monto)
+                _mensual(_mes_key(fecha), moneda, "ingreso", monto)
+                detalle.append({
+                    "id": d["_id"], "fecha": fecha, "tipo": "ingreso",
+                    "categoria": "Comisión venta", "moneda": moneda, "monto": round(monto),
+                    "descripcion": etiqueta, "origen": "venta", "recurrente": False, "estado": "confirmada",
+                })
+        else:  # reserva → pendiente de confirmar
+            m = monedas.setdefault(moneda, _blank_cur())
+            m["ventasPendientes"] += monto
+            pendientes_list.append({
+                "id": d["_id"], "moneda": moneda, "monto": round(monto),
+                "propertyLabel": d.get("propertyLabel") or "", "personName": d.get("personName") or "",
+                "descripcion": d.get("descripcion") or "",
+            })
+
     # Cierre: neto y redondeos.
     for cur in monedas.values():
         cur["ingresos"] = round(cur["ingresos"])
         cur["gastos"] = round(cur["gastos"])
         cur["neto"] = cur["ingresos"] - cur["gastos"]
+        cur["ventasPendientes"] = round(cur["ventasPendientes"])
         cur["ingresosPorCat"] = {k: round(v) for k, v in cur["ingresosPorCat"].items()}
         cur["gastosPorCat"] = {k: round(v) for k, v in cur["gastosPorCat"].items()}
 
@@ -388,4 +505,5 @@ async def resumen(desde: str = Query(...), hasta: str = Query(...)):
         "monedas": monedas,
         "mensual": serie,
         "movimientos": detalle,
+        "ventasPendientes": pendientes_list,
     }

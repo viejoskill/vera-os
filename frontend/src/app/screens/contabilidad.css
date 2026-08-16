@@ -91,3 +91,9 @@
 .cont__recpower.on { border-color: rgba(70,160,90,.5); color: #4bbf6b; }
 .cont__auto--fijo { color: #6ba0e0; background: rgba(70,130,200,.14); border-color: rgba(70,130,200,.3); }
 
+.cont__pending { display: flex; align-items: flex-start; gap: 12px; background: rgba(224,150,40,.09); border: 1px solid rgba(224,150,40,.35); border-radius: 12px; padding: 14px 16px; margin-bottom: 22px; }
+.cont__pending-dot { width: 10px; height: 10px; border-radius: 50%; background: #e0962a; margin-top: 5px; flex-shrink: 0; box-shadow: 0 0 0 4px rgba(224,150,40,.18); }
+.cont__pending strong { color: #e0962a; font-size: 1.05rem; }
+.cont__pending em { font-style: normal; color: #e0962a; font-weight: 600; }
+.cont__pending p { margin: 4px 0 0; font-size: .8rem; color: var(--vera-color-text-secondary); }
+

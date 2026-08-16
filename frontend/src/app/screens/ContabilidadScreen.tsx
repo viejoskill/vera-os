@@ -13,7 +13,7 @@ import './contabilidad.css';
 const API = `${env.backendUrl}/api/contabilidad`;
 
 interface CurStats {
-  ingresos: number; gastos: number; neto: number;
+  ingresos: number; gastos: number; neto: number; ventasPendientes: number;
   ingresosPorCat: Record<string, number>; gastosPorCat: Record<string, number>;
 }
 interface Entry {
@@ -324,6 +324,16 @@ export const ContabilidadScreen = () => {
                 <span><Scale size={13} /> Resultado neto</span>
                 <strong className={stats.neto < 0 ? 'neg' : ''} data-testid="cont-neto">{fmtMoney(stats.neto, cur)}</strong>
                 {comparar && prevStats && <div className="cont__cmp"><Delta actual={stats.neto} anterior={prevStats.neto} /><em>antes {fmtMoney(prevStats.neto, cur)}</em></div>}
+              </div>
+            </div>
+          )}
+
+          {stats && stats.ventasPendientes > 0 && (
+            <div className="cont__pending" data-testid="cont-pending">
+              <span className="cont__pending-dot" />
+              <div>
+                <strong>{fmtMoney(stats.ventasPendientes, cur)}</strong> en comisiones de venta <em>por confirmar</em>
+                <p>Corresponden a operaciones en etapa "Reserva". Cuando la oportunidad pase a "Ganada" en Operaciones, se suman al ingreso real.</p>
               </div>
             </div>
           )}
