@@ -366,7 +366,7 @@
             <button type="button" class="btn sec" id="fAddFicha" style="margin-top:8px;width:100%">+ Ficha de lote</button>
           </div>
         </div>
-        <label class="chk"><input type="checkbox" id="fAviso" checked> Incluir aviso de edici&oacute;n con IA en la esquina (Atardecer, D&iacute;a despejado, Despejar y Potencial)</label>
+        <label class="chk"><input type="checkbox" id="fAviso" checked> Incluir aviso de edici&oacute;n con IA en la esquina (Atardecer, D&iacute;a despejado, Despejar, Airbnb y Potencial)</label>
         <div class="tabs" id="fTabs"></div>
         <div id="fEditor"></div>
 
@@ -1063,6 +1063,10 @@ const MODOS_IA = {
   ordenado: {
     label:"Despejar", etiqueta:"Foto optimizada con IA",
     prompt:"Editar esta fotografia de una propiedad quitando unicamente objetos sueltos, desorden, cables visibles, ropa colgada, basura, cajas, herramientas o elementos personales dispersos que no formen parte de la arquitectura fija de la propiedad. Mantener exactamente iguales la arquitectura, los muebles fijos, los materiales, las proporciones, el cesped, la vegetacion y el resto de la escena. No agregar ningun elemento nuevo, unicamente remover objetos sueltos y desorden temporal. Resultado fotorrealista, prolijo y natural, como si la foto se hubiera tomado con el lugar ya ordenado."
+  },
+  airbnb: {
+    label:"Airbnb / Interiores", etiqueta:"Interior optimizado con IA",
+    prompt:"Transformar esta fotografia de interior en una imagen de real estate premium estilo Airbnb: luminosa, limpia, acogedora y con aire fresco. Mantener EXACTAMENTE iguales la arquitectura, la distribucion, los muebles fijos, los materiales, las texturas, las proporciones y el angulo de camara. Aumentar la luminosidad y la claridad de forma natural con luz suave y bien balanceada; equilibrar y blanquear los blancos para dar sensacion de pureza y limpieza, sin quemar las zonas claras. Encender de forma sutil las luces del ambiente y potenciar la luz natural que entra por las ventanas. Si las ventanas, persianas o cortinas estan cerradas, mostrarlas abiertas dejando entrar luz exterior clara y agradable y una vista natural y coherente a traves de ellas. Quitar unicamente objetos sueltos, desorden, cables visibles, ropa, basura y elementos personales que no correspondan, dejando el ambiente ordenado y despejado. Realzar los colores de forma natural, mejorar nitidez y contraste con acabado fotorrealista de fotografia de interiores profesional. EVITAR ESTRICTAMENTE: cambiar la arquitectura, mover, quitar o agregar muebles nuevos, alterar materiales, texturas o proporciones, cambiar el angulo de camara; sobresaturacion, HDR excesivo, reflejos irreales, iluminacion artificial exagerada o artefactos generados por IA. El resultado debe verse natural, luminoso, limpio y totalmente realista."
   }
 };
 const FORMAS_LOTE = {
@@ -3697,7 +3701,16 @@ if($("capBtnCont")) $("capBtnCont").addEventListener("click", ()=> abrirCaption(
 if($("capBtnProp")) $("capBtnProp").addEventListener("click", ()=> abrirCaption(ctxProp));
 if($("capBtnCartel")) $("capBtnCartel").addEventListener("click", ()=> abrirCaption(ctxCartel));
 
-document.fonts.ready.then(async ()=>{ drawTabs(); drawEditor(); await cargarIdentidad(); await cargarPlan(); });
+document.fonts.ready.then(async ()=>{
+  drawTabs(); drawEditor(); await cargarIdentidad(); await cargarPlan();
+  try{
+    var only = new URLSearchParams(location.search).get('only');
+    if(only==='fotos'){
+      document.querySelectorAll('.modes .mode').forEach(function(b){ if(b.id!=='modeFotos') b.style.display='none'; });
+      setMode('fotos');
+    }
+  }catch(e){}
+});
 </script>
 </body>
 </html>

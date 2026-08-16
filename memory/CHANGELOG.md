@@ -167,3 +167,9 @@ Verificado 100% (iteration_40): backend 7/7 pytest (`test_documents_sprint4_5.py
 - Empleados (no admin): antes solo veían Alquileres. Ahora ven **Alquileres + Studio** (editor de fotos). AppLayout: `EMPLOYEE_PATHS=['/alquileres','/studio']` para el redirect y el filtro de sidebar incluye 'studio'.
 - Verificado por screenshots: empleado qa_varela ve Alquileres+Studio y entra a /studio; admin ya no ve Operaciones ni Event Log, sí Integraciones.
 - ⚠️ El usuario ve producción (veraosvarela.com) → debe REDEPLOYAR.
+
+## 2026-06-16 · Studio: preset "Airbnb / Interiores" + empleado restringido a Editor de fotos
+- Nuevo preset de IA en el Editor de fotos: `MODOS_IA.airbnb` (label "Airbnb / Interiores") con prompt fijo para realzar interiores: más luminosidad/claridad, blancos puros, encender luces sutiles, potenciar luz natural, mostrar ventanas/cortinas cerradas como ABIERTAS con luz y vista exterior, quitar desorden/objetos que no correspondan, manteniendo arquitectura/muebles/ángulo intactos y fotorrealismo. Reusa el mismo flujo `/editar` (servidor externo "Vera", modelo gpt-image-2) que los modos existentes → sin cambios de backend.
+- Restricción de empleado: StudioScreen.tsx agrega `only=fotos` al iframe cuando el usuario NO es admin. En vera-studio.html, el boot lee `only`; si es 'fotos' oculta todos los botones de modo salvo "Editor de fotos" y hace `setMode('fotos')`. Admin sigue viendo Studio completo.
+- Acceso: AppLayout ya habilita Alquileres + Studio para empleados (cambio previo). Verificado: empleado ve solo "Editor de fotos", panel abre directo, MODOS_IA.airbnb presente; sin errores JS.
+- ⚠️ Producción: el usuario debe REDEPLOYAR.
