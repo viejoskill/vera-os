@@ -21,7 +21,7 @@ export const featureFlags: FeatureFlags = {
   veraBot: true, // "Vera Bot" — integración de mensajería (motor: Arturito)
   propiedades: true,
   personas: true,
-  operaciones: true, // "Operaciones" — tablero operativo (Leads/Oportunidades/Tareas/Actividad)
+  operaciones: false, // OCULTO — el usuario no usa el tablero operativo (pipeline sin alimentar)
   documentos: true, // "Documentos" — motor documental (Templates + Documents). Sprint fundacional.
   studio: true, // "Studio" — herramienta de contenido de redes, embebida (public/vera-studio.html)
   integraciones: true, // "Integraciones" — Centro de Integraciones (Sprint 05)
