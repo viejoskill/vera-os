@@ -160,3 +160,10 @@ Verificado 100% (iteration_40): backend 7/7 pytest (`test_documents_sprint4_5.py
 - Revertido: se quitó la UI de comisión de OperacionesScreen y el hook de sincronización en routes_core.py.
 - Verificado E2E con datos reales: propiedad reservada VAR-517024 → pendiente US$6000 (no suma); propiedad vendida VAR-432272 → ingreso US$9000 (suma como "Comisión venta"). Screenshot de la ficha con el panel naranja. Datos de prueba eliminados, admin QA revertido.
 - ⚠️ El usuario ve la app DESPLEGADA (veraosvarela.com); debe REDEPLOYAR para tener este cambio.
+
+## 2026-06-16 · Menú y accesos: ocultar Operaciones/Event Log + Studio para empleados
+- Feature flags: `operaciones: false` y `eventLog: false` (ocultos, código intacto). Integraciones se mantiene.
+- Sidebar mostraba los ítems `enabled:false` como "Próximamente" (no los ocultaba) → AppLayout ahora filtra `r.enabled !== false`, así desaparecen del menú.
+- Empleados (no admin): antes solo veían Alquileres. Ahora ven **Alquileres + Studio** (editor de fotos). AppLayout: `EMPLOYEE_PATHS=['/alquileres','/studio']` para el redirect y el filtro de sidebar incluye 'studio'.
+- Verificado por screenshots: empleado qa_varela ve Alquileres+Studio y entra a /studio; admin ya no ve Operaciones ni Event Log, sí Integraciones.
+- ⚠️ El usuario ve producción (veraosvarela.com) → debe REDEPLOYAR.

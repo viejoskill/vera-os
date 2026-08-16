@@ -25,6 +25,6 @@ export const featureFlags: FeatureFlags = {
   documentos: true, // "Documentos" — motor documental (Templates + Documents). Sprint fundacional.
   studio: true, // "Studio" — herramienta de contenido de redes, embebida (public/vera-studio.html)
   integraciones: true, // "Integraciones" — Centro de Integraciones (Sprint 05)
-  eventLog: true, // "Event Log" — vista técnica del Conversation Event Pipeline (dev/debug)
+  eventLog: false, // OCULTO — vista técnica de debug, sin uso para el usuario final
   alquileres: true, // "Alquileres Temporarios" — gestión de rentas de verano + web de reservas
 };

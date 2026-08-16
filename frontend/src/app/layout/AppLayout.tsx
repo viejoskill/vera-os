@@ -16,10 +16,11 @@ export const AppLayout = () => {
   const { approval, approvalReady } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Empleados (aprobados, no admin): acceso restringido solo a Alquileres.
+  // Empleados (aprobados, no admin): acceso restringido a Alquileres + Studio (editor de fotos).
   const isEmployee = approvalReady && approval && !approval.isAdmin;
+  const EMPLOYEE_PATHS = ['/alquileres', '/studio'];
   useEffect(() => {
-    if (isEmployee && !location.pathname.startsWith('/alquileres')) {
+    if (isEmployee && !EMPLOYEE_PATHS.some((p) => location.pathname.startsWith(p))) {
       navigate('/alquileres', { replace: true });
     }
   }, [isEmployee, location.pathname, navigate]);
@@ -27,7 +28,8 @@ export const AppLayout = () => {
   const active = navRoutes.find((r) => location.pathname.startsWith(r.path)) ?? navRoutes[1];
 
   const items: SidebarItem[] = navRoutes
-    .filter((r) => (approval?.isAdmin ? true : r.id === 'alquileres'))
+    .filter((r) => r.enabled !== false)
+    .filter((r) => (approval?.isAdmin ? true : (r.id === 'alquileres' || r.id === 'studio')))
     .map((r) => ({
       id: r.id,
       label: r.label,
