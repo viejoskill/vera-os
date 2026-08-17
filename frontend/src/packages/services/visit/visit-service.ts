@@ -34,7 +34,8 @@ export function buildOwnerMessage(opts: {
   const owner = (opts.ownerName || '').trim();
   const saludo = owner ? `Estimado/a ${owner}` : 'Estimado/a propietario/a';
   const agent = (opts.agent || '').trim();
-  const agentName = agent && !agent.includes('@') ? agent : 'Inmobiliaria Varela';
+  const agentFirst = agent.split(/\s+/)[0];
+  const agentName = agentFirst && !agentFirst.includes('@') ? agentFirst : 'Inmobiliaria Varela';
   const where = opts.address ? ` de ${opts.address}` : '';
   const cuando = visitDateLong(opts.date);
   const hora = (opts.time || '').trim();
@@ -57,15 +58,15 @@ export function buildOwnerMessage(opts: {
   return lineas.join('\n');
 }
 
-/** Fecha de la visita en formato "el miércoles 1 de julio" (o "hoy" si es el día actual). */
+/** Fecha de la visita en formato "el miércoles 1 de julio" (o "hoy, miércoles 1 de julio"). */
 function visitDateLong(dateStr?: string): string {
   if (!dateStr) return 'hoy';
   const d = new Date(`${dateStr}T00:00:00`);
   if (Number.isNaN(d.getTime())) return 'hoy';
+  const txt = d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  if (d.getTime() === today.getTime()) return 'hoy';
-  const txt = d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+  if (d.getTime() === today.getTime()) return `hoy, ${txt}`;
   return `el ${txt}`;
 }
 
