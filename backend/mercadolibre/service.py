@@ -312,15 +312,23 @@ def _payload(prop: dict, images: list[dict], category_id: str, attributes: list[
 
 _EDITABLE_STATUS = {"active", "paused"}
 _PENDING_STATUS = {"not_yet_active", "payment_required", "under_review"}
+# Estados "muertos": el aviso ya no se puede editar. Solo se relista (crea uno nuevo)
+# en una publicación MANUAL; nunca en la re-sync automática al guardar.
+_DEAD_STATUS = {"closed", "inactive", "not_found"}
 
 
 async def _item_status(access: str, item_id: str) -> str | None:
+    """Status real del item; 'not_found' si ML responde 404 (borrado), None si no se
+    pudo verificar (error de red/token). Distinguir None de 'not_found' evita duplicar
+    un aviso vivo por un fallo transitorio."""
     try:
         async with httpx.AsyncClient(timeout=20) as h:
             r = await h.get(
                 f"{config.MELI_API}/items/{item_id}?attributes=status",
                 headers={"Authorization": f"Bearer {access}"},
             )
+        if r.status_code == 404:
+            return "not_found"
         return r.json().get("status") if r.status_code == 200 else None
     except Exception:  # noqa: BLE001
         return None
@@ -359,10 +367,14 @@ async def _set_description_deferred(item_id: str, text: str) -> None:
     return None
 
 
-async def publish(prop: dict, images: list[dict], existing_item_id: str | None) -> dict:
-    """Crea (POST /items) o actualiza (PUT /items/{id}) el aviso. Devuelve item id + permalink.
-    ML NO permite modificar title ni currency_id, y un item cerrado/finalizado no es editable
-    (en ese caso se crea uno nuevo)."""
+async def publish(prop: dict, images: list[dict], existing_item_id: str | None, *, allow_relist: bool = True) -> dict:
+    """Crea (POST /items) o ACTUALIZA (PUT /items/{id}) el aviso. Devuelve item id + permalink.
+
+    Regla anti-duplicados: si ya hay un `existing_item_id`, NUNCA se crea un aviso nuevo
+    en silencio. Solo se relista (crea uno nuevo) cuando el aviso está realmente muerto
+    (closed/inactive/borrado) Y `allow_relist=True` (publicación manual). En la re-sync
+    automática al guardar (`allow_relist=False`) jamás se crea uno nuevo.
+    En inmuebles ML SÍ permite editar título, precio y fotos por PUT."""
     access = await _valid_token()
     category_id, _ = await _resolve_listing(access, prop)
     attributes = await _category_attributes(access, category_id, prop)
@@ -370,35 +382,46 @@ async def publish(prop: dict, images: list[dict], existing_item_id: str | None) 
     payload = _payload(prop, images, category_id, attributes, location)
     headers = {"Authorization": f"Bearer {access}", "Content-Type": "application/json"}
 
-    status = await _item_status(access, existing_item_id) if existing_item_id else None
-    if status in _PENDING_STATUS:
-        raise ValueError(
-            "El aviso todavía se está activando en Mercado Libre (puede tardar unos minutos). "
-            "Reintentá en un rato."
-        )
+    if existing_item_id:
+        status = await _item_status(access, existing_item_id)
+        if status in _PENDING_STATUS:
+            raise ValueError(
+                "El aviso todavía se está activando en Mercado Libre (puede tardar unos minutos). "
+                "Reintentá en un rato."
+            )
+        if status in _EDITABLE_STATUS:
+            async with httpx.AsyncClient(timeout=40) as h:
+                # ML admite editar título, precio y fotos en inmuebles.
+                upd = {"title": payload["title"], "price": payload["price"], "pictures": payload["pictures"]}
+                r = await h.put(f"{config.MELI_API}/items/{existing_item_id}", headers=headers, json=upd)
+                if r.status_code >= 400:
+                    # Si rechaza el título (categorías que lo bloquean), reintenta sin él.
+                    logger.warning("ML update con título rechazado (%s): %s", existing_item_id, r.text[:200])
+                    r = await h.put(
+                        f"{config.MELI_API}/items/{existing_item_id}",
+                        headers=headers,
+                        json={"price": payload["price"], "pictures": payload["pictures"]},
+                    )
+                if r.status_code >= 400:
+                    raise MeliError(r.status_code, r.text)
+                await _set_description(h, headers, existing_item_id, payload["description"]["plain_text"])
+                data = r.json()
+            return {"item_id": existing_item_id, "permalink": data.get("permalink", "")}
+        # Estado muerto o no verificable → no duplicar salvo relist manual explícito.
+        if not (allow_relist and status in _DEAD_STATUS):
+            raise ValueError(
+                "No pudimos actualizar el aviso de Mercado Libre y no creamos uno nuevo "
+                "para evitar duplicados. Reintentá en unos minutos; si el aviso quedó "
+                "finalizado en Mercado Libre, volvé a publicarlo a mano para relistarlo."
+            )
+        # allow_relist y aviso muerto → sigue a crear uno nuevo (relistar).
 
     async with httpx.AsyncClient(timeout=40) as h:
-        if existing_item_id and status in _EDITABLE_STATUS:
-            # Solo campos modificables (title y currency_id no lo son en ML).
-            upd = {"price": payload["price"], "pictures": payload["pictures"]}
-            r = await h.put(f"{config.MELI_API}/items/{existing_item_id}", headers=headers, json=upd)
-            if r.status_code < 400:
-                await _set_description(h, headers, existing_item_id, payload["description"]["plain_text"])
-            fallback_id = existing_item_id
-        else:
-            # Sin publicación previa o item cerrado/no editable → crear uno nuevo.
-            r = await h.post(f"{config.MELI_API}/items", headers=headers, json=payload)
-            fallback_id = None
-            if r.status_code < 400:
-                new_id = r.json().get("id")
-                if new_id:
-                    # La descripción se setea de forma perezosa desde /state (ML la
-                    # rechaza los primeros segundos del alta).
-                    pass
-    if r.status_code >= 400:
-        raise MeliError(r.status_code, r.text)
-    data = r.json()
-    return {"item_id": data.get("id", fallback_id), "permalink": data.get("permalink", "")}
+        r = await h.post(f"{config.MELI_API}/items", headers=headers, json=payload)
+        if r.status_code >= 400:
+            raise MeliError(r.status_code, r.text)
+        data = r.json()
+    return {"item_id": data.get("id"), "permalink": data.get("permalink", "")}
 
 
 async def sync_status(item_id: str, desired: str) -> str | None:

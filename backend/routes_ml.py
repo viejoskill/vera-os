@@ -113,12 +113,17 @@ async def ml_resync_patch(prop: dict) -> dict:
     item_id = ml_pub.get("itemId")
     if not item_id or not config.meli_configured():
         return {}
+    # Solo resincroniza avisos que hoy están publicados. Un aviso finalizado/en error
+    # no se toca al guardar (evita reactivarlo o duplicarlo sin que el usuario lo pida).
+    if ml_pub.get("status") != "published":
+        return {}
     # Si está Reservada/Vendida, la portada del aviso lleva el sello quemado; el aviso
     # NO se pausa automáticamente (el usuario lo pausa a mano si lo necesita).
     status = prop.get("status")
     try:
         images = await _stamped_images(prop, status) if status in ("reserved", "sold") else await _images(prop)
-        res = await ml.publish(prop, images, item_id)
+        # allow_relist=False: al guardar NUNCA se crea un aviso nuevo (anti-duplicados).
+        res = await ml.publish(prop, images, item_id, allow_relist=False)
     except Exception as e:  # noqa: BLE001 — best-effort
         detail = getattr(e, "detail", str(e))
         logger.error("ML re-sync error (%s): %s", prop.get("id"), detail)

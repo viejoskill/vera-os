@@ -1342,3 +1342,18 @@ El calendario de la propiedad (tab Reservas del RentalWorkspace) pasó de 1 mes 
 - Deep-link `?section=` mapea a la solapa correcta antes de hacer scroll (tabOf en el useEffect de searchParams).
 - CSS nuevo: `.vera-ws-tabs` / `.vera-ws-tabs__btn` en index.css. data-testids: ws-tab-datos, ws-tab-fotos, ws-tab-propietario, ws-tab-comercializacion, ws-tab-publicaciones.
 - Verificado por testing_agent (iteration_52: 100% frontend, todas las solapas renderizan, header fijo, sin secciones perdidas). Requiere REDEPLOY para producción.
+
+## Fix ML: actualizar NO debe duplicar el aviso (2026-06)
+**Bug reportado:** al actualizar una propiedad publicada (cambiar título/precio), ML no editaba el aviso existente sino que creaba OTRO → avisos duplicados con info distinta.
+**Causa raíz** (`mercadolibre/service.py::publish`): si el `itemId` existía pero su estado NO era `active`/`paused` (o `_item_status` devolvía None por un fallo transitorio de red/token), el código caía al `else` y hacía POST /items → creaba un aviso nuevo en silencio. Además el update solo mandaba `price` + `pictures`, nunca el `title`.
+**Fix:**
+- `_item_status` ahora distingue 404 (`not_found`, aviso borrado) de None (no verificable).
+- `publish(prop, images, existing, *, allow_relist=True)`:
+  - `active`/`paused` → PUT (ahora incluye **título** + precio + fotos; si ML rechaza el título reintenta sin él) + descripción. Devuelve el MISMO itemId.
+  - `not_yet_active`/`under_review`/`payment_required` → error "activándose, reintentá".
+  - Estado muerto (`closed`/`inactive`/`not_found`) → relista (crea nuevo) SOLO si `allow_relist=True` (publicación manual). 
+  - None (no verificable) o auto-resync → **lanza error, NUNCA duplica**.
+- `routes_ml.py::ml_resync_patch` (auto-sync al Guardar una propiedad de Ventas): solo resincroniza si el canal está `published` y llama `publish(..., allow_relist=False)` → al guardar jamás se crea un aviso nuevo.
+- Confirmado por la doc de ML: en inmuebles el título ES editable por PUT (salvo con ventas registradas, imposible en clasificados).
+**Alcance:** afecta Ventas (`routes_ml.py`, auto-sync + botón Publicar) y Alquileres (`routes_ml_rentals.py`, botón Actualizar) porque comparten `service.publish`.
+**Verificado:** test determinístico `/app/backend/tests_ml_publish.py` (7/7 PASS, simula respuestas de ML). Falta verificación e2e del usuario sobre un aviso real. Requiere REDEPLOY para producción.
