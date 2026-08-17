@@ -174,9 +174,21 @@ export const waLink = (telefono: string, mensaje: string): string => {
 };
 
 /** Mensaje al huésped con datos de la reserva y (si existe) el link de seña. */
+export const GOOGLE_REVIEW_URL = 'https://share.google/BjitJyGJx5FhF2ehn';
+
 export const mensajeReserva = (r: Reservation): string => {
   if (r.estado === 'cancelada') return mensajeRechazo(r, r.motivo);
   const nombre = r.huesped?.nombre?.split(' ')[0] || '';
+  if (r.estado === 'finalizada') {
+    return [
+      `¡Hola ${nombre}! 👋 Gracias por elegirnos para tu estadía en ${r.propertyTitulo || 'la propiedad'}. ¡Esperamos que la hayas pasado genial! 🌴`,
+      '',
+      'Si te sentiste bien atendido/a, nos ayudaría muchísimo que nos dejes una reseña en Google (te lleva 1 minuto):',
+      GOOGLE_REVIEW_URL,
+      '',
+      '¡Gracias y te esperamos la próxima!',
+    ].join('\n');
+  }
   const l: string[] = [];
   l.push(`¡Hola ${nombre}! 👋 Te escribimos de Inmobiliaria Varela por tu reserva de ${r.propertyTitulo || 'la propiedad'}.`);
   l.push('');

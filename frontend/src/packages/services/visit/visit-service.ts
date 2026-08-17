@@ -3,6 +3,9 @@ import type { PropertyVisit, VisitInput } from '@vera/types';
 
 const base = `${env.backendUrl}/api/properties`;
 
+/** Link de reseña de Google de Inmobiliaria Varela (para sumar reputación). */
+export const GOOGLE_REVIEW_URL = 'https://share.google/BjitJyGJx5FhF2ehn';
+
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${base}${path}`, {
     headers: { 'Content-Type': 'application/json' },
@@ -53,6 +56,9 @@ export function buildOwnerMessage(opts: {
   lineas.push('');
   lineas.push('Ante cualquier novedad o consulta, nos estaremos comunicando.');
   lineas.push('¡Muchas gracias!');
+  lineas.push('');
+  lineas.push('Si quedó conforme con nuestra atención, nos ayuda muchísimo que nos deje una reseña en Google:');
+  lineas.push(GOOGLE_REVIEW_URL);
   lineas.push('');
   lineas.push('_Este es un mensaje automático de Inmobiliaria Varela_');
   return lineas.join('\n');
