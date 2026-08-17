@@ -6579,8 +6579,9 @@ p {
   background: var(--vera-color-surface);
 }
 .vera-ws-tabs__btn--active {
-  color: #fff;
-  background: var(--vera-color-text);
+  color: #14140f;
+  background: var(--vera-color-primary);
+  border-color: transparent;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.16);
 }
 
