@@ -82,3 +82,7 @@ WHATSAPP_NUMBER = os.environ.get("WHATSAPP_NUMBER", "5492246586030")
 PUBLIC_WEB_BASE_URL = os.environ.get(
     "PUBLIC_WEB_BASE_URL", "https://www.varelapropiedadescde.com.ar"
 ).rstrip("/")
+# Subdominio de marca de la web de reservas (alquileres). Sirve /reservar/:slug.
+RENTALS_PUBLIC_BASE_URL = os.environ.get(
+    "RENTALS_PUBLIC_BASE_URL", "https://alquileres.varelapropiedadescde.com.ar"
+).rstrip("/")

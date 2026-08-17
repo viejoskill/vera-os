@@ -189,3 +189,10 @@ Verificado 100% (iteration_40): backend 7/7 pytest (`test_documents_sprint4_5.py
 - Verificado E2E real: re-publicó el alquiler de prueba con el link (item MLA1999070161), ML lo aceptó (published→active, sin rechazo de moderación) y se cerró el aviso de test. Propiedad de prueba restaurada.
 - Nota: en producción el link resuelve al host de PUBLIC_APP_URL. Si se quiere el subdominio de marca (alquileres.varelapropiedadescde.com.ar), se cambia esa env.
 - ⚠️ Requiere REDEPLOY para producción.
+
+## 2026-06-17 · ML alquileres: link de marca al inicio + sync confirmado
+- Link ahora va al INICIO del cuerpo del aviso (antes iba al final) y usa el subdominio de marca: `RENTALS_PUBLIC_BASE_URL` (default `https://alquileres.varelapropiedadescde.com.ar`) + `/reservar/{slug}`. Fallback a PUBLIC_APP_URL si no está seteada.
+- Config nueva `RENTALS_PUBLIC_BASE_URL` en config.py (env-configurable).
+- Sync precio/fotos: NO requirió cambios — el botón "Actualizar" (publish con itemId existente) ya hace PUT de price + pictures + description con los valores actuales de la propiedad. Confirmado en service.py.
+- Verificado con dry-run de _rental_to_prop: descripción arranca con "📅 Reservá por fechas online…" + link de marca, seguido de la descripción de la propiedad.
+- ⚠️ Requiere REDEPLOY. En producción, el subdominio alquileres.varelapropiedadescde.com.ar debe apuntar a la app (sirve /reservar/:slug).
