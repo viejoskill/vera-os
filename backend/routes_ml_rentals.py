@@ -64,7 +64,7 @@ def _rental_to_prop(r: dict) -> dict:
     desc = (r.get("descripcion") or r.get("titulo") or "").strip()
     if base and slug:
         link = f"{base}/reservar/{slug}"
-        header = f"📅 Reservá por fechas online (disponibilidad en tiempo real):\n{link}"
+        header = f"Reserva por fechas online (disponibilidad en tiempo real):\n{link}"
         desc = f"{header}\n\n{desc}" if desc else header
     return {
         "id": r["_id"],
@@ -136,13 +136,24 @@ async def rental_state(pid: str):
     if not config.meli_configured():
         return {"hasListing": False}
     r = await _get(pid)
-    item_id = ((r.get("publications") or {}).get("mercadolibre") or {}).get("itemId")
+    pubs = (r.get("publications") or {}).get("mercadolibre") or {}
+    item_id = pubs.get("itemId")
     if not item_id:
         return {"hasListing": False}
+    # Setear la descripción (con el link) de forma perezosa: ML rechaza el POST los
+    # primeros segundos del alta, así que se reintenta en cada consulta de estado.
+    desc_set = bool(pubs.get("descSet"))
+    if not desc_set:
+        try:
+            if await ml.set_description(item_id, _rental_to_prop(r)["description"]):
+                await _set_channel(pid, {"descSet": True})
+                desc_set = True
+        except Exception:  # noqa: BLE001
+            pass
     try:
         st = await ml.item_state(item_id)
     except Exception:  # noqa: BLE001
-        return {"hasListing": True, "itemId": item_id, "status": None, "label": "—", "tone": "none", "activating": False}
+        return {"hasListing": True, "itemId": item_id, "status": None, "label": "—", "tone": "none", "activating": False, "descSet": desc_set}
     label, tone = _ML_STATE_LABEL.get(st.get("status"), ("—", "none"))
     sub = st.get("sub_status") or []
     activating = st.get("status") in ("not_yet_active", "under_review", "payment_required") or (
@@ -151,7 +162,7 @@ async def rental_state(pid: str):
     return {
         "hasListing": True, "itemId": item_id, "status": st.get("status"),
         "subStatus": sub, "label": label, "tone": tone,
-        "activating": activating, "url": st.get("permalink") or "",
+        "activating": activating, "url": st.get("permalink") or "", "descSet": desc_set,
     }
 
 

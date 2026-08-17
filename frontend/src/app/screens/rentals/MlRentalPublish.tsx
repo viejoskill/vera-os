@@ -5,7 +5,7 @@ import { env } from '@vera/config';
 
 const ML = `${env.backendUrl}/api/ml`;
 
-interface MlState { hasListing: boolean; status?: string | null; label?: string; tone?: string; activating?: boolean; url?: string; }
+interface MlState { hasListing: boolean; status?: string | null; label?: string; tone?: string; activating?: boolean; url?: string; descSet?: boolean; }
 
 /** Publicación del alquiler en Mercado Libre (como "Alquiler temporal").
  * Reutiliza la conexión OAuth global de ML; publicar/estado/finalizar por propiedad. */
@@ -26,6 +26,15 @@ export const MlRentalPublish = ({ propertyId }: { propertyId: string }) => {
 
   useEffect(() => { loadStatus(); }, [loadStatus]);
   useEffect(() => { if (connected) loadState(); }, [connected, loadState]);
+
+  // Mientras el aviso se activa o falta setear la descripción (con el link),
+  // reconsultamos el estado cada 15s (eso dispara el seteo perezoso en el backend).
+  useEffect(() => {
+    if (!connected || !state.hasListing) return;
+    if (!state.activating && state.descSet) return;
+    const t = setTimeout(() => { loadState(); }, 15000);
+    return () => clearTimeout(t);
+  }, [connected, state, loadState]);
 
   const connect = async () => {
     const { auth_url } = await fetch(`${ML}/oauth/start?origin=${encodeURIComponent(window.location.origin)}`).then((r) => r.json());

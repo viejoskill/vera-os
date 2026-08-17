@@ -3,6 +3,7 @@ nombre de la cuenta vendedor de Varela, y publicar/actualizar/finalizar avisos.
 El Client Secret vive solo acá (backend). Tokens y estado en Mongo."""
 from __future__ import annotations
 
+import asyncio
 import logging
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -325,6 +326,39 @@ async def _item_status(access: str, item_id: str) -> str | None:
         return None
 
 
+_bg_tasks: set = set()
+
+
+async def set_description(item_id: str, text: str) -> bool:
+    """Setea (o reemplaza) la descripción de un aviso. POST y, si ya existe, PUT.
+    ML rechaza el POST durante los primeros ~20-30s del alta; por eso se reintenta
+    desde el polling de estado hasta que ML lo acepta."""
+    access = await _valid_token()
+    headers = {"Authorization": f"Bearer {access}", "Content-Type": "application/json"}
+    async with httpx.AsyncClient(timeout=20) as h:
+        r = await h.post(f"{config.MELI_API}/items/{item_id}/description", headers=headers, json={"plain_text": text})
+        if r.status_code < 400:
+            return True
+        rp = await h.put(f"{config.MELI_API}/items/{item_id}/description", headers=headers, json={"plain_text": text})
+        return rp.status_code < 400
+
+
+async def _set_description(h, headers, item_id: str, text: str) -> bool:
+    """Setea la descripción de un aviso YA activo/pausado (update). POST y, si ya existe, PUT."""
+    r = await h.post(f"{config.MELI_API}/items/{item_id}/description", headers=headers, json={"plain_text": text})
+    if r.status_code < 400:
+        return True
+    rp = await h.put(f"{config.MELI_API}/items/{item_id}/description", headers=headers, json={"plain_text": text})
+    if rp.status_code >= 400:
+        logger.error("ML: no se pudo setear descripción de %s: %s", item_id, rp.text[:300])
+    return rp.status_code < 400
+
+
+async def _set_description_deferred(item_id: str, text: str) -> None:
+    """(Reservado) — la descripción en altas se setea de forma perezosa desde /state."""
+    return None
+
+
 async def publish(prop: dict, images: list[dict], existing_item_id: str | None) -> dict:
     """Crea (POST /items) o actualiza (PUT /items/{id}) el aviso. Devuelve item id + permalink.
     ML NO permite modificar title ni currency_id, y un item cerrado/finalizado no es editable
@@ -349,15 +383,18 @@ async def publish(prop: dict, images: list[dict], existing_item_id: str | None) 
             upd = {"price": payload["price"], "pictures": payload["pictures"]}
             r = await h.put(f"{config.MELI_API}/items/{existing_item_id}", headers=headers, json=upd)
             if r.status_code < 400:
-                await h.put(
-                    f"{config.MELI_API}/items/{existing_item_id}/description",
-                    headers=headers, json={"plain_text": payload["description"]["plain_text"]},
-                )
+                await _set_description(h, headers, existing_item_id, payload["description"]["plain_text"])
             fallback_id = existing_item_id
         else:
             # Sin publicación previa o item cerrado/no editable → crear uno nuevo.
             r = await h.post(f"{config.MELI_API}/items", headers=headers, json=payload)
             fallback_id = None
+            if r.status_code < 400:
+                new_id = r.json().get("id")
+                if new_id:
+                    # La descripción se setea de forma perezosa desde /state (ML la
+                    # rechaza los primeros segundos del alta).
+                    pass
     if r.status_code >= 400:
         raise MeliError(r.status_code, r.text)
     data = r.json()

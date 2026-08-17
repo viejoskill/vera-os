@@ -196,3 +196,13 @@ Verificado 100% (iteration_40): backend 7/7 pytest (`test_documents_sprint4_5.py
 - Sync precio/fotos: NO requirió cambios — el botón "Actualizar" (publish con itemId existente) ya hace PUT de price + pictures + description con los valores actuales de la propiedad. Confirmado en service.py.
 - Verificado con dry-run de _rental_to_prop: descripción arranca con "📅 Reservá por fechas online…" + link de marca, seguido de la descripción de la propiedad.
 - ⚠️ Requiere REDEPLOY. En producción, el subdominio alquileres.varelapropiedadescde.com.ar debe apuntar a la app (sirve /reservar/:slug).
+
+## 2026-06-17 · FIX ML alquileres: descripción/cuerpo vacío (causa raíz: emoji)
+- Bug reportado: el aviso publicado en ML salía SIN cuerpo/descripción/links.
+- Causa raíz #1: ML (clasificados de inmuebles) IGNORA la descripción inline del alta → hay que setearla con llamada aparte a /items/{id}/description (POST nuevo, PUT si existe).
+- Causa raíz #2 (la clave): ML RECHAZA descripciones con emojis ("DESCRIPTION_PLAIN_TEXT_NOT_ALLOWED"). El header llevaba 📅 → se quitó, ahora texto plano: "Reserva por fechas online (disponibilidad en tiempo real):\n{link}\n\n{descripcion}".
+- Timing: ML rechaza el POST de descripción los primeros ~20-60s del alta; se acepta después. Solución robusta (no fire-and-forget, que moría por GC/reload): seteo PEREZOSO desde `GET /ml/rentals/{id}/state` — cada consulta intenta setear la descripción hasta que ML la acepta, y persiste `publications.mercadolibre.descSet=true`.
+- Frontend `MlRentalPublish.tsx`: mientras `activating` o `!descSet`, re-consulta `/state` cada 15s (dispara el seteo perezoso hasta completarse).
+- service.py: nueva `set_description(item_id, text)` pública (POST→PUT). Se removió el `_spawn`/task diferida.
+- Verificado E2E real: PUT descripción 200 y GET 200 mostrando el cuerpo = link (subdominio de marca) ARRIBA + descripción de la propiedad abajo. Avisos de prueba cerrados, propiedad de test restaurada.
+- ⚠️ Requiere REDEPLOY.
