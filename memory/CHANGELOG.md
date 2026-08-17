@@ -213,3 +213,10 @@ Verificado 100% (iteration_40): backend 7/7 pytest (`test_documents_sprint4_5.py
 - Nuevo botón "Pedir reseña de Google" en TrackingSection (Estadísticas de la propiedad, junto a "Registrar visita"): abre wa.me/?text=... con mensaje + link para enviar a cualquier cliente (elige contacto en WhatsApp).
 - GOOGLE_REVIEW_URL = https://share.google/BjitJyGJx5FhF2ehn (exportado desde @vera/services). Verificado: tsc limpio, webpack compiled successfully, botón renderiza en la ficha.
 - ⚠️ Requiere REDEPLOY.
+
+## 2026-06-17 · Studio: Identidad fija + Código de acceso COMPARTIDOS entre usuarios
+- Bug: la secretaria (usuario no-admin) veía "Falta el Código de acceso en Identidad fija" en el editor de fotos, porque la config del Studio (studio_kv) se guardaba por-usuario (?u={supabase uid}).
+- Fix vera-studio.html: el bucket de storage ahora usa un uid FIJO 'varela-workspace-shared' (en vez del uid real) → identidad/logo/plan/Código de acceso compartidos por todo el workspace. Se mantiene el fallback a localStorage en modo standalone (sin ?u).
+- Migración de datos: copiadas las claves del admin (uid 5b3ff802-...: ev_identidad [incluye 'acceso'], ev_logo) a 'varela-workspace-shared:*'.
+- Verificado como qa_varela (no-admin): conexionVera OK, campo acceso presente (15 chars), sin error.
+- ⚠️ Requiere REDEPLOY para producción.

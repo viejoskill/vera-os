@@ -70,9 +70,12 @@
  * Si no hay usuario (uso standalone del archivo), cae solo a localStorage.
  * ============================================================================== */
 (function () {
-  var uid = null;
-  try { uid = new URLSearchParams(location.search).get('u'); } catch (e) {}
-  if (!uid) return; // sin usuario -> el tool usa localStorage como siempre
+  var realUid = null;
+  try { realUid = new URLSearchParams(location.search).get('u'); } catch (e) {}
+  if (!realUid) return; // sin usuario -> el tool usa localStorage como siempre
+  // La Identidad fija (marca, logo, plan y Código de acceso) es de la inmobiliaria,
+  // no de cada persona: se comparte entre todos los usuarios del workspace.
+  var uid = 'varela-workspace-shared';
 
   function kvUrl(key) {
     return '/api/studio/kv/' + encodeURIComponent(key) + '?u=' + encodeURIComponent(uid);
