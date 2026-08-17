@@ -1,0 +1,22 @@
+{
+  "summary": "Frontend-only test of PropertyWorkspace (Ventas) 5-tab refactor. All 5 tabs render in the correct order (Datos, Fotos, Propietario y Documentos, Comercialización, Publicaciones y Gestión) with the correct data-testids (ws-tab-datos, ws-tab-fotos, ws-tab-propietario, ws-tab-comercializacion, ws-tab-publicaciones). Default active tab is 'Datos'. Panels switch correctly per tab (Datos → information+features+amenities; Fotos → photos; Propietario → owner+documents+documentacion; Comercialización → commercialization; Publicaciones → channels+stats). Header (title, status-bar, progress, Guardar) stays visible across all 5 tabs on an existing property. On new-property (/propiedades/nueva) route the tabs render and switch fine, and documentacion + stats are intentionally hidden (they require a saved property) — status-bar is also hidden on /nueva by design (isNew guard).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PropertyWorkspace.tsx is 694 lines — approaching the 700-line split threshold; consider extracting tab panels into subcomponents (DatosTab, FotosTab, etc.) for maintainability.",
+    "Tabs currently only unmount+remount their content (no lazy load / no state preservation between tabs). Acceptable for now, but if inner sections use uncontrolled inputs, switching tabs could lose unsaved local state — verify with main agent whether all sections rely on the parent form context."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "test_credentials": "Used qa_varela@vera.test / VeraQA!2026ml. Since employees (non-admin) get redirected away from /propiedades by AppLayout, temporarily flipped isAdmin=True on this user's app_access doc, ran tests, then reverted to isAdmin=False. Also created a temporary Ventas property (id 8944f10e-…) via POST /api/properties to exercise the existing-property path and deleted it after. Both admin flag and test property have been cleaned up.",
+  "seed_data_creation": "Temp property created and deleted; qa_varela isAdmin toggled True then reverted to False.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "To test /propiedades screens with the qa_varela user you must flip its isAdmin flag to True in Mongo (db.app_access) — AppLayout redirects non-admin employees to /alquileres. Remember to revert. No Ventas seed data exists by default; create via POST /api/properties with operation='venta' and delete after."
+}

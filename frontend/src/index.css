@@ -6554,6 +6554,36 @@ p {
 .vera-status-bar__btn--active.vera-status-bar__btn--active { }
 .vera-status-bar__btn--active { }
 
+.vera-ws-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vera-space-xs);
+  margin: 0 0 var(--vera-space-md);
+  border-bottom: 1px solid var(--vera-color-border);
+  padding-bottom: var(--vera-space-sm);
+}
+.vera-ws-tabs__btn {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--vera-color-text-secondary);
+  font-family: var(--vera-font-family);
+  font-size: var(--vera-font-size-sm);
+  font-weight: var(--vera-font-weight-medium);
+  padding: 8px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.vera-ws-tabs__btn:hover {
+  color: var(--vera-color-text);
+  background: var(--vera-color-surface);
+}
+.vera-ws-tabs__btn--active {
+  color: #fff;
+  background: var(--vera-color-text);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.16);
+}
+
 .vera-owner__select {
   display: flex;
   align-items: flex-end;

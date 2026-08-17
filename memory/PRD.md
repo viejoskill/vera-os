@@ -1330,3 +1330,15 @@ El calendario de la propiedad (tab Reservas del RentalWorkspace) pasó de 1 mes 
 
 ## Fix REAL calendario finalizada (2026-08)
 - El fix del backend (OCUPA) NO alcanzaba: RentalWorkspace.tsx (línea ~58) armaba `ocupados` en el CLIENTE filtrando `["prereserva","confirmada","encurso","bloqueo"]` (SIN finalizada). Se agregó "finalizada" a ese filtro del frontend. Verificado por screenshot: reserva Finalizada futura ahora se pinta roja (rt-cal__cell--reserva). Requiere REDEPLOY para producción.
+
+## Ajuste UX Workspace de VENTAS por solapas (2026-06)
+`PropertyWorkspace.tsx` (ficha de propiedades de VENTA) pasó de un scroll único muy largo a **5 solapas** (estado `wsTab`, default 'datos'), replicando el patrón de `RentalWorkspace`. Pedido del usuario: agrupar en 4-5 solapas y que **Publicar quede AL FINAL** (el orden anterior obligaba a publicar antes de terminar de cargar propietario/docs). Orden final:
+1. **Datos** → Datos de la propiedad + Características + Amenities
+2. **Fotos** → galería
+3. **Propietario y Documentos** → Propietario + Documentos + Documentación oficial
+4. **Comercialización** → título/descripción/textos para portales (ExpressSection)
+5. **Publicaciones y Gestión** → Publicaciones (portales/ML) + Estadísticas + Seguimiento
+- Header (título, código, status-bar, barra de progreso, Guardar/Guardar borrador) y la comisión de venta (Reservada/Vendida) + HealthScore quedan FUERA de las solapas → siempre visibles. Guardar persiste todo desde cualquier solapa (todas las secciones comparten el mismo `FormProvider` de react-hook-form, por lo que cambiar de solapa NO pierde datos cargados).
+- Deep-link `?section=` mapea a la solapa correcta antes de hacer scroll (tabOf en el useEffect de searchParams).
+- CSS nuevo: `.vera-ws-tabs` / `.vera-ws-tabs__btn` en index.css. data-testids: ws-tab-datos, ws-tab-fotos, ws-tab-propietario, ws-tab-comercializacion, ws-tab-publicaciones.
+- Verificado por testing_agent (iteration_52: 100% frontend, todas las solapas renderizan, header fijo, sin secciones perdidas). Requiere REDEPLOY para producción.

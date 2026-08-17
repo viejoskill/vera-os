@@ -109,6 +109,7 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
   const [saving, setSaving] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
   const [liveStatus, setLiveStatus] = useState<LiveStatus>('idle');
+  const [wsTab, setWsTab] = useState('datos');
 
   const showToast = useCallback((state: ToastState) => {
     setToast(state);
@@ -348,17 +349,31 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
   useEffect(() => {
     const section = searchParams.get('section');
     if (!section) return;
-    const el = document.getElementById(`ws-section-${section}`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      el.classList.add('vera-section--focus');
-      window.setTimeout(() => el.classList.remove('vera-section--focus'), 2200);
-    }
-    if (searchParams.get('focus') === 'price') {
-      window.setTimeout(() => {
+    const tabOf: Record<string, string> = {
+      information: 'datos',
+      features: 'datos',
+      amenities: 'datos',
+      photos: 'fotos',
+      owner: 'propietario',
+      documents: 'propietario',
+      documentacion: 'propietario',
+      commercialization: 'comercializacion',
+      channels: 'publicaciones',
+      stats: 'publicaciones',
+    };
+    const tab = tabOf[section];
+    if (tab) setWsTab(tab);
+    window.setTimeout(() => {
+      const el = document.getElementById(`ws-section-${section}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        el.classList.add('vera-section--focus');
+        window.setTimeout(() => el.classList.remove('vera-section--focus'), 2200);
+      }
+      if (searchParams.get('focus') === 'price') {
         (document.querySelector('[data-testid="input-price"]') as HTMLElement | null)?.focus();
-      }, 500);
-    }
+      }
+    }, 120);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
@@ -463,83 +478,115 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
 
         <div className="vera-workspace__grid">
           <div className="vera-workspace__main">
-            {/* 1 — Datos de la propiedad */}
-            <div id="ws-section-information">
-              <Panel title="Datos de la propiedad" description="Operación, tipo, precio y ubicación.">
-                <BasicInfoSection />
-              </Panel>
-            </div>
-            <div id="ws-section-features">
-              <Panel title="Características" description="Superficies, ambientes y estado físico.">
-                <FeaturesSection />
-              </Panel>
-            </div>
-            <div id="ws-section-amenities">
-              <Panel title="Amenities" description="Atributos y comodidades. Buscá o marcá lo que corresponda.">
-                <AmenitiesSection />
-              </Panel>
-            </div>
-
-            {/* 2 — Fotos (el activo principal) */}
-            <div id="ws-section-photos">
-              <Panel title="Fotos" description="El activo principal de la propiedad.">
-                <PhotosSection
-                  photos={photos}
-                  onAddFiles={onAddPhotos}
-                  onRemove={onRemovePhoto}
-                  onSetCover={onSetCover}
-                  onMove={onMovePhoto}
-                  onDownloadPhoto={onDownloadPhoto}
-                  onDownloadAll={onDownloadAllPhotos}
-                />
-              </Panel>
+            <div className="vera-ws-tabs" role="tablist" data-testid="ws-tabs">
+              {(([
+                ['datos', 'Datos'],
+                ['fotos', 'Fotos'],
+                ['propietario', 'Propietario y Documentos'],
+                ['comercializacion', 'Comercialización'],
+                ['publicaciones', 'Publicaciones y Gestión'],
+              ]) as [string, string][]).map(([t, label]) => (
+                <button
+                  key={t}
+                  type="button"
+                  role="tab"
+                  aria-selected={wsTab === t}
+                  className={`vera-ws-tabs__btn ${wsTab === t ? 'vera-ws-tabs__btn--active' : ''}`.trim()}
+                  data-testid={`ws-tab-${t}`}
+                  onClick={() => setWsTab(t)}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
 
-            {/* 3 — Propietario */}
-            <div id="ws-section-owner">
-              <Panel title="Propietario" description="Quién es el dueño de la propiedad.">
-                <OwnerSection />
-              </Panel>
-            </div>
+            {/* Solapa 1 — Datos */}
+            {wsTab === 'datos' && (
+              <>
+                <div id="ws-section-information">
+                  <Panel title="Datos de la propiedad" description="Operación, tipo, precio y ubicación.">
+                    <BasicInfoSection />
+                  </Panel>
+                </div>
+                <div id="ws-section-features">
+                  <Panel title="Características" description="Superficies, ambientes y estado físico.">
+                    <FeaturesSection />
+                  </Panel>
+                </div>
+                <div id="ws-section-amenities">
+                  <Panel title="Amenities" description="Atributos y comodidades. Buscá o marcá lo que corresponda.">
+                    <AmenitiesSection />
+                  </Panel>
+                </div>
+              </>
+            )}
 
-            {/* 4 — Documentos */}
-            <div id="ws-section-documents">
-              <Panel title="Documentos" description="Escritura, plano, autorización, video y otros archivos.">
-                <DocumentsSection documents={documents} onAdd={onAddDoc} onRemove={onRemoveDoc} />
-              </Panel>
-            </div>
-
-            {/* 4b — Documentación del motor documental (Autorización, Reserva, etc.) */}
-            {propertyId && (
-              <div id="ws-section-documentacion">
-                <Panel title="Documentación" description="Documentos oficiales de VERA. Se tildan cuando se firman.">
-                  <DocumentacionSection propertyId={propertyId} />
+            {/* Solapa 2 — Fotos (el activo principal) */}
+            {wsTab === 'fotos' && (
+              <div id="ws-section-photos">
+                <Panel title="Fotos" description="El activo principal de la propiedad.">
+                  <PhotosSection
+                    photos={photos}
+                    onAddFiles={onAddPhotos}
+                    onRemove={onRemovePhoto}
+                    onSetCover={onSetCover}
+                    onMove={onMovePhoto}
+                    onDownloadPhoto={onDownloadPhoto}
+                    onDownloadAll={onDownloadAllPhotos}
+                  />
                 </Panel>
               </div>
             )}
 
-            {/* 5 — Comercialización (título, descripción y textos para portales) */}
-            <div id="ws-section-commercialization">
-              <Panel title="Comercialización" description="Título, descripción y textos para portales. VERA propone; vos decidís.">
-                <ExpressSection />
-              </Panel>
-            </div>
+            {/* Solapa 3 — Propietario y Documentos */}
+            {wsTab === 'propietario' && (
+              <>
+                <div id="ws-section-owner">
+                  <Panel title="Propietario" description="Quién es el dueño de la propiedad.">
+                    <OwnerSection />
+                  </Panel>
+                </div>
+                <div id="ws-section-documents">
+                  <Panel title="Documentos" description="Escritura, plano, autorización, video y otros archivos.">
+                    <DocumentsSection documents={documents} onAdd={onAddDoc} onRemove={onRemoveDoc} />
+                  </Panel>
+                </div>
+                {propertyId && (
+                  <div id="ws-section-documentacion">
+                    <Panel title="Documentación" description="Documentos oficiales de VERA. Se tildan cuando se firman.">
+                      <DocumentacionSection propertyId={propertyId} />
+                    </Panel>
+                  </div>
+                )}
+              </>
+            )}
 
-            {/* 6 — Publicaciones */}
-            <div id="ws-section-channels">
-              <Panel title="Publicaciones" description="Dónde está publicada la propiedad. VERA nunca publica sola.">
-                <ChannelsSection propertyId={propertyId} initial={detail?.publications ?? {}} />
-              </Panel>
-            </div>
-
-            {/* 7 — Estadísticas */}
-            {!isNew && detail && (
-              <div id="ws-section-stats">
-                <Panel title="Estadísticas" description="Métricas del activo. Solo lectura.">
-                  <StatsSection propertyId={detail.id} />
-                  <TrackingSection propertyId={detail.id} address={detail.address} ownerId={detail.ownerId} />
+            {/* Solapa 4 — Comercialización (título, descripción y textos para portales) */}
+            {wsTab === 'comercializacion' && (
+              <div id="ws-section-commercialization">
+                <Panel title="Comercialización" description="Título, descripción y textos para portales. VERA propone; vos decidís.">
+                  <ExpressSection />
                 </Panel>
               </div>
+            )}
+
+            {/* Solapa 5 — Publicaciones y Gestión */}
+            {wsTab === 'publicaciones' && (
+              <>
+                <div id="ws-section-channels">
+                  <Panel title="Publicaciones" description="Dónde está publicada la propiedad. VERA nunca publica sola.">
+                    <ChannelsSection propertyId={propertyId} initial={detail?.publications ?? {}} />
+                  </Panel>
+                </div>
+                {!isNew && detail && (
+                  <div id="ws-section-stats">
+                    <Panel title="Estadísticas" description="Métricas del activo. Solo lectura.">
+                      <StatsSection propertyId={detail.id} />
+                      <TrackingSection propertyId={detail.id} address={detail.address} ownerId={detail.ownerId} />
+                    </Panel>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
