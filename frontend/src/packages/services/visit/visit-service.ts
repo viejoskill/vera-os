@@ -29,35 +29,44 @@ export function buildOwnerMessage(opts: {
   ownerName?: string;
   agent?: string;
   date?: string;
+  time?: string;
 }): string {
-  const first = (opts.ownerName || '').trim().split(/\s+/)[0];
-  const greeting = first ? `Hola ${first}` : 'Hola';
-  const agentFirst = (opts.agent || '').trim().split(/\s+/)[0];
-  const agentName = agentFirst && !agentFirst.includes('@') ? agentFirst : 'Inmobiliaria Varela';
+  const owner = (opts.ownerName || '').trim();
+  const saludo = owner ? `Estimado/a ${owner}` : 'Estimado/a propietario/a';
+  const agent = (opts.agent || '').trim();
+  const agentName = agent && !agent.includes('@') ? agent : 'Inmobiliaria Varela';
   const where = opts.address ? ` de ${opts.address}` : '';
+  const cuando = visitDateLong(opts.date);
+  const hora = (opts.time || '').trim();
   const comment = (opts.comment || '').trim();
-  const commentPart = comment ? `\n\nComentario de la visita: ${comment}` : '';
-  const when = visitWhen(opts.date);
-  return (
-    `${greeting} ¿cómo estás? 👋 Soy Vera, la asistente virtual de ${agentName}\n\n` +
-    `Te cuento que ${when} tuvimos una visita en tu propiedad${where} 🏡. ` +
-    `Vino un interesado y la mostramos con toda la dedicación de siempre.${commentPart}\n\n` +
-    `Seguimos trabajando para encontrar el comprador ideal y te mantenemos al tanto de cada novedad. ` +
-    `¡Gracias por la confianza! 🤝`
-  );
+
+  const lineas = [
+    '🏠 Inmobiliaria Varela',
+    '',
+    `${saludo}, le informamos que ${cuando} hemos realizado una visita a su propiedad${where} junto a un posible comprador.`,
+    '',
+  ];
+  if (hora) lineas.push(`🕐 Horario: ${hora} hs`);
+  lineas.push(`👤 Agente: ${agentName}`);
+  if (comment) { lineas.push(''); lineas.push(`📝 ${comment}`); }
+  lineas.push('');
+  lineas.push('Ante cualquier novedad o consulta, nos estaremos comunicando.');
+  lineas.push('¡Muchas gracias! 🙏');
+  lineas.push('');
+  lineas.push('_Este es un mensaje automático de Inmobiliaria Varela_');
+  return lineas.join('\n');
 }
 
-/** "hoy" / "ayer" / "el DD/MM/AAAA" según la fecha de la visita. */
-function visitWhen(dateStr?: string): string {
+/** Fecha de la visita en formato "el miércoles 1 de julio" (o "hoy" si es el día actual). */
+function visitDateLong(dateStr?: string): string {
   if (!dateStr) return 'hoy';
   const d = new Date(`${dateStr}T00:00:00`);
   if (Number.isNaN(d.getTime())) return 'hoy';
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const diff = Math.round((today.getTime() - d.getTime()) / 86_400_000);
-  if (diff <= 0) return 'hoy';
-  if (diff === 1) return 'ayer';
-  return `el ${d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+  if (d.getTime() === today.getTime()) return 'hoy';
+  const txt = d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+  return `el ${txt}`;
 }
 
 /** WhatsApp deep link con el mensaje precargado. Limpia el teléfono a solo dígitos. */

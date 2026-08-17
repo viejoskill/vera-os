@@ -44,7 +44,7 @@ export const VisitModal = ({ propertyId, address, ownerId, onClose, onRegistered
   const update = (patch: Partial<VisitInput>) => setForm((f) => ({ ...f, ...patch }));
 
   const buildMsg = () =>
-    buildOwnerMessage({ address, comment: form.comment, ownerName: owner?.fullName, agent: form.agent, date: form.date });
+    buildOwnerMessage({ address, comment: form.comment, ownerName: owner?.fullName, agent: form.agent, date: form.date, time: form.time });
 
   const mutation = useMutation({
     mutationFn: (input: VisitInput) => visitService.create(propertyId, input),
