@@ -15,10 +15,11 @@ import { ReservaManual } from './ReservaManual';
 import { ReservaSemaforo } from './Semaforo';
 import { AvisoPendientes } from './AvisoPendientes';
 import { MoneyInput } from './MoneyInput';
+import { MlRentalPublish } from './MlRentalPublish';
 import './rentals.css';
 
 const empty: Partial<RentalProperty> = {
-  titulo: '', direccion: '', localidad: 'Costa del Este', descripcion: '', capacidad: 4,
+  titulo: '', tipo: 'casa', direccion: '', localidad: 'Costa del Este', descripcion: '', capacidad: 4,
   dormitorios: 2, banos: 1, amenities: [], moneda: 'ARS', precioNoche: 0,
   descSemana: 0, descQuincena: 0, descMes: 0, activa: true,
 };
@@ -201,6 +202,12 @@ export const RentalWorkspace = () => {
               <Input label="Dirección" value={f.direccion || ''} onChange={(e) => set('direccion', e.target.value)} data-testid="rt-direccion" />
               <Input label="Localidad" value={f.localidad || ''} onChange={(e) => set('localidad', e.target.value)} data-testid="rt-localidad" />
             </div>
+            <label className="rt-field"><span>Tipo de inmueble (para Mercado Libre)</span>
+              <select value={f.tipo || 'casa'} onChange={(e) => set('tipo', e.target.value)} data-testid="rt-tipo">
+                <option value="casa">Casa</option>
+                <option value="departamento">Departamento</option>
+                <option value="ph">PH</option>
+              </select></label>
             <label className="rt-field"><span>Descripción</span>
               <textarea rows={4} value={f.descripcion || ''} onChange={(e) => set('descripcion', e.target.value)} data-testid="rt-descripcion" /></label>
             <div className="rt-row3">
@@ -254,6 +261,7 @@ export const RentalWorkspace = () => {
                 </div>
               </>
             )}
+            {pid && <MlRentalPublish propertyId={pid} />}
           </section>
         </div>
       )}

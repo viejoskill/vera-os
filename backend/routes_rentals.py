@@ -105,6 +105,7 @@ def _prop_out(p: dict, public: bool = False) -> dict:
     imgs = sorted(p.get("imagenes") or [], key=lambda i: i.get("position", 0))
     out = {
         "id": p["_id"], "slug": p.get("slug"), "codigo": p.get("codigo"), "titulo": p.get("titulo"),
+        "tipo": p.get("tipo", "casa"),
         "direccion": p.get("direccion"), "localidad": p.get("localidad"),
         "descripcion": p.get("descripcion"), "capacidad": p.get("capacidad"),
         "dormitorios": p.get("dormitorios"), "banos": p.get("banos"),
@@ -129,6 +130,7 @@ def _prop_out(p: dict, public: bool = False) -> dict:
             "comisionPct": p.get("comisionPct", 0), "comisionMinima": p.get("comisionMinima", 0),
             "notas": p.get("notas", ""),
             "propietario": p.get("propietario") or {},
+            "publications": p.get("publications") or {},
         })
     return out
 
@@ -202,6 +204,7 @@ class OwnerBody(BaseModel):
 
 class PropertyBody(BaseModel):
     titulo: str
+    tipo: str = "casa"  # casa | departamento | ph (para Mercado Libre)
     direccion: str | None = ""
     localidad: str | None = "Costa del Este"
     descripcion: str | None = ""

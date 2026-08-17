@@ -244,6 +244,7 @@ _ATTR_VALUE = {
     "ROOMS": lambda p: str(_int(p.get("rooms")) or _int(p.get("bedrooms"))),
     "FULL_BATHROOMS": lambda p: str(_int(p.get("bathrooms"))),
     "PARKING_LOTS": lambda p: str(_int(p.get("parking_covered")) + _int(p.get("parking_uncovered"))),
+    "GUESTS": lambda p: str(_int(p.get("capacity")) or 2),  # alquiler temporal (huéspedes)
 }
 
 # Defaults para atributos-lista OBLIGATORIOS que ML exige pero que VERA no modela

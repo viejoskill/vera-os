@@ -24,6 +24,7 @@ import routes_migration
 import routes_people
 import routes_public
 import routes_ml
+import routes_ml_rentals
 import routes_properties
 import routes_sign
 import routes_notifications
@@ -59,6 +60,7 @@ api_router.include_router(routes_migration.router)
 api_router.include_router(routes_people.router)
 api_router.include_router(routes_public.router)
 api_router.include_router(routes_ml.router)
+api_router.include_router(routes_ml_rentals.router)
 api_router.include_router(routes_events.router)
 api_router.include_router(routes_core.router)
 api_router.include_router(routes_knowledge.router)

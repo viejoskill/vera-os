@@ -469,3 +469,10 @@
 }
 .rt-manual__resumen strong { color: var(--vera-color-text); }
 
+
+/* Publicación en Mercado Libre desde el alquiler */
+.rt-ml { margin-top: 22px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.08); }
+.rt-ml__status { display: flex; align-items: center; gap: 8px; font-size: .88rem; margin: 6px 0; }
+.rt-ml__link { display: inline-flex; align-items: center; gap: 5px; font-size: .8rem; color: var(--vera-color-primary, #d6aa28); text-decoration: none; margin-bottom: 8px; }
+.rt-ml__actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.rt-ml__err { color: #e07575; font-size: .82rem; margin: 6px 0; }

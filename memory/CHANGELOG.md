@@ -173,3 +173,13 @@ Verificado 100% (iteration_40): backend 7/7 pytest (`test_documents_sprint4_5.py
 - Restricción de empleado: StudioScreen.tsx agrega `only=fotos` al iframe cuando el usuario NO es admin. En vera-studio.html, el boot lee `only`; si es 'fotos' oculta todos los botones de modo salvo "Editor de fotos" y hace `setMode('fotos')`. Admin sigue viendo Studio completo.
 - Acceso: AppLayout ya habilita Alquileres + Studio para empleados (cambio previo). Verificado: empleado ve solo "Editor de fotos", panel abre directo, MODOS_IA.airbnb presente; sin errores JS.
 - ⚠️ Producción: el usuario debe REDEPLOYAR.
+
+## 2026-06-17 · Mercado Libre para Alquileres (Alquiler temporal)
+- Ventas: sin cambios (la integración ML ya existía y funciona; publicación manual con botón "Publicar" en la ficha, cuenta INMOVARELA conectada).
+- Alquileres: NUEVO. `routes_ml_rentals.py` (prefix `/api/ml/rentals`) con publish/state/close, reusando `mercadolibre/service.py`. Adaptador rental→prop publica como "alquiler_temporario" (categorías MLA50278/50279/105180 casa/depto/ph). Imágenes firmadas con `_sign` (mismo storage Supabase). Estado guardado en `rental_properties.publications.mercadolibre`.
+- `mercadolibre/service.py`: agregado atributo `GUESTS` (capacidad) en `_ATTR_VALUE` — requerido por ML para alquiler temporal (categoría lo pedía). No afecta ventas (solo se envía si la categoría lo exige).
+- rentals: PropertyBody + `_prop_out` ahora incluyen `tipo` (casa/departamento/ph, default casa) y exponen `publications`.
+- Frontend: selector "Tipo de inmueble (para Mercado Libre)" en la pestaña Datos; nuevo componente `MlRentalPublish.tsx` en la columna Fotos del RentalWorkspace (conectar / publicar / estado en vivo / actualizar / finalizar). Estilos `.rt-ml*` en rentals.css.
+- Verificado E2E REAL: publicó un alquiler de prueba en ML (item MLA3799642018, categoría MLA50279), estado pasó not_yet_active→active, y se CERRÓ el aviso de test. Datos de prueba restaurados.
+- NOTA: ML muestra `pack_quota_pending` mientras activa; los avisos de inmuebles consumen cupo/pack de la cuenta ML (tier gratuito limitado; más avisos pueden requerir pack pago). Es condición de la cuenta ML, no del sistema.
+- ⚠️ Producción: el usuario debe REDEPLOYAR para tener esto en veraosvarela.com.
