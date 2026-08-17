@@ -206,3 +206,10 @@ Verificado 100% (iteration_40): backend 7/7 pytest (`test_documents_sprint4_5.py
 - service.py: nueva `set_description(item_id, text)` pública (POST→PUT). Se removió el `_spawn`/task diferida.
 - Verificado E2E real: PUT descripción 200 y GET 200 mostrando el cuerpo = link (subdominio de marca) ARRIBA + descripción de la propiedad abajo. Avisos de prueba cerrados, propiedad de test restaurada.
 - ⚠️ Requiere REDEPLOY.
+
+## 2026-06-17 · Reseñas de Google + fix emojis en aviso de visita
+- Aviso de visita al propietario (visit-service.ts buildOwnerMessage): quitados los emojis (se veían como "�" por codificación en WhatsApp); texto plano. Se agregó al final invitación a reseña de Google con GOOGLE_REVIEW_URL.
+- Mensaje al inquilino cuando reserva queda FINALIZADA (rentals/api.ts mensajeReserva): agradecimiento + pedido de reseña con el link.
+- Nuevo botón "Pedir reseña de Google" en TrackingSection (Estadísticas de la propiedad, junto a "Registrar visita"): abre wa.me/?text=... con mensaje + link para enviar a cualquier cliente (elige contacto en WhatsApp).
+- GOOGLE_REVIEW_URL = https://share.google/BjitJyGJx5FhF2ehn (exportado desde @vera/services). Verificado: tsc limpio, webpack compiled successfully, botón renderiza en la ficha.
+- ⚠️ Requiere REDEPLOY.

@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarDays, Users, MessageCircle, Plus, Footprints } from 'lucide-react';
+import { CalendarDays, Users, MessageCircle, Plus, Footprints, Star } from 'lucide-react';
 import { Button } from '@vera/ui';
-import { visitService } from '@vera/services';
+import { visitService, GOOGLE_REVIEW_URL } from '@vera/services';
 import type { PropertyVisit } from '@vera/types';
 import { VisitModal } from './VisitModal';
 
@@ -34,6 +34,14 @@ export const TrackingSection = ({
     queryFn: () => visitService.list(propertyId),
   });
   const [modalOpen, setModalOpen] = useState(false);
+
+  const pedirResena = () => {
+    const msg =
+      '¡Hola! Gracias por confiar en Inmobiliaria Varela. Si quedaste conforme con nuestra atención, ' +
+      'nos ayudaría muchísimo que nos dejes una reseña en Google (te lleva 1 minuto):\n' +
+      `${GOOGLE_REVIEW_URL}\n\n¡Muchas gracias!`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+  };
 
   const stats = useMemo(() => {
     const lastVisit = visits[0]?.date ?? '';
@@ -75,9 +83,14 @@ export const TrackingSection = ({
         </div>
       </div>
 
-      <Button size="md" data-testid="register-visit-btn" onClick={() => setModalOpen(true)}>
-        <Plus size={16} /> Registrar visita
-      </Button>
+      <div className="vera-track__actions" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <Button size="md" data-testid="register-visit-btn" onClick={() => setModalOpen(true)}>
+          <Plus size={16} /> Registrar visita
+        </Button>
+        <Button size="md" variant="secondary" data-testid="pedir-resena-btn" onClick={pedirResena}>
+          <Star size={16} /> Pedir reseña de Google
+        </Button>
+      </div>
 
       {timeline.length > 0 && (
         <div className="vera-timeline" data-testid="visit-timeline">
