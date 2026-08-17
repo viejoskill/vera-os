@@ -59,12 +59,18 @@ def _rental_to_prop(r: dict) -> dict:
     tipo = (r.get("tipo") or "casa").lower()
     if tipo not in ("casa", "departamento", "ph"):
         tipo = "casa"
+    base = (config.PUBLIC_APP_URL or "").rstrip("/")
+    slug = r.get("slug")
+    desc = (r.get("descripcion") or r.get("titulo") or "").strip()
+    if base and slug:
+        link = f"{base}/reservar/{slug}"
+        desc = f"{desc}\n\n📅 Consultá disponibilidad y reservá por fechas online:\n{link}".strip()
     return {
         "id": r["_id"],
         "type": tipo,
         "operation": "alquiler_temporario",
         "title": r.get("titulo") or "Alquiler temporal",
-        "description": r.get("descripcion") or r.get("titulo") or "",
+        "description": desc,
         "price": r.get("precioNoche") or 1,
         "currency": _norm_currency(r.get("moneda")),
         "address": r.get("direccion") or "",

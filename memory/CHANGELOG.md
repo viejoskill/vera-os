@@ -183,3 +183,9 @@ Verificado 100% (iteration_40): backend 7/7 pytest (`test_documents_sprint4_5.py
 - Verificado E2E REAL: publicó un alquiler de prueba en ML (item MLA3799642018, categoría MLA50279), estado pasó not_yet_active→active, y se CERRÓ el aviso de test. Datos de prueba restaurados.
 - NOTA: ML muestra `pack_quota_pending` mientras activa; los avisos de inmuebles consumen cupo/pack de la cuenta ML (tier gratuito limitado; más avisos pueden requerir pack pago). Es condición de la cuenta ML, no del sistema.
 - ⚠️ Producción: el usuario debe REDEPLOYAR para tener esto en veraosvarela.com.
+
+## 2026-06-17 · ML alquileres: link a la web de reservas en el cuerpo del aviso
+- `routes_ml_rentals._rental_to_prop` ahora agrega al final de la descripción del aviso de ML un link público a la página de reservas de la propiedad: `{PUBLIC_APP_URL}/reservar/{slug}` (📅 "Consultá disponibilidad y reservá por fechas online"). `PUBLIC_APP_URL` es env-aware (preview vs prod) y es el mismo host público donde vive `/reservar/:slug` (ruta pública, sin login) y se usan los redirects de pago MP.
+- Verificado E2E real: re-publicó el alquiler de prueba con el link (item MLA1999070161), ML lo aceptó (published→active, sin rechazo de moderación) y se cerró el aviso de test. Propiedad de prueba restaurada.
+- Nota: en producción el link resuelve al host de PUBLIC_APP_URL. Si se quiere el subdominio de marca (alquileres.varelapropiedadescde.com.ar), se cambia esa env.
+- ⚠️ Requiere REDEPLOY para producción.
