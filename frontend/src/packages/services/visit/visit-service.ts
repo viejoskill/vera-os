@@ -42,17 +42,17 @@ export function buildOwnerMessage(opts: {
   const comment = (opts.comment || '').trim();
 
   const lineas = [
-    '🏠 Inmobiliaria Varela',
+    'Inmobiliaria Varela',
     '',
     `${saludo}, le informamos que ${cuando} hemos realizado una visita a su propiedad${where} junto a un posible comprador.`,
     '',
   ];
-  if (hora) lineas.push(`🕐 Horario: ${hora} hs`);
-  lineas.push(`👤 Agente: ${agentName}`);
-  if (comment) { lineas.push(''); lineas.push(`📝 ${comment}`); }
+  if (hora) lineas.push(`Horario: ${hora} hs`);
+  lineas.push(`Agente: ${agentName}`);
+  if (comment) { lineas.push(''); lineas.push(comment); }
   lineas.push('');
   lineas.push('Ante cualquier novedad o consulta, nos estaremos comunicando.');
-  lineas.push('¡Muchas gracias! 🙏');
+  lineas.push('¡Muchas gracias!');
   lineas.push('');
   lineas.push('_Este es un mensaje automático de Inmobiliaria Varela_');
   return lineas.join('\n');
