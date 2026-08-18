@@ -1417,3 +1417,9 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Home `ALQUILERES_URL='/alquileres'` (nav pill + banda).
 - Verificado por screenshots: /veraos (login OS), /alquileres (reservas), / (home). Compila OK, backend reiniciado.
 - IMPORTANTE despliegue: como back_urls/ML link apuntan al dominio final, conviene apuntar el dominio ANTES de publicar nuevos alquileres/cobrar; el subdominio viejo sigue de fallback. Para entrar al OS ahora: `<dominio>/veraos`. Requiere REDEPLOY.
+
+### Fix Google OAuth con dominio + basename /veraos (2026-06, iter 11)
+- Síntoma: login con Google volvía a `veraosvarela.com/?code=...` (dominio viejo → Cloudflare Error 1034).
+- Causa: `LoginScreen.tsx` usaba `redirectTo=${origin}/login`. (1) el OS vive bajo basename `/veraos` (debía ser `/veraos/login`); (2) esa URL no estaba en la allowlist de Supabase → Supabase la ignoraba y caía al **Site URL** del proyecto (veraosvarela.com). Además, al volver a otro origin, el code_verifier PKCE de localStorage no estaba → el intercambio fallaba igual.
+- Fix código: `redirectTo=${window.location.origin}/veraos/login`. Al volver al mismo origin bajo /veraos, Supabase (detectSessionInUrl+pkce) intercambia el `?code=` y navega a /veraos/hoy.
+- ACCIÓN DEL USUARIO (Supabase Dashboard → Authentication → URL Configuration): Site URL = `https://varelapropiedadescde.com.ar/veraos/login`; Redirect URLs allowlist += `https://varelapropiedadescde.com.ar/veraos/login`, `https://www.varelapropiedadescde.com.ar/veraos/login` (o wildcard `.../veraos/**`). Google Cloud OAuth: sin cambios (redirect URI sigue siendo el callback de Supabase). Requiere REDEPLOY del código + guardar en Supabase.
