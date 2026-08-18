@@ -1428,3 +1428,6 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - **Reordenar fotos** (RentalWorkspace, tab Datos): flechas ◀▶ en cada miniatura (`moveImage`), la 1ª es la portada. Backend `PUT /api/rentals/properties/{pid}/images/order` (body {order:[ids]}) reordena position + isCover=primera. `api.reorderImages`. CSS `.rt-thumb__move`.
 - **Código editable** (empieza con CDE, único): input + "Guardar código" en tab Datos (solo si pid). Backend `PUT /api/rentals/properties/{pid}/codigo` (CodigoBody): valida uppercase, startswith CDE (400), unicidad excluyendo self (409). `api.updateCodigo`. Auto-prefija CDE en el front si falta.
 - VERIFICADO backend por curl: 400 (sin CDE), 409 (duplicado, con prop temporal), 200 (único). Frontend compila OK. PENDIENTE: verificación visual del workspace (screenshot con auth falló; propiedad sin fotos para probar reorder e2e). Requiere REDEPLOY.
+
+### Logo en Tasar (2026-06, iter 13)
+- `TasarPublico.tsx`: el topbar mostraba texto "VARELA PROPIEDADES" (izq) + ubicación (der), sin logo. A pedido del usuario: ahora ubicación "Costa del Este · Mar del Tuyú" (izq) + **logo de marca `/varela-logo-brand.png` arriba a la derecha** (data-testid tasar-logo, height 34). Verificado por screenshot. Requiere REDEPLOY. (Nota: preview cacheaba el bundle; se resolvió con restart frontend.)

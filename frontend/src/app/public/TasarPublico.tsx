@@ -97,8 +97,8 @@ export const TasarPublico = () => {
   return (
     <div className="vera-pub tasp" data-testid="tasar-publico">
       <header className="vera-pub__topbar">
-        <span className="vera-pub__brand">VARELA<span>PROPIEDADES</span></span>
         <span className="vera-pub__count">Costa del Este · Mar del Tuyú</span>
+        <img src="/varela-logo-brand.png" alt="Varela Inmobiliaria" style={{ height: 34, width: 'auto' }} data-testid="tasar-logo" />
       </header>
 
       {result ? (
