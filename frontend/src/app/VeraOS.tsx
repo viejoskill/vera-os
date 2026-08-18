@@ -14,7 +14,6 @@ import { WorkspaceHome } from '@app/workspace/WorkspaceHome';
 import { VeraBotWorkspace } from '@app/vera-bot';
 import { IntegrationsScreen } from '@app/integraciones';
 import { LoginScreen } from '@app/screens/LoginScreen';
-import { PlaceholderScreen } from '@app/screens/PlaceholderScreen';
 import { StudioScreen } from '@app/screens/StudioScreen';
 import { TeamScreen } from '@app/screens/TeamScreen';
 import { TasacionesScreen } from '@app/screens/TasacionesScreen';
@@ -39,97 +38,106 @@ const queryClient = new QueryClient({
   },
 });
 
-/** VERA OS root: providers + router + shell. */
+/** El OS interno (login + app). Se monta bajo el basename /veraos, así todos sus
+ *  links absolutos (/hoy, /propiedades…) quedan como /veraos/... sin tocar nada interno. */
+const OsRoutes = () => (
+  <AuthProvider>
+    <Routes>
+      <Route path="/login" element={<LoginScreen />} />
+      <Route element={<RequireAuth />}>
+        <Route element={<AppLayout />}>
+          <Route index element={<Navigate to="/hoy" replace />} />
+          <Route path="hoy" element={<WorkspaceHome />} />
+          <Route path="propiedades" element={<PropertiesScreen />} />
+          <Route path="propiedades/nueva" element={<PropertyWorkspace />} />
+          <Route path="propiedades/:id" element={<PropertyWorkspace />} />
+          <Route path="vera-bot" element={<VeraBotWorkspace />} />
+          <Route path="personas" element={<PeopleScreen />} />
+          <Route path="personas/:id" element={<PersonDetail />} />
+          <Route path="eventos" element={<EventLogScreen />} />
+          <Route path="operaciones" element={<OperacionesScreen />} />
+          <Route path="documentos" element={<DocumentsScreen />} />
+          <Route path="documentos/nuevo" element={<DocumentWizard />} />
+          <Route path="documentos/:id" element={<DocumentDetail />} />
+          <Route path="studio" element={<StudioScreen />} />
+          <Route path="integraciones" element={<IntegrationsScreen />} />
+          <Route path="equipo" element={<TeamScreen />} />
+          <Route path="tasaciones" element={<TasacionesScreen />} />
+          <Route path="alquileres" element={<AlquileresScreen />} />
+          <Route path="alquileres/nueva" element={<RentalWorkspace />} />
+          <Route path="alquileres/:id" element={<RentalWorkspace />} />
+          <Route path="liquidaciones" element={<LiquidacionesScreen />} />
+          <Route path="contabilidad" element={<ContabilidadScreen />} />
+          <Route path="*" element={<Navigate to="/hoy" replace />} />
+        </Route>
+      </Route>
+    </Routes>
+  </AuthProvider>
+);
+
+/** Web pública de alquileres temporarios (reservas). Se monta bajo /alquileres. */
+const RentalsPublicRoutes = () => (
+  <Routes>
+    <Route path="/" element={<ReservarPublico />} />
+    <Route path="/reservar/:slug" element={<ReservarPropiedad />} />
+    <Route path="/pago/resultado" element={<ReservaResultado />} />
+    <Route path="*" element={<Navigate to="/" replace />} />
+  </Routes>
+);
+
+/** Sitio público institucional (home, cartera, ficha, tasación, firma). */
+const PublicSiteRoutes = () => (
+  <Routes>
+    <Route path="/" element={<PublicHome />} />
+    <Route path="/inicio" element={<PublicHome />} />
+    <Route path="/web" element={<PublicListing />} />
+    <Route path="/web/:id" element={<PublicPropertyDetail />} />
+    <Route path="/tasar" element={<TasarPublico />} />
+    <Route path="/firma/:token" element={<SignScreen />} />
+    <Route path="*" element={<Navigate to="/" replace />} />
+  </Routes>
+);
+
+/**
+ * VERA OS root. Un solo dominio, ruteo por PATH:
+ *   /            -> web pública institucional
+ *   /veraos/*    -> el OS (login + app)
+ *   /alquileres/* -> web pública de alquileres
+ * El subdominio alquileres.* se mantiene por compatibilidad (avisos de ML ya publicados).
+ */
 export const VeraOS = () => {
-  // Subdominio de marca para alquileres: sirve SOLO la web pública de reservas,
-  // sin login ni el OS (alquileres.varelapropiedadescde.com.ar).
-  const isRentalsHost = typeof window !== 'undefined' && window.location.hostname.startsWith('alquileres.');
-  if (isRentalsHost) {
+  const host = typeof window !== 'undefined' ? window.location.hostname : '';
+  const path = typeof window !== 'undefined' ? window.location.pathname : '/';
+
+  // Compatibilidad: subdominio de alquileres ya en uso (links viejos de ML).
+  if (host.startsWith('alquileres.')) {
     return (
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<ReservarPublico />} />
-            <Route path="/reservar" element={<ReservarPublico />} />
-            <Route path="/reservar/:slug" element={<ReservarPropiedad />} />
-            <Route path="/pago/resultado" element={<ReservaResultado />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <RentalsPublicRoutes />
         </BrowserRouter>
       </QueryClientProvider>
     );
   }
 
-  // Sitio público institucional de Varela. En el dominio público (varelapropiedadescde.com.ar)
-  // sirve SOLO la web pública (home, cartera, ficha, tasar) sin login ni OS. En veraosvarela.com
-  // la home vive en /inicio para poder previsualizarla antes de apuntar el dominio.
-  const host = typeof window !== 'undefined' ? window.location.hostname : '';
-  const isPublicSiteHost = /varelapropiedadescde\.com\.ar$/.test(host) && !host.startsWith('alquileres.');
-  if (isPublicSiteHost) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<PublicHome />} />
-            <Route path="/inicio" element={<PublicHome />} />
-            <Route path="/web" element={<PublicListing />} />
-            <Route path="/web/:id" element={<PublicPropertyDetail />} />
-            <Route path="/tasar" element={<TasarPublico />} />
-            <Route path="/reservar" element={<ReservarPublico />} />
-            <Route path="/reservar/:slug" element={<ReservarPropiedad />} />
-            <Route path="/pago/resultado" element={<ReservaResultado />} />
-            <Route path="/firma/:token" element={<SignScreen />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </QueryClientProvider>
-    );
-  }
+  const inOs = path === '/veraos' || path.startsWith('/veraos/');
+  const inRentals = path === '/alquileres' || path.startsWith('/alquileres/');
 
   return (
-  <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<LoginScreen />} />
-          <Route path="/inicio" element={<PublicHome />} />
-          <Route path="/web" element={<PublicListing />} />
-          <Route path="/web/:id" element={<PublicPropertyDetail />} />
-          <Route path="/tasar" element={<TasarPublico />} />
-          <Route path="/reservar" element={<ReservarPublico />} />
-          <Route path="/reservar/:slug" element={<ReservarPropiedad />} />
-          <Route path="/pago/resultado" element={<ReservaResultado />} />
-          <Route path="/firma/:token" element={<SignScreen />} />
-          <Route element={<RequireAuth />}>
-            <Route element={<AppLayout />}>
-              <Route index element={<Navigate to="/hoy" replace />} />
-              <Route path="hoy" element={<WorkspaceHome />} />
-              <Route path="propiedades" element={<PropertiesScreen />} />
-              <Route path="propiedades/nueva" element={<PropertyWorkspace />} />
-              <Route path="propiedades/:id" element={<PropertyWorkspace />} />
-              <Route path="vera-bot" element={<VeraBotWorkspace />} />
-              <Route path="personas" element={<PeopleScreen />} />
-              <Route path="personas/:id" element={<PersonDetail />} />
-              <Route path="eventos" element={<EventLogScreen />} />
-              <Route path="operaciones" element={<OperacionesScreen />} />
-              <Route path="documentos" element={<DocumentsScreen />} />
-              <Route path="documentos/nuevo" element={<DocumentWizard />} />
-              <Route path="documentos/:id" element={<DocumentDetail />} />
-              <Route path="studio" element={<StudioScreen />} />
-              <Route path="integraciones" element={<IntegrationsScreen />} />
-              <Route path="equipo" element={<TeamScreen />} />
-              <Route path="tasaciones" element={<TasacionesScreen />} />
-              <Route path="alquileres" element={<AlquileresScreen />} />
-              <Route path="alquileres/nueva" element={<RentalWorkspace />} />
-              <Route path="alquileres/:id" element={<RentalWorkspace />} />
-              <Route path="liquidaciones" element={<LiquidacionesScreen />} />
-              <Route path="contabilidad" element={<ContabilidadScreen />} />
-              <Route path="*" element={<Navigate to="/hoy" replace />} />
-            </Route>
-          </Route>
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
-  </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      {inOs ? (
+        <BrowserRouter basename="/veraos">
+          <OsRoutes />
+        </BrowserRouter>
+      ) : inRentals ? (
+        <BrowserRouter basename="/alquileres">
+          <RentalsPublicRoutes />
+        </BrowserRouter>
+      ) : (
+        <BrowserRouter>
+          <PublicSiteRoutes />
+        </BrowserRouter>
+      )}
+    </QueryClientProvider>
   );
 };

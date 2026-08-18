@@ -13,7 +13,7 @@ import { REVIEWS, GOOGLE_RATING, GOOGLE_TOTAL, GOOGLE_REVIEW_URL } from './revie
 const WA_VENTAS = '5492246586030';
 const WA_ALQUILERES = '5492257404000';
 const PORTAL_URL = 'http://177.7.35.221/portal';
-const ALQUILERES_URL = 'https://alquileres.varelapropiedadescde.com.ar';
+const ALQUILERES_URL = '/alquileres';
 const LOGO = '/varela-logo-brand.png';
 const SEBASTIAN = '/sebastian.jpg';
 const HERO_BG = '/home-hero-16x9.jpg';

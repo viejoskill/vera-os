@@ -48,10 +48,13 @@ async def create_preference(
         data["payer"] = {"email": payer_email}
     if base:
         data["notification_url"] = f"{base}/api/rentals/payment-webhook"
+        # La página de retorno vive en el sitio público de alquileres (path /alquileres),
+        # separada del base del backend usado para el webhook.
+        ui = (config.RENTALS_PUBLIC_BASE_URL or base).rstrip("/")
         data["back_urls"] = {
-            "success": f"{base}/pago/resultado?status=success",
-            "pending": f"{base}/pago/resultado?status=pending",
-            "failure": f"{base}/pago/resultado?status=failure",
+            "success": f"{ui}/pago/resultado?status=success",
+            "pending": f"{ui}/pago/resultado?status=pending",
+            "failure": f"{ui}/pago/resultado?status=failure",
         }
         data["auto_return"] = "approved"
 

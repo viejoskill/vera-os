@@ -1406,3 +1406,14 @@ El usuario decidió migrar la web pública (`varelapropiedadescde.com.ar`) a VER
 
 ### Tipografía unificada Alquileres ↔ Ventas (2026-06, iter 9)
 - El sitio público de Alquileres (`rentals.css`, clases `.rt-pub*`) usaba Playfair Display (serif) + DM Sans, distinto a Ventas. Unificado a la identidad de Ventas: **Clash Display** en títulos (reemplaza Playfair) + **Manrope** en cuerpo (reemplaza DM Sans). @import actualizado (fontshare Clash + Google Manrope). `em` de acentos: font-style normal (Clash no tiene itálica). Verificado por screenshot en /reservar. Requiere REDEPLOY.
+
+### Ruteo por PATH en un solo dominio (2026-06, iter 10)
+Migración a UN dominio con paths (evita el problema de multi-dominio y que el OS quede inaccesible):
+- `varelapropiedadescde.com.ar/` → web pública institucional
+- `varelapropiedadescde.com.ar/veraos` → OS (login+app), montado con `<BrowserRouter basename="/veraos">` (links internos absolutos se prefijan solos, sin refactor).
+- `varelapropiedadescde.com.ar/alquileres` → web pública de alquileres, `basename="/alquileres"`.
+- `VeraOS.tsx` reescrito: decide por `window.location.pathname` (inOs / inRentals / público). Se mantiene el branch `alquileres.*` (subdominio) por compatibilidad con avisos de ML ya publicados. Mismo comportamiento en preview, veraosvarela.com y dominio final.
+- Backend: `RENTALS_PUBLIC_BASE_URL` (.env) = `https://www.varelapropiedadescde.com.ar/alquileres` → link de reserva de ML = `{base}/reservar/{slug}`. `payments_mp.py`: `back_urls` ahora usan `RENTALS_PUBLIC_BASE_URL` (path /alquileres) y `notification_url` sigue con `PUBLIC_APP_URL` (backend /api). 
+- Home `ALQUILERES_URL='/alquileres'` (nav pill + banda).
+- Verificado por screenshots: /veraos (login OS), /alquileres (reservas), / (home). Compila OK, backend reiniciado.
+- IMPORTANTE despliegue: como back_urls/ML link apuntan al dominio final, conviene apuntar el dominio ANTES de publicar nuevos alquileres/cobrar; el subdominio viejo sigue de fallback. Para entrar al OS ahora: `<dominio>/veraos`. Requiere REDEPLOY.
