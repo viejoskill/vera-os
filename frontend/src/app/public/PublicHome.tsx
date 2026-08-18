@@ -25,7 +25,7 @@ interface Listing {
   id: string; code: string; title: string; type: string; operation: string;
   price: number; currency: string; city: string; neighborhood: string;
   coverImage: string; bedrooms: number; bathrooms: number; areaM2: number;
-  lotAreaM2: number; rooms: number; status: string; whatsappUrl: string; publicUrl: string;
+  lotAreaM2: number; rooms: number; status: string; radar: boolean; whatsappUrl: string; publicUrl: string;
 }
 
 const money = (n: number, c: string) =>
@@ -156,7 +156,8 @@ export const PublicHome = () => {
     [data, tipo, zona, precioMax, ambientes],
   );
   const clear = () => { setTipo(''); setZona(''); setPrecioMax(''); setAmbientes(''); };
-  const featured = useMemo(() => data.filter((p) => p.status === 'active').slice(0, 3), [data]);
+  // Destacados = propiedades marcadas "En Radar" en VERA OS (activas/reservadas/vendidas visibles).
+  const featured = useMemo(() => data.filter((p) => p.radar).slice(0, 6), [data]);
 
   const stats = useInView<HTMLDivElement>();
   const cProps = useCountUp(data.length || 0, stats.seen);

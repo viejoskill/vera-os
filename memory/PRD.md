@@ -1383,3 +1383,10 @@ El usuario decidió migrar la web pública (`varelapropiedadescde.com.ar`) a VER
   - **Hero** → `/home-hero.jpg` (casa moderna de hormigón+madera con ventanales, entre pinos, al atardecer).
   - **Banda Alquileres** → `/home-rentals.jpg` (bajada a la playa entre dunas con sol sobre el mar).
 - Constantes `HERO_BG` / `RENTALS_BG` en PublicHome.tsx apuntan a esos archivos locales en /public. Verificado hero por screenshot. Requiere REDEPLOY.
+
+### Destacados de la home conectados al flag "Radar" del OS (2026-06, iter 5)
+- El toggle "En Radar — destacada en la portada del sitio" (campo `radar` en la propiedad, BasicInfoSection del workspace) es el mecanismo oficial para elegir destacados. La home nueva NO lo usaba (mostraba primeras 3 activas). Corregido:
+  - `routes_public.py`: agregado `"radar"` a `_SUMMARY_KEYS` (el endpoint /api/public/listings ahora expone el flag).
+  - `PublicHome.tsx`: `Listing.radar` + `featured = data.filter(p => p.radar).slice(0,6)`. La sección "Destacados" ahora muestra solo las marcadas En Radar (hasta 6); si no hay ninguna, la sección se oculta.
+- (Nota: `routes_properties.py:311 data["radar"]=False` es del endpoint DUPLICAR, correcto: una copia no hereda destacada.)
+- Requiere REDEPLOY.
