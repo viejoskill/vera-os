@@ -83,6 +83,10 @@ export const api = {
     return fetch(`${RENTALS_API}/properties/${id}/images`, { method: 'POST', body: fd }).then(json);
   },
   deleteImage: (id: string, imgId: string) => fetch(`${RENTALS_API}/properties/${id}/images/${imgId}`, { method: 'DELETE' }).then(json),
+  reorderImages: (id: string, order: string[]): Promise<RentalProperty> =>
+    fetch(`${RENTALS_API}/properties/${id}/images/order`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order }) }).then(json),
+  updateCodigo: (id: string, codigo: string): Promise<RentalProperty> =>
+    fetch(`${RENTALS_API}/properties/${id}/codigo`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo }) }).then(json),
   listReservations: (propertyId?: string, estado?: string): Promise<Reservation[]> => {
     const q = new URLSearchParams(); if (propertyId) q.set('propertyId', propertyId); if (estado) q.set('estado', estado);
     return fetch(`${RENTALS_API}/reservations?${q}`).then(json);

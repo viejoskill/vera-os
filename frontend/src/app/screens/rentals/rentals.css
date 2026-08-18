@@ -477,3 +477,8 @@
 .rt-ml__link { display: inline-flex; align-items: center; gap: 5px; font-size: .8rem; color: var(--vera-color-primary, #d6aa28); text-decoration: none; margin-bottom: 8px; }
 .rt-ml__actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
 .rt-ml__err { color: #e07575; font-size: .82rem; margin: 6px 0; }
+
+/* Reordenar fotos (flechas) */
+.rt-thumb__move { position: absolute; bottom: 5px; left: 5px; right: 5px; display: flex; justify-content: space-between; gap: 4px; }
+.rt-thumb__move button { position: static; top: auto; right: auto; width: 26px; height: 26px; background: rgba(0,0,0,.65); }
+.rt-thumb__move button:disabled { opacity: .3; cursor: default; }

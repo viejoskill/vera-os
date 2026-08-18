@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Trash2, Upload, Star, CalendarX2, ExternalLink, UserPlus } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Upload, Star, CalendarX2, ExternalLink, UserPlus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button, Input } from '@vera/ui';
 import { api, fmtMoney, fmtDate, nightsBetween, displayEstado, TIPO_MOV, type RentalProperty, type Reservation, type RentalImage, type Movimiento, type Occupied } from './api';
 import { RentalCalendar } from './RentalCalendar';
@@ -127,6 +127,30 @@ export const RentalWorkspace = () => {
     setImages((s) => s.filter((i) => i.id !== imgId));
   };
 
+  const moveImage = async (index: number, dir: -1 | 1) => {
+    const to = index + dir;
+    if (to < 0 || to >= images.length) return;
+    const next = [...images];
+    [next[index], next[to]] = [next[to], next[index]];
+    const withCover = next.map((im, i) => ({ ...im, isCover: i === 0 }));
+    setImages(withCover);
+    if (pid) {
+      try { await api.reorderImages(pid, withCover.map((i) => i.id)); }
+      catch (e) { setFlash((e as Error).message); }
+    }
+  };
+
+  const saveCodigo = async () => {
+    if (!pid) return;
+    let cod = (f.codigo || '').trim().toUpperCase();
+    if (!cod.startsWith('CDE')) cod = `CDE${cod.replace(/^CDE/i, '')}`;
+    try {
+      const updated = await api.updateCodigo(pid, cod);
+      set('codigo', updated.codigo);
+      setFlash('Código actualizado ✅'); setTimeout(() => setFlash(''), 2500);
+    } catch (e) { setFlash((e as Error).message); }
+  };
+
   const blockRange = async () => {
     if (!pid || !sel.checkIn || !sel.checkOut) return;
     try {
@@ -198,6 +222,14 @@ export const RentalWorkspace = () => {
           <section className="rt-ws__col">
             <h3 className="rt-ws__sec">Datos de la propiedad</h3>
             <Input label="Título" value={f.titulo || ''} onChange={(e) => set('titulo', e.target.value)} data-testid="rt-titulo" />
+            {pid && (
+              <label className="rt-field"><span>Código (empieza con CDE, único)</span>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+                  <input style={{ flex: 1 }} value={f.codigo || ''} onChange={(e) => set('codigo', e.target.value.toUpperCase())} placeholder="CDE010" data-testid="rt-codigo" />
+                  <Button size="sm" variant="ghost" onClick={saveCodigo} data-testid="rt-codigo-save">Guardar código</Button>
+                </div>
+              </label>
+            )}
             <div className="rt-row2">
               <Input label="Dirección" value={f.direccion || ''} onChange={(e) => set('direccion', e.target.value)} data-testid="rt-direccion" />
               <Input label="Localidad" value={f.localidad || ''} onChange={(e) => set('localidad', e.target.value)} data-testid="rt-localidad" />
@@ -252,13 +284,18 @@ export const RentalWorkspace = () => {
                   <input type="file" accept="image/*" multiple onChange={onUpload} hidden />
                 </label>
                 <div className="rt-thumbs">
-                  {images.map((im) => (
+                  {images.map((im, idx) => (
                     <div className="rt-thumb" key={im.id} style={{ backgroundImage: `url(${im.url})` }} data-testid={`rt-thumb-${im.id}`}>
-                      {im.isCover && <span className="rt-thumb__cover"><Star size={12} /> Portada</span>}
+                      {idx === 0 && <span className="rt-thumb__cover"><Star size={12} /> Portada</span>}
                       <button type="button" onClick={() => delImage(im.id)} data-testid={`rt-delimg-${im.id}`}><Trash2 size={13} /></button>
+                      <div className="rt-thumb__move">
+                        <button type="button" disabled={idx === 0} onClick={() => moveImage(idx, -1)} title="Mover antes" data-testid={`rt-moveleft-${im.id}`}><ChevronLeft size={15} /></button>
+                        <button type="button" disabled={idx === images.length - 1} onClick={() => moveImage(idx, 1)} title="Mover después" data-testid={`rt-moveright-${im.id}`}><ChevronRight size={15} /></button>
+                      </div>
                     </div>
                   ))}
                 </div>
+                {images.length > 1 && <p className="rt-hint">La primera foto es la portada. Usá las flechas para ordenar.</p>}
               </>
             )}
             {pid && <MlRentalPublish propertyId={pid} />}

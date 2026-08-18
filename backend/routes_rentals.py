@@ -409,6 +409,43 @@ async def delete_image(pid: str, img_id: str):
     await _props().update_one({"_id": pid}, {"$pull": {"imagenes": {"id": img_id}}})
 
 
+class ImageOrderBody(BaseModel):
+    order: list[str]
+
+
+@router.put("/properties/{pid}/images/order")
+async def reorder_images(pid: str, body: ImageOrderBody):
+    p = await _get_prop(pid)
+    imgs = p.get("imagenes") or []
+    by_id = {i["id"]: i for i in imgs}
+    ordered = [by_id[i] for i in body.order if i in by_id]
+    ordered += [i for i in imgs if i["id"] not in set(body.order)]
+    for idx, img in enumerate(ordered):
+        img["position"] = idx
+        img["isCover"] = idx == 0
+    await _props().update_one({"_id": pid}, {"$set": {"imagenes": ordered, "updatedAt": _now()}})
+    return _prop_out(await _get_prop(pid))
+
+
+class CodigoBody(BaseModel):
+    codigo: str
+
+
+@router.put("/properties/{pid}/codigo")
+async def update_codigo(pid: str, body: CodigoBody):
+    await _get_prop(pid)
+    cod = (body.codigo or "").strip().upper()
+    if not cod.startswith("CDE"):
+        raise HTTPException(400, "El código debe empezar con CDE.")
+    if len(cod) <= 3:
+        raise HTTPException(400, "Ingresá un código válido después de CDE (ej: CDE010).")
+    dup = await _props().find_one({"codigo": cod, "_id": {"$ne": pid}})
+    if dup:
+        raise HTTPException(409, f"El código {cod} ya está en uso por otra propiedad.")
+    await _props().update_one({"_id": pid}, {"$set": {"codigo": cod, "updatedAt": _now()}})
+    return _prop_out(await _get_prop(pid))
+
+
 @router.get("/reservations")
 async def list_reservations(propertyId: str | None = Query(None), estado: str | None = Query(None)):
     q: dict = {}
