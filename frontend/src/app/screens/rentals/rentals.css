@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400;1,700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=clash-display@600,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
 /* ===================== Alquileres · interno (tema VERA) ===================== */
 .rt__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: var(--vera-space-lg, 20px); flex-wrap: wrap; }
@@ -129,7 +130,7 @@
 .rt-cal__cell--edge { background: var(--vera-color-primary); color: var(--vera-color-primary-foreground); font-weight: 700; }
 
 /* ===================== Público (tema claro Airbnb) ===================== */
-.rt-pub { min-height: 100vh; background: #faf8f3; color: #1c1c1e; font-family: var(--vera-font-family, 'DM Sans', sans-serif); }
+.rt-pub { min-height: 100vh; background: #faf8f3; color: #1c1c1e; font-family: 'Manrope', sans-serif; }
 .rt-pub--center { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px; }
 .rt-pub__hero { text-align: center; padding: 56px 20px 34px; max-width: 720px; margin: 0 auto; }
 .rt-pub__logo { height: 64px; margin-bottom: 22px; }
@@ -207,14 +208,14 @@
   --pborder: rgba(255,255,255,0.08); --pborder2: rgba(255,255,255,0.12);
   --ptext: #FFFFFF; --ptext2: rgba(255,255,255,0.65); --ptext3: rgba(255,255,255,0.40);
   background: var(--pbg); color: var(--ptext);
-  font-family: 'DM Sans', sans-serif; -webkit-font-smoothing: antialiased;
+  font-family: 'Manrope', sans-serif; -webkit-font-smoothing: antialiased;
 }
 .rt-pub__topbar { padding: 20px 40px; border-bottom: 1px solid var(--pborder); background: rgba(14,14,16,0.85); backdrop-filter: blur(18px); }
 .rt-pub__topbar img { height: 46px; }
 .rt-pub__hero { text-align: center; padding: 74px 20px 40px; max-width: 760px; }
 .rt-pub__logo { height: 72px; margin-bottom: 26px; }
-.rt-pub__hero h1 { font-family: 'DM Sans', sans-serif; font-weight: 700; color: #fff; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.05; letter-spacing: -1.5px; margin-bottom: 18px; }
-.rt-pub__hero h1 em { font-family: 'Playfair Display', serif; color: var(--am); font-style: italic; }
+.rt-pub__hero h1 { font-family: 'Manrope', sans-serif; font-weight: 700; color: #fff; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.05; letter-spacing: -1.5px; margin-bottom: 18px; }
+.rt-pub__hero h1 em { font-family: 'Clash Display', 'Manrope', sans-serif; color: var(--am); font-style: normal; }
 .rt-pub__hero p { color: var(--ptext2); font-size: 1.02rem; }
 .rt-pub__loading { text-align: center; color: var(--ptext3); padding: 60px; }
 .rt-pub__card { background: var(--pcard); border: 1px solid var(--pborder); border-radius: 18px; overflow: hidden; transition: transform .22s, border-color .22s, box-shadow .22s; }
@@ -222,18 +223,18 @@
 .rt-pub__img { height: 210px; border-radius: 0; background-color: var(--pbg2); color: var(--ptext3); }
 .rt-pub__cbody { padding: 16px 18px 18px; }
 .rt-pub__code { display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .06em; color: var(--am); border: 1px solid rgba(214,204,106,0.35); padding: 2px 8px; border-radius: 6px; margin-bottom: 8px; }
-.rt-pub__cbody h3 { font-family: 'Playfair Display', serif; font-weight: 700; color: #fff; font-size: 1.2rem; margin-bottom: 6px; }
+.rt-pub__cbody h3 { font-family: 'Clash Display', 'Manrope', sans-serif; font-weight: 700; color: #fff; font-size: 1.2rem; margin-bottom: 6px; }
 .rt-pub__addr { color: var(--ptext3); }
 .rt-pub__specs { color: var(--ptext2); }
 .rt-pub__price { color: var(--am); font-weight: 700; }
 .rt-pub__price em { color: var(--ptext3); }
-.rt-pub__foot { color: var(--ptext3); border-top: 1px solid var(--pborder); font-family: 'DM Sans', sans-serif; }
+.rt-pub__foot { color: var(--ptext3); border-top: 1px solid var(--pborder); font-family: 'Manrope', sans-serif; }
 .rt-pub__back { color: var(--am); }
 
 .rt-detail__main { background-color: var(--pbg2); border-radius: 18px; }
 .rt-detail__thumbs button { border-radius: 10px; border: 2px solid transparent; }
 .rt-detail__thumbs button.sel { border-color: var(--am); }
-.rt-detail__info h1 { font-family: 'Playfair Display', serif; font-weight: 700; color: #fff; font-size: 2.1rem; letter-spacing: -.5px; }
+.rt-detail__info h1 { font-family: 'Clash Display', 'Manrope', sans-serif; font-weight: 700; color: #fff; font-size: 2.1rem; letter-spacing: -.5px; }
 .rt-detail__code { color: var(--am); font-size: .8rem; font-weight: 600; letter-spacing: .06em; margin-bottom: 12px; }
 .rt-detail__addr { color: var(--ptext2); }
 .rt-detail__specs { border-top: 1px solid var(--pborder); border-bottom: 1px solid var(--pborder); }
@@ -241,7 +242,7 @@
 .rt-detail__amen li { color: var(--ptext2); }
 .rt-detail__amen li svg { color: var(--am); stroke: var(--am); }
 
-.rt-book__cal h3 { font-family: 'Playfair Display', serif; font-weight: 700; color: #fff; }
+.rt-book__cal h3 { font-family: 'Clash Display', 'Manrope', sans-serif; font-weight: 700; color: #fff; }
 .rt-book__cal .rt-cal__cell { background: var(--pcard); color: #fff; }
 .rt-book__cal .rt-cal__cell:not(:disabled):hover { background: var(--pbg2); }
 .rt-book__cal .rt-cal__cell--range { background: rgba(214,204,106,0.22); }
@@ -264,7 +265,7 @@
 .rt-book__cta { background: var(--am); color: #1E1E20; }
 .rt-book__cta:hover { background: var(--am-light); box-shadow: 0 10px 30px rgba(214,204,106,0.25); }
 .rt-book__note { color: var(--ptext3); }
-.rt-ok h2 { font-family: 'Playfair Display', serif; color: #fff; }
+.rt-ok h2 { font-family: 'Clash Display', 'Manrope', sans-serif; color: #fff; }
 .rt-ok p { color: var(--ptext2); }
 .rt-ok svg { color: var(--am); }
 
@@ -371,7 +372,7 @@
 
 /* Página de resultado del pago (huésped) */
 .rt-result { max-width: 520px; margin: 8vh auto; text-align: center; padding: 40px 28px; background: var(--pcard, #26262a); border: 1px solid var(--pborder, rgba(255,255,255,.08)); border-radius: 20px; color: var(--ptext, #f5f5f0); }
-.rt-result h1 { font-family: 'Playfair Display', serif; font-size: 1.8rem; margin: 14px 0 8px; }
+.rt-result h1 { font-family: 'Clash Display', 'Manrope', sans-serif; font-size: 1.8rem; margin: 14px 0 8px; }
 .rt-result p { color: var(--ptext2, #b9b9b2); line-height: 1.6; }
 .rt-result__ok { color: #4bbf6b; }
 .rt-result__err { color: #e07575; }
