@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import {
   BedDouble, Bath, Maximize, MapPin, MessageCircle, ArrowRight, Menu, X,
   Gauge, Bot, MessagesSquare, Radar, ShieldCheck, MapPinned, Sparkles, Handshake,
-  Mail, Phone,
+  Mail, Umbrella,
 } from 'lucide-react';
 import { env } from '@vera/config';
 import { openWhatsAppInquiry } from './whatsappInquiry';
@@ -12,9 +12,11 @@ import { openWhatsAppInquiry } from './whatsappInquiry';
 const WA_VENTAS = '5492246586030';
 const WA_ALQUILERES = '5492257404000';
 const PORTAL_URL = 'http://177.7.35.221/portal';
+const ALQUILERES_URL = 'https://alquileres.varelapropiedadescde.com.ar';
 const LOGO = '/varela-logo-brand.png';
 const SEBASTIAN = '/sebastian.jpg';
-const HERO_BG = 'https://images.pexels.com/photos/4279989/pexels-photo-4279989.jpeg';
+const HERO_BG = 'https://images.pexels.com/photos/14776836/pexels-photo-14776836.jpeg?auto=compress&cs=tinysrgb&w=1920';
+const RENTALS_BG = 'https://images.unsplash.com/photo-1628214457196-676766da086e?crop=entropy&cs=srgb&fm=jpg&w=1600&q=80';
 
 const wa = (num: string, msg: string) => `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 
@@ -165,6 +167,7 @@ export const PublicHome = () => {
           </a>
           <nav className={`vh-nav__links ${menuOpen ? 'is-open' : ''}`}>
             <button type="button" onClick={() => nav('cartera')} data-testid="nav-propiedades">Propiedades</button>
+            <a className="vh-nav__rentals" href={ALQUILERES_URL} target="_blank" rel="noreferrer" data-testid="nav-alquileres"><Umbrella size={15} /> Alquileres</a>
             <Link to="/tasar" onClick={() => setMenuOpen(false)} data-testid="nav-tasar">Tasar</Link>
             <button type="button" onClick={() => nav('nosotros')} data-testid="nav-nosotros">Nosotros</button>
             <button type="button" onClick={() => nav('contacto')} data-testid="nav-contacto">Contacto</button>
@@ -207,6 +210,20 @@ export const PublicHome = () => {
           <div className="vh-stat"><span className="vh-stat__n">+{cClients}</span><span className="vh-stat__l">Clientes</span></div>
         </div>
       </div>
+
+      {/* ALQUILERES DE VERANO — acceso destacado al subdominio */}
+      <section className="vh-rentals" data-testid="home-rentals">
+        <div className="vh-rentals__bg" style={{ backgroundImage: `url(${RENTALS_BG})` }} />
+        <div className="vh-rentals__scrim" />
+        <div className="vh-rentals__inner">
+          <span className="vh-eyebrow"><Umbrella size={13} /> Temporada de verano</span>
+          <h2 className="vh-h2">Alquileres Temporarios<br /> <em>en Costa del Este</em></h2>
+          <p className="vh-rentals__sub">Casas y departamentos frente al mar, entre los pinos. Mirá disponibilidad, fotos y reservá 100% online.</p>
+          <a className="vh-btn vh-btn--brand vh-rentals__cta" href={ALQUILERES_URL} target="_blank" rel="noreferrer" data-testid="rentals-cta">
+            <Umbrella size={18} /> Ver alquileres de verano <ArrowRight size={18} />
+          </a>
+        </div>
+      </section>
 
       {/* RADAR / DESTACADOS */}
       {featured.length > 0 && (
