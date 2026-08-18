@@ -1390,3 +1390,7 @@ El usuario decidió migrar la web pública (`varelapropiedadescde.com.ar`) a VER
   - `PublicHome.tsx`: `Listing.radar` + `featured = data.filter(p => p.radar).slice(0,6)`. La sección "Destacados" ahora muestra solo las marcadas En Radar (hasta 6); si no hay ninguna, la sección se oculta.
 - (Nota: `routes_properties.py:311 data["radar"]=False` es del endpoint DUPLICAR, correcto: una copia no hereda destacada.)
 - Requiere REDEPLOY.
+
+### Hero apaisado 16:9 (2026-06, iter 6)
+- La foto del hero del usuario era vertical → en el hero panorámico se recortaba (solo se veía una esquina, sin bosque). Se generó una imagen 16:9 (basada en la foto de referencia del usuario: casa moderna hormigón+madera con ventanales iluminados, bosque al atardecer) → `/home-hero-16x9.jpg`. `HERO_BG` actualizado. Verificado por screenshot (casa completa + bosque, texto legible a la izquierda).
+- NOTA CACHÉ: al cambiar solo el nombre de archivo de una imagen de fondo, el preview servía un bundle cacheado; se resolvió con `supervisorctl restart frontend`. En producción, redeploy sirve el bundle nuevo.
