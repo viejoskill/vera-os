@@ -1377,3 +1377,9 @@ El usuario decidió migrar la web pública (`varelapropiedadescde.com.ar`) a VER
 ### SEO por propiedad + Reseñas de Google en la home (2026-06, iter 3)
 - **SEO por propiedad (compartir)**: botón "Compartir" en la ficha pública `PublicPropertyDetail.tsx` (data-testid public-detail-share). Usa `navigator.share` o copia el link `${backend}/api/properties/{id}/share` (endpoint server-side ya existente que devuelve OG por propiedad: título + precio·dirección + foto real con sello, y redirige a /web/{id}). Así WhatsApp/redes muestran la vista previa correcta de CADA propiedad. Verificado iter 54 (100%). Nota: el og:image es una URL firmada de Supabase (~1h); como /share la regenera en cada request, WhatsApp la scrapea al instante del posteo → OK en la práctica.
 - **Reseñas de Google en la home**: sección nueva en `PublicHome.tsx` (data-testid home-reviews) con badge de puntaje (GOOGLE_RATING), cards de reseñas y CTAs "Ver todas en Google" / "Dejanos tu reseña" (→ GOOGLE_REVIEW_URL = https://share.google/BjitJyGJx5FhF2ehn). Datos curados en `/app/frontend/src/app/public/reviews.ts` (array REVIEWS + GOOGLE_RATING + GOOGLE_TOTAL). **PENDIENTE**: el usuario va a juntar y pasar reseñas reales; hoy hay 3 ejemplos PLACEHOLDER marcados con "Reseña de ejemplo" (reemplazar en reviews.ts). Verificado iter 54 (100%). CSS `.vh-reviews`/`.vh-review`/`.vh-rev-badge` en index.css. Requiere REDEPLOY.
+
+### Fotos reales del usuario en home (2026-06, iter 4)
+- Reemplazadas las imágenes stock por las fotos que subió el usuario (artifacts del job):
+  - **Hero** → `/home-hero.jpg` (casa moderna de hormigón+madera con ventanales, entre pinos, al atardecer).
+  - **Banda Alquileres** → `/home-rentals.jpg` (bajada a la playa entre dunas con sol sobre el mar).
+- Constantes `HERO_BG` / `RENTALS_BG` en PublicHome.tsx apuntan a esos archivos locales en /public. Verificado hero por screenshot. Requiere REDEPLOY.

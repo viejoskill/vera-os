@@ -16,8 +16,8 @@ const PORTAL_URL = 'http://177.7.35.221/portal';
 const ALQUILERES_URL = 'https://alquileres.varelapropiedadescde.com.ar';
 const LOGO = '/varela-logo-brand.png';
 const SEBASTIAN = '/sebastian.jpg';
-const HERO_BG = 'https://images.pexels.com/photos/14776836/pexels-photo-14776836.jpeg?auto=compress&cs=tinysrgb&w=1920';
-const RENTALS_BG = 'https://images.unsplash.com/photo-1628214457196-676766da086e?crop=entropy&cs=srgb&fm=jpg&w=1600&q=80';
+const HERO_BG = '/home-hero.jpg';
+const RENTALS_BG = '/home-rentals.jpg';
 
 const wa = (num: string, msg: string) => `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 
