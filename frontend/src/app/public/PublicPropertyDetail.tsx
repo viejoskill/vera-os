@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, BedDouble, Bath, Maximize, MapPin, Ruler, Compass, MessageCircle } from 'lucide-react';
+import { ArrowLeft, BedDouble, Bath, Maximize, MapPin, Ruler, Compass, MessageCircle, Share2, Check } from 'lucide-react';
 import { env } from '@vera/config';
 import { logInquiry } from './whatsappInquiry';
 
@@ -35,6 +35,25 @@ export const PublicPropertyDetail = () => {
     retry: false,
   });
   const [active, setActive] = useState(0);
+  const [shared, setShared] = useState(false);
+
+  // Link de compartir con vista previa por propiedad (foto + título reales). Pega el
+  // endpoint server-side /share que WhatsApp/redes SÍ leen (los crawlers no ejecutan JS).
+  const shareLink = `${env.backendUrl}/api/properties/${id}/share`;
+  const onShare = async () => {
+    if (navigator.share) {
+      try { await navigator.share({ title: data?.title, url: shareLink }); return; } catch { /* cancelado */ }
+    }
+    try {
+      await navigator.clipboard.writeText(shareLink);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = shareLink; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); ta.remove();
+    }
+    setShared(true);
+    window.setTimeout(() => setShared(false), 2200);
+  };
 
   // Open Graph / Twitter Cards: la vista previa al compartir es responsabilidad del
   // sitio público. Reflejamos aquí los metadatos desde la fuente de verdad de VERA
@@ -93,7 +112,9 @@ export const PublicPropertyDetail = () => {
     <div className="vera-pub" data-testid="public-detail">
       <header className="vera-pub__topbar">
         <Link to="/web" className="vera-pub__back"><ArrowLeft size={16} /> Cartera</Link>
-        <span className="vera-pub__brand">VARELA<span>PROPIEDADES</span></span>
+        <button type="button" className="vera-pub__share" onClick={onShare} data-testid="public-detail-share">
+          {shared ? <><Check size={15} /> Link copiado</> : <><Share2 size={15} /> Compartir</>}
+        </button>
       </header>
 
       <div className="vera-pub-detail">

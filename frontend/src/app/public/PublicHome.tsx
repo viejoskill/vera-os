@@ -4,10 +4,11 @@ import { Link } from 'react-router-dom';
 import {
   BedDouble, Bath, Maximize, MapPin, MessageCircle, ArrowRight, Menu, X,
   Gauge, Bot, MessagesSquare, Radar, ShieldCheck, MapPinned, Sparkles, Handshake,
-  Mail, Umbrella,
+  Mail, Umbrella, Star, Quote,
 } from 'lucide-react';
 import { env } from '@vera/config';
 import { openWhatsAppInquiry } from './whatsappInquiry';
+import { REVIEWS, GOOGLE_RATING, GOOGLE_TOTAL, GOOGLE_REVIEW_URL } from './reviews';
 
 const WA_VENTAS = '5492246586030';
 const WA_ALQUILERES = '5492257404000';
@@ -72,6 +73,14 @@ const useInView = <T extends HTMLElement>() => {
   }, [seen]);
   return { ref, seen };
 };
+
+const Stars = ({ n }: { n: number }) => (
+  <span className="vh-stars" aria-label={`${n} de 5`}>
+    {[1, 2, 3, 4, 5].map((i) => (
+      <Star key={i} size={15} fill={i <= Math.round(n) ? '#F6E63A' : 'none'} color={i <= Math.round(n) ? '#F6E63A' : '#3f3f46'} />
+    ))}
+  </span>
+);
 
 const PropCard = ({ p }: { p: Listing }) => {
   const stamp = STAMP[p.status];
@@ -347,6 +356,44 @@ export const PublicHome = () => {
           )}
         </div>
       </section>
+
+      {/* RESEÑAS DE GOOGLE */}
+      {REVIEWS.length > 0 && (
+        <section className="vh-sec vh-sec--reviews">
+          <div className="vh-sec__inner">
+            <span className="vh-eyebrow"><Star size={13} fill="#F6E63A" color="#F6E63A" /> Reseñas de Google</span>
+            <div className="vh-sec__head">
+              <div>
+                <h2 className="vh-h2">Lo que dicen nuestros clientes</h2>
+                <div className="vh-rev-badge" data-testid="reviews-badge">
+                  <span className="vh-rev-badge__score">{GOOGLE_RATING.toFixed(1)}</span>
+                  <Stars n={GOOGLE_RATING} />
+                  <span className="vh-rev-badge__meta">en Google{GOOGLE_TOTAL ? ` · ${GOOGLE_TOTAL} reseñas` : ''}</span>
+                </div>
+              </div>
+              <a className="vh-link" href={GOOGLE_REVIEW_URL} target="_blank" rel="noreferrer" data-testid="reviews-all">Ver todas en Google <ArrowRight size={15} /></a>
+            </div>
+            <div className="vh-reviews" data-testid="home-reviews">
+              {REVIEWS.map((r, i) => (
+                <article className="vh-review" key={i} data-testid={`review-${i}`}>
+                  <Quote className="vh-review__quote" size={26} />
+                  <Stars n={r.rating} />
+                  <p className="vh-review__text">{r.text}</p>
+                  <div className="vh-review__foot">
+                    <span className="vh-review__avatar">{r.name.charAt(0)}</span>
+                    <span className="vh-review__meta"><strong>{r.name}</strong>{r.when && <small>{r.when}</small>}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <div className="vh-reviews__cta">
+              <a className="vh-btn vh-btn--brand" href={GOOGLE_REVIEW_URL} target="_blank" rel="noreferrer" data-testid="reviews-leave">
+                <Star size={17} /> Dejanos tu reseña
+              </a>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* CONTACTO */}
       <section className="vh-sec vh-sec--contact" id="contacto">
