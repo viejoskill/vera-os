@@ -33,8 +33,8 @@ const money = (n: number, c: string) =>
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 const STAMP: Record<string, { label: string; cls: string }> = {
-  sold: { label: 'VENDIDA', cls: 'vh-stamp--sold' },
-  reserved: { label: 'RESERVADA', cls: 'vh-stamp--reserved' },
+  sold: { label: 'VENDIDA', cls: 'vera-pub-stamp--sold' },
+  reserved: { label: 'RESERVADA', cls: 'vera-pub-stamp--reserved' },
 };
 const PRICE_STEPS = [50000, 100000, 150000, 200000, 300000, 500000];
 const ROOM_STEPS = ['2', '3', '4'];
@@ -89,7 +89,7 @@ const PropCard = ({ p }: { p: Listing }) => {
       <div className="vh-card__media">
         {p.coverImage ? <img src={p.coverImage} alt={p.title} loading="lazy" /> : <div className="vh-card__noimg" />}
         <span className="vh-card__op">{cap(p.operation)}</span>
-        {stamp && <span className={`vh-stamp ${stamp.cls}`}>{stamp.label}</span>}
+        {stamp && <span className={`vera-pub-stamp vera-pub-stamp--card ${stamp.cls}`}>{stamp.label}</span>}
       </div>
       <div className="vh-card__body">
         <span className="vh-card__price">{money(p.price, p.currency)}</span>

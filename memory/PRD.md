@@ -1431,3 +1431,8 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 
 ### Logo en Tasar (2026-06, iter 13)
 - `TasarPublico.tsx`: el topbar mostraba texto "VARELA PROPIEDADES" (izq) + ubicación (der), sin logo. A pedido del usuario: ahora ubicación "Costa del Este · Mar del Tuyú" (izq) + **logo de marca `/varela-logo-brand.png` arriba a la derecha** (data-testid tasar-logo, height 34). Verificado por screenshot. Requiere REDEPLOY. (Nota: preview cacheaba el bundle; se resolvió con restart frontend.)
+
+### Sellos Vendida/Reservada en la home (2026-06, iter 14)
+- Síntoma: en la home las tarjetas mostraban solo un chip chico "RESERVADA/VENDIDA" (`.vh-stamp`), no el sello diagonal grande estampado sobre la foto (como sí hacen /web y la ficha).
+- Fix: `PublicHome.tsx` PropCard ahora reutiliza el sello diagonal existente `.vera-pub-stamp vera-pub-stamp--card vera-pub-stamp--{sold|reserved}` (mismo que PublicListing/ficha). STAMP map actualizado. La ficha ya mostraba ambos (sold+reserved, líneas 123-124) → sin cambios. `/web` ya usaba el sello grande.
+- Verificado: reutiliza CSS ya probado en /web. Requiere REDEPLOY. (Preview cacheaba bundle → restart frontend.)
