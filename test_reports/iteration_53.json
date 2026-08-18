@@ -1,0 +1,26 @@
+{
+  "summary": "Frontend-only testing of the new public marketing home at /inicio. All 16 requested behaviors verified end-to-end against the preview URL. Route renders without auth, contains data-testid 'public-home', shows correct headline, nav (desktop + mobile burger), hero CTAs with correct WhatsApp/Tasar hrefs, 4 stats (30 Propiedades / 20 / +500 / +1200), destacados, Sebastián section (says 'Agente Inmobiliario' and 'Martillero Público · Jorge Varela', does NOT contain 'Titular'), '¿Por qué elegirnos?' 4 cards, portal-cta -> http://177.7.35.221/portal, cartera filter bar (4 selects + Limpiar + home-count), tipo filter changes count (30 -> 14 -> 30 after clear), 33 property card bodies (home-card-<uuid>) plus 30 home-card-wa-* buttons on non-sold, card click navigates to /web/:id, contact section has both WhatsApp cards with the exact numbers (5492246586030 ventas, 5492257404000 alquileres), varelavendecde@gmail.com email present, NO form inputs and NO 'Horario'/'Lun a Sáb' text, footer renders. Regression: /web still renders, /login still renders, unauthenticated / still redirects to /login (auth gating untouched). Hero background image and card images loaded.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/inicio - Cartera activa filter", "issues": ["React hydration warning: '<span> cannot be a child of <option>'. Coming from the 'home-filter-precio' <select>; option label uses an expression that gets wrapped in a data-ve-dynamic <span>. Cosmetic (dev instrumentation), no runtime break, but should be cleaned up so React does not emit hydration errors and to keep the HTML valid. Suggested fix: render the price option label as a plain template string (e.g. `${(v/1000)}k USD`) so no JSX expression wrapper is generated inside <option>."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Optional: silence the '<span> cannot be a child of <option>' hydration warning by using a plain string label in the price-filter <option> elements in PublicHome.tsx."
+  ],
+  "critical_code_review_comments": [
+    "PublicHome.tsx is a large single file; consider splitting Hero/Stats/Nosotros/Cartera/Contacto into subcomponents for maintainability.",
+    "Price <option> label uses computed JSX which the build wraps in an extra <span>; keep option children as strings to remain HTML-valid."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "test_credentials": "N/A (public route)",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All /inicio spec items pass. Only outstanding item is a hydration warning about <span> inside <option> in the price filter of PublicHome. /web, /login, and auth-gated / all behave correctly."
+}

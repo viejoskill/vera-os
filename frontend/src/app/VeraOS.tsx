@@ -28,6 +28,7 @@ import { ReservarPublico } from '@app/public/ReservarPublico';
 import { ReservarPropiedad } from '@app/public/ReservarPropiedad';
 import { ReservaResultado } from '@app/public/ReservaResultado';
 import { PublicPropertyDetail } from '@app/public/PublicPropertyDetail';
+import { PublicHome } from '@app/public/PublicHome';
 import { SignScreen } from '@app/public/SignScreen';
 import { AuthProvider } from '@app/auth/AuthProvider';
 import { RequireAuth } from '@app/auth/RequireAuth';
@@ -58,12 +59,40 @@ export const VeraOS = () => {
       </QueryClientProvider>
     );
   }
+
+  // Sitio público institucional de Varela. En el dominio público (varelapropiedadescde.com.ar)
+  // sirve SOLO la web pública (home, cartera, ficha, tasar) sin login ni OS. En veraosvarela.com
+  // la home vive en /inicio para poder previsualizarla antes de apuntar el dominio.
+  const host = typeof window !== 'undefined' ? window.location.hostname : '';
+  const isPublicSiteHost = /varelapropiedadescde\.com\.ar$/.test(host) && !host.startsWith('alquileres.');
+  if (isPublicSiteHost) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<PublicHome />} />
+            <Route path="/inicio" element={<PublicHome />} />
+            <Route path="/web" element={<PublicListing />} />
+            <Route path="/web/:id" element={<PublicPropertyDetail />} />
+            <Route path="/tasar" element={<TasarPublico />} />
+            <Route path="/reservar" element={<ReservarPublico />} />
+            <Route path="/reservar/:slug" element={<ReservarPropiedad />} />
+            <Route path="/pago/resultado" element={<ReservaResultado />} />
+            <Route path="/firma/:token" element={<SignScreen />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </QueryClientProvider>
+    );
+  }
+
   return (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginScreen />} />
+          <Route path="/inicio" element={<PublicHome />} />
           <Route path="/web" element={<PublicListing />} />
           <Route path="/web/:id" element={<PublicPropertyDetail />} />
           <Route path="/tasar" element={<TasarPublico />} />

@@ -1,90 +1,143 @@
 {
-  "theme": "dark",
-  "colors": {
-    "primary": "#F6E63A",
-    "background": {
-      "base": "#050505",
-      "surface": "#0F0F0F",
-      "surface_elevated": "#1A1A1A",
-      "glass": "rgba(255, 255, 255, 0.02)"
-    },
-    "text": {
-      "primary": "#FFFFFF",
-      "secondary": "#A1A1AA",
-      "tertiary": "#52525B",
-      "inverse": "#000000"
-    },
-    "priority": {
-      "alta": "#FF453A",
-      "atencion": "#FF9F0A",
-      "lista": "#32D74B"
-    },
-    "borders": {
-      "subtle": "rgba(255, 255, 255, 0.06)",
-      "focus": "#F6E63A"
-    }
-  },
   "typography": {
-    "font_family": "DM Sans, sans-serif",
-    "hierarchy": {
-      "greeting": "text-3xl font-light tracking-tight text-white",
-      "greeting_highlight": "font-medium",
-      "section_title": "text-xs font-semibold uppercase tracking-widest text-secondary mb-4 flex items-center gap-2",
-      "card_title": "text-lg font-medium tracking-tight text-white",
-      "card_body": "text-sm text-secondary leading-relaxed",
-      "button_text": "text-sm font-medium tracking-wide"
-    }
+    "strategy": "The 'Editorial Future' (Web3 / Gaming / Premium Coastal)",
+    "fonts": {
+      "heading": "Clash Display (or Cabinet Grotesk)",
+      "body": "Manrope (or Satoshi)",
+      "mono": "JetBrains Mono (for codes, stats)"
+    },
+    "scale": {
+      "h1": "text-5xl md:text-6xl lg:text-7xl tracking-tighter leading-[1.1]",
+      "h2": "text-3xl md:text-5xl tracking-tight leading-tight",
+      "h3": "text-2xl md:text-3xl tracking-tight",
+      "body": "text-base md:text-lg text-zinc-400 leading-relaxed",
+      "eyebrow_labels": "text-xs uppercase tracking-[0.2em] font-bold text-[#F6E63A]"
+    },
+    "rules": [
+      "Never use generic Inter for headings.",
+      "Headings over 32px MUST use tracking-tight.",
+      "Overlines MUST be Uppercase + Wide Spacing."
+    ]
+  },
+  "colors": {
+    "strategy": "Electric & Neon crossed with Luxury Dark Mode (Deep Midnight + Yellow)",
+    "tokens": {
+      "--vera-brand": "#F6E63A",
+      "--vera-brand-hover": "#E5D52A",
+      "--vera-bg": "#0A0A0B",
+      "--vera-surface": "#121214",
+      "--vera-surface-hover": "#1C1C1F",
+      "--vera-border": "rgba(255,255,255,0.08)",
+      "--vera-text-main": "#FFFFFF",
+      "--vera-text-muted": "#A1A1AA"
+    },
+    "tailwind_classes": {
+      "primary": "bg-[#F6E63A] text-black",
+      "background": "bg-[#0A0A0B]",
+      "card": "bg-[#121214] border border-white/10"
+    },
+    "rules": [
+      "NO muddy gray transparency. Glassmorphism must be premium.",
+      "NEVER use pure #000000. Always tint neutral greys with blue or warm tone (#0A0A0B).",
+      "Buttons with --vera-brand must have black text for high contrast."
+    ]
   },
   "layouts": {
-    "grid_system": "8px base spacing scale (Tailwind p-2, p-4, p-6, p-8).",
-    "structure": {
-      "app_shell": "flex h-screen overflow-hidden bg-background-base text-text-primary font-sans",
-      "sidebar": "w-64 flex-shrink-0 border-r border-borders-subtle bg-background-surface flex flex-col justify-between z-20 relative",
-      "main_content": "flex-1 relative overflow-hidden flex flex-col",
-      "inbox_container": "flex-1 overflow-y-auto px-12 pt-24 pb-32 w-full max-w-4xl mx-auto z-10 relative space-y-16"
-    }
+    "spacing": "Generous Spacing Philosophy. Use py-24 or py-32 for sections.",
+    "container": "max-w-7xl mx-auto px-6 lg:px-8",
+    "grid_strategy": "The 'Bento' Grid Protocol (Asymmetry & Visual Tension)",
+    "sections": [
+      {
+        "name": "Header",
+        "style": "Sticky Top Nav. Crystal Glassmorphism: backdrop-blur-xl bg-[#0A0A0B]/80 border-b border-white/10. z-50."
+      },
+      {
+        "name": "Hero",
+        "style": "min-h-[90vh] flex flex-col justify-center relative. Background image with gradient overlay (bg-gradient-to-r from-[#0A0A0B] via-[#0A0A0B]/80 to-transparent). Content max-w-3xl."
+      },
+      {
+        "name": "Stat Counters",
+        "style": "grid grid-cols-2 md:grid-cols-4 gap-8 py-12 border-b border-white/10."
+      },
+      {
+        "name": "Radar / Cartera Activa",
+        "style": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6. Filter bar sticky or prominent."
+      },
+      {
+        "name": "Conocé a Sebastián",
+        "style": "Bento style. grid md:grid-cols-12 gap-12 items-center. Image col-span-12 md:col-span-5, text col-span-12 md:col-span-7."
+      },
+      {
+        "name": "Contacto",
+        "style": "grid grid-cols-1 md:grid-cols-2 gap-6."
+      }
+    ]
   },
   "visual_enhancers": {
-    "mood_background": "CSS-only living background. Place a fixed div behind content. Use 2-3 extremely soft radial gradients with massive blurs (blur-[120px] or blur-[160px]) and very low opacity (10-15%). Animate via slow CSS keyframes (15-20s duration) drifting gently to reflect VERA's state. It must be completely serene and NOT compete with information.",
-    "glassmorphism": "For action cards: backdrop-blur-2xl bg-white/[0.02] border border-white/[0.06]. This mimics Apple Vision Pro elegant depth.",
-    "shadows": "Avoid hard drop shadows. Use ambient glows for active/priority elements."
+    "glassmorphism": "bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl",
+    "borders": "Use Grid Borders micro-theme. 1px solid rgba(255,255,255,0.05).",
+    "noise": "Optional subtle SVG grain overlay for texture to avoid digital flatness."
   },
-  "components": {
-    "Sidebar": "Apps: Hoy (active indicator), Propiedades, Operaciones, Studio. User chip bottom-left (Valentina). No heavy active backgrounds; use a subtle left border (primary color) and white text for active, dim text for inactive.",
-    "Header": "Human greeting ('Buen día, Valentina.') with a language-based summary ('Hay 3 temas que requieren tu atención.'). No KPI blocks.",
-    "RecommendationCard": {
-      "anatomy": [
-        "1. ¿Qué pasó? (Context): Brief status.",
-        "2. ¿Por qué importa? (Impact): The value at stake.",
-        "3. ¿Qué recomienda VERA? (Action): The AI deterministic next step.",
-        "4. [ Resolver ahora ] (Button): The explicit resolution trigger."
-      ],
-      "style": "Glassmorphism surface. Cleanly structured. Add a subtle vertical indicator line on the left mapping to the priority tier color (Red/Yellow/Green). Give breathing room (p-6 or p-8).",
-      "button": "Pill-shaped (rounded-full). For primary actions: bg-text-primary text-text-inverse hover:bg-gray-200. Do not overuse the #F6E63A yellow for every button; reserve yellow for absolute primary system actions to keep it premium."
-    },
-    "EmptyState": "Cared-for empty state: 'Todo al día. No hay acciones prioritarias por ahora.' Centered, serene, deeply muted text to reflect calm."
+  "component_strategies": {
+    "buttons": "Pill-shaped (rounded-full). Primary: bg-[#F6E63A] text-black font-bold hover:scale-105 transition-transform. Secondary: bg-white/5 text-white border border-white/10 backdrop-blur-md.",
+    "cards": "Property Cards: rounded-2xl overflow-hidden bg-[#121214] border border-white/10 hover:-translate-y-2 transition-transform duration-300.",
+    "inputs": "Shadcn based. bg-transparent border-white/10 text-white focus:border-[#F6E63A] rounded-xl."
+  },
+  "grids": {
+    "bento": "grid-cols-1 md:grid-cols-12 gap-6",
+    "cards": "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
   },
   "motion": {
-    "entrance": "Staggered fade-up (opacity 0 -> 1, translateY 10px -> 0) over 0.6s. Gives the feeling VERA 'was already working' before the user arrived.",
-    "interactions": "Smooth subtle scaling (scale-95) on button press. Explicit targeted transitions (e.g. transition-colors, transition-transform) over 200ms."
+    "hover": "All interactive elements must scale slightly or shift border color.",
+    "scroll": "Staggered fade-up for grid items. Use framer-motion if possible.",
+    "image_hover": "Property card images scale-110 on group-hover inside overflow-hidden container."
   },
-  "image_urls": {
-    "user_avatar": {
-      "url": "https://images.unsplash.com/photo-1506863530036-1efeddceb993?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2Mzl8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMG9mJTIwd29tYW4lMjBtb2Rlcm4lMjBkYXJrJTIwYmFja2dyb3VuZCUyMHN0dWRpbyUyMGxpZ2h0aW5nfGVufDB8fHx8MTc4NDE2NTQwNHww&ixlib=rb-4.1.0&q=85",
-      "description": "Professional modern woman portrait in dark studio lighting for Valentina's user chip.",
-      "category": "sidebar_user_profile"
+  "accessibility": {
+    "contrast": "Ensure #A1A1AA against #0A0A0B passes WCAG. Black text on #F6E63A.",
+    "aria": "Add aria-labels to WhatsApp buttons.",
+    "testing": "All interactive elements MUST include data-testid attribute."
+  },
+  "media": {
+    "icons": "lucide-react for standard icons. Phosphor icons if available."
+  },
+  "3d_libraries": {
+    "recommendation": "Not strictly needed for this fast coastal UI, but a subtle framer-motion parallax on the hero image or stat counters adds premium feel."
+  },
+  "image_urls": [
+    {
+      "category": "Hero Background",
+      "url": "https://images.pexels.com/photos/4279989/pexels-photo-4279989.jpeg",
+      "description": "Picturesque view of house near ocean at sunset"
+    },
+    {
+      "category": "Agent Portrait (Sebastián)",
+      "url": "https://images.unsplash.com/photo-1676989880361-091e12efc056?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2ODl8MHwxfHNlYXJjaHwyfHxwcm9mZXNzaW9uYWwlMjByZWFsJTIwZXN0YXRlJTIwYWdlbnQlMjBwb3J0cmFpdCUyMG1hbnxlbnwwfHx8fDE3ODcwMTIyMTF8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Man with beard and glasses (grayscale with yellow accent glow recommended)"
+    },
+    {
+      "category": "Property Mock 1",
+      "url": "https://images.pexels.com/photos/19879685/pexels-photo-19879685.jpeg",
+      "description": "Contemporary beachfront villa"
+    },
+    {
+      "category": "Property Mock 2",
+      "url": "https://images.pexels.com/photos/19219055/pexels-photo-19219055.jpeg",
+      "description": "Beautiful white houses"
+    },
+    {
+      "category": "Property Mock 3",
+      "url": "https://images.unsplash.com/photo-1693160206111-202ab0b8b34c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NjZ8MHwxfHNlYXJjaHwzfHxtb2Rlcm4lMjBsdXh1cnklMjBiZWFjaCUyMGhvdXNlJTIwZXh0ZXJpb3J8ZW58MHx8fHwxNzg3MDEyMjExfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Modern house curved roof"
     }
-  },
+  ],
   "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
-    "NEVER use Shadcn UI or any external component libraries. Build exclusively with custom React components and Tailwind CSS (VERA UI Kit).",
-    "STRICTLY use .js and .jsx extensions. Do not use TypeScript.",
-    "NO KPIs, NO dashboard widgets, NO charts. 'Hoy' is an operational inbox organized purely by priority actions.",
-    "NEVER use the word 'Error'. Use 'Próximo paso', 'Recomendación', 'Oportunidad', 'Atención', or 'Listo'.",
-    "BANNED: sci-fi tropes (robots, circuits, hexagons, aggressive neon). Design for 'future elegant' (Apple Vision Pro, Linear, Framer).",
-    "BACKGROUND RULES: The background must be CSS-only (no images) and reflect VERA's 'mood' via extremely subtle, slow-moving radial gradients with massive blurs. Never distract from content.",
-    "GLASSMORPHISM: Do NOT use complete transparent backgrounds for surfaces with content underneath. Use backdrop-blur + slight white opacity (bg-white/[0.02]).",
-    "COLORS: Only use the design tokens mapped in Tailwind config. Primary color is #F6E63A. Dark theme is strictly enforced.",
-    "TESTING: Every interactive and key informational element MUST include a `data-testid` attribute (e.g. data-testid=\"resolve-now-button\").",
-    "ANIMATIONS: Do not apply `transition-all`. Specify explicitly (e.g., `transition-colors duration-200`). Ensure a smooth entrance choreography."
-  ]
+    "NEVER use default Inter or Arial. Stick to the designated fonts (Clash Display / Manrope).",
+    "Use 2-3x more spacing than feels comfortable. generous padding (e.g., py-24).",
+    "Every interaction needs micro-animations - hover states, transitions.",
+    "Do not use transparent backgrounds for the sticky header; use backdrop-blur and a semi-solid background like bg-[#0A0A0B]/80.",
+    "Apply `data-testid` to all CTAs, inputs, and property cards.",
+    "WhatsApp buttons are primary CTAs: stylize them distinctively with the Varela Yellow.",
+    "The app uses pure CSS variables prefix `vera-`. Map Tailwind utility classes to these variables if possible, or use arbitrary values like `bg-[#F6E63A]`."
+  ],
+  "instructions_to_main_agent": "Create the marketing landing page in React.js (.js files, not .tsx) using Tailwind CSS. Follow the color tokens strictly. Ensure the dark theme has high contrast with the yellow accents. Implement the sections chronologically: Nav, Hero, Stats, Destacados (Radar Inmobiliario), Bio (Conocé a Sebastián), Features (Por qué elegirnos), Portal Promo, Active Listings Grid (Cartera activa), Contact, and Footer. Replicate exact text from requirements (e.g., Sebastián's title, no business hours). Use Lucide-react for icons. The layout MUST feel premium, coastal, and tech-enabled. Focus heavily on layout precision, crisp 1px borders, and responsive mobile design."
 }
