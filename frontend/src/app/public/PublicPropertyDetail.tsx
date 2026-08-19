@@ -72,28 +72,39 @@ export const PublicPropertyDetail = () => {
     canonical: canonicalUrl,
     ogImage: image,
     jsonLd: data
-      ? {
-          '@context': 'https://schema.org',
-          '@type': 'RealEstateListing',
-          name: data.title,
-          description: shortDesc,
-          url: canonicalUrl,
-          image: image ? [image] : undefined,
-          address: {
-            '@type': 'PostalAddress',
-            streetAddress: data.address,
-            addressLocality: data.city,
-            addressRegion: data.province,
-            addressCountry: 'AR',
+      ? [
+          {
+            '@context': 'https://schema.org',
+            '@type': 'RealEstateListing',
+            name: data.title,
+            description: shortDesc,
+            url: canonicalUrl,
+            image: image ? [image] : undefined,
+            address: {
+              '@type': 'PostalAddress',
+              streetAddress: data.address,
+              addressLocality: data.city,
+              addressRegion: data.province,
+              addressCountry: 'AR',
+            },
+            offers: {
+              '@type': 'Offer',
+              price: data.price,
+              priceCurrency: data.currency,
+              availability:
+                data.status === 'sold' ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+            },
           },
-          offers: {
-            '@type': 'Offer',
-            price: data.price,
-            priceCurrency: data.currency,
-            availability:
-              data.status === 'sold' ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+          {
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Inicio', item: `${SITE_URL}/` },
+              { '@type': 'ListItem', position: 2, name: 'Cartera', item: `${SITE_URL}/web` },
+              { '@type': 'ListItem', position: 3, name: data.title, item: canonicalUrl },
+            ],
           },
-        }
+        ]
       : undefined,
   });
 

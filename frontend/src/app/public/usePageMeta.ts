@@ -9,7 +9,7 @@ interface PageMeta {
   canonical?: string;
   ogImage?: string;
   ogType?: string;
-  jsonLd?: Record<string, unknown>;
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
 const setMetaTag = (attr: 'property' | 'name', key: string, value: string) => {

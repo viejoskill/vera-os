@@ -1459,3 +1459,9 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - PENDIENTE c) redirect legacy /ficha: esperando confirmación del usuario sobre si el número de las URLs viejas existe hoy en algún campo (legacy_id/código). Plan acordado: arrancar con endpoint `/api/public/resolve/{code}` + ruta SPA `/ficha/:slug` (redirect client-side), y opcionalmente Cloudflare Bulk Redirect encima.
 - PENDIENTE e) reseñas reales de Google (reviews.ts sigue mockeado).
 - Requiere REDEPLOY.
+
+### SEO: BreadcrumbList + horario sáb/dom (2026-06, iter 18)
+- **usePageMeta.ts**: tipo `jsonLd` ahora acepta objeto O array (`Record | Record[]`); un solo <script id=page-jsonld> puede llevar varios schemas.
+- **PublicPropertyDetail.tsx**: jsonLd pasa a array [RealEstateListing + BreadcrumbList] (Inicio › Cartera › Propiedad). VERIFICADO: la ficha emite ambos @type.
+- **BUSINESS_JSONLD (Home)**: horario actualizado a Lun-Sáb 09:30-13:00 y 16:30-19:00 + Dom 09:30-13:00. VERIFICADO en vivo.
+- Requiere REDEPLOY.
