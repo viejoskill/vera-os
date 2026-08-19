@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
 
+/** Dominio de producción (fuente de verdad para canonical/OG). */
+export const SITE_URL = 'https://www.varelapropiedadescde.com.ar';
+
 interface PageMeta {
   title: string;
   description: string;

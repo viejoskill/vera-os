@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, BedDouble, Bath, Maximize, MapPin, Ruler, Compass, MessageCircle, Share2, Check } from 'lucide-react';
 import { env } from '@vera/config';
 import { logInquiry } from './whatsappInquiry';
-import { usePageMeta } from './usePageMeta';
+import { usePageMeta, SITE_URL } from './usePageMeta';
 
 interface Img { id: string; url: string; }
 interface Detail {
@@ -63,7 +63,8 @@ export const PublicPropertyDetail = () => {
     ? `${data.operation} en ${[data.neighborhood, data.city].filter(Boolean).join(', ')}. ${money(data.price, data.currency)}. ${desc}`.slice(0, 160)
     : 'Ficha de propiedad — Varela Inmobiliaria, Costa del Este y Mar del Tuyú.';
   const image = data?.coverImage || data?.images?.[0]?.url || '';
-  const canonicalUrl = data?.publicUrl || (typeof window !== 'undefined' ? window.location.href : '');
+  // Canonical siempre en el dominio propio (/web/{id}), nunca la URL vieja de otro sistema.
+  const canonicalUrl = `${SITE_URL}/web/${id}`;
 
   usePageMeta({
     title: data ? `${data.title} · Varela Propiedades` : 'Propiedad · Varela Propiedades',

@@ -1450,3 +1450,12 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - PENDIENTE opcional: aplicar `usePageMeta` en PublicHome.tsx, PublicListing.tsx y TasarPublico.tsx (títulos/descripciones propios de cada página).
 - NOTA: canonical de la ficha usa `data.publicUrl` (formato viejo `?propiedad=vera-...`). Evaluar si conviene apuntar a `/web/{id}` del dominio propio.
 - Requiere REDEPLOY para producción.
+
+### SEO: meta por página + canonical propio + JSON-LD negocio (2026-06, iter 17)
+- **SITE_URL** const exportada desde usePageMeta.ts (`https://www.varelapropiedadescde.com.ar`).
+- **a) usePageMeta en Home / Cartera / Tasar** con title+description+canonical propios de cada página (textos provistos por el usuario). VERIFICADO en vivo las 3 + ficha.
+- **d) Canonical propio en la ficha**: PublicPropertyDetail ahora usa `${SITE_URL}/web/${id}` (antes usaba data.publicUrl con formato viejo `?propiedad=vera-...`). VERIFICADO.
+- **b) JSON-LD RealEstateAgent en Home** (const BUSINESS_JSONLD, datos verificados con el cliente): dirección "Av. Interbalnearia interna 162, Costa del Este 7108, Buenos Aires, AR", tel +5492246586030, horario Lun-Vie 09:30-13:00 y 16:30-19:00 (DÍAS ASUMIDOS Lun-Vie; el usuario dio los turnos sin especificar días — confirmar si aplica sábado), sameAs Google Business + Instagram. Sin aggregateRating (reseñas aún placeholder). VERIFICADO: @type RealEstateAgent presente.
+- PENDIENTE c) redirect legacy /ficha: esperando confirmación del usuario sobre si el número de las URLs viejas existe hoy en algún campo (legacy_id/código). Plan acordado: arrancar con endpoint `/api/public/resolve/{code}` + ruta SPA `/ficha/:slug` (redirect client-side), y opcionalmente Cloudflare Bulk Redirect encima.
+- PENDIENTE e) reseñas reales de Google (reviews.ts sigue mockeado).
+- Requiere REDEPLOY.

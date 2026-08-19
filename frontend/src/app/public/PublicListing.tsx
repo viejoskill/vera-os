@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { BedDouble, Bath, Maximize, MapPin, MessageCircle } from 'lucide-react';
 import { env } from '@vera/config';
 import { openWhatsAppInquiry } from './whatsappInquiry';
+import { usePageMeta, SITE_URL } from './usePageMeta';
 
 interface Listing {
   id: string;
@@ -86,6 +87,12 @@ export const PublicListing = () => {
     setPrecioMax('');
     setAmbientes('');
   };
+
+  usePageMeta({
+    title: 'Propiedades en venta y alquiler en Costa del Este | Varela',
+    description: 'Casas, lotes, PH y departamentos disponibles en Costa del Este y Mar del Tuyú. Filtrá por tipo, zona y precio.',
+    canonical: `${SITE_URL}/web`,
+  });
 
   return (
     <div className="vera-pub" data-testid="public-listing">

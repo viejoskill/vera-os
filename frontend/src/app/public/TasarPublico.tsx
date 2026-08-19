@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Sparkles, TrendingUp, ShieldCheck, Loader2 } from 'lucide-react';
 import { env } from '@vera/config';
+import { usePageMeta, SITE_URL } from './usePageMeta';
 
 const API = `${env.backendUrl}/api/public/tasacion`;
 
@@ -61,6 +62,12 @@ export const TasarPublico = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const set = (k: string, val: string | boolean) => setF((s) => ({ ...s, [k]: val }));
+
+  usePageMeta({
+    title: 'Tasación online gratuita en Costa del Este | Varela',
+    description: 'Tasá tu propiedad en Costa del Este o Mar del Tuyú en minutos, sin costo y sin compromiso.',
+    canonical: `${SITE_URL}/tasar`,
+  });
 
   const esCasa = f.tipo === 'casa' || f.tipo === 'duplex';
   const esDepto = f.tipo === 'depto';

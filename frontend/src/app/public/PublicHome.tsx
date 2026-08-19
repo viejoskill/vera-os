@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { env } from '@vera/config';
 import { openWhatsAppInquiry } from './whatsappInquiry';
+import { usePageMeta, SITE_URL } from './usePageMeta';
 import { REVIEWS, GOOGLE_RATING, GOOGLE_TOTAL, GOOGLE_REVIEW_URL } from './reviews';
 
 const WA_VENTAS = '5492246586030';
@@ -20,6 +21,45 @@ const HERO_BG = '/home-hero-16x9.jpg';
 const RENTALS_BG = '/home-rentals-16x9.jpg';
 
 const wa = (num: string, msg: string) => `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+
+/** JSON-LD de negocio local (datos verificados con el cliente). Sin rating/reseñas
+ *  porque hoy son placeholders. Horario: turnos confirmados; días asumidos Lun-Vie. */
+const BUSINESS_JSONLD = {
+  '@context': 'https://schema.org',
+  '@type': 'RealEstateAgent',
+  name: 'Varela Inmobiliaria',
+  url: 'https://www.varelapropiedadescde.com.ar/',
+  image: 'https://www.varelapropiedadescde.com.ar/varela-logo-brand.png',
+  logo: 'https://www.varelapropiedadescde.com.ar/varela-logo-brand.png',
+  telephone: '+5492246586030',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: 'Av. Interbalnearia interna 162',
+    addressLocality: 'Costa del Este',
+    postalCode: '7108',
+    addressRegion: 'Buenos Aires',
+    addressCountry: 'AR',
+  },
+  areaServed: ['Costa del Este', 'Mar del Tuyú'],
+  openingHoursSpecification: [
+    {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+      opens: '09:30',
+      closes: '13:00',
+    },
+    {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+      opens: '16:30',
+      closes: '19:00',
+    },
+  ],
+  sameAs: [
+    'https://share.google/x0lQpAsrJI4mvCXvk',
+    'https://www.instagram.com/inmobiliariavarelacde/',
+  ],
+};
 
 interface Listing {
   id: string; code: string; title: string; type: string; operation: string;
@@ -186,6 +226,13 @@ export const PublicHome = () => {
   const cClients = useCountUp(1200, stats.seen);
 
   const nav = (id: string) => { setMenuOpen(false); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }); };
+
+  usePageMeta({
+    title: 'Varela Inmobiliaria | Costa del Este y Mar del Tuyú',
+    description: '20 años en Costa del Este y Mar del Tuyú. Casas, lotes, PH y departamentos en venta y alquiler. Tasación online gratuita y Portal del Propietario.',
+    canonical: `${SITE_URL}/`,
+    jsonLd: BUSINESS_JSONLD,
+  });
 
   return (
     <div className="vh-root" data-testid="public-home">
