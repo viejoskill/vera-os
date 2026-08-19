@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /veraos/
+Disallow: /firma/
+
+Sitemap: https://www.varelapropiedadescde.com.ar/api/sitemap.xml

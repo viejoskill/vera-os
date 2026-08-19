@@ -1439,3 +1439,14 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 
 ### Filtros compartibles por URL en la home (2026-06, iter 15)
 - Los filtros de la cartera (Tipo/Zona/Precio/Ambientes) eran estado local → no se podían compartir filtrados. Ahora `PublicHome.tsx` sincroniza los filtros con query params (`?tipo=&zona=&precio=&ambientes=`) vía useSearchParams: inicializa desde la URL y actualiza la URL al cambiar (replace). Si el link llega con filtros, hace auto-scroll a #cartera. Así se puede compartir p.ej. `varelapropiedadescde.com.ar/?tipo=terreno`. Requiere REDEPLOY.
+
+### SEO técnico: meta tags, sitemap, robots (2026-06, iter 16)
+- **Parches de auditoría externa (Claude)** aplicados y adaptados a la arquitectura real (backend solo alcanzable bajo `/api` por el ingress k8s; server.py NO sirve el build de React ni tiene catch-all).
+- **usePageMeta** (`frontend/src/app/public/usePageMeta.ts`): hook nuevo que setea title + meta description + link canonical + OG/Twitter + JSON-LD client-side. Reutilizable en todas las páginas públicas.
+- **PublicPropertyDetail.tsx**: reemplazado el useEffect manual de OG por `usePageMeta` con JSON-LD `RealEstateListing` (address, offers, availability SoldOut/InStock). VERIFICADO en vivo: title/description/canonical/JSON-LD/og:image se setean con datos reales de la propiedad.
+- **sitemap.xml DINÁMICO** (`backend/routes_sitemap.py`): montado en **`/api/sitemap.xml`** (NO en raíz, porque el ingress no rutea root al backend). Lista `/`, `/web`, `/tasar` + `/web/{id}` de todas las propiedades publicadas en Web (reusa `inquiries.is_web_published`). VERIFICADO: 200 application/xml. Registrado en server.py.
+- **robots.txt** (`frontend/public/robots.txt`): servido en `/robots.txt` por el frontend. Allow /, Disallow /veraos/ y /firma/, declara `Sitemap: .../api/sitemap.xml`. VERIFICADO servido.
+- **NO aplicado — Parche 3 (redirect 301 legacy `/ficha/{id}-slug`)**: imposible como ruta raíz del backend (ingress solo `/api`). Requiere decisión del usuario: (a) ruta SPA `/ficha/:slug` con redirect client-side (no es 301 real), (b) Bulk Redirect en Cloudflare (301 real, pero necesita mapeo id→propiedad), o (c) endpoint `/api/public/resolve/{code}` + ruta SPA. Falta también confirmar que el código legacy numérico mapea al campo `code` actual.
+- PENDIENTE opcional: aplicar `usePageMeta` en PublicHome.tsx, PublicListing.tsx y TasarPublico.tsx (títulos/descripciones propios de cada página).
+- NOTA: canonical de la ficha usa `data.publicUrl` (formato viejo `?propiedad=vera-...`). Evaluar si conviene apuntar a `/web/{id}` del dominio propio.
+- Requiere REDEPLOY para producción.

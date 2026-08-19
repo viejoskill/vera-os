@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, BedDouble, Bath, Maximize, MapPin, Ruler, Compass, MessageCircle, Share2, Check } from 'lucide-react';
 import { env } from '@vera/config';
 import { logInquiry } from './whatsappInquiry';
+import { usePageMeta } from './usePageMeta';
 
 interface Img { id: string; url: string; }
 interface Detail {
@@ -55,34 +56,45 @@ export const PublicPropertyDetail = () => {
     window.setTimeout(() => setShared(false), 2200);
   };
 
-  // Open Graph / Twitter Cards: la vista previa al compartir es responsabilidad del
-  // sitio público. Reflejamos aquí los metadatos desde la fuente de verdad de VERA
-  // (título, descripción, foto principal, URL canónica).
-  useEffect(() => {
-    if (!data) return;
-    const setMeta = (attr: 'property' | 'name', key: string, value: string) => {
-      let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`);
-      if (!el) {
-        el = document.createElement('meta');
-        el.setAttribute(attr, key);
-        document.head.appendChild(el);
-      }
-      el.setAttribute('content', value);
-    };
-    const desc = (data.description || '').replace(/\s+/g, ' ').trim().slice(0, 200);
-    const image = data.coverImage || data.images?.[0]?.url || '';
-    const url = data.publicUrl || '';
-    document.title = `${data.title} · Varela Propiedades`;
-    setMeta('property', 'og:title', data.title);
-    setMeta('property', 'og:description', desc);
-    setMeta('property', 'og:image', image);
-    setMeta('property', 'og:url', url);
-    setMeta('property', 'og:type', 'website');
-    setMeta('name', 'twitter:card', 'summary_large_image');
-    setMeta('name', 'twitter:title', data.title);
-    setMeta('name', 'twitter:description', desc);
-    setMeta('name', 'twitter:image', image);
-  }, [data]);
+  // Open Graph / Twitter / SEO: reflejamos los metadatos desde la fuente de verdad
+  // de VERA (título, descripción, foto, URL canónica) + JSON-LD RealEstateListing.
+  const desc = (data?.description || '').replace(/\s+/g, ' ').trim();
+  const shortDesc = data
+    ? `${data.operation} en ${[data.neighborhood, data.city].filter(Boolean).join(', ')}. ${money(data.price, data.currency)}. ${desc}`.slice(0, 160)
+    : 'Ficha de propiedad — Varela Inmobiliaria, Costa del Este y Mar del Tuyú.';
+  const image = data?.coverImage || data?.images?.[0]?.url || '';
+  const canonicalUrl = data?.publicUrl || (typeof window !== 'undefined' ? window.location.href : '');
+
+  usePageMeta({
+    title: data ? `${data.title} · Varela Propiedades` : 'Propiedad · Varela Propiedades',
+    description: shortDesc,
+    canonical: canonicalUrl,
+    ogImage: image,
+    jsonLd: data
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'RealEstateListing',
+          name: data.title,
+          description: shortDesc,
+          url: canonicalUrl,
+          image: image ? [image] : undefined,
+          address: {
+            '@type': 'PostalAddress',
+            streetAddress: data.address,
+            addressLocality: data.city,
+            addressRegion: data.province,
+            addressCountry: 'AR',
+          },
+          offers: {
+            '@type': 'Offer',
+            price: data.price,
+            priceCurrency: data.currency,
+            availability:
+              data.status === 'sold' ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+          },
+        }
+      : undefined,
+  });
 
   if (isLoading) return <div className="vera-pub"><p className="vera-pub__empty">Cargando…</p></div>;
 
