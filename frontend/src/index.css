@@ -8327,3 +8327,27 @@ p {
   margin: 32px auto 0;
   padding: 0 32px;
 }
+
+
+/* Botón "Ver web" en el TopBar del OS */
+.vera-topbar-web {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #17181d;
+  color: #fafafa;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+}
+.vera-topbar-web:hover {
+  border-color: #fbe000;
+  background: #1e1f26;
+  transform: translateY(-1px);
+}
+.vera-topbar-web svg { color: #fbe000; }

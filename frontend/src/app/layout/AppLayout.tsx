@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Globe } from 'lucide-react';
 import { Sidebar, TopBar, type SidebarItem } from '@vera/ui';
 import { appConfig, workspaceConfig } from '@vera/config';
 import { navRoutes } from '@app/navigation';
@@ -68,7 +69,20 @@ export const AppLayout = () => {
           title={active.label}
           subtitle={appConfig.tagline}
           onMenuClick={() => setMobileOpen((v) => !v)}
-          actions={<><NotificationBell /><UserMenu /></>}
+          actions={<>
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="vera-topbar-web"
+              data-testid="topbar-web-link"
+              title="Abrir la web pública en una pestaña nueva"
+            >
+              <Globe size={16} /> Ver web
+            </a>
+            <NotificationBell />
+            <UserMenu />
+          </>}
         />
         <main className="vera-shell__content">
           <Outlet />

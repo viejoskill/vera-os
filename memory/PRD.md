@@ -1520,3 +1520,7 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Se mantiene copia pública varela-logo-brand.png solo para JSON-LD/og y otras páginas públicas (crawlers, no crítico para perf).
 - ACCIÓN usuario: puede DESACTIVAR/borrar las Cache Rules de Cloudflare (no hacen nada por el SaaS). Para TTL de assets de /public restantes (favicon, og), es capa Emergent (support@emergent.sh) — no crítico.
 - Requiere REDEPLOY.
+
+### Botón "Ver web" en TopBar del OS (2026-06, iter 25)
+- AppLayout.tsx: agregado <a href="/" target="_blank"> "Ver web" (ícono Globe) en TopBar actions, antes de NotificationBell/UserMenu. Al ser <a> plano sale del basename /veraos y va a la web pública. Global (todas las pantallas del OS). CSS .vera-topbar-web en index.css. VERIFICADO tras login (href=/ target=_blank).
+- Requiere REDEPLOY.
