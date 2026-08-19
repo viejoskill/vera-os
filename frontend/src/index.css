@@ -8131,7 +8131,7 @@ p {
 
 /* ALQUILERES band */
 .vh-rentals { position: relative; overflow: hidden; }
-.vh-rentals__bg { position: absolute; inset: 0; background-size: cover; background-position: center; }
+.vh-rentals__bg { position: absolute; inset: 0; background-color: #0a0a0b; background-size: cover; background-position: center; }
 .vh-rentals__scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,10,11,0.5) 0%, rgba(10,10,11,0.72) 60%, rgba(10,10,11,0.85) 100%); }
 .vh-rentals__inner { position: relative; max-width: 1220px; margin: 0 auto; padding: clamp(56px, 8vw, 96px) 24px; text-align: center; display: flex; flex-direction: column; align-items: center; }
 .vh-rentals__inner .vh-h2 { margin: 14px 0 0; }
@@ -8140,7 +8140,7 @@ p {
 
 /* HERO */
 .vh-hero { position: relative; min-height: 92vh; display: flex; align-items: center; overflow: hidden; }
-.vh-hero__bg { position: absolute; inset: 0; background-size: cover; background-position: center; transform: scale(1.05); }
+.vh-hero__bg { position: absolute; inset: 0; background-color: #0a0a0b; background-size: cover; background-position: center; transform: scale(1.05); }
 .vh-hero__scrim { position: absolute; inset: 0; background: linear-gradient(100deg, rgba(10,10,11,0.97) 0%, rgba(10,10,11,0.82) 42%, rgba(10,10,11,0.35) 100%); }
 .vh-hero__inner { position: relative; max-width: 1220px; margin: 0 auto; padding: 0 24px; width: 100%; }
 .vh-hero__inner > * { animation: vhUp 0.7s cubic-bezier(0.22,1,0.36,1) both; }

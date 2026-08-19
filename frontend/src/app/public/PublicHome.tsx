@@ -17,8 +17,16 @@ const PORTAL_URL = 'http://177.7.35.221/portal';
 const ALQUILERES_URL = '/alquileres';
 const LOGO = '/varela-logo-brand.png';
 const SEBASTIAN = '/sebastian.jpg';
-const HERO_BG = '/home-hero-16x9.jpg';
-const RENTALS_BG = '/home-rentals-16x9.jpg';
+const supportsWebp = () => {
+  try {
+    return document.createElement('canvas').toDataURL('image/webp').indexOf('data:image/webp') === 0;
+  } catch {
+    return false;
+  }
+};
+const WEBP_OK = typeof document !== 'undefined' && supportsWebp();
+const HERO_BG = WEBP_OK ? '/home-hero-16x9.webp' : '/home-hero-16x9.jpg';
+const RENTALS_BG = WEBP_OK ? '/home-rentals-16x9.webp' : '/home-rentals-16x9.jpg';
 
 const wa = (num: string, msg: string) => `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 
@@ -247,6 +255,7 @@ export const PublicHome = () => {
     link.rel = 'preload';
     link.as = 'image';
     link.href = HERO_BG;
+    if (WEBP_OK) link.type = 'image/webp';
     link.setAttribute('fetchpriority', 'high');
     document.head.appendChild(link);
     return () => { link.remove(); };

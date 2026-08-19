@@ -1506,3 +1506,9 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Footer: link al hub "Casas y lotes en venta en Costa del Este" → /venta/costa-del-este.
 - Anchor text descriptivo (no "ver más") para sumar señal semántica. Reusa clases .vera-lp__types/.vera-lp__typelink. VERIFICADO e2e (hrefs + navegación).
 - Requiere REDEPLOY.
+
+### Perf: WebP hero/rentals + caché finding (2026-06, iter 23)
+- Generados home-hero-16x9.webp (212KB, q72) y home-rentals-16x9.webp (107KB, q80) en frontend/public.
+- PublicHome: detección JS de soporte WebP (supportsWebp/WEBP_OK) → HERO_BG/RENTALS_BG apuntan a .webp o .jpg. Backgrounds inline url() (NO image-set, evita css-loader y prefijos -webkit-). Preload del hero usa webp + type=image/webp cuando aplica. VERIFICADO: solo se descarga el webp, sin doble fetch, hero nítido.
+  - NOTA: se intentó image-set() en index.css pero css-loader de CRA rompe al resolver url() con path absoluto de /public. Solución: detección JS + inline url().
+- HALLAZGO PROD (no-código): estáticos con Cache-Control public max-age=300 (5 min). Recomendado al usuario Cloudflare Cache Rules: /static/* (JS/CSS hasheado) TTL 1 año; imágenes .jpg/.png/.webp TTL 1 mes + purge tras deploy. HTML queda no-cache (correcto SPA).
