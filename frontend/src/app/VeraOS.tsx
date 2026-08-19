@@ -28,6 +28,7 @@ import { ReservarPropiedad } from '@app/public/ReservarPropiedad';
 import { ReservaResultado } from '@app/public/ReservaResultado';
 import { PublicPropertyDetail } from '@app/public/PublicPropertyDetail';
 import { PublicHome } from '@app/public/PublicHome';
+import { LegacyFichaRedirect } from '@app/public/LegacyFichaRedirect';
 import { SignScreen } from '@app/public/SignScreen';
 import { AuthProvider } from '@app/auth/AuthProvider';
 import { RequireAuth } from '@app/auth/RequireAuth';
@@ -92,6 +93,7 @@ const PublicSiteRoutes = () => (
     <Route path="/inicio" element={<PublicHome />} />
     <Route path="/web" element={<PublicListing />} />
     <Route path="/web/:id" element={<PublicPropertyDetail />} />
+    <Route path="/ficha/:slug" element={<LegacyFichaRedirect />} />
     <Route path="/tasar" element={<TasarPublico />} />
     <Route path="/firma/:token" element={<SignScreen />} />
     <Route path="*" element={<Navigate to="/" replace />} />

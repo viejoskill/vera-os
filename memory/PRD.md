@@ -1465,3 +1465,16 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - **PublicPropertyDetail.tsx**: jsonLd pasa a array [RealEstateListing + BreadcrumbList] (Inicio › Cartera › Propiedad). VERIFICADO: la ficha emite ambos @type.
 - **BUSINESS_JSONLD (Home)**: horario actualizado a Lun-Sáb 09:30-13:00 y 16:30-19:00 + Dom 09:30-13:00. VERIFICADO en vivo.
 - Requiere REDEPLOY.
+
+### Redirect legacy /ficha/{id}-slug (2026-06, iter 19)
+- CONTEXTO: el id numérico viejo de Google (9847, 3540...) NO existe en la base actual. `legacy_id` está poblado pero con IDs alfanuméricos de otro CRM (mq2yxdp..., mnml9...), NO los numéricos. No hay tabla vieja en el proyecto Supabase. → imposible resolver 1:1.
+- SOLUCIÓN aplicada (opción a+b combinada): `LegacyFichaRedirect.tsx` + ruta SPA `/ficha/:slug` en VeraOS PublicSiteRoutes. Ignora el número inicial, tokeniza el TEXTO del slug (sin acentos, len>=4, stopwords fuera) y lo matchea contra la cartera en vivo (/api/public/listings) por title+neighborhood+city+type+operation+code. Umbral: >=2 tokens y >=40% del slug → redirige a /web/{id}; si no, a /web (Cartera). Es redirect client-side (no 301 real) pero mata el soft-404.
+- VERIFICADO e2e: slug descriptivo→ficha correcta; slug sin match→/web; solo número→/web.
+- MEJORA futura: Cloudflare Bulk Redirect (301 real) encima, SOLO si se consigue el mapeo numérico exacto del sitio viejo (export/backup). Endpoint `/api/public/resolve/{code}` NO se hizo porque no hay dato numérico en la base.
+- Requiere REDEPLOY.
+
+### Pendientes de la auditoría original (no arrancados)
+- Core Web Vitals / performance real (requiere medir en prod).
+- SEO semántico / arquitectura de contenido / análisis de competencia.
+- Verificar re-indexación en Google Search Console post-deploy.
+- Reseñas reales en la Home (en pausa por decisión del usuario) + aggregateRating cuando haya reseñas.
