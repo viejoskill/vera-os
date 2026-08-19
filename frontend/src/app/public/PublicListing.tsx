@@ -97,7 +97,9 @@ export const PublicListing = () => {
   return (
     <div className="vera-pub" data-testid="public-listing">
       <header className="vera-pub__topbar">
-        <span className="vera-pub__brand">VARELA<span>PROPIEDADES</span></span>
+        <Link to="/" data-testid="listing-logo-home">
+          <img src="/varela-logo-brand.png" alt="Varela Inmobiliaria" style={{ height: 34, width: 'auto', display: 'block' }} />
+        </Link>
         <span className="vera-pub__count">{data.length} propiedades</span>
       </header>
 
