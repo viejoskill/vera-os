@@ -1512,3 +1512,11 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - PublicHome: detección JS de soporte WebP (supportsWebp/WEBP_OK) → HERO_BG/RENTALS_BG apuntan a .webp o .jpg. Backgrounds inline url() (NO image-set, evita css-loader y prefijos -webkit-). Preload del hero usa webp + type=image/webp cuando aplica. VERIFICADO: solo se descarga el webp, sin doble fetch, hero nítido.
   - NOTA: se intentó image-set() en index.css pero css-loader de CRA rompe al resolver url() con path absoluto de /public. Solución: detección JS + inline url().
 - HALLAZGO PROD (no-código): estáticos con Cache-Control public max-age=300 (5 min). Recomendado al usuario Cloudflare Cache Rules: /static/* (JS/CSS hasheado) TTL 1 año; imágenes .jpg/.png/.webp TTL 1 mes + purge tras deploy. HTML queda no-cache (correcto SPA).
+
+### Perf caché: assets hasheados (fix real) (2026-06, iter 24)
+- CAUSA RAÍZ del max-age=300: el dominio se sirve vía Cloudflare-for-SaaS de Emergent (IPs 172.66/162.159, sin cf-cache-status). Las Cache Rules de la zona propia del usuario NO se ejecutan; el TTL de /public lo controla la plataforma (confirmado por support). Los /static/ ya venían con immutable 1 año.
+- FIX (dentro del código): mover hero/rentals (jpg+webp) + logo a src/assets/home/ e importarlos en PublicHome → CRA les pone hash y salen bajo /static/media/<hash> → heredan cache immutable 1 año automáticamente. Cache-bust automático al cambiar el archivo (hash nuevo), sin purge manual.
+- VERIFICADO: hero/rentals/logo cargan desde /static/media/*.webp|png hasheado; WebP activo; preload al webp hasheado; Home OK.
+- Se mantiene copia pública varela-logo-brand.png solo para JSON-LD/og y otras páginas públicas (crawlers, no crítico para perf).
+- ACCIÓN usuario: puede DESACTIVAR/borrar las Cache Rules de Cloudflare (no hacen nada por el SaaS). Para TTL de assets de /public restantes (favicon, og), es capa Emergent (support@emergent.sh) — no crítico.
+- Requiere REDEPLOY.

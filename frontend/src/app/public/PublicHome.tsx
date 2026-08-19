@@ -10,12 +10,17 @@ import { env } from '@vera/config';
 import { openWhatsAppInquiry } from './whatsappInquiry';
 import { usePageMeta, SITE_URL } from './usePageMeta';
 import { REVIEWS, GOOGLE_RATING, GOOGLE_TOTAL, GOOGLE_REVIEW_URL } from './reviews';
+import heroJpg from '../../assets/home/home-hero-16x9.jpg';
+import heroWebp from '../../assets/home/home-hero-16x9.webp';
+import rentalsJpg from '../../assets/home/home-rentals-16x9.jpg';
+import rentalsWebp from '../../assets/home/home-rentals-16x9.webp';
+import logoBrand from '../../assets/home/varela-logo-brand.png';
 
 const WA_VENTAS = '5492246586030';
 const WA_ALQUILERES = '5492257404000';
 const PORTAL_URL = 'http://177.7.35.221/portal';
 const ALQUILERES_URL = '/alquileres';
-const LOGO = '/varela-logo-brand.png';
+const LOGO = logoBrand;
 const SEBASTIAN = '/sebastian.jpg';
 const supportsWebp = () => {
   try {
@@ -25,8 +30,8 @@ const supportsWebp = () => {
   }
 };
 const WEBP_OK = typeof document !== 'undefined' && supportsWebp();
-const HERO_BG = WEBP_OK ? '/home-hero-16x9.webp' : '/home-hero-16x9.jpg';
-const RENTALS_BG = WEBP_OK ? '/home-rentals-16x9.webp' : '/home-rentals-16x9.jpg';
+const HERO_BG = WEBP_OK ? heroWebp : heroJpg;
+const RENTALS_BG = WEBP_OK ? rentalsWebp : rentalsJpg;
 
 const wa = (num: string, msg: string) => `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 
