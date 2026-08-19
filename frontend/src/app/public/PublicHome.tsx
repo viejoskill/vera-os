@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   BedDouble, Bath, Maximize, MapPin, MessageCircle, ArrowRight, Menu, X,
   Gauge, Bot, MessagesSquare, Radar, ShieldCheck, MapPinned, Sparkles, Handshake,
@@ -130,10 +130,30 @@ export const PublicHome = () => {
   });
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [tipo, setTipo] = useState('');
-  const [zona, setZona] = useState('');
-  const [precioMax, setPrecioMax] = useState('');
-  const [ambientes, setAmbientes] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [tipo, setTipo] = useState(searchParams.get('tipo') || '');
+  const [zona, setZona] = useState(searchParams.get('zona') || '');
+  const [precioMax, setPrecioMax] = useState(searchParams.get('precio') || '');
+  const [ambientes, setAmbientes] = useState(searchParams.get('ambientes') || '');
+
+  // Sincroniza los filtros con la URL para poder compartir la lista ya filtrada.
+  useEffect(() => {
+    const p = new URLSearchParams();
+    if (tipo) p.set('tipo', tipo);
+    if (zona) p.set('zona', zona);
+    if (precioMax) p.set('precio', precioMax);
+    if (ambientes) p.set('ambientes', ambientes);
+    setSearchParams(p, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tipo, zona, precioMax, ambientes]);
+
+  // Si el link llega con filtros, baja directo a la cartera.
+  useEffect(() => {
+    if (tipo || zona || precioMax || ambientes) {
+      window.setTimeout(() => document.getElementById('cartera')?.scrollIntoView({ behavior: 'smooth' }), 400);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const tipos = useMemo(() => Array.from(new Set(data.map((p) => p.type).filter(Boolean))).sort(), [data]);
   const zonas = useMemo(() => {

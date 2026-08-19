@@ -1436,3 +1436,6 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Síntoma: en la home las tarjetas mostraban solo un chip chico "RESERVADA/VENDIDA" (`.vh-stamp`), no el sello diagonal grande estampado sobre la foto (como sí hacen /web y la ficha).
 - Fix: `PublicHome.tsx` PropCard ahora reutiliza el sello diagonal existente `.vera-pub-stamp vera-pub-stamp--card vera-pub-stamp--{sold|reserved}` (mismo que PublicListing/ficha). STAMP map actualizado. La ficha ya mostraba ambos (sold+reserved, líneas 123-124) → sin cambios. `/web` ya usaba el sello grande.
 - Verificado: reutiliza CSS ya probado en /web. Requiere REDEPLOY. (Preview cacheaba bundle → restart frontend.)
+
+### Filtros compartibles por URL en la home (2026-06, iter 15)
+- Los filtros de la cartera (Tipo/Zona/Precio/Ambientes) eran estado local → no se podían compartir filtrados. Ahora `PublicHome.tsx` sincroniza los filtros con query params (`?tipo=&zona=&precio=&ambientes=`) vía useSearchParams: inicializa desde la URL y actualiza la URL al cambiar (replace). Si el link llega con filtros, hace auto-scroll a #cartera. Así se puede compartir p.ej. `varelapropiedadescde.com.ar/?tipo=terreno`. Requiere REDEPLOY.
