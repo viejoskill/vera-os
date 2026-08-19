@@ -1500,3 +1500,9 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - CSS nuevo en index.css: .vera-lp__intro/.vera-lp__types/.vera-lp__typelink/.vera-lp__hublink.
 - PENDIENTE opcional: enlazar el hub desde el nav/Home para mejor crawleo (hoy se descubren por sitemap + hub→tipos).
 - Requiere REDEPLOY.
+
+### Enlaces internos a landings desde la Home (2026-06, iter 22)
+- Sección "Cartera activa" de PublicHome: nav con 3 links (anchor text descriptivo): "Casas en venta en Costa del Este" → /venta/casas..., "Lotes y terrenos en venta en Costa del Este" → /venta/lotes..., "PH en venta en Costa del Este" → /venta/ph...
+- Footer: link al hub "Casas y lotes en venta en Costa del Este" → /venta/costa-del-este.
+- Anchor text descriptivo (no "ver más") para sumar señal semántica. Reusa clases .vera-lp__types/.vera-lp__typelink. VERIFICADO e2e (hrefs + navegación).
+- Requiere REDEPLOY.

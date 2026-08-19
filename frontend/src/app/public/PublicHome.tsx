@@ -409,6 +409,11 @@ export const PublicHome = () => {
         <div className="vh-sec__inner">
           <span className="vh-eyebrow">Cartera activa</span>
           <h2 className="vh-h2">Todas las propiedades</h2>
+          <nav className="vera-lp__types" style={{ padding: 0, margin: '2px 0 22px' }} aria-label="Explorar propiedades por tipo">
+            <Link to="/venta/casas-costa-del-este" className="vera-lp__typelink" data-testid="home-link-casas">Casas en venta en Costa del Este</Link>
+            <Link to="/venta/lotes-costa-del-este" className="vera-lp__typelink" data-testid="home-link-lotes">Lotes y terrenos en venta en Costa del Este</Link>
+            <Link to="/venta/ph-costa-del-este" className="vera-lp__typelink" data-testid="home-link-ph">PH en venta en Costa del Este</Link>
+          </nav>
           <div className="vh-filters" data-testid="home-filters">
             <label className="vh-filter"><span>Tipo</span>
               <select value={tipo} onChange={(e) => setTipo(e.target.value)} data-testid="home-filter-tipo">
@@ -515,6 +520,7 @@ export const PublicHome = () => {
           </div>
           <div className="vh-footer__links">
             <button type="button" onClick={() => nav('cartera')}>Propiedades</button>
+            <Link to="/venta/costa-del-este" data-testid="footer-link-venta">Casas y lotes en venta en Costa del Este</Link>
             <Link to="/tasar">Tasar mi propiedad</Link>
             <button type="button" onClick={() => nav('nosotros')}>Nosotros</button>
             <a href={wa(WA_VENTAS, 'Hola Varela, quiero consultar')} target="_blank" rel="noreferrer">WhatsApp Ventas</a>
