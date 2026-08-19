@@ -240,13 +240,25 @@ export const PublicHome = () => {
     jsonLd: BUSINESS_JSONLD,
   });
 
+  // Precarga del hero (elemento LCP): al ser background-CSS el navegador lo descubre
+  // tarde; con el preload arranca la descarga ya. Solo en la Home (se limpia al salir).
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = HERO_BG;
+    link.setAttribute('fetchpriority', 'high');
+    document.head.appendChild(link);
+    return () => { link.remove(); };
+  }, []);
+
   return (
     <div className="vh-root" data-testid="public-home">
       {/* NAV */}
       <header className="vh-nav" data-testid="home-nav">
         <div className="vh-nav__inner">
           <a href="#top" className="vh-nav__brand" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-            <img src={LOGO} alt="Varela Inmobiliaria" />
+            <img src={LOGO} alt="Varela Inmobiliaria" width={600} height={277} />
           </a>
           <nav className={`vh-nav__links ${menuOpen ? 'is-open' : ''}`}>
             <button type="button" onClick={() => nav('cartera')} data-testid="nav-propiedades">Propiedades</button>
@@ -498,7 +510,7 @@ export const PublicHome = () => {
       <footer className="vh-footer">
         <div className="vh-footer__inner">
           <div className="vh-footer__brand">
-            <img src={LOGO} alt="Varela Inmobiliaria" />
+            <img src={LOGO} alt="Varela Inmobiliaria" width={600} height={277} />
             <p>Inmobiliaria en Costa del Este y Mar del Tuyú.</p>
           </div>
           <div className="vh-footer__links">

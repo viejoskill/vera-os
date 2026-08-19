@@ -1478,3 +1478,11 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - SEO semántico / arquitectura de contenido / análisis de competencia.
 - Verificar re-indexación en Google Search Console post-deploy.
 - Reseñas reales en la Home (en pausa por decisión del usuario) + aggregateRating cuando haya reseñas.
+
+### Performance / Core Web Vitals — pase de imágenes (2026-06, iter 20)
+- Comprimidas in-place con Pillow (mismos nombres, sin cambio visual): home-hero-16x9.jpg 1007KB→238KB, home-rentals-16x9.jpg 740KB→126KB, varela-logo-brand.png 360KB→125KB (resize a 600px), varela-favicon.png 330KB→41KB (resize a 256). ~1,9 MB menos.
+- **Preload del hero** (LCP): PublicHome inyecta <link rel=preload as=image fetchpriority=high href=/home-hero-16x9.jpg> solo en la Home (se limpia al desmontar). El hero es background-CSS y sin preload se descubre tarde. VERIFICADO presente en vivo.
+- **CLS**: logo del nav/footer con width=600 height=277 (aspect ratio reservado).
+- PropCard ya usaba loading=lazy; sebastian.jpg también.
+- OJO DEPLOY: los archivos mantienen el mismo nombre; Cloudflare puede seguir sirviendo las versiones PESADAS cacheadas hasta el TTL → **hacer Purge Cache de esas 4 imágenes tras el deploy**.
+- PENDIENTE perf: medir CWV reales en prod (PageSpeed/Lighthouse) tras deploy+purge; considerar WebP y srcset responsive del hero si hiciera falta.
