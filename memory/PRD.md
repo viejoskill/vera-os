@@ -1486,3 +1486,17 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - PropCard ya usaba loading=lazy; sebastian.jpg también.
 - OJO DEPLOY: los archivos mantienen el mismo nombre; Cloudflare puede seguir sirviendo las versiones PESADAS cacheadas hasta el TTL → **hacer Purge Cache de esas 4 imágenes tras el deploy**.
 - PENDIENTE perf: medir CWV reales en prod (PageSpeed/Lighthouse) tras deploy+purge; considerar WebP y srcset responsive del hero si hiciera falta.
+
+### Landing pages por zona/tipo (SEO local) (2026-06, iter 21)
+- Validado contra stock real (30 publicadas, TODAS venta; barrio vacío en todas → no hay pages por barrio aún). Aprobadas 3 fuertes + hub.
+- Nuevos: `landingConfigs.ts` (LANDINGS hub/casas/lotes/ph) + `ZonaLanding.tsx` (config-driven, reusa cartera en vivo + estilos vera-pub). Rutas en VeraOS PublicSiteRoutes.
+  - `/venta/costa-del-este` (hub, todas, chips a las 3 + link a /alquileres)
+  - `/venta/casas-costa-del-este` (type=casa, 14)
+  - `/venta/lotes-costa-del-este` (type=terreno; H1/URL "Lotes", copy menciona "terrenos"; 10)
+  - `/venta/ph-costa-del-este` (type=ph, filtra city=Costa del Este → 4, excluye el PH de Mar del Tuyú)
+- Cada landing: H1 + copy únicos, meta/canonical propios, JSON-LD CollectionPage(ItemList) + BreadcrumbList. VERIFICADO e2e las 4.
+- Locales (1) y Mar del Tuyú (1): NO como landing (thin content); quedan dentro del hub. Separar cuando tengan 3+.
+- sitemap.xml: STATIC_URLS ampliado con las 4 URLs. VERIFICADO presentes.
+- CSS nuevo en index.css: .vera-lp__intro/.vera-lp__types/.vera-lp__typelink/.vera-lp__hublink.
+- PENDIENTE opcional: enlazar el hub desde el nav/Home para mejor crawleo (hoy se descubren por sitemap + hub→tipos).
+- Requiere REDEPLOY.

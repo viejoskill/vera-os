@@ -29,6 +29,8 @@ import { ReservaResultado } from '@app/public/ReservaResultado';
 import { PublicPropertyDetail } from '@app/public/PublicPropertyDetail';
 import { PublicHome } from '@app/public/PublicHome';
 import { LegacyFichaRedirect } from '@app/public/LegacyFichaRedirect';
+import { ZonaLanding } from '@app/public/ZonaLanding';
+import { LANDINGS } from '@app/public/landingConfigs';
 import { SignScreen } from '@app/public/SignScreen';
 import { AuthProvider } from '@app/auth/AuthProvider';
 import { RequireAuth } from '@app/auth/RequireAuth';
@@ -95,6 +97,10 @@ const PublicSiteRoutes = () => (
     <Route path="/web/:id" element={<PublicPropertyDetail />} />
     <Route path="/ficha/:slug" element={<LegacyFichaRedirect />} />
     <Route path="/tasar" element={<TasarPublico />} />
+    <Route path="/venta/costa-del-este" element={<ZonaLanding config={LANDINGS.hub} />} />
+    <Route path="/venta/casas-costa-del-este" element={<ZonaLanding config={LANDINGS.casas} />} />
+    <Route path="/venta/lotes-costa-del-este" element={<ZonaLanding config={LANDINGS.lotes} />} />
+    <Route path="/venta/ph-costa-del-este" element={<ZonaLanding config={LANDINGS.ph} />} />
     <Route path="/firma/:token" element={<SignScreen />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>

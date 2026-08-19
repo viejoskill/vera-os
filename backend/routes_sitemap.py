@@ -12,7 +12,15 @@ from property_repository import property_repository
 
 router = APIRouter(tags=["seo"])
 
-STATIC_URLS = ["/", "/web", "/tasar"]
+STATIC_URLS = [
+    "/",
+    "/web",
+    "/tasar",
+    "/venta/costa-del-este",
+    "/venta/casas-costa-del-este",
+    "/venta/lotes-costa-del-este",
+    "/venta/ph-costa-del-este",
+]
 
 
 @router.get("/sitemap.xml")
