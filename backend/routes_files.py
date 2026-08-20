@@ -2,6 +2,8 @@
 only metadata + object paths are stored in the DB. Reads use signed URLs."""
 from urllib.parse import quote
 import os
+import uuid
+import logging
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
@@ -12,6 +14,8 @@ from property_repository import property_repository
 from schemas import DocumentResponse, ImageResponse, ReorderRequest
 from serializers import document_to_response, image_to_response
 from storage_service import get_storage
+
+logger = logging.getLogger("vera")
 
 router = APIRouter(prefix="/properties", tags=["files"])
 
@@ -133,10 +137,20 @@ async def set_cover(property_id: str, image_id: str):
 @router.delete("/{property_id}/images/{image_id}", status_code=204)
 async def delete_image(property_id: str, image_id: str):
     _ensure()
+    # id no-UUID (p.ej. foto temporal aún sin persistir) -> nada que borrar (idempotente)
+    try:
+        uuid.UUID(str(image_id))
+    except (ValueError, AttributeError):
+        return
     image = await property_repository.get_image(image_id)
+    # Ya no existe o no pertenece a esta propiedad -> idempotente, no es un error.
     if image is None or image.get("property_id") != property_id:
-        raise HTTPException(404, "Image not found")
-    await get_storage().delete(image["bucket"], image["object_path"])
+        return
+    # El objeto en storage puede faltar (migración / borrado previo): no debe bloquear.
+    try:
+        await get_storage().delete(image["bucket"], image["object_path"])
+    except Exception:  # noqa: BLE001
+        logger.warning("No se pudo borrar el objeto de storage de la imagen %s (se elimina igual el registro)", image_id)
     await property_repository.delete_image(image_id)
     await property_repository.touch(property_id)
 
@@ -144,10 +158,17 @@ async def delete_image(property_id: str, image_id: str):
 @router.delete("/{property_id}/documents/{doc_id}", status_code=204)
 async def delete_document(property_id: str, doc_id: str):
     _ensure()
+    try:
+        uuid.UUID(str(doc_id))
+    except (ValueError, AttributeError):
+        return
     doc = await property_repository.get_document(doc_id)
     if doc is None or doc.get("property_id") != property_id:
-        raise HTTPException(404, "Document not found")
-    await get_storage().delete(doc["bucket"], doc["object_path"])
+        return
+    try:
+        await get_storage().delete(doc["bucket"], doc["object_path"])
+    except Exception:  # noqa: BLE001
+        logger.warning("No se pudo borrar el objeto de storage del documento %s (se elimina igual el registro)", doc_id)
     await property_repository.delete_document(doc_id)
     await property_repository.touch(property_id)
 

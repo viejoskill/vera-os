@@ -1537,3 +1537,10 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Frontend: ChannelsSection.tsx boton "Revisar duplicados" (data-testid ml-check-duplicates) en canal ML publicado; panel lista extras con boton Pausar (ml-dup-pause-{id}); OK si <=1. CSS .vera-ml-dups en index.css. Compila sin errores TS.
 - NO click-tested visual: el workspace de Ventas es solo-admin y el QA de test es empleado. Endpoint probado por URL externa.
 - Requiere REDEPLOY.
+
+### Fix borrado de fotos (No pudimos eliminar la foto) (2026-06, iter 28)
+- CAUSA: DELETE /properties/{pid}/images/{img_id} con id NO-UUID (foto temporal aun sin persistir / id sintetico) -> get_image() dispara postgrest invalid uuid -> 500. Y si la fila no existia -> 404. Ambos hacian que el front mostrara el toast de error.
+- FIX backend (routes_files.py delete_image + delete_document): valida UUID (si no, 204 idempotente); si la fila no existe -> 204 (idempotente, no error); storage.delete best-effort (no bloquea si el objeto falta). 
+- FIX frontend (useWorkspaceGallery.removePhoto): si el id empieza con temp- (subida en curso/fallida) se quita solo de la UI sin llamar a la API.
+- VERIFICADO e2e por URL externa: no-UUID->204, UUID inexistente->204, borrado real->204.
+- Requiere REDEPLOY (el bug se veia en produccion; codigo compartido).

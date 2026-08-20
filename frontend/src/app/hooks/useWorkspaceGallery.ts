@@ -68,6 +68,12 @@ export function useWorkspaceGallery(
         backup = prev;
         return prev.filter((p) => p.id !== id);
       });
+      // Foto temporal (subida en curso o fallida): aún no existe en el backend,
+      // se quita solo de la UI sin llamar a la API.
+      if (id.startsWith('temp-')) {
+        notify('saved');
+        return;
+      }
       notify('saving');
       propertyFilesGateway
         .deleteImage(propertyId, id)
