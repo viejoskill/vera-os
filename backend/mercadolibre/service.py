@@ -307,6 +307,7 @@ def _payload(prop: dict, images: list[dict], category_id: str, attributes: list[
         "description": {"plain_text": _description_with_disclaimer(prop)},
         "location": location,
         "attributes": attributes,
+        "seller_custom_field": str(prop.get("id") or ""),
     }
 
 
@@ -367,6 +368,59 @@ async def _set_description_deferred(item_id: str, text: str) -> None:
     return None
 
 
+async def _find_item_by_property(access: str, property_id: str) -> str | None:
+    """Busca en la cuenta del vendedor un aviso ya existente para esta propiedad
+    (marcado con seller_custom_field = property_id). Red anti-duplicados cuando el
+    itemId se perdió en la DB (p.ej. migración): reusa el aviso en vez de crear otro.
+
+    Nota: el endpoint items/search NO filtra por seller_custom_field (lo ignora y
+    devuelve todo), así que traemos los ids del vendedor y verificamos el campo con
+    multiget. Devuelve el itemId (preferentemente activo/pausado) o None."""
+    if not property_id:
+        return None
+    tok = await _db()["ml_tokens"].find_one({"_id": "connected"})
+    seller_id = tok and (tok.get("seller_id") or tok.get("user_id"))
+    if not seller_id:
+        return None
+    headers = {"Authorization": f"Bearer {access}"}
+    match_active: str | None = None
+    match_other: str | None = None
+    try:
+        async with httpx.AsyncClient(timeout=25) as h:
+            ids: list[str] = []
+            offset = 0
+            while offset < 400:  # tope de seguridad
+                r = await h.get(
+                    f"{config.MELI_API}/users/{seller_id}/items/search",
+                    headers=headers, params={"limit": 50, "offset": offset},
+                )
+                if r.status_code != 200:
+                    break
+                page = r.json().get("results") or []
+                ids += page
+                if len(page) < 50:
+                    break
+                offset += 50
+            for i in range(0, len(ids), 20):
+                batch = ids[i:i + 20]
+                m = await h.get(
+                    f"{config.MELI_API}/items",
+                    headers=headers,
+                    params={"ids": ",".join(batch), "attributes": "id,seller_custom_field,status"},
+                )
+                if m.status_code != 200:
+                    continue
+                for entry in m.json():
+                    body = entry.get("body") or {}
+                    if body.get("seller_custom_field") == property_id:
+                        if body.get("status") in _EDITABLE_STATUS:
+                            return body.get("id")
+                        match_other = match_other or body.get("id")
+    except Exception:  # noqa: BLE001
+        return match_active or match_other
+    return match_active or match_other
+
+
 async def publish(prop: dict, images: list[dict], existing_item_id: str | None, *, allow_relist: bool = True) -> dict:
     """Crea (POST /items) o ACTUALIZA (PUT /items/{id}) el aviso. Devuelve item id + permalink.
 
@@ -376,6 +430,10 @@ async def publish(prop: dict, images: list[dict], existing_item_id: str | None, 
     automática al guardar (`allow_relist=False`) jamás se crea uno nuevo.
     En inmuebles ML SÍ permite editar título, precio y fotos por PUT."""
     access = await _valid_token()
+    # Red anti-duplicados: si no tenemos itemId guardado (p.ej. se perdió en la
+    # migración), buscamos si YA existe un aviso de esta propiedad en ML antes de crear.
+    if not existing_item_id:
+        existing_item_id = await _find_item_by_property(access, str(prop.get("id") or ""))
     category_id, _ = await _resolve_listing(access, prop)
     attributes = await _category_attributes(access, category_id, prop)
     location = await _location(access, prop)
@@ -392,7 +450,12 @@ async def publish(prop: dict, images: list[dict], existing_item_id: str | None, 
         if status in _EDITABLE_STATUS:
             async with httpx.AsyncClient(timeout=40) as h:
                 # ML admite editar título, precio y fotos en inmuebles.
-                upd = {"title": payload["title"], "price": payload["price"], "pictures": payload["pictures"]}
+                upd = {
+                    "title": payload["title"],
+                    "price": payload["price"],
+                    "pictures": payload["pictures"],
+                    "seller_custom_field": str(prop.get("id") or ""),
+                }
                 r = await h.put(f"{config.MELI_API}/items/{existing_item_id}", headers=headers, json=upd)
                 if r.status_code >= 400:
                     # Si rechaza el título (categorías que lo bloquean), reintenta sin él.
@@ -400,7 +463,7 @@ async def publish(prop: dict, images: list[dict], existing_item_id: str | None, 
                     r = await h.put(
                         f"{config.MELI_API}/items/{existing_item_id}",
                         headers=headers,
-                        json={"price": payload["price"], "pictures": payload["pictures"]},
+                        json={"price": payload["price"], "pictures": payload["pictures"], "seller_custom_field": str(prop.get("id") or "")},
                     )
                 if r.status_code >= 400:
                     raise MeliError(r.status_code, r.text)
