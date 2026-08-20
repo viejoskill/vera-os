@@ -1531,3 +1531,9 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - ACCIONES EN VIVO (ML global, ya aplicadas): pausado huerfano MLA1753595349 ($89k); backfill seller_custom_field en 10 avisos editables. Saltado MLA3803568764 (closed, prop Av 3 1218 en error).
 - Requiere REDEPLOY para que el codigo anti-dup corra en produccion.
 - PENDIENTE menor: prop Av 3 1218 (casa 2 dormis) aviso closed en ML -> republicar a mano para relistar.
+
+### Chequeo de duplicados ML en workspace (2026-06, iter 27)
+- Backend: GET /api/ml/listings/{pid}/duplicates (lista avisos activos/pausados con seller_custom_field==pid, marca linked) + POST /api/ml/items/{item_id}/pause (pausa reversible). service.find_property_items() + service.pause(). VERIFICADO e2e el endpoint duplicates (devuelve MLA2001436345 linked=true, count=1).
+- Frontend: ChannelsSection.tsx boton "Revisar duplicados" (data-testid ml-check-duplicates) en canal ML publicado; panel lista extras con boton Pausar (ml-dup-pause-{id}); OK si <=1. CSS .vera-ml-dups en index.css. Compila sin errores TS.
+- NO click-tested visual: el workspace de Ventas es solo-admin y el QA de test es empleado. Endpoint probado por URL externa.
+- Requiere REDEPLOY.

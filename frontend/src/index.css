@@ -8351,3 +8351,22 @@ p {
   transform: translateY(-1px);
 }
 .vera-topbar-web svg { color: #fbe000; }
+
+/* Chequeo de duplicados en Mercado Libre */
+.vera-ml-dups { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.vera-ml-dups__ok { color: #7ee081; font-size: 13px; margin: 0; }
+.vera-ml-dups__warn { color: #ffcf4d; font-size: 13px; margin: 0 0 4px; }
+.vera-ml-dups__row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.03);
+}
+.vera-ml-dups__link { color: #e6e6e6; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+.vera-ml-dups__link:hover { color: #fbe000; }
+.vera-ml-dups__badge {
+  font-size: 11px; font-weight: 600; color: #0a0a0b; background: #7ee081;
+  border-radius: 999px; padding: 2px 8px;
+}
+.vera-spin { animation: vera-spin 0.9s linear infinite; }
+@keyframes vera-spin { to { transform: rotate(360deg); } }
+

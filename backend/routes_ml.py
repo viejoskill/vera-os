@@ -188,6 +188,32 @@ async def listing_state(property_id: str):
     }
 
 
+@router.get("/listings/{property_id}/duplicates")
+async def listing_duplicates(property_id: str):
+    """Lista todos los avisos ML (activos/pausados) de esta propiedad para detectar
+    duplicados. Marca cuál es el vinculado en el CRM (itemId guardado)."""
+    _ensure()
+    prop = await property_repository.get(property_id)
+    if not prop:
+        raise HTTPException(404, "Propiedad no encontrada.")
+    linked = ((prop.get("publications") or {}).get("mercadolibre") or {}).get("itemId")
+    items = await ml.find_property_items(property_id)
+    for it in items:
+        it["linked"] = (it["itemId"] == linked)
+    return {"linkedItemId": linked, "count": len(items), "items": items}
+
+
+@router.post("/items/{item_id}/pause")
+async def pause_item(item_id: str):
+    """Pausa un aviso puntual (para limpiar un duplicado suelto). Reversible."""
+    _ensure()
+    try:
+        await ml.pause(item_id)
+    except ml.MeliError as e:
+        raise HTTPException(400, f"No se pudo pausar el aviso: {e.detail[:300]}")
+    return {"itemId": item_id, "status": "paused"}
+
+
 @router.post("/listings/{property_id}/close")
 async def close_listing(property_id: str):
     _ensure()

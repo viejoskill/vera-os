@@ -504,6 +504,68 @@ async def sync_status(item_id: str, desired: str) -> str | None:
     return desired
 
 
+async def find_property_items(property_id: str) -> list[dict]:
+    """Devuelve TODOS los avisos (activos/pausados) de la cuenta cuyo
+    seller_custom_field == property_id, con detalle. Sirve para detectar duplicados."""
+    if not property_id or not config.meli_configured():
+        return []
+    access = await _valid_token()
+    tok = await _db()["ml_tokens"].find_one({"_id": "connected"})
+    seller_id = tok and (tok.get("seller_id") or tok.get("user_id"))
+    if not seller_id:
+        return []
+    headers = {"Authorization": f"Bearer {access}"}
+    out: list[dict] = []
+    try:
+        async with httpx.AsyncClient(timeout=25) as h:
+            ids: list[str] = []
+            offset = 0
+            while offset < 400:
+                r = await h.get(
+                    f"{config.MELI_API}/users/{seller_id}/items/search",
+                    headers=headers, params={"limit": 50, "offset": offset},
+                )
+                if r.status_code != 200:
+                    break
+                page = r.json().get("results") or []
+                ids += page
+                if len(page) < 50:
+                    break
+                offset += 50
+            attrs = "id,seller_custom_field,status,price,currency_id,title,permalink"
+            for i in range(0, len(ids), 20):
+                m = await h.get(
+                    f"{config.MELI_API}/items",
+                    headers=headers, params={"ids": ",".join(ids[i:i + 20]), "attributes": attrs},
+                )
+                if m.status_code != 200:
+                    continue
+                for entry in m.json():
+                    b = entry.get("body") or {}
+                    if b.get("seller_custom_field") == property_id and b.get("status") in ("active", "paused"):
+                        out.append({
+                            "itemId": b.get("id"), "status": b.get("status"),
+                            "price": b.get("price"), "currency": b.get("currency_id"),
+                            "title": b.get("title"), "url": b.get("permalink"),
+                        })
+    except Exception:  # noqa: BLE001
+        return out
+    return out
+
+
+async def pause(item_id: str) -> None:
+    """Pausa un aviso (status 'paused'). Reversible."""
+    access = await _valid_token()
+    async with httpx.AsyncClient(timeout=30) as h:
+        r = await h.put(
+            f"{config.MELI_API}/items/{item_id}",
+            headers={"Authorization": f"Bearer {access}", "Content-Type": "application/json"},
+            json={"status": "paused"},
+        )
+        if r.status_code >= 400:
+            raise MeliError(r.status_code, r.text)
+
+
 async def close(item_id: str) -> None:
     access = await _valid_token()
     async with httpx.AsyncClient(timeout=30) as h:

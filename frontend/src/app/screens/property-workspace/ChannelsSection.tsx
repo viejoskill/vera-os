@@ -40,6 +40,8 @@ export const ChannelsSection = ({
   const [editing, setEditing] = useState<string | null>(null);
   const [draftUrl, setDraftUrl] = useState('');
   const [mlError, setMlError] = useState('');
+  const [dups, setDups] = useState<{ itemId: string; status: string; price: number; currency: string; title: string; url: string; linked: boolean }[] | null>(null);
+  const [dupBusy, setDupBusy] = useState(false);
 
   const { data: mlStatus } = useQuery<{ connected: boolean; nickname?: string }>({
     queryKey: ['ml-status'],
@@ -77,6 +79,29 @@ export const ChannelsSection = ({
       setMlError(e instanceof Error ? e.message : 'No se pudo reactivar');
     } finally {
       setBusy(null);
+    }
+  };
+
+  const checkDuplicates = async () => {
+    setDupBusy(true);
+    try {
+      const res = await fetch(`${env.backendUrl}/api/ml/listings/${propertyId}/duplicates`);
+      const data = await res.json();
+      setDups(data?.items ?? []);
+    } catch {
+      setDups([]);
+    } finally {
+      setDupBusy(false);
+    }
+  };
+
+  const pauseDuplicate = async (itemId: string) => {
+    setDupBusy(true);
+    try {
+      await fetch(`${env.backendUrl}/api/ml/items/${itemId}/pause`, { method: 'POST' });
+      await checkDuplicates();
+    } finally {
+      setDupBusy(false);
     }
   };
 
@@ -225,6 +250,11 @@ export const ChannelsSection = ({
                     <Button type="button" variant="secondary" size="sm" disabled={isBusy} data-testid={`unpublish-${ch.id}`} onClick={() => act(ch.id, 'unpublish')}>
                       {isMl ? 'Finalizar' : 'Despublicar'}
                     </Button>
+                    {isMl && (
+                      <button type="button" className="vera-ai-action" data-testid="ml-check-duplicates" disabled={dupBusy} onClick={checkDuplicates}>
+                        {dupBusy ? <Loader2 size={13} className="vera-spin" /> : <Globe size={13} />} Revisar duplicados
+                      </button>
+                    )}
                   </>
                 ) : (
                   <Button type="button" variant="primary" size="sm" disabled={isBusy} data-testid={`publish-${ch.id}`} onClick={() => act(ch.id, 'publish')}>
@@ -239,6 +269,31 @@ export const ChannelsSection = ({
 
             {isMl && mlError && (
               <p className="vera-modal__error" data-testid="ml-error">{mlError}</p>
+            )}
+
+            {isMl && dups !== null && (
+              <div className="vera-ml-dups" data-testid="ml-duplicates">
+                {dups.length <= 1 ? (
+                  <p className="vera-ml-dups__ok">✓ Sin duplicados en Mercado Libre.</p>
+                ) : (
+                  <>
+                    <p className="vera-ml-dups__warn">⚠ Esta propiedad tiene {dups.length} avisos en Mercado Libre. Dejá el correcto y pausá los demás:</p>
+                    {dups.map((d) => (
+                      <div key={d.itemId} className="vera-ml-dups__row" data-testid={`ml-dup-${d.itemId}`}>
+                        <a href={d.url} target="_blank" rel="noopener noreferrer" className="vera-ml-dups__link">
+                          {d.itemId} · {d.currency === 'USD' ? 'US$' : '$'} {Number(d.price).toLocaleString('es-AR')} · {d.status}
+                          {d.linked && <span className="vera-ml-dups__badge">vinculado</span>}
+                        </a>
+                        {!d.linked && d.status === 'active' && (
+                          <Button type="button" variant="secondary" size="sm" disabled={dupBusy} data-testid={`ml-dup-pause-${d.itemId}`} onClick={() => pauseDuplicate(d.itemId)}>
+                            Pausar
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
             )}
 
             {editing === ch.id && !autoLink && (
