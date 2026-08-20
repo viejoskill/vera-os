@@ -1524,3 +1524,10 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 ### Botón "Ver web" en TopBar del OS (2026-06, iter 25)
 - AppLayout.tsx: agregado <a href="/" target="_blank"> "Ver web" (ícono Globe) en TopBar actions, antes de NotificationBell/UserMenu. Al ser <a> plano sale del basename /veraos y va a la web pública. Global (todas las pantallas del OS). CSS .vera-topbar-web en index.css. VERIFICADO tras login (href=/ target=_blank).
 - Requiere REDEPLOY.
+
+### Fix duplicados ML (recurrencia) — seller_custom_field dedup (2026-06, iter 26)
+- CAUSA RAIZ: propiedad migrada 20/07 sin itemId del aviso original (creado abril). Al publicar 17/08 sin itemId -> POST -> duplicado. El anti-dup solo protegia con itemId guardado.
+- FIX (mercadolibre/service.py): _payload agrega seller_custom_field=property_id; PUT (upd) tambien lo estampa; publish() cuando NO hay existing_item_id llama _find_item_by_property() que lista items del vendedor (paginado) + multiget y matchea seller_custom_field (el param seller_custom_field del search NO filtra, hay que verificar por multiget) -> reusa aviso existente en vez de crear. Prefiere active/paused.
+- ACCIONES EN VIVO (ML global, ya aplicadas): pausado huerfano MLA1753595349 ($89k); backfill seller_custom_field en 10 avisos editables. Saltado MLA3803568764 (closed, prop Av 3 1218 en error).
+- Requiere REDEPLOY para que el codigo anti-dup corra en produccion.
+- PENDIENTE menor: prop Av 3 1218 (casa 2 dormis) aviso closed en ML -> republicar a mano para relistar.
