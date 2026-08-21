@@ -354,7 +354,7 @@
       <div class="panel" id="panelFotos" style="display:none">
         <h2>1 &middot; Editor de fotos <span class="opt">(para web / CRM, sin marca)</span></h2>
         <div style="margin-bottom:10px">
-          <label>Sello de estado <span class="opt">(cinta diagonal roja al editar con IA)</span></label>
+          <label>Sello de estado <span class="opt">(cinta diagonal roja dentro del cartel)</span></label>
           <select id="foSello">
             <option value="">Sin sello</option>
             <option value="RESERVADO">RESERVADO</option>
@@ -486,7 +486,7 @@
           </div>
         </div>
         <div style="margin-top:10px">
-          <label>Sello de estado <span class="opt">(cinta diagonal roja de esquina a esquina)</span></label>
+          <label>Sello de estado <span class="opt">(cinta diagonal roja dentro del cartel)</span></label>
           <select id="caSello">
             <option value="">Sin sello</option>
             <option value="RESERVADO">RESERVADO</option>
@@ -3403,7 +3403,7 @@ $("caFormato").addEventListener("change", caRender);
 function selloPrompt(estado){
   const e=(estado||"").toUpperCase().trim();
   if(e!=="RESERVADO" && e!=="VENDIDO") return "";
-  return " ENCIMA DE TODO, superpone una BANDA/CINTA DIAGONAL de color ROJO INTENSO solido que cruza la imagen de esquina a esquina (desde la esquina inferior izquierda hasta la superior derecha), con una leve sombra para despegarla del fondo. Sobre la banda, centrado y con la MISMA inclinacion diagonal, escribi el texto \""+e+"\" en MAYUSCULAS, tipografia gruesa condensada, en color BLANCO, perfectamente legible y bien centrado. Es un sello/overlay grafico plano por ENCIMA de la foto (no un objeto fisico de la escena), ocupa todo el ancho en diagonal y NO debe tapar el precio si se puede evitar. Ortografia EXACTA de la palabra, sin deformarla ni cambiar ninguna letra.";
+  return " IMPORTANTE: agrega una BANDA/CINTA DIAGONAL de color ROJO INTENSO solido UNICAMENTE DENTRO DEL CARTEL/placa (no sobre el resto de la foto), que cruce el cartel de una esquina a la esquina opuesta, integrada como si estuviera impresa o pegada sobre el cartel y respetando su MISMA perspectiva e inclinacion (que se vea parte del cartel, no un overlay plano sobre la imagen). Sobre esa banda, centrado y con la misma inclinacion, escribi el texto \""+e+"\" en MAYUSCULAS, tipografia gruesa condensada, en color BLANCO, perfectamente legible. La banda NO debe salirse de los bordes del cartel ni tapar el resto de la escena (arboles, casa, persona, cielo, suelo); solo cruza el cartel. Ortografia EXACTA de la palabra, sin deformar ninguna letra.";
 }
 function caPrompt(rec){
   const t=($("caTitulo").value||"LOTE").toUpperCase().trim();

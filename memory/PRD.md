@@ -1550,3 +1550,8 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Helper selloPrompt(estado): instruye a la IA a dibujar una BANDA/CINTA DIAGONAL roja de esquina a esquina (inf-izq a sup-der), texto blanco MAYUSC centrado con misma inclinacion, ortografia exacta, sin tapar el precio.
 - Inyectado en caPrompt() (Cartel viral IA) y en generarEdicionIA() (Editor de fotos). Enfoque prompt-based (la IA lo dibuja), segun eleccion del usuario.
 - VERIFICADO: selects presentes en ambos modos + caPrompt incluye la instruccion DIAGONAL al elegir VENDIDO. Estatico en public/ -> requiere REDEPLOY.
+
+### Studio sello: banda DENTRO del cartel (fix) (2026-06, iter 30)
+- selloPrompt() reescrito: la banda diagonal roja va UNICAMENTE dentro del cartel/placa (respeta perspectiva/inclinacion del cartel), NO cruza toda la foto ni tapa la escena. Texto blanco MAYUSC centrado, ortografia exacta.
+- Motivo: el usuario ya resuelve el overlay full-photo aparte; queria el sello impreso en el cartel.
+- Labels UI actualizados a "dentro del cartel". VERIFICADO en caPrompt. Requiere REDEPLOY (estatico).
