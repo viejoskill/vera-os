@@ -60,6 +60,22 @@ async def get_property(property_id: str):
     return await property_to_detail(prop)
 
 
+@router.patch("/{property_id}/auto-stamp")
+async def set_auto_stamp(property_id: str, body: dict):
+    """Activa/desactiva el sello automático RESERVADA/VENDIDA quemado en la portada
+    (ML/OG). Se usa cuando el usuario ya trae el sello dentro de la imagen (ej. Studio)
+    y no quiere que se pise. Se guarda en publications.autoStamp."""
+    _ensure()
+    prop = await property_repository.get(property_id)
+    if prop is None:
+        raise HTTPException(404, "Property not found")
+    enabled = bool(body.get("enabled", True))
+    pubs = prop.get("publications") or {}
+    pubs["autoStamp"] = enabled
+    await property_repository.update(property_id, {"publications": pubs})
+    return {"autoStamp": enabled}
+
+
 @router.get("/{property_id}/stamped-cover")
 async def stamped_cover(property_id: str, status: Optional[str] = None):
     """Portada con el sello VENDIDA/RESERVADA + logo Varela quemado (JPEG), para
@@ -119,7 +135,7 @@ async def share_page(property_id: str, request: Request):
     if imgs:
         cover = next((i.url for i in imgs if getattr(i, "isCover", False)), imgs[0].url)
     status = prop.get("status")
-    if status in ("reserved", "sold"):
+    if status in ("reserved", "sold") and (prop.get("publications") or {}).get("autoStamp", True):
         from property_stamp import stamped_cover_url
         stamped = await stamped_cover_url(prop, status)
         if stamped:

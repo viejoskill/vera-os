@@ -34,6 +34,7 @@ export const propertyFormSchema = z.object({
   // Amenities (atributos) — lista plana de claves canónicas
   amenities: z.array(z.string()),
   radar: z.boolean(),
+  autoStamp: z.boolean(),
   description: z.string(),
   ownerId: z.string(),
   ownerObservations: z.string(),
@@ -74,6 +75,7 @@ export const defaultPropertyForm: PropertyFormValues = {
   yearBuilt: '',
   amenities: [],
   radar: false,
+  autoStamp: true,
   description: '',
   ownerId: '',
   ownerObservations: '',

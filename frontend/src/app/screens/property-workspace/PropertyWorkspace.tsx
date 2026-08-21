@@ -4,6 +4,7 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { env } from '@vera/config';
 import { ArrowLeft, Building2, AlertTriangle, Save } from 'lucide-react';
 import { Button, Panel, Progress, Toast } from '@vera/ui';
 import {
@@ -93,6 +94,7 @@ const toForm = (d: PropertyDetail): PropertyFormValues => ({
   condition: d.condition ?? '',
   amenities: d.amenities ?? [],
   radar: d.radar ?? false,
+  autoStamp: d.autoStamp ?? true,
   description: d.description,
   ownerId: d.ownerId ?? '',
   ownerObservations: d.ownerObservations ?? '',
@@ -233,9 +235,21 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
           });
           await queryClient.invalidateQueries({ queryKey: ['properties'] });
           await queryClient.invalidateQueries({ queryKey: ['today'] });
+          try {
+            await fetch(`${env.backendUrl}/api/properties/${created.id}/auto-stamp`, {
+              method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ enabled: v.autoStamp }),
+            });
+          } catch { /* no bloquea el guardado */ }
           navigate(`/propiedades/${created.id}`);
         } else {
           await propertyService.updateProperty(propertyId, payload);
+          try {
+            await fetch(`${env.backendUrl}/api/properties/${propertyId}/auto-stamp`, {
+              method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ enabled: v.autoStamp }),
+            });
+          } catch { /* no bloquea el guardado */ }
           await queryClient.invalidateQueries({ queryKey: ['properties'] });
           await queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
           await queryClient.invalidateQueries({ queryKey: ['today'] });

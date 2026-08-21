@@ -150,6 +150,7 @@ class PropertyResponse(CamelModel):
     condition: str = ""
     amenities: list[str] = []
     radar: bool = False
+    auto_stamp: bool = True
     publications: dict = {}
     public_url: Optional[str] = None
     archived: bool = False

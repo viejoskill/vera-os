@@ -121,7 +121,8 @@ async def ml_resync_patch(prop: dict) -> dict:
     # NO se pausa automáticamente (el usuario lo pausa a mano si lo necesita).
     status = prop.get("status")
     try:
-        images = await _stamped_images(prop, status) if status in ("reserved", "sold") else await _images(prop)
+        _stamp_on = (prop.get("publications") or {}).get("autoStamp", True)
+        images = await _stamped_images(prop, status) if (status in ("reserved", "sold") and _stamp_on) else await _images(prop)
         # allow_relist=False: al guardar NUNCA se crea un aviso nuevo (anti-duplicados).
         res = await ml.publish(prop, images, item_id, allow_relist=False)
     except Exception as e:  # noqa: BLE001 — best-effort

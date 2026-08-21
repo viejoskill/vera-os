@@ -1555,3 +1555,9 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - selloPrompt() reescrito: la banda diagonal roja va UNICAMENTE dentro del cartel/placa (respeta perspectiva/inclinacion del cartel), NO cruza toda la foto ni tapa la escena. Texto blanco MAYUSC centrado, ortografia exacta.
 - Motivo: el usuario ya resuelve el overlay full-photo aparte; queria el sello impreso en el cartel.
 - Labels UI actualizados a "dentro del cartel". VERIFICADO en caPrompt. Requiere REDEPLOY (estatico).
+
+### Toggle sello automatico RESERVADA/VENDIDA por propiedad (2026-06, iter 31)
+- PROBLEMA: al marcar reservada/vendida, el sistema quema el sello sobre la portada (ML + OG/share). Si la imagen ya trae el sello (Studio), se pisaban.
+- FIX: flag publications.autoStamp (default true). Endpoint PATCH /api/properties/{id}/auto-stamp {enabled}. Gating en routes_ml _stamped_images y routes_properties share: solo estampan si autoStamp!=false. serializers expone auto_stamp; schemas PropertyResponse auto_stamp:bool=True. NO se agrego columna (DATABASE_URL vacio) -> se guarda en el JSON publications.
+- Frontend: campo autoStamp en form-schema (default true) + toggle "Sello automatico" en BasicInfoSection (data-testid toggle-auto-stamp) + mapeo on load (d.autoStamp??true) + PATCH al endpoint tras guardar (new y existing) en PropertyWorkspace. Tipo PropertyDetail.autoStamp. tsc OK.
+- NO click-test visual (workspace Ventas solo-admin, QA es empleado). Endpoint verificado e2e. Requiere REDEPLOY.

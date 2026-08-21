@@ -18,6 +18,7 @@ export const BasicInfoSection = () => {
   const operation = watch('operation');
   const price = watch('price');
   const radar = watch('radar');
+  const autoStamp = watch('autoStamp');
 
   return (
     <div className="vera-form">
@@ -73,6 +74,20 @@ export const BasicInfoSection = () => {
         >
           <span className="vera-amenity__box">{radar && <Check size={13} />}</span>
           En Radar — destacada en la portada del sitio
+        </button>
+      </div>
+
+      <div className="vera-field">
+        <span className="vera-field__label">Sello automático</span>
+        <button
+          type="button"
+          className={`vera-amenity ${autoStamp ? 'vera-amenity--active' : ''}`.trim()}
+          data-testid="toggle-auto-stamp"
+          aria-pressed={autoStamp}
+          onClick={() => setValue('autoStamp', !autoStamp, { shouldDirty: true })}
+        >
+          <span className="vera-amenity__box">{autoStamp && <Check size={13} />}</span>
+          Aplicar sello RESERVADA/VENDIDA sobre la portada (desactivalo si la imagen ya trae el sello)
         </button>
       </div>
 
