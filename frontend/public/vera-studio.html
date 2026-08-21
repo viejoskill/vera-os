@@ -353,6 +353,14 @@
 
       <div class="panel" id="panelFotos" style="display:none">
         <h2>1 &middot; Editor de fotos <span class="opt">(para web / CRM, sin marca)</span></h2>
+        <div style="margin-bottom:10px">
+          <label>Sello de estado <span class="opt">(cinta diagonal roja al editar con IA)</span></label>
+          <select id="foSello">
+            <option value="">Sin sello</option>
+            <option value="RESERVADO">RESERVADO</option>
+            <option value="VENDIDO">VENDIDO</option>
+          </select>
+        </div>
         <div class="row">
           <div>
             <label>Formato de salida</label>
@@ -476,6 +484,14 @@
             <label>Look / acabado</label>
             <select id="caLook"></select>
           </div>
+        </div>
+        <div style="margin-top:10px">
+          <label>Sello de estado <span class="opt">(cinta diagonal roja de esquina a esquina)</span></label>
+          <select id="caSello">
+            <option value="">Sin sello</option>
+            <option value="RESERVADO">RESERVADO</option>
+            <option value="VENDIDO">VENDIDO</option>
+          </select>
         </div>
         <button class="btn" id="caGen" type="button" style="margin-top:10px;width:100%">✨ Generar cartel</button>
         <div class="status" id="caStatus"></div>
@@ -1352,6 +1368,8 @@ async function generarEdicionIA(f, modo, statusId){
     if(f.notaIA && f.notaIA.trim()){
       promptFinal += " Indicacion adicional y PRIORITARIA del usuario para esta foto (cumplirla si o si, de forma fotorrealista y sin alterar el resto de la escena): " + f.notaIA.trim() + ".";
     }
+    const _selloFo = ($("foSello") && $("foSello").value) ? selloPrompt($("foSello").value) : "";
+    if(_selloFo) promptFinal += _selloFo;
     fd.append("prompt", promptFinal);
     fd.append("size","1536x1024");
     fd.append("quality","high");
@@ -3382,6 +3400,11 @@ $("caLogo").addEventListener("change", caRender);
 $("caLogoPos").addEventListener("change", caRender);
 $("caFormato").addEventListener("change", caRender);
 
+function selloPrompt(estado){
+  const e=(estado||"").toUpperCase().trim();
+  if(e!=="RESERVADO" && e!=="VENDIDO") return "";
+  return " ENCIMA DE TODO, superpone una BANDA/CINTA DIAGONAL de color ROJO INTENSO solido que cruza la imagen de esquina a esquina (desde la esquina inferior izquierda hasta la superior derecha), con una leve sombra para despegarla del fondo. Sobre la banda, centrado y con la MISMA inclinacion diagonal, escribi el texto \""+e+"\" en MAYUSCULAS, tipografia gruesa condensada, en color BLANCO, perfectamente legible y bien centrado. Es un sello/overlay grafico plano por ENCIMA de la foto (no un objeto fisico de la escena), ocupa todo el ancho en diagonal y NO debe tapar el precio si se puede evitar. Ortografia EXACTA de la palabra, sin deformarla ni cambiar ninguna letra.";
+}
 function caPrompt(rec){
   const t=($("caTitulo").value||"LOTE").toUpperCase().trim();
   const u=($("caUbic").value||"").toUpperCase().trim();
@@ -3407,6 +3430,8 @@ function caPrompt(rec){
   else parts.push("No agregues ningun logo, marca ni simbolo en el cartel: solo el texto indicado.");
   parts.push("Calidad de salida: "+look.calidad+" Composicion fresca, natural y atractiva, con profundidad de campo realista y detalle nitido. Que parezca una FOTO, no un diseno.");
   parts.push("EVITAR ESTRICTAMENTE: cartel plano tipo vector o sticker pegado, aspecto de render 3D o collage, amarillo dorado/mostaza, palido o desaturado (tiene que ser el amarillo vivo del logo), negro puro, colores fluorescentes o sobresaturados, texto o numeros deformados o mal escritos, logos o marcas de agua dentro del cartel, texto adicional inventado, bordes recortados poco naturales.");
+  const sello = ($("caSello") && $("caSello").value) ? selloPrompt($("caSello").value) : "";
+  if(sello) parts.push(sello);
   return parts.join(" ");
 }
 

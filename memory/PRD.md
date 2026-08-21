@@ -1544,3 +1544,9 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - FIX frontend (useWorkspaceGallery.removePhoto): si el id empieza con temp- (subida en curso/fallida) se quita solo de la UI sin llamar a la API.
 - VERIFICADO e2e por URL externa: no-UUID->204, UUID inexistente->204, borrado real->204.
 - Requiere REDEPLOY (el bug se veia en produccion; codigo compartido).
+
+### Studio: sello RESERVADO/VENDIDO (banda diagonal) (2026-06, iter 29)
+- vera-studio.html: select "Sello de estado" (Sin sello/RESERVADO/VENDIDO) en panelCartel (#caSello) y panelFotos (#foSello).
+- Helper selloPrompt(estado): instruye a la IA a dibujar una BANDA/CINTA DIAGONAL roja de esquina a esquina (inf-izq a sup-der), texto blanco MAYUSC centrado con misma inclinacion, ortografia exacta, sin tapar el precio.
+- Inyectado en caPrompt() (Cartel viral IA) y en generarEdicionIA() (Editor de fotos). Enfoque prompt-based (la IA lo dibuja), segun eleccion del usuario.
+- VERIFICADO: selects presentes en ambos modos + caPrompt incluye la instruccion DIAGONAL al elegir VENDIDO. Estatico en public/ -> requiere REDEPLOY.
