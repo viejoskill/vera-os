@@ -126,7 +126,9 @@ export const ChannelsSection = ({
       setPubs((p) => ({ ...p, [channel]: { ...p[channel], status: 'syncing' } }));
       try {
         const path = action === 'unpublish' ? 'close' : 'publish';
-        const res = await fetch(`${env.backendUrl}/api/ml/listings/${propertyId}/${path}`, { method: 'POST' });
+        // "Actualizar" (update) NUNCA debe crear un aviso nuevo → relist=false.
+        const qs = action === 'update' ? '?relist=false' : '';
+        const res = await fetch(`${env.backendUrl}/api/ml/listings/${propertyId}/${path}${qs}`, { method: 'POST' });
         const data = await res.json();
         if (!res.ok) throw new Error(data?.detail || 'Error de Mercado Libre');
         setPubs((p) => ({

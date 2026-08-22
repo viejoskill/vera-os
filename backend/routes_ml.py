@@ -136,14 +136,17 @@ async def ml_resync_patch(prop: dict) -> dict:
 
 
 @router.post("/listings/{property_id}/publish")
-async def publish_listing(property_id: str):
+async def publish_listing(property_id: str, relist: bool = True):
+    """Publica o actualiza el aviso en Mercado Libre.
+    `relist=False` (acción "Actualizar" desde la UI): NUNCA crea un aviso nuevo; solo
+    edita el existente o falla con un mensaje claro (blindaje anti-duplicados)."""
     _ensure()
     prop = await property_repository.get(property_id)
     if not prop:
         raise HTTPException(404, "Propiedad no encontrada.")
     existing = ((prop.get("publications") or {}).get("mercadolibre") or {}).get("itemId")
     try:
-        res = await ml.publish(prop, await _images(prop), existing)
+        res = await ml.publish(prop, await _images(prop), existing, allow_relist=relist)
     except ml.MeliError as e:
         logger.error("ML publish rechazado (%s): %s", property_id, e.detail)
         await _set_channel(prop, {"status": "error", "lastSync": _now(), "error": e.detail[:800]})
