@@ -13,7 +13,7 @@ interface Detail {
   province: string; description: string; bedrooms: number; bathrooms: number; rooms: number;
   areaM2: number; lotAreaM2: number; orientation: string; condition: string;
   amenities: string[]; images: Img[]; coverImage: string; status: string;
-  whatsappUrl: string; publicUrl: string;
+  whatsappUrl: string; publicUrl: string; autoStamp?: boolean;
 }
 
 const money = (n: number, c: string) =>
@@ -144,8 +144,8 @@ export const PublicPropertyDetail = () => {
       <div className="vera-pub-detail">
         <div className="vera-pub-detail__gallery">
           {main ? <img className="vera-pub-detail__main" src={main} alt={data.title} data-testid="public-detail-main-image" /> : <div className="vera-pub-card__noimg" />}
-          {data.status === 'sold' && <span className="vera-pub-stamp vera-pub-stamp--sold vera-pub-stamp--lg">VENDIDA</span>}
-          {data.status === 'reserved' && <span className="vera-pub-stamp vera-pub-stamp--reserved vera-pub-stamp--lg">RESERVADA</span>}
+          {data.autoStamp !== false && data.status === 'sold' && <span className="vera-pub-stamp vera-pub-stamp--sold vera-pub-stamp--lg">VENDIDA</span>}
+          {data.autoStamp !== false && data.status === 'reserved' && <span className="vera-pub-stamp vera-pub-stamp--reserved vera-pub-stamp--lg">RESERVADA</span>}
           {gallery.length > 1 && (
             <div className="vera-pub-detail__thumbs">
               {gallery.slice(0, 8).map((g, i) => (

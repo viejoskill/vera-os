@@ -25,6 +25,7 @@ interface Listing {
   status: string;
   whatsappUrl: string;
   publicUrl: string;
+  autoStamp?: boolean;
 }
 
 const money = (n: number, c: string) =>
@@ -149,7 +150,7 @@ export const PublicListing = () => {
       ) : (
         <div className="vera-pub__grid">
           {filtered.map((p) => {
-            const stamp = STAMP[p.status];
+            const stamp = p.autoStamp === false ? undefined : STAMP[p.status];
             return (
               <Link key={p.id} to={`/web/${p.id}`} className="vera-pub-card" data-testid={`public-card-${p.id}`}>
                 <div className="vera-pub-card__media">

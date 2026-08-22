@@ -12,6 +12,7 @@ interface Listing {
   price: number; currency: string; city: string; neighborhood: string; coverImage: string;
   bedrooms: number; bathrooms: number; areaM2: number; lotAreaM2: number; rooms: number;
   status: string; whatsappUrl: string;
+  autoStamp?: boolean;
 }
 
 const money = (n: number, c: string) =>
@@ -111,7 +112,7 @@ export const ZonaLanding = ({ config }: { config: LandingConfig }) => {
       ) : (
         <div className="vera-pub__grid">
           {items.map((p) => {
-            const stamp = STAMP[p.status];
+            const stamp = p.autoStamp === false ? undefined : STAMP[p.status];
             return (
               <Link key={p.id} to={`/web/${p.id}`} className="vera-pub-card" data-testid={`zona-card-${p.id}`}>
                 <div className="vera-pub-card__media">

@@ -85,6 +85,7 @@ interface Listing {
   price: number; currency: string; city: string; neighborhood: string;
   coverImage: string; bedrooms: number; bathrooms: number; areaM2: number;
   lotAreaM2: number; rooms: number; status: string; radar: boolean; whatsappUrl: string; publicUrl: string;
+  autoStamp?: boolean;
 }
 
 const money = (n: number, c: string) =>
@@ -142,7 +143,7 @@ const Stars = ({ n }: { n: number }) => (
 );
 
 const PropCard = ({ p }: { p: Listing }) => {
-  const stamp = STAMP[p.status];
+  const stamp = p.autoStamp === false ? undefined : STAMP[p.status];
   return (
     <Link to={`/web/${p.id}`} className="vh-card" data-testid={`home-card-${p.id}`}>
       <div className="vh-card__media">

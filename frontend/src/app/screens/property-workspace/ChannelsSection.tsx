@@ -5,6 +5,7 @@ import { Button } from '@vera/ui';
 import { env } from '@vera/config';
 import { publicationService } from '@vera/services';
 import type { PublicationsMap } from '@vera/repositories';
+import { SITE_URL } from '../../public/usePageMeta';
 import {
   CHANNELS,
   STATUS_META,
@@ -179,7 +180,7 @@ export const ChannelsSection = ({
         const mlInfo = isMl && mlLive?.hasListing ? mlLive : null;
         const mlLink = mlInfo?.url || url;
         const autoLink = isWeb || isMl;
-        const webUrl = `${window.location.origin}/web/${propertyId}`;
+        const webUrl = `${SITE_URL}/web/${propertyId}`;
         return (
           <div key={ch.id} className="vera-channel" data-testid={`channel-${ch.id}`}>
             <div className="vera-channel__id">
@@ -201,7 +202,7 @@ export const ChannelsSection = ({
                   )}
                 </span>
                 {published && isWeb && (
-                  <a className="vera-channel__link" href={url || webUrl} target="_blank" rel="noreferrer" data-testid={`view-listing-${ch.id}`}>
+                  <a className="vera-channel__link" href={webUrl} target="_blank" rel="noreferrer" data-testid={`view-listing-${ch.id}`}>
                     <ExternalLink size={12} /> Ver en la web
                   </a>
                 )}
