@@ -240,6 +240,16 @@ export const RentalWorkspace = () => {
                 <option value="departamento">Departamento</option>
                 <option value="ph">PH</option>
               </select></label>
+            <Input
+              label="Número de llave"
+              placeholder="0 a 100 · opcional"
+              value={f.numeroLlave != null ? String(f.numeroLlave) : ''}
+              onChange={(e) => {
+                const d = e.target.value.replace(/\D/g, '');
+                set('numeroLlave', (d === '' ? null : Math.min(100, Math.max(0, Number(d)))) as never);
+              }}
+              data-testid="rt-numero-llave"
+            />
             <label className="rt-field"><span>Descripción</span>
               <textarea rows={4} value={f.descripcion || ''} onChange={(e) => set('descripcion', e.target.value)} data-testid="rt-descripcion" /></label>
             <div className="rt-row3">

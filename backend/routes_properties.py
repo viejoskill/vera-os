@@ -43,9 +43,12 @@ async def list_properties(status: Optional[str] = None, query: Optional[str] = N
 @router.post("", response_model=PropertyDetailResponse, status_code=201)
 async def create_property(payload: PropertyCreate):
     _ensure()
-    prop = await property_repository.create(
-        payload.model_dump(), workspace_id=config.DEFAULT_WORKSPACE_ID
-    )
+    data = payload.model_dump()
+    # El número de llave se guarda dentro del JSON `publications` (sin columna nueva).
+    key_number = data.pop("key_number", None)
+    if key_number is not None:
+        data["publications"] = {**(data.get("publications") or {}), "keyNumber": int(key_number)}
+    prop = await property_repository.create(data, workspace_id=config.DEFAULT_WORKSPACE_ID)
     if prop is None:
         raise HTTPException(500, "Could not create property")
     return await property_to_detail(prop)
@@ -184,7 +187,20 @@ async def share_page(property_id: str, request: Request):
 @router.patch("/{property_id}", response_model=PropertyDetailResponse)
 async def update_property(property_id: str, payload: PropertyUpdate):
     _ensure()
-    prop = await property_repository.update(property_id, payload.model_dump(exclude_none=True))
+    patch = payload.model_dump(exclude_none=True)
+    patch.pop("key_number", None)
+    # Número de llave → dentro de `publications` (solo si el cliente lo envió; null = limpiar).
+    if "key_number" in payload.model_fields_set:
+        existing = await property_repository.get(property_id)
+        if existing is None:
+            raise HTTPException(404, "Property not found")
+        pubs = dict(existing.get("publications") or {})
+        if payload.key_number is None:
+            pubs.pop("keyNumber", None)
+        else:
+            pubs["keyNumber"] = int(payload.key_number)
+        patch["publications"] = pubs
+    prop = await property_repository.update(property_id, patch)
     if prop is None:
         raise HTTPException(404, "Property not found")
     # Auto-sync al Guardar: reflejar los cambios en Web Varela y Mercado Libre en

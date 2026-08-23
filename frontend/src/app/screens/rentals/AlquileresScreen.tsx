@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Palmtree, Plus, Pencil, ExternalLink, Link2, Check, Users, BedDouble, Bath, XCircle, Building2, Search, X, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { Palmtree, Plus, Pencil, ExternalLink, Link2, Check, Users, BedDouble, Bath, XCircle, Building2, Search, X, SlidersHorizontal, Trash2, KeyRound } from 'lucide-react';
 import { Button } from '@vera/ui';
 import { api, fmtMoney, fmtDate, displayEstado, reservaBucket, type RentalProperty, type Reservation, type SaleProperty, type RentalSettings } from './api';
 import { CobrarSena } from './CobrarSena';
@@ -159,6 +159,19 @@ export const AlquileresScreen = () => {
                   <div className="rt-card__img" style={cover ? { backgroundImage: `url(${cover.url})` } : undefined}>
                     {!cover && <Palmtree size={26} />}
                     <span className={`rt-card__state ${p.activa ? 'on' : 'off'}`}>{p.activa ? 'Publicada' : 'Oculta'}</span>
+                    {p.numeroLlave != null && (
+                      <span
+                        data-testid={`rt-key-${p.id}`}
+                        style={{
+                          position: 'absolute', left: 8, bottom: 8, display: 'inline-flex', alignItems: 'center',
+                          gap: 4, padding: '3px 9px', borderRadius: 999, background: 'rgba(28,28,28,0.82)',
+                          color: '#F6E63A', fontSize: 12, fontWeight: 600, backdropFilter: 'blur(6px)',
+                          border: '1px solid rgba(246,230,58,0.35)',
+                        }}
+                      >
+                        <KeyRound size={12} /> Llave {p.numeroLlave}
+                      </span>
+                    )}
                   </div>
                   <div className="rt-card__body">
                     {p.codigo && <span className="rt-card__code" data-testid={`rt-code-${p.id}`}>{p.codigo}</span>}

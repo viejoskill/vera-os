@@ -50,6 +50,7 @@ class PropertyCreate(CamelModel):
     condition: str = ""
     amenities: list[str] = []
     radar: bool = False
+    key_number: Optional[int] = None
 
 
 class PropertyUpdate(CamelModel):
@@ -89,6 +90,7 @@ class PropertyUpdate(CamelModel):
     condition: Optional[str] = None
     amenities: Optional[list[str]] = None
     radar: Optional[bool] = None
+    key_number: Optional[int] = None
 
 
 class ImageResponse(CamelModel):
@@ -150,6 +152,7 @@ class PropertyResponse(CamelModel):
     condition: str = ""
     amenities: list[str] = []
     radar: bool = False
+    key_number: Optional[int] = None
     auto_stamp: bool = True
     publications: dict = {}
     public_url: Optional[str] = None

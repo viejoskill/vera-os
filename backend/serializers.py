@@ -123,6 +123,7 @@ async def property_to_response(prop: dict) -> PropertyResponse:
         condition=prop.get("condition", "") or "",
         amenities=prop.get("amenities") or [],
         radar=prop.get("radar", False) or False,
+        key_number=(prop.get("publications") or {}).get("keyNumber"),
         auto_stamp=(prop.get("publications") or {}).get("autoStamp", True),
         publications=prop.get("publications") or {},
         public_url=web_publisher.stored_public_url(prop),

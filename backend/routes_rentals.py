@@ -129,6 +129,7 @@ def _prop_out(p: dict, public: bool = False) -> dict:
             "descMes": p.get("descMes", 0), "createdAt": p.get("createdAt"),
             "comisionPct": p.get("comisionPct", 0), "comisionMinima": p.get("comisionMinima", 0),
             "notas": p.get("notas", ""),
+            "numeroLlave": p.get("numeroLlave"),
             "propietario": p.get("propietario") or {},
             "publications": p.get("publications") or {},
         })
@@ -231,6 +232,7 @@ class PropertyBody(BaseModel):
     checkOutHora: str | None = ""
     estadiaMinima: int = 0
     condiciones: list[str] = []
+    numeroLlave: int | None = None
 
 
 class ReservationBody(BaseModel):

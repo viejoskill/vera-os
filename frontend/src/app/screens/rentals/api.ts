@@ -14,6 +14,7 @@ export interface RentalProperty {
   ropaBlanca?: boolean; aceptaMascotas?: boolean; depositoGarantia?: number;
   penalidadDiaria?: number; limpieza?: number;
   checkInHora?: string; checkOutHora?: string; estadiaMinima?: number; condiciones?: string[];
+  numeroLlave?: number | null;
   ocupados?: Occupied[]; descuentos?: { semana: number; quincena: number; mes: number };
 }
 export interface RentalSettings { condicionesGenerales: string[]; avisoValidez: string; whatsappAgencia?: string; }

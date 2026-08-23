@@ -95,6 +95,7 @@ const toForm = (d: PropertyDetail): PropertyFormValues => ({
   amenities: d.amenities ?? [],
   radar: d.radar ?? false,
   autoStamp: d.autoStamp ?? true,
+  keyNumber: d.keyNumber != null ? String(d.keyNumber) : '',
   description: d.description,
   ownerId: d.ownerId ?? '',
   ownerObservations: d.ownerObservations ?? '',
@@ -208,6 +209,7 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
       condition: v.condition,
       amenities: v.amenities,
       radar: v.radar,
+      keyNumber: v.keyNumber?.trim() ? Math.min(100, Math.max(0, Math.trunc(toNumber(v.keyNumber)))) : null,
     } as object),
   });
 

@@ -1576,3 +1576,14 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - FIX frontend (ChannelsSection.tsx): la accion "Actualizar" (update) ahora pega a `/publish?relist=false` -> NUNCA crea un aviso nuevo (solo edita o falla con mensaje claro). "Publicar" sigue con relist=true.
 - Verificado: `_match_existing` sobre la propiedad real devuelve el aviso vivo (MLA2027250695, active/editable) -> se actualiza, no se crea. tsc OK, backend sin errores. Estado ML actual: solo 1 aviso activo (el viejo MLA3203554654 quedo closed).
 - IMPORTANTE: fix en PREVIEW. Requiere REDEPLOY para que aplique en produccion (donde ocurrio el duplicado). El aviso viejo ya esta finalizado; no hay 2 activos ahora.
+
+### Feature: Número de llave por propiedad (Ventas + Alquileres) (2026-08-23)
+- Campo "Número de llave" (entero 0–100, opcional; vacío = sin asignar) por propiedad, en "Datos de la propiedad" de ambos módulos. Se ve como badge amarillo "🔑 Llave N" en la tarjeta del listado.
+- VENTAS (Supabase): SIN migración/columna nueva. Se guarda dentro del JSON `publications.keyNumber` (mismo patrón que autoStamp), asi funciona ya en preview y prod (columna publications ya existe).
+  - schemas.py: `key_number: Optional[int]` en PropertyCreate/Update/Response.
+  - serializers.py: `key_number=(publications).get("keyNumber")`.
+  - routes_properties.py create: pop key_number -> publications.keyNumber. update: usa `payload.model_fields_set` para tocar keyNumber SOLO si el cliente lo envió (null = limpiar); no lo borra en patches parciales de otros campos.
+  - Frontend: form-schema keyNumber(str), BasicInfoSection input clamp 0-100 (data-testid input-key-number), PropertyWorkspace toForm/buildPayload, PropertiesScreen badge (data-testid card-key-{id}), Property type keyNumber.
+- ALQUILERES (Mongo): campo `numeroLlave` (int|None) en PropertyBody + `_prop_out` (no público). RentalWorkspace input (rt-numero-llave), api.ts RentalProperty.numeroLlave, AlquileresScreen badge (rt-key-{id}).
+- Verificado e2e: Ventas (API: set 25 -> lista muestra 25 -> patch parcial no borra -> clear null OK; UI: input renderiza, guardar, badge "Llave 33" en tarjeta). Alquileres (API PUT numeroLlave=42 persiste; UI input en ficha). tsc OK.
+- NOTA: aplica a preview; requiere REDEPLOY para producción. No necesita SQL.

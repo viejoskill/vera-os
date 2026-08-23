@@ -19,6 +19,15 @@ export const BasicInfoSection = () => {
   const price = watch('price');
   const radar = watch('radar');
   const autoStamp = watch('autoStamp');
+  const keyNumber = watch('keyNumber');
+
+  // Número de llave física: entero 0–100 (vacío = sin asignar).
+  const setKeyNumber = (raw: string) => {
+    const digits = raw.replace(/\D/g, '');
+    if (digits === '') return setValue('keyNumber', '', { shouldDirty: true });
+    const clamped = Math.min(100, Math.max(0, Number(digits)));
+    setValue('keyNumber', String(clamped), { shouldDirty: true });
+  };
 
   return (
     <div className="vera-form">
@@ -61,6 +70,17 @@ export const BasicInfoSection = () => {
           />
           <Select label="Moneda" options={CURRENCY_OPTIONS} {...register('currency')} />
         </div>
+      </div>
+
+      <div className="vera-form-grid">
+        <Input
+          label="Número de llave"
+          inputMode="numeric"
+          placeholder="Ej.: 12 (0 a 100 · opcional)"
+          data-testid="input-key-number"
+          value={keyNumber}
+          onChange={(e) => setKeyNumber(e.target.value)}
+        />
       </div>
 
       <div className="vera-field">

@@ -18,6 +18,7 @@ import {
   DownloadCloud,
   Share2,
   ClipboardCheck,
+  KeyRound,
 } from 'lucide-react';
 import { Card, Input, Button, Toast } from '@vera/ui';
 import { appConfig } from '@vera/config';
@@ -139,6 +140,21 @@ const PropertyCard = ({ property, actions }: { property: Property; actions: Card
           </span>
         )}
         <span className={`vera-badge ${meta.className}`}>{meta.label}</span>
+
+        {property.keyNumber != null && (
+          <span
+            className="vera-prop__key"
+            data-testid={`card-key-${property.id}`}
+            style={{
+              position: 'absolute', left: 8, bottom: 8, display: 'inline-flex', alignItems: 'center',
+              gap: 4, padding: '3px 9px', borderRadius: 999, background: 'rgba(28,28,28,0.82)',
+              color: '#F6E63A', fontSize: 12, fontWeight: 600, backdropFilter: 'blur(6px)',
+              border: '1px solid rgba(246,230,58,0.35)',
+            }}
+          >
+            <KeyRound size={12} /> Llave {property.keyNumber}
+          </span>
+        )}
 
         {!property.archived && (
           <button
