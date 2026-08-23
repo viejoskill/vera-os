@@ -1587,3 +1587,10 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - ALQUILERES (Mongo): campo `numeroLlave` (int|None) en PropertyBody + `_prop_out` (no público). RentalWorkspace input (rt-numero-llave), api.ts RentalProperty.numeroLlave, AlquileresScreen badge (rt-key-{id}).
 - Verificado e2e: Ventas (API: set 25 -> lista muestra 25 -> patch parcial no borra -> clear null OK; UI: input renderiza, guardar, badge "Llave 33" en tarjeta). Alquileres (API PUT numeroLlave=42 persiste; UI input en ficha). tsc OK.
 - NOTA: aplica a preview; requiere REDEPLOY para producción. No necesita SQL.
+
+### Feature: Tablero de llaves + rangos por módulo (2026-08-23)
+- Rangos: Ventas 1–49, Alquileres 50–100. Clamp en fichas: BasicInfoSection (onChange cap max 49, onBlur clamp [1,49]); RentalWorkspace (onChange cap 100, onBlur clamp [50,100]). Placeholders actualizados.
+- Nueva pantalla `KeysBoardScreen.tsx` (ruta /veraos/llaves, nav "Llaves" con icono KeyRound, ADMIN-only por el filtro de AppLayout). Muestra 2 grillas: Ventas (1–49) y Alquileres (50–100). Cada slot ocupado muestra código+título+zona y es clickeable (abre /propiedades/{id} o /alquileres/{id}); libres atenuados con borde dashed. Contador "N asignadas" por sección.
+- Datos: reusa GET /api/properties (keyNumber) y GET /api/rentals/properties (numeroLlave) vía react-query. Sin backend nuevo.
+- Verificado e2e (UI): board carga, Ventas "1 asignadas" (slot 1 = VAR-208479), Alquileres muestra slot 50 ocupado en demo (luego limpiado). tsc OK.
+- NOTA: requiere REDEPLOY para producción.

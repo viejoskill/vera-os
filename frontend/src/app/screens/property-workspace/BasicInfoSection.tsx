@@ -21,12 +21,15 @@ export const BasicInfoSection = () => {
   const autoStamp = watch('autoStamp');
   const keyNumber = watch('keyNumber');
 
-  // Número de llave física: entero 0–100 (vacío = sin asignar).
+  // Número de llave física para Ventas: entero 1–49 (vacío = sin asignar).
   const setKeyNumber = (raw: string) => {
     const digits = raw.replace(/\D/g, '');
     if (digits === '') return setValue('keyNumber', '', { shouldDirty: true });
-    const clamped = Math.min(100, Math.max(0, Number(digits)));
-    setValue('keyNumber', String(clamped), { shouldDirty: true });
+    setValue('keyNumber', String(Math.min(49, Number(digits))), { shouldDirty: true });
+  };
+  const blurKeyNumber = () => {
+    if (!keyNumber) return;
+    setValue('keyNumber', String(Math.min(49, Math.max(1, Number(keyNumber)))), { shouldDirty: true });
   };
 
   return (
@@ -76,10 +79,11 @@ export const BasicInfoSection = () => {
         <Input
           label="Número de llave"
           inputMode="numeric"
-          placeholder="Ej.: 12 (0 a 100 · opcional)"
+          placeholder="Ej.: 12 (1 a 49 · opcional)"
           data-testid="input-key-number"
           value={keyNumber}
           onChange={(e) => setKeyNumber(e.target.value)}
+          onBlur={blurKeyNumber}
         />
       </div>
 

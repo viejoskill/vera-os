@@ -242,11 +242,15 @@ export const RentalWorkspace = () => {
               </select></label>
             <Input
               label="Número de llave"
-              placeholder="0 a 100 · opcional"
+              placeholder="50 a 100 · opcional"
               value={f.numeroLlave != null ? String(f.numeroLlave) : ''}
               onChange={(e) => {
                 const d = e.target.value.replace(/\D/g, '');
-                set('numeroLlave', (d === '' ? null : Math.min(100, Math.max(0, Number(d)))) as never);
+                set('numeroLlave', (d === '' ? null : Math.min(100, Number(d))) as never);
+              }}
+              onBlur={() => {
+                if (f.numeroLlave == null) return;
+                set('numeroLlave', Math.min(100, Math.max(50, Number(f.numeroLlave))) as never);
               }}
               data-testid="rt-numero-llave"
             />
