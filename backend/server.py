@@ -33,6 +33,7 @@ import routes_auth
 import routes_tasacion
 import routes_tasacion_online
 import routes_rentals
+import rentals_bot
 import routes_contabilidad
 import routes_sitemap
 
@@ -73,6 +74,7 @@ api_router.include_router(routes_auth.router)
 api_router.include_router(routes_tasacion.router)
 api_router.include_router(routes_tasacion_online.router)
 api_router.include_router(routes_rentals.router)
+api_router.include_router(rentals_bot.router)
 api_router.include_router(routes_contabilidad.router)
 api_router.include_router(routes_sitemap.router)
 app.include_router(api_router)

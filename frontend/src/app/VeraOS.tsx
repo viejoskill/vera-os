@@ -19,6 +19,7 @@ import { TeamScreen } from '@app/screens/TeamScreen';
 import { TasacionesScreen } from '@app/screens/TasacionesScreen';
 import { AlquileresScreen } from '@app/screens/rentals/AlquileresScreen';
 import { KeysBoardScreen } from '@app/screens/KeysBoardScreen';
+import { RentalBotSimulator } from '@app/screens/rentals/RentalBotSimulator';
 import { RentalWorkspace } from '@app/screens/rentals/RentalWorkspace';
 import { LiquidacionesScreen } from '@app/screens/rentals/LiquidacionesScreen';
 import { ContabilidadScreen } from '@app/screens/ContabilidadScreen';
@@ -68,6 +69,7 @@ const OsRoutes = () => (
           <Route path="equipo" element={<TeamScreen />} />
           <Route path="tasaciones" element={<TasacionesScreen />} />
           <Route path="llaves" element={<KeysBoardScreen />} />
+          <Route path="bot-alquileres" element={<RentalBotSimulator />} />
           <Route path="alquileres" element={<AlquileresScreen />} />
           <Route path="alquileres/nueva" element={<RentalWorkspace />} />
           <Route path="alquileres/:id" element={<RentalWorkspace />} />
