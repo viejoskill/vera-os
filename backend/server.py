@@ -92,3 +92,8 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger("vera")
+
+
+@app.on_event("startup")
+async def _start_bot_scheduler():
+    rentals_bot.start_scheduler()

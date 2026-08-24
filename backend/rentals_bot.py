@@ -9,8 +9,10 @@ El canal (WhatsApp QR / Cloud API) se enchufa después: este motor es agnóstico
 """
 from __future__ import annotations
 
+import asyncio
+import json
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from fastapi import APIRouter, HTTPException
@@ -371,3 +373,174 @@ async def add_contact(body: ContactBody):
 async def delete_contact(contact_id: str):
     await _contacts_col().delete_one({"_id": contact_id})
     return {"ok": True}
+
+
+# --------------------------------------------------------------------------- #
+# Fase 2 — Bandeja + Resúmenes de turno con semáforo de urgencia               #
+# --------------------------------------------------------------------------- #
+def _digests_col():
+    return _props().database["rental_bot_digests"]
+
+
+def _turno_bounds(turno: str, ref_ar: datetime) -> tuple[datetime, datetime]:
+    d = ref_ar.date()
+    if turno == "manana":  # desde el cierre de ayer (16:30) hasta la apertura (09:30)
+        start = datetime.combine(d - timedelta(days=1), time(16, 30), AR_TZ)
+        end = datetime.combine(d, time(9, 30), AR_TZ)
+    else:  # tarde: 13:00 → 16:30
+        start = datetime.combine(d, time(13, 0), AR_TZ)
+        end = datetime.combine(d, time(16, 30), AR_TZ)
+    return start, end
+
+
+CLASIFICADOR = """Sos un clasificador de conversaciones de una inmobiliaria (alquileres y ventas).
+Para CADA conversación, devolvé su nivel de urgencia y un resumen de 1 línea.
+
+Semáforo:
+- "roja": el cliente está listo para avanzar/reservar/comprar, dejó datos, pidió algo con fecha inminente o quedó esperando respuesta. Necesita atención YA.
+- "amarilla": consulta activa que conviene seguir pronto (pidió info, está evaluando).
+- "verde": ya resuelto, sin acción pendiente, o spam/publicidad.
+
+Respondé SOLO un JSON válido, sin texto extra, con esta forma:
+[{"sessionId":"...","urgencia":"roja|amarilla|verde","resumen":"...", "accion":"qué hacer en 1 frase"}]
+"""
+
+
+async def _clasificar(convos: list[dict]) -> dict:
+    if not convos or not appconfig.EMERGENT_LLM_KEY:
+        return {}
+    bloques = []
+    for c in convos:
+        msgs = (c.get("mensajes") or [])[-8:]
+        tx = "\n".join(f"{'Cliente' if m.get('rol') == 'user' else 'Vera'}: {m.get('texto', '')}" for m in msgs)
+        bloques.append(f"### Conversación {c['_id']} (canal: {c.get('canal', '?')})\n{tx}")
+    prompt = "Clasificá estas conversaciones:\n\n" + "\n\n".join(bloques)
+    chat = LlmChat(api_key=appconfig.EMERGENT_LLM_KEY, session_id=f"digest-{uuid.uuid4().hex[:8]}",
+                   system_message=CLASIFICADOR).with_model(MODEL_PROVIDER, MODEL_NAME)
+    try:
+        raw = await chat.send_message(UserMessage(text=prompt))
+        s = raw.strip()
+        if s.startswith("```"):
+            s = s.split("```")[1].replace("json", "", 1).strip()
+        data = json.loads(s)
+        return {str(i.get("sessionId")): i for i in data if i.get("sessionId")}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+async def _generar_digest(turno: str | None = None) -> dict:
+    now_ar = datetime.now(AR_TZ)
+    if turno in ("manana", "tarde"):
+        # Programado: ventana fija del turno.
+        start, end = _turno_bounds(turno, now_ar)
+        if end > now_ar:
+            end = now_ar
+        label = "Turno mañana (apertura 09:30)" if turno == "manana" else "Turno tarde (16:30)"
+        doc_id = f"{turno}-{now_ar.strftime('%Y%m%d')}"
+    else:
+        # Manual ("generar ahora"): desde el último resumen (o últimas 24 h) hasta ahora.
+        turno = "manual"
+        last = await _digests_col().find_one({}, sort=[("generadoAt", -1)])
+        if last and last.get("rango", {}).get("hasta"):
+            start = datetime.fromisoformat(last["rango"]["hasta"]).astimezone(AR_TZ)
+        else:
+            start = now_ar - timedelta(hours=24)
+        end = now_ar
+        label = f"Resumen al {now_ar.strftime('%d/%m %H:%M')}"
+        doc_id = f"manual-{now_ar.strftime('%Y%m%d%H%M%S')}"
+    start_iso = start.astimezone(timezone.utc).isoformat()
+    end_iso = end.astimezone(timezone.utc).isoformat()
+    convos = [c async for c in _convos().find(
+        {"updatedAt": {"$gte": start_iso, "$lte": end_iso}}
+    ).sort("updatedAt", 1)]
+    clasif = await _clasificar(convos)
+    orden = {"roja": 0, "amarilla": 1, "verde": 2}
+    items = []
+    for c in convos:
+        info = clasif.get(str(c["_id"]), {})
+        urg = info.get("urgencia", "amarilla")
+        item = {
+            "sessionId": c["_id"], "canal": c.get("canal", "whatsapp"),
+            "urgencia": urg if urg in orden else "amarilla",
+            "resumen": info.get("resumen") or (c.get("ultimoMensaje") or "")[:120],
+            "accion": info.get("accion", ""),
+            "ultimoMensaje": c.get("ultimoMensaje", ""),
+            "updatedAt": c.get("updatedAt"),
+        }
+        items.append(item)
+        await _convos().update_one({"_id": c["_id"]}, {"$set": {"urgencia": item["urgencia"], "resumen": item["resumen"]}})
+    items.sort(key=lambda x: orden.get(x["urgencia"], 1))
+    counts = {"roja": 0, "amarilla": 0, "verde": 0}
+    for it in items:
+        counts[it["urgencia"]] = counts.get(it["urgencia"], 0) + 1
+    doc = {
+        "_id": doc_id,
+        "turno": turno, "label": label, "generadoAt": _now(),
+        "rango": {"desde": start_iso, "hasta": end_iso},
+        "counts": counts, "total": len(items), "items": items,
+    }
+    await _digests_col().update_one({"_id": doc["_id"]}, {"$set": doc}, upsert=True)
+    return doc
+
+
+@router.post("/digest/generate")
+async def generate_digest(turno: str | None = None):
+    return await _generar_digest(turno)
+
+
+@router.get("/digests")
+async def list_digests(limit: int = 10):
+    docs = [d async for d in _digests_col().find({}).sort("generadoAt", -1).limit(limit)]
+    return {"digests": docs}
+
+
+@router.get("/conversations")
+async def list_conversations(limit: int = 50):
+    docs = [c async for c in _convos().find({}).sort("updatedAt", -1).limit(limit)]
+    out = []
+    for c in docs:
+        out.append({
+            "id": c["_id"], "canal": c.get("canal", "whatsapp"),
+            "estado": c.get("estado", "pendiente"),
+            "urgencia": c.get("urgencia", "amarilla"),
+            "resumen": c.get("resumen", ""),
+            "ultimoMensaje": c.get("ultimoMensaje", ""),
+            "updatedAt": c.get("updatedAt"),
+            "mensajes": (c.get("mensajes") or [])[-12:],
+        })
+    return {"conversaciones": out}
+
+
+class EstadoBody(BaseModel):
+    estado: str  # pendiente | resuelto
+
+
+@router.patch("/conversations/{sid}")
+async def set_estado(sid: str, body: EstadoBody):
+    await _convos().update_one({"_id": sid}, {"$set": {"estado": body.estado, "updatedAt": _now()}})
+    return {"ok": True, "estado": body.estado}
+
+
+# --- Scheduler liviano: dispara los resúmenes 09:30 y 16:30 (hora AR) -------- #
+async def _scheduler_loop():
+    while True:
+        try:
+            now = datetime.now(AR_TZ)
+            hoy = now.strftime("%Y%m%d")
+            marca = _props().database["rental_bot_sched"]
+            for turno, h, m in (("manana", 9, 30), ("tarde", 16, 30)):
+                if now.hour == h and m <= now.minute < m + 10:
+                    done = await marca.find_one({"_id": f"{turno}-{hoy}"})
+                    if not done:
+                        await _generar_digest(turno)
+                        await marca.update_one({"_id": f"{turno}-{hoy}"}, {"$set": {"at": _now()}}, upsert=True)
+        except Exception:  # noqa: BLE001
+            pass
+        await asyncio.sleep(300)
+
+
+def start_scheduler():
+    try:
+        asyncio.get_event_loop().create_task(_scheduler_loop())
+    except RuntimeError:
+        pass

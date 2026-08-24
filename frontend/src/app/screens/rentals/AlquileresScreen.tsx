@@ -12,6 +12,7 @@ import { CobrarSaldo } from './CobrarSaldo';
 import { DocsReserva } from './DocsReserva';
 import { AvisoPendientes } from './AvisoPendientes';
 import { ReservaSemaforo } from './Semaforo';
+import { RentalBotInbox } from './RentalBotInbox';
 import './rentals.css';
 
 const Badge = ({ reserva }: { reserva: Reservation }) => {
@@ -21,7 +22,7 @@ const Badge = ({ reserva }: { reserva: Reservation }) => {
 
 export const AlquileresScreen = () => {
   const nav = useNavigate();
-  const [tab, setTab] = useState<'props' | 'res'>('props');
+  const [tab, setTab] = useState<'props' | 'res' | 'bot'>('props');
   const [props, setProps] = useState<RentalProperty[]>([]);
   const [res, setRes] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,9 +133,12 @@ export const AlquileresScreen = () => {
             <span className="rt-tabbadge" data-testid="rt-pending-badge">{res.filter((r) => r.estado === 'prereserva').length}</span>
           )}
         </button>
+        <button type="button" className={tab === 'bot' ? 'sel' : ''} onClick={() => setTab('bot')} data-testid="rt-tab-bot">Bandeja del bot</button>
       </div>
 
-      {loading ? <p className="rt__loading">Cargando…</p> : tab === 'props' ? (
+      {tab === 'bot' ? (
+        <RentalBotInbox />
+      ) : loading ? <p className="rt__loading">Cargando…</p> : tab === 'props' ? (
         props.length === 0 ? (
           <div className="rt__empty" data-testid="rt-empty">
             <Palmtree size={30} />

@@ -1639,3 +1639,11 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 ### Ajuste: selector de rol en el simulador del bot (2026-08-24)
 - Simulador: botones "Escribo como: Cliente nuevo / Propietario / Limpieza / Servicio técnico". Al elegir un rol != cliente, reinicia la charla y prueba el MODO NO COMERCIAL sin necesidad de cargar un contacto real.
 - Backend: SimulateBody.role; `_build_system(from_phone, role_override)` usa un contacto sintético cuando role_override in (propietario/limpieza/tecnico). Verificado (API + UI): rol limpieza -> no ofrece nada, deriva Mariana. tsc OK. Requiere REDEPLOY.
+
+### Feature: Bot Alquileres FASE 2 — Bandeja + Resúmenes con semáforo (2026-08-24)
+- Backend rentals_bot.py: colección rental_bot_digests. `_generar_digest(turno)`: turno manana/tarde = ventana fija (ayer 16:30→hoy 09:30 / hoy 13:00→16:30); sin turno = MANUAL ventana móvil (desde último resumen o últimas 24h → ahora). `_clasificar()` hace UNA llamada a Gemini Flash y devuelve por conversación urgencia (roja/amarilla/verde) + resumen + accion (JSON). Guarda digest con counts y items ordenados por urgencia; actualiza cada convo con urgencia/resumen.
+- Endpoints: POST /rentals/bot/digest/generate?turno=, GET /digests, GET /conversations, PATCH /conversations/{sid} (estado pendiente|resuelto).
+- Scheduler liviano (asyncio, arranca en startup de server.py): dispara resúmenes 09:30 (turno mañana) y 16:30 (turno tarde) hora AR, idempotente por día (colección rental_bot_sched).
+- Frontend: RentalBotInbox.tsx (semáforo 🔴🟡🟢 con counts, "Generar ahora", items con resumen/accion/últimoMensaje, botón "Marcar resuelto"). EMBEBIDO como pestaña "Bandeja del bot" dentro de AlquileresScreen (tab 'bot') → accesible a la secretaria (empleada, solo ve /alquileres). testids: rt-tab-bot, bot-inbox, generate-digest, count-roja/amarilla/verde, inbox-item-*, resolve-*.
+- Verificado: API clasifica bien (cliente quiere reservar+dejó tel = ROJA; "lo pienso" = VERDE); UI embebida accesible a empleada, genera y muestra semáforo/estado vacío. tsc OK, backend sin errores.
+- PENDIENTE entrega automática: el resumen se ve en el PANEL. Envío por MAIL requiere integración de email (Resend/SendGrid) — a definir. Envío por WhatsApp llega con Fase 3 (canal conectado). Requiere REDEPLOY para prod.
