@@ -234,6 +234,16 @@ async def _build_system(from_phone: str | None = None, role_override: str | None
     )
 
 
+async def _responder(system: str, sid: str, text: str) -> str:
+    """Una llamada a Gemini Flash. Memoria estable por session_id (mismo teléfono = misma charla)."""
+    chat = LlmChat(
+        api_key=appconfig.EMERGENT_LLM_KEY,
+        session_id=f"rentbot-{sid}",
+        system_message=system,
+    ).with_model(MODEL_PROVIDER, MODEL_NAME)
+    return await chat.send_message(UserMessage(text=text))
+
+
 class SimulateBody(BaseModel):
     sessionId: str | None = None
     message: str
@@ -252,13 +262,8 @@ async def simulate(body: SimulateBody):
         raise HTTPException(400, "El mensaje no puede estar vacío.")
     sid = body.sessionId or f"sim-{uuid.uuid4().hex[:10]}"
     system = await _build_system(from_phone=body.fromPhone, role_override=body.role)
-    chat = LlmChat(
-        api_key=appconfig.EMERGENT_LLM_KEY,
-        session_id=f"rentbot-{sid}",
-        system_message=system,
-    ).with_model(MODEL_PROVIDER, MODEL_NAME)
     try:
-        reply = await chat.send_message(UserMessage(text=text))
+        reply = await _responder(system, sid, text)
     except Exception as e:  # noqa: BLE001
         raise HTTPException(502, f"No se pudo generar la respuesta: {e}")
     now = _now()
