@@ -64,10 +64,14 @@ async def _next_code() -> str:
 
 
 async def _ensure_codes() -> None:
-    """Backfill: asigna código a propiedades que aún no lo tienen (más antiguas primero)."""
-    cur = _props().find({"$or": [{"codigo": {"$exists": False}}, {"codigo": None}, {"codigo": ""}]}).sort("createdAt", 1)
+    """Normaliza códigos: toda propiedad debe tener un código A### (A100–A1000).
+    Renombra los que falten o no cumplan el formato (p.ej. legacy CDE###). Idempotente:
+    una vez normalizados, no vuelve a tocarlos."""
+    cur = _props().find({"codigo": {"$not": {"$regex": r"^A\d+$"}}}).sort("createdAt", 1)
     async for p in cur:
-        await _props().update_one({"_id": p["_id"]}, {"$set": {"codigo": await _next_code()}})
+        await _props().update_one(
+            {"_id": p["_id"]}, {"$set": {"codigo": await _next_code(), "updatedAt": _now()}}
+        )
 
 
 def _slugify(text: str) -> str:

@@ -1612,3 +1612,9 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 
 ### Ajuste: etiqueta "Cód." en tarjetas y tablero (2026-08-24)
 - Para diferenciar código vs llave (ambos con prefijo V/A), las tarjetas muestran "Cód. V228"/"Cód. A294" (PropertiesScreen .vera-prop__code, AlquileresScreen .rt-card__code) y el Tablero muestra "Cód. {code}" en cada slot. El badge de llave sigue como "🔑 Llave V1"/"Llave A50". tsc OK. Requiere REDEPLOY.
+
+### Fix: renumeración automática de códigos de Alquileres en producción (2026-08-24)
+- CAUSA: los alquileres viven en MongoDB, que NO es compartida entre preview y prod (Ventas/Supabase SÍ es compartida). La migración manual solo tocó preview; en prod seguían los CDE### legacy.
+- FIX: `_ensure_codes()` (que ya se llama en GET /rentals/properties) ahora NORMALIZA cualquier código que no cumpla `^A\d+$` (incluye CDE###/vacíos) renombrándolo a A### (A100–A1000) único vía `_next_code()`. Idempotente: tras normalizar no vuelve a tocar. Se dispara al abrir la pantalla de Alquileres.
+- Verificado en preview: forzado CDE009 -> al listar quedó A161 (formato/rango OK).
+- ACCIÓN USUARIO: redeployar y abrir Alquileres una vez; los CDE### de prod pasan a A### automáticamente.
