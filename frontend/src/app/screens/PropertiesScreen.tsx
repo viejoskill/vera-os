@@ -231,7 +231,7 @@ const PropertyCard = ({ property, actions }: { property: Property; actions: Card
           <span className="vera-prop__price">{formatPrice(property)}</span>
           {property.code && (
             <span className="vera-prop__code" data-testid={`property-code-${property.id}`}>
-              {property.code}
+              Cód. {property.code}
             </span>
           )}
         </div>

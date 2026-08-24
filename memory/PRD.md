@@ -1609,3 +1609,6 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Migración única ejecutada (migrate_codes.py, ya borrado): 29 Ventas -> V### únicos, 1 Alquiler -> A###. Verificado: formato correcto, únicos, en rango.
 - widgets.tsx FAVS (mock dashboard) actualizado a V102/V118/V131.
 - NOTA: los códigos históricos ya copiados en liquidaciones/contratos previos NO cambian (guardaban su snapshot). Requiere REDEPLOY para producción.
+
+### Ajuste: etiqueta "Cód." en tarjetas y tablero (2026-08-24)
+- Para diferenciar código vs llave (ambos con prefijo V/A), las tarjetas muestran "Cód. V228"/"Cód. A294" (PropertiesScreen .vera-prop__code, AlquileresScreen .rt-card__code) y el Tablero muestra "Cód. {code}" en cada slot. El badge de llave sigue como "🔑 Llave V1"/"Llave A50". tsc OK. Requiere REDEPLOY.

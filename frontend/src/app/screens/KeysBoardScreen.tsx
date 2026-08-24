@@ -47,7 +47,7 @@ const Slot = ({ n, prefix, code, title, place, onOpen }: SlotData) => {
       </span>
       {occupied ? (
         <span className="keyslot__body">
-          {code && <span className="keyslot__code">{code}</span>}
+          {code && <span className="keyslot__code">Cód. {code}</span>}
           <span className="keyslot__title">{title}</span>
           {place && (
             <span className="keyslot__place">

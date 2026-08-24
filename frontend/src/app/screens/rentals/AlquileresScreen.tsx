@@ -174,7 +174,7 @@ export const AlquileresScreen = () => {
                     )}
                   </div>
                   <div className="rt-card__body">
-                    {p.codigo && <span className="rt-card__code" data-testid={`rt-code-${p.id}`}>{p.codigo}</span>}
+                    {p.codigo && <span className="rt-card__code" data-testid={`rt-code-${p.id}`}>Cód. {p.codigo}</span>}
                     <h3>{p.titulo}</h3>
                     <p className="rt-card__addr">{p.direccion || p.localidad}</p>
                     <div className="rt-card__specs">
