@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { Bot, Send, RotateCcw } from 'lucide-react';
+import { Bot, Send, RotateCcw, GraduationCap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { env } from '@vera/config';
 
 interface Msg { rol: 'user' | 'bot'; texto: string }
@@ -10,6 +11,7 @@ export const RentalBotSimulator = () => {
   const [sending, setSending] = useState(false);
   const [sid, setSid] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   const scroll = () => setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
 
@@ -50,6 +52,9 @@ export const RentalBotSimulator = () => {
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: '#fff', letterSpacing: '-0.02em' }}>Bot de Alquileres · Simulador</h1>
           <p style={{ margin: '2px 0 0', color: '#9a9a95', fontSize: 13 }}>Probá la pre-atención sin WhatsApp. Usa tus propiedades, precios y disponibilidad reales.</p>
         </div>
+        <button onClick={() => navigate('/entrenar-vera')} data-testid="go-training" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 10, background: 'rgba(143,227,196,0.12)', color: '#8fe3c4', border: '1px solid rgba(143,227,196,0.3)', cursor: 'pointer', fontSize: 13 }}>
+          <GraduationCap size={14} /> Entrenar
+        </button>
         <button onClick={reset} data-testid="bot-reset" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', color: '#c9c9c4', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', fontSize: 13 }}>
           <RotateCcw size={14} /> Reiniciar
         </button>

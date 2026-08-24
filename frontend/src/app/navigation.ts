@@ -91,6 +91,13 @@ export const navRoutes: NavRoute[] = [
     enabled: true,
   },
   {
+    id: 'entrenar-vera',
+    label: 'Entrenar Vera',
+    path: '/entrenar-vera',
+    icon: createElement(Bot, { size: 18 }),
+    enabled: true,
+  },
+  {
     id: 'contabilidad',
     label: 'Contabilidad',
     path: '/contabilidad',
