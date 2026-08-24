@@ -169,7 +169,7 @@ export const AlquileresScreen = () => {
                           border: '1px solid rgba(246,230,58,0.35)',
                         }}
                       >
-                        <KeyRound size={12} /> Llave {p.numeroLlave}
+                        <KeyRound size={12} /> Llave A{p.numeroLlave}
                       </span>
                     )}
                   </div>

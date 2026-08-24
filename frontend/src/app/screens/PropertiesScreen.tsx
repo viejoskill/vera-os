@@ -152,7 +152,7 @@ const PropertyCard = ({ property, actions }: { property: Property; actions: Card
               border: '1px solid rgba(246,230,58,0.35)',
             }}
           >
-            <KeyRound size={12} /> Llave {property.keyNumber}
+            <KeyRound size={12} /> Llave V{property.keyNumber}
           </span>
         )}
 

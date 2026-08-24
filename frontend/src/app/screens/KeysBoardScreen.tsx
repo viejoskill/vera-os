@@ -24,13 +24,14 @@ const range = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i)
 
 interface SlotData {
   n: number;
+  prefix: string;
   code?: string;
   title?: string;
   place?: string;
   onOpen?: () => void;
 }
 
-const Slot = ({ n, code, title, place, onOpen }: SlotData) => {
+const Slot = ({ n, prefix, code, title, place, onOpen }: SlotData) => {
   const occupied = Boolean(title);
   return (
     <button
@@ -38,11 +39,11 @@ const Slot = ({ n, code, title, place, onOpen }: SlotData) => {
       className={`keyslot ${occupied ? 'keyslot--on' : 'keyslot--off'}`}
       onClick={onOpen}
       disabled={!occupied}
-      data-testid={`keyslot-${n}`}
-      title={occupied ? `${code ? code + ' · ' : ''}${title}` : `Llave ${n} libre`}
+      data-testid={`keyslot-${prefix}${n}`}
+      title={occupied ? `${code ? code + ' · ' : ''}${title}` : `Llave ${prefix}${n} libre`}
     >
       <span className="keyslot__num">
-        <KeyRound size={13} /> {n}
+        <KeyRound size={13} /> {prefix}{n}
       </span>
       {occupied ? (
         <span className="keyslot__body">
@@ -106,16 +107,17 @@ export const KeysBoardScreen = () => {
       <section className="keys-section">
         <div className="keys-section__head">
           <span className="keys-section__label"><Home size={16} /> Ventas</span>
-          <span className="keys-section__range">Llaves 1 – 49</span>
+          <span className="keys-section__range">Llaves V0 – V100</span>
           <span className="keys-section__count" data-testid="keys-count-ventas">{salesCount} asignadas</span>
         </div>
         <div className="keys-grid">
-          {range(1, 49).map((n) => {
+          {range(0, 100).map((n) => {
             const p = salesByKey.get(n);
             return (
               <Slot
                 key={`v-${n}`}
                 n={n}
+                prefix="V"
                 code={p?.code}
                 title={p?.title}
                 place={p ? p.neighborhood || p.city || p.address : undefined}
@@ -130,16 +132,17 @@ export const KeysBoardScreen = () => {
       <section className="keys-section">
         <div className="keys-section__head">
           <span className="keys-section__label keys-section__label--rent"><Palmtree size={16} /> Alquileres</span>
-          <span className="keys-section__range">Llaves 50 – 100</span>
+          <span className="keys-section__range">Llaves A0 – A100</span>
           <span className="keys-section__count" data-testid="keys-count-alquileres">{rentalsCount} asignadas</span>
         </div>
         <div className="keys-grid">
-          {range(50, 100).map((n) => {
+          {range(0, 100).map((n) => {
             const p = rentalsByKey.get(n);
             return (
               <Slot
                 key={`a-${n}`}
                 n={n}
+                prefix="A"
                 code={p?.codigo}
                 title={p?.titulo}
                 place={p ? p.direccion || p.localidad : undefined}

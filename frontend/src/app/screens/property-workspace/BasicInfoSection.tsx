@@ -21,15 +21,15 @@ export const BasicInfoSection = () => {
   const autoStamp = watch('autoStamp');
   const keyNumber = watch('keyNumber');
 
-  // Número de llave física para Ventas: entero 1–49 (vacío = sin asignar).
+  // Número de llave física para Ventas: entero 0–100 (vacío = sin asignar). Se muestra como "V{n}".
   const setKeyNumber = (raw: string) => {
     const digits = raw.replace(/\D/g, '');
     if (digits === '') return setValue('keyNumber', '', { shouldDirty: true });
-    setValue('keyNumber', String(Math.min(49, Number(digits))), { shouldDirty: true });
+    setValue('keyNumber', String(Math.min(100, Number(digits))), { shouldDirty: true });
   };
   const blurKeyNumber = () => {
     if (!keyNumber) return;
-    setValue('keyNumber', String(Math.min(49, Math.max(1, Number(keyNumber)))), { shouldDirty: true });
+    setValue('keyNumber', String(Math.min(100, Math.max(0, Number(keyNumber)))), { shouldDirty: true });
   };
 
   return (
@@ -77,9 +77,9 @@ export const BasicInfoSection = () => {
 
       <div className="vera-form-grid">
         <Input
-          label="Número de llave"
+          label="Número de llave (V)"
           inputMode="numeric"
-          placeholder="Ej.: 12 (1 a 49 · opcional)"
+          placeholder="Ej.: 5 → V5 (0 a 100 · opcional)"
           data-testid="input-key-number"
           value={keyNumber}
           onChange={(e) => setKeyNumber(e.target.value)}

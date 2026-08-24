@@ -1594,3 +1594,10 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Datos: reusa GET /api/properties (keyNumber) y GET /api/rentals/properties (numeroLlave) vía react-query. Sin backend nuevo.
 - Verificado e2e (UI): board carga, Ventas "1 asignadas" (slot 1 = VAR-208479), Alquileres muestra slot 50 ocupado en demo (luego limpiado). tsc OK.
 - NOTA: requiere REDEPLOY para producción.
+
+### Cambio: prefijos de llave V (Ventas) y A (Alquileres), rango 0–100 ambos (2026-08-24)
+- Ventas: llaves V0–V100; Alquileres: A0–A100. El valor interno sigue siendo int 0–100 por módulo; el prefijo (V/A) es de presentación (el módulo lo determina).
+- Fichas: clamp 0–100 en ambas (BasicInfoSection y RentalWorkspace); placeholders "→ V5"/"→ A5"; label "(V)"/"(A)".
+- Badges de tarjeta: "Llave V{n}" (PropertiesScreen), "Llave A{n}" (AlquileresScreen).
+- Tablero: secciones "Llaves V0–V100" y "Llaves A0–A100" (range 0..100); Slot recibe prop `prefix`; testids keyslot-V{n}/keyslot-A{n}.
+- Verificado UI: V1 ocupado (VAR-208479), A50 demo (luego limpiado). tsc OK. Requiere REDEPLOY.
