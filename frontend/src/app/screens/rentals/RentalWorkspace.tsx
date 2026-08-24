@@ -143,7 +143,7 @@ export const RentalWorkspace = () => {
   const saveCodigo = async () => {
     if (!pid) return;
     let cod = (f.codigo || '').trim().toUpperCase();
-    if (!cod.startsWith('CDE')) cod = `CDE${cod.replace(/^CDE/i, '')}`;
+    if (!cod.startsWith('A')) cod = `A${cod.replace(/^A/i, '')}`;
     try {
       const updated = await api.updateCodigo(pid, cod);
       set('codigo', updated.codigo);
@@ -223,9 +223,9 @@ export const RentalWorkspace = () => {
             <h3 className="rt-ws__sec">Datos de la propiedad</h3>
             <Input label="Título" value={f.titulo || ''} onChange={(e) => set('titulo', e.target.value)} data-testid="rt-titulo" />
             {pid && (
-              <label className="rt-field"><span>Código (empieza con CDE, único)</span>
+              <label className="rt-field"><span>Código (empieza con A, único)</span>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
-                  <input style={{ flex: 1 }} value={f.codigo || ''} onChange={(e) => set('codigo', e.target.value.toUpperCase())} placeholder="CDE010" data-testid="rt-codigo" />
+                  <input style={{ flex: 1 }} value={f.codigo || ''} onChange={(e) => set('codigo', e.target.value.toUpperCase())} placeholder="A347" data-testid="rt-codigo" />
                   <Button size="sm" variant="ghost" onClick={saveCodigo} data-testid="rt-codigo-save">Guardar código</Button>
                 </div>
               </label>

@@ -145,7 +145,7 @@ export const AlquileresScreen = () => {
           <>
             <div className="rt__searchbar">
               <Search size={15} />
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por código (CDE001), título o dirección…" data-testid="rt-search" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por código (A294), título o dirección…" data-testid="rt-search" />
             </div>
             <div className="rt__grid" data-testid="rt-props-grid">
               {props.filter((p) => {

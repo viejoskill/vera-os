@@ -7,6 +7,7 @@ crea una PRE-RESERVA que siempre requiere confirmación interna.
 """
 from __future__ import annotations
 
+import random
 import re
 from datetime import date, datetime, timezone
 from uuid import uuid4
@@ -49,11 +50,17 @@ def _now() -> str:
 
 
 async def _next_code() -> str:
-    doc = await _db()["rental_counters"].find_one_and_update(
-        {"_id": "codigo"}, {"$inc": {"seq": 1}},
-        upsert=True, return_document=ReturnDocument.AFTER,
-    )
-    return f"CDE{doc['seq']:03d}"
+    """Código aleatorio y único para Alquileres: A100–A1000 (letra A + número, sin guion)."""
+    used: set[int] = set()
+    async for p in _props().find({"codigo": {"$regex": r"^A\d+$"}}, {"codigo": 1}):
+        try:
+            used.add(int(str(p["codigo"])[1:]))
+        except (ValueError, TypeError):
+            pass
+    pool = [n for n in range(100, 1001) if n not in used]
+    if not pool:  # sin números libres en el rango → seguimos por encima de 1000
+        return f"A{1001 + len(used)}"
+    return f"A{random.choice(pool)}"
 
 
 async def _ensure_codes() -> None:
@@ -437,10 +444,10 @@ class CodigoBody(BaseModel):
 async def update_codigo(pid: str, body: CodigoBody):
     await _get_prop(pid)
     cod = (body.codigo or "").strip().upper()
-    if not cod.startswith("CDE"):
-        raise HTTPException(400, "El código debe empezar con CDE.")
-    if len(cod) <= 3:
-        raise HTTPException(400, "Ingresá un código válido después de CDE (ej: CDE010).")
+    if not cod.startswith("A"):
+        raise HTTPException(400, "El código debe empezar con A.")
+    if len(cod) <= 1 or not cod[1:].isdigit():
+        raise HTTPException(400, "Ingresá un número válido después de A (ej: A347).")
     dup = await _props().find_one({"codigo": cod, "_id": {"$ne": pid}})
     if dup:
         raise HTTPException(409, f"El código {cod} ya está en uso por otra propiedad.")

@@ -12,12 +12,12 @@ _SIGN_CACHE: dict[str, tuple[str, float]] = {}
 
 
 def _property_code(pid: str) -> str:
-    """Stable, human-friendly internal code derived from the id (no DB column)."""
+    """Fallback estable derivado del id (solo si no hay `codigo` guardado). Formato V###."""
     try:
-        n = int(pid.replace("-", "")[:8], 16) % 1000000
+        n = int(pid.replace("-", "")[:8], 16) % 900 + 100
     except Exception:
-        n = 0
-    return f"VAR-{n:06d}"
+        n = 100
+    return f"V{n}"
 
 
 def visit_to_response(v: dict) -> VisitResponse:

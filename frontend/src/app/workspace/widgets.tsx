@@ -164,9 +164,9 @@ export const AudioWidget = () => {
 
 /* -------------------------------- Favoritos ----------------------------- */
 const FAVS = [
-  { title: 'Casa 3 amb. en Costa del Este', place: 'Costa del Este', code: 'VAR-102' },
-  { title: 'Departamento con balcón', place: 'Palermo', code: 'VAR-118' },
-  { title: 'PH luminoso a reciclar', place: 'Caballito', code: 'VAR-131' },
+  { title: 'Casa 3 amb. en Costa del Este', place: 'Costa del Este', code: 'V102' },
+  { title: 'Departamento con balcón', place: 'Palermo', code: 'V118' },
+  { title: 'PH luminoso a reciclar', place: 'Caballito', code: 'V131' },
 ];
 
 export const FavoritesWidget = () => (

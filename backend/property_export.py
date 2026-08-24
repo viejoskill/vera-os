@@ -55,8 +55,9 @@ def photo_entries(prop: dict) -> list[ExportEntry]:
 
 
 def zip_filename(prop: dict, kind: str) -> str:
-    """`VAR-000123-fotos.zip` — estable y legible."""
-    return f"{_property_code(prop['id'])}-{kind}.zip"
+    """`V347-fotos.zip` — estable y legible."""
+    code = (prop.get("codigo") or "").strip() or _property_code(prop["id"])
+    return f"{code}-{kind}.zip"
 
 
 def _dedupe(name: str, used: set[str]) -> str:

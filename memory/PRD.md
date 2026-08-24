@@ -1601,3 +1601,11 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Badges de tarjeta: "Llave V{n}" (PropertiesScreen), "Llave A{n}" (AlquileresScreen).
 - Tablero: secciones "Llaves V0–V100" y "Llaves A0–A100" (range 0..100); Slot recibe prop `prefix`; testids keyslot-V{n}/keyslot-A{n}.
 - Verificado UI: V1 ocupado (VAR-208479), A50 demo (luego limpiado). tsc OK. Requiere REDEPLOY.
+
+### Cambio: códigos de propiedad V### (Ventas) y A### (Alquileres), aleatorios únicos 100–1000 (2026-08-24)
+- Formato: V347 / A347 (letra + número, SIN guion). Reemplaza VAR-###### (Ventas) y CDE### secuencial (Alquileres).
+- Ventas (Supabase, columna `codigo` ya existente): create_property asigna `_gen_ventas_code()` (random único 100–1000 no usado). serializers._property_code fallback ahora V###. property_export.zip_filename usa codigo guardado.
+- Alquileres (Mongo): `_next_code()` reescrito a random único A100–A1000 (antes contador CDE). update_codigo valida prefijo "A". RentalWorkspace saveCodigo fuerza prefijo "A"; placeholder A347; label "empieza con A". AlquileresScreen search placeholder A294.
+- Migración única ejecutada (migrate_codes.py, ya borrado): 29 Ventas -> V### únicos, 1 Alquiler -> A###. Verificado: formato correcto, únicos, en rango.
+- widgets.tsx FAVS (mock dashboard) actualizado a V102/V118/V131.
+- NOTA: los códigos históricos ya copiados en liquidaciones/contratos previos NO cambian (guardaban su snapshot). Requiere REDEPLOY para producción.

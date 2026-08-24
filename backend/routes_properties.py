@@ -1,6 +1,7 @@
 """Property CRUD endpoints. All persistence goes through SupabasePropertyRepository."""
 import asyncio
 import logging
+import random
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -32,6 +33,21 @@ def _ensure() -> None:
         raise HTTPException(503, "Supabase is not configured.")
 
 
+async def _gen_ventas_code() -> str:
+    """Código aleatorio y único para Ventas: V100–V1000 (letra V + número, sin guion)."""
+    rows = await property_repository.list_properties(status="all")
+    used: set[int] = set()
+    for p in rows:
+        c = str(p.get("codigo") or "")
+        if c.startswith("V") and c[1:].isdigit():
+            used.add(int(c[1:]))
+    pool = [n for n in range(100, 1001) if n not in used]
+    if not pool:  # sin números libres en el rango → seguimos por encima de 1000
+        return f"V{1001 + len(used)}"
+    return f"V{random.choice(pool)}"
+
+
+
 @router.get("", response_model=list[PropertyResponse])
 async def list_properties(status: Optional[str] = None, query: Optional[str] = None):
     _ensure()
@@ -44,6 +60,7 @@ async def list_properties(status: Optional[str] = None, query: Optional[str] = N
 async def create_property(payload: PropertyCreate):
     _ensure()
     data = payload.model_dump()
+    data["codigo"] = await _gen_ventas_code()
     # El número de llave se guarda dentro del JSON `publications` (sin columna nueva).
     key_number = data.pop("key_number", None)
     if key_number is not None:
