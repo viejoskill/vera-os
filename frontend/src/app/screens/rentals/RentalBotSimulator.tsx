@@ -10,6 +10,7 @@ export const RentalBotSimulator = () => {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [sid, setSid] = useState<string | null>(null);
+  const [role, setRole] = useState('cliente');
   const endRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -26,7 +27,7 @@ export const RentalBotSimulator = () => {
       const res = await fetch(`${env.backendUrl}/api/rentals/bot/simulate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: sid, message: text }),
+        body: JSON.stringify({ sessionId: sid, message: text, role: role === 'cliente' ? undefined : role }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.detail || 'Error');
@@ -59,6 +60,33 @@ export const RentalBotSimulator = () => {
           <RotateCcw size={14} /> Reiniciar
         </button>
       </header>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 12, color: '#9a9a95' }}>Escribo como:</span>
+        {[
+          { k: 'cliente', l: 'Cliente nuevo' },
+          { k: 'propietario', l: 'Propietario' },
+          { k: 'limpieza', l: 'Limpieza' },
+          { k: 'tecnico', l: 'Servicio técnico' },
+        ].map((o) => (
+          <button
+            key={o.k}
+            onClick={() => { setRole(o.k); reset(); }}
+            data-testid={`role-${o.k}`}
+            style={{
+              padding: '5px 11px', borderRadius: 999, fontSize: 12.5, cursor: 'pointer',
+              background: role === o.k ? '#8fe3c4' : 'rgba(255,255,255,0.05)',
+              color: role === o.k ? '#0f2a22' : '#c9c9c4', fontWeight: role === o.k ? 700 : 500,
+              border: `1px solid ${role === o.k ? '#8fe3c4' : 'rgba(255,255,255,0.12)'}`,
+            }}
+          >
+            {o.l}
+          </button>
+        ))}
+        {role !== 'cliente' && (
+          <span style={{ fontSize: 11.5, color: '#8fe3c4' }}>Modo no comercial: Vera no ofrece propiedades y deriva.</span>
+        )}
+      </div>
 
       <div style={{ background: '#141412', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 16, minHeight: 380, maxHeight: 520, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }} data-testid="bot-thread">
         {messages.length === 0 && (

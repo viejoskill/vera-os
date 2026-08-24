@@ -160,10 +160,13 @@ async def _known_contact(phone: str | None) -> dict | None:
     return None
 
 
-async def _build_system(from_phone: str | None = None) -> str:
+async def _build_system(from_phone: str | None = None, role_override: str | None = None) -> str:
     cfg = await _get_config()
     # --- Contacto conocido: modo NO comercial --------------------------------
-    contacto = await _known_contact(from_phone)
+    if role_override in ("propietario", "limpieza", "tecnico"):
+        contacto = {"nombre": "(contacto de prueba)", "rol": role_override, "nota": ""}
+    else:
+        contacto = await _known_contact(from_phone)
     contacto_bloque = ""
     if contacto:
         rol_map = {"propietario": "propietario/a de una propiedad", "limpieza": "del personal de limpieza",
@@ -233,6 +236,7 @@ class SimulateBody(BaseModel):
     sessionId: str | None = None
     message: str
     fromPhone: str | None = None
+    role: str | None = None
 
 
 @router.post("/simulate")
@@ -245,7 +249,7 @@ async def simulate(body: SimulateBody):
     if not text:
         raise HTTPException(400, "El mensaje no puede estar vacío.")
     sid = body.sessionId or f"sim-{uuid.uuid4().hex[:10]}"
-    system = await _build_system(from_phone=body.fromPhone)
+    system = await _build_system(from_phone=body.fromPhone, role_override=body.role)
     chat = LlmChat(
         api_key=appconfig.EMERGENT_LLM_KEY,
         session_id=f"rentbot-{sid}",

@@ -1635,3 +1635,7 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Frontend: RentalBotTraining.tsx (ruta /veraos/entrenar-vera, nav "Entrenar Vera") con secciones Identidad&Tono, Ventas&Alquileres (toggles + deriva), Reglas (activar/editar/borrar + Cargar sugeridas), Datos fijos, Contactos conocidos (alta/baja), FAQ. Botón "Entrenar" en el simulador. data-testids: bot-training, cfg-*, regla-*, nc-*, faq-*, save-training.
 - Verificado e2e (API + UI): contacto conocido (limpieza) → no ofrece nada, deriva Mariana; consulta ventas → muestra V752/V145/V211 reales y deriva Sebastián; panel guarda config/contactos/faq. tsc OK.
 - PENDIENTE: Fase 2 (resúmenes 2x/día 09:30 y 16:30 + urgencia + panel/WhatsApp/mail) y Fase 3 (conectar WhatsApp Cloud API + coexistencia; seguimientos). Requiere REDEPLOY para prod.
+
+### Ajuste: selector de rol en el simulador del bot (2026-08-24)
+- Simulador: botones "Escribo como: Cliente nuevo / Propietario / Limpieza / Servicio técnico". Al elegir un rol != cliente, reinicia la charla y prueba el MODO NO COMERCIAL sin necesidad de cargar un contacto real.
+- Backend: SimulateBody.role; `_build_system(from_phone, role_override)` usa un contacto sintético cuando role_override in (propietario/limpieza/tecnico). Verificado (API + UI): rol limpieza -> no ofrece nada, deriva Mariana. tsc OK. Requiere REDEPLOY.
