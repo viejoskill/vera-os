@@ -148,7 +148,7 @@ export const PublicPropertyDetail = () => {
           {data.autoStamp !== false && data.status === 'reserved' && <span className="vera-pub-stamp vera-pub-stamp--reserved vera-pub-stamp--lg">RESERVADA</span>}
           {gallery.length > 1 && (
             <div className="vera-pub-detail__thumbs">
-              {gallery.slice(0, 8).map((g, i) => (
+              {gallery.map((g, i) => (
                 <button
                   key={g.id}
                   type="button"
