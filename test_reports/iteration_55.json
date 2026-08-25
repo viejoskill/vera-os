@@ -1,0 +1,38 @@
+{
+  "summary": "Frontend-only testing of Bandeja del bot digest summary card (Hoy + Alquileres), Abrir en WhatsApp link in bot inbox, and Entrenar a Vera (WhatsApp connect panel + digest email section). All 5 feature checks PASS functionally. The QA credential provided (qa_varela) is a non-admin employee, and by default AppLayout's employee-route restriction blocks /entrenar-vera (redirects to /alquileres). Testing agent temporarily promoted qa_varela to admin in Mongo (per procedure documented in /app/memory/test_credentials.md) to complete /entrenar-vera checks, then reverted. All UI + integrations work as spec.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Access to /entrenar-vera with the provided test user (qa_varela, non-admin)",
+        "issue": "AppLayout.tsx (lines 21-27) restricts non-admin/employees to EMPLOYEE_PATHS=['/alquileres','/studio'] and force-redirects any other path to /alquileres. As a consequence, /entrenar-vera is unreachable for qa_varela — the QA credential specified in the review request. To validate the feature the tester had to temporarily flip isAdmin=true in Mongo app_access. Either (a) add '/entrenar-vera' (and probably '/bot-alquileres', '/hoy') to EMPLOYEE_PATHS since these screens are logically part of the Alquileres workspace, or (b) update /app/memory/test_credentials.md to state that testing /entrenar-vera requires a temporary isAdmin flip.",
+        "affected_selectors": ["wa-connect", "digest-email-section", "cfg-digest-email", "send-test-email"]
+      },
+      {
+        "flow": "Hoy → 'Ver bandeja' navigation for non-admin employees",
+        "issue": "For non-admin users, after login they briefly land on /hoy and then AppLayout's employee-redirect useEffect replaces the URL with /alquileres (no query). If the user clicks 'Ver bandeja' during that brief window, the navigate('/alquileres?tab=bot') race with the auto-redirect can end up dropping the ?tab=bot query, leaving the Alquileres screen on the Propiedades tab. Observed once in iteration. When accessed as admin (or with direct URL /alquileres?tab=bot), the query is respected and rt-tab-bot is selected correctly.",
+        "affected_selectors": ["digest-summary-ver", "rt-tab-bot"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Decide policy for non-admin employees on /entrenar-vera and /hoy: either whitelist those paths in EMPLOYEE_PATHS (AppLayout.tsx) so QA/employees can use them, or explicitly document that only admins can access them and update test_credentials.md accordingly.",
+    "Optional: harden the isEmployee redirect so it does not fight with intentional client-side navigation (e.g., only run once on mount, not on every location change), to avoid the ?tab=bot query being stripped when clicking Ver bandeja from /hoy right after login."
+  ],
+  "critical_code_review_comments": [
+    "AlquileresScreen.tsx line 26: tab state is initialised from window.location.search only on first mount; changes to search after mount won't re-sync (fine here, but worth noting).",
+    "DigestSummaryCard.tsx: the wa.me anchor inside this component does NOT have a data-testid (only the RentalBotInbox open-wa button does). If the review spec requires testids on the summary card icons too, they should be added, but current spec only asks for it in RentalBotInbox — verified present with data-testid='open-wa-5492257546284' → href='https://wa.me/5492257546284'.",
+    "AppLayout.tsx isEmployee redirect: uses location.pathname in effect deps and runs on every navigation. Consider limiting to first-render enforcement or moving to a route guard component."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "n/a", "frontend": "100% (once user has access to /entrenar-vera)" },
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (non-admin; must be temporarily marked isAdmin=true in Mongo app_access to test /entrenar-vera)",
+  "seed_data_creation": "None. Used existing digests. When empty, clicked 'Generar ahora' to create digest items (includes phone-based sessionId 5492257546284).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Verified: (1) Hoy shows digest-summary-card with pills roja/amarilla/verde and Ver bandeja button. (2) Ver bandeja from Hoy navigates to /alquileres?tab=bot and selects rt-tab-bot (verified as admin; race condition observed once when triggered right after login as non-admin). (3) Alquileres screen shows digest-summary-card above tabs when tab != bot; clicking Ver bandeja on that screen switches to rt-tab-bot. (4) Bandeja del bot tab shows open-wa-5492257546284 link → https://wa.me/5492257546284; generate-digest button works. (5) Propiedades/Reservas tabs regression OK (no errors). (6) Entrenar a Vera: wa-connect renders, wa-connect-btn absent (correct — Config ID missing), digest-email-section renders with cfg-digest-enabled toggle checked, cfg-digest-email prefilled with 'varelavendecde@gmail.com', send-test-email shows '✅ Email de prueba enviado a varelavendecde@gmail.com...'. NOTE: to test /entrenar-vera you MUST temporarily set isAdmin=true on qa_varela@vera.test in Mongo collection app_access, then revert.",
+  "rca of the issue": "Only integration issue: non-admin employees are locked out of /entrenar-vera (and /hoy after redirect). RCA: AppLayout.tsx effect `if (isEmployee && !EMPLOYEE_PATHS.some((p) => location.pathname.startsWith(p))) navigate('/alquileres', {replace:true})` treats every path other than /alquileres and /studio as forbidden. Fix: extend EMPLOYEE_PATHS (recommend adding '/entrenar-vera','/bot-alquileres','/hoy','/alquileres') or introduce a per-role whitelist."
+}

@@ -1,13 +1,14 @@
-"""WhatsApp Cloud API (oficial de Meta) — canal del bot de Alquileres (Fase 3).
+"""WhatsApp Cloud API (oficial de Meta) — canal del bot de Alquileres.
 
 - GET  /api/webhooks/whatsapp  → verificación del webhook (Meta).
-- POST /api/webhooks/whatsapp  → mensajes entrantes → cerebro del bot → responde.
+- POST /api/webhooks/whatsapp  → eventos entrantes:
+    · messages            → mensajes de clientes → cerebro del bot → responde.
+    · smb_message_echoes  → mensajes que la SECRETARIA escribe desde el celular
+                            (coexistencia) → se guardan en la Bandeja como "secretaria".
 
-Número: el de ALQUILERES (distinto al de Ventas que usa Arturito). Con coexistencia,
-la secretaria sigue usando el celular; el bot pre-atiende y todo queda en la Bandeja.
-
-Credenciales (env): WHATSAPP_VERIFY_TOKEN (la elegimos), WHATSAPP_TOKEN y
-WHATSAPP_PHONE_ID (los da Meta), WHATSAPP_APP_SECRET (opcional, verifica firma).
+Coexistencia: el mismo número vive en WhatsApp Business App (celular) y en Cloud API.
+El token y el phone_number_id salen de la conexión guardada (whatsapp_connections),
+con fallback a las variables de entorno del número de prueba.
 """
 from __future__ import annotations
 
@@ -20,12 +21,16 @@ import httpx
 from fastapi import APIRouter, Request, Response
 
 import rentals_bot
-from routes_rentals import _now
+from routes_rentals import _now, _props
 
 logger = logging.getLogger("vera.whatsapp")
 router = APIRouter(prefix="/webhooks", tags=["whatsapp"])
 
-GRAPH = "https://graph.facebook.com/v21.0"
+GRAPH = f"https://graph.facebook.com/{os.environ.get('WHATSAPP_GRAPH_VERSION', 'v21.0')}"
+
+
+def _conns():
+    return _props().database["whatsapp_connections"]
 
 
 def _cfg():
@@ -45,15 +50,26 @@ async def verify(request: Request):
     return Response(content="forbidden", status_code=403)
 
 
-async def _send_text(to: str, body: str):
+async def _creds_for(phone_id: str | None) -> tuple[str, str]:
+    """Devuelve (token, phone_id) priorizando la conexión guardada (coexistencia);
+    si no hay, cae a las credenciales del .env (número de prueba)."""
+    if phone_id:
+        conn = await _conns().find_one({"_id": phone_id})
+        if conn and conn.get("token"):
+            return conn["token"], conn.get("phone_number_id") or phone_id
     cfg = _cfg()
-    if not (cfg["token"] and cfg["phone_id"]):
+    return cfg["token"], (phone_id or cfg["phone_id"])
+
+
+async def _send_text(to: str, body: str, phone_id: str | None = None):
+    token, pid = await _creds_for(phone_id)
+    if not (token and pid):
         logger.warning("WhatsApp sin credenciales; no se envía (respuesta lista: %s)", body[:60])
         return
     async with httpx.AsyncClient(timeout=25) as h:
         r = await h.post(
-            f"{GRAPH}/{cfg['phone_id']}/messages",
-            headers={"Authorization": f"Bearer {cfg['token']}", "Content-Type": "application/json"},
+            f"{GRAPH}/{pid}/messages",
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
             json={"messaging_product": "whatsapp", "recipient_type": "individual",
                   "to": to, "type": "text", "text": {"body": body}},
         )
@@ -70,12 +86,12 @@ def _valid_signature(raw: bytes, sig: str | None, secret: str) -> bool:
     return hmac.compare_digest(mac, sig.split("=", 1)[1])
 
 
-async def _handle_message(from_phone: str, text: str, profile_name: str = ""):
+async def _handle_message(from_phone: str, text: str, profile_name: str = "", phone_id: str | None = None):
     """Corre el cerebro del bot y responde por WhatsApp. Usa el teléfono como sesión
     (memoria estable) y para reconocer contactos conocidos."""
     system = await rentals_bot._build_system(from_phone=from_phone)
     reply = await rentals_bot._responder(system, from_phone, text)
-    await _send_text(from_phone, reply)
+    await _send_text(from_phone, reply, phone_id=phone_id)
     now = _now()
     await rentals_bot._convos().update_one(
         {"_id": from_phone},
@@ -91,6 +107,21 @@ async def _handle_message(from_phone: str, text: str, profile_name: str = ""):
     )
 
 
+async def _handle_echo(client_phone: str, text: str, phone_id: str | None = None):
+    """Eco de la app del celular: la SECRETARIA le escribió al cliente desde WhatsApp
+    Business. Lo dejamos en la conversación del cliente para que la Bandeja tenga todo."""
+    now = _now()
+    await rentals_bot._convos().update_one(
+        {"_id": client_phone},
+        {
+            "$setOnInsert": {"_id": client_phone, "canal": "whatsapp", "estado": "pendiente", "createdAt": now},
+            "$set": {"updatedAt": now},
+            "$push": {"mensajes": {"rol": "secretaria", "texto": text, "at": now}},
+        },
+        upsert=True,
+    )
+
+
 @router.post("/whatsapp")
 async def receive(request: Request):
     raw = await request.body()
@@ -100,14 +131,29 @@ async def receive(request: Request):
     try:
         for entry in data.get("entry", []):
             for change in entry.get("changes", []):
+                field = change.get("field")
                 value = change.get("value", {})
+                phone_id = (value.get("metadata") or {}).get("phone_number_id")
+
+                if field == "smb_message_echoes":
+                    for echo in value.get("message_echoes", []):
+                        if echo.get("type") != "text":
+                            continue
+                        # En un eco, "to" es el cliente al que le escribió la secretaria.
+                        client = echo.get("to") or echo.get("recipient_id")
+                        if client:
+                            await _handle_echo(client, echo.get("text", {}).get("body", ""), phone_id)
+                    continue
+
+                # field == "messages" (o payload clásico sin field explícito)
                 contacts = value.get("contacts", [])
                 pname = (contacts[0].get("profile", {}).get("name", "") if contacts else "")
                 for msg in value.get("messages", []):
+                    frm = msg.get("from")
                     if msg.get("type") != "text":
-                        await _send_text(msg.get("from"), "¡Hola! Por ahora te puedo leer solo mensajes de texto 🙂 Contame qué estás buscando.")
+                        await _send_text(frm, "¡Hola! Por ahora te puedo leer solo mensajes de texto 🙂 Contame qué estás buscando.", phone_id=phone_id)
                         continue
-                    await _handle_message(msg.get("from"), msg.get("text", {}).get("body", ""), pname)
+                    await _handle_message(frm, msg.get("text", {}).get("body", ""), pname, phone_id=phone_id)
     except Exception as e:  # noqa: BLE001
         logger.exception("WhatsApp receive error: %s", e)
     return {"status": "ok"}  # Meta espera 200 siempre

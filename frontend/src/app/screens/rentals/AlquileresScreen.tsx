@@ -13,6 +13,7 @@ import { DocsReserva } from './DocsReserva';
 import { AvisoPendientes } from './AvisoPendientes';
 import { ReservaSemaforo } from './Semaforo';
 import { RentalBotInbox } from './RentalBotInbox';
+import { DigestSummaryCard } from './DigestSummaryCard';
 import './rentals.css';
 
 const Badge = ({ reserva }: { reserva: Reservation }) => {
@@ -22,7 +23,7 @@ const Badge = ({ reserva }: { reserva: Reservation }) => {
 
 export const AlquileresScreen = () => {
   const nav = useNavigate();
-  const [tab, setTab] = useState<'props' | 'res' | 'bot'>('props');
+  const [tab, setTab] = useState<'props' | 'res' | 'bot'>(() => (new URLSearchParams(window.location.search).get('tab') === 'bot' ? 'bot' : 'props'));
   const [props, setProps] = useState<RentalProperty[]>([]);
   const [res, setRes] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,6 +125,12 @@ export const AlquileresScreen = () => {
       </header>
 
       <AvisoPendientes reservas={res} onVer={() => setTab('res')} />
+
+      {tab !== 'bot' && (
+        <div style={{ marginBottom: 14 }}>
+          <DigestSummaryCard onVerBandeja={() => setTab('bot')} />
+        </div>
+      )}
 
       <div className="rt__tabs">
         <button type="button" className={tab === 'props' ? 'sel' : ''} onClick={() => setTab('props')} data-testid="rt-tab-props">Propiedades ({props.length})</button>

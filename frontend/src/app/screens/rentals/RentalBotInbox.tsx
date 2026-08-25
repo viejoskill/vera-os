@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { RefreshCw, CheckCircle2, Inbox } from 'lucide-react';
+import { RefreshCw, CheckCircle2, Inbox, MessageCircle } from 'lucide-react';
 import { env } from '@vera/config';
 
 const API = `${env.backendUrl}/api/rentals/bot`;
@@ -87,6 +87,18 @@ export const RentalBotInbox = () => {
               <button onClick={() => resolver(it.sessionId)} disabled={resolved} data-testid={`resolve-${it.sessionId}`} style={{ alignSelf: 'center', display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 9, background: 'rgba(143,227,196,0.1)', color: '#8fe3c4', border: '1px solid rgba(143,227,196,0.25)', cursor: resolved ? 'default' : 'pointer', fontSize: 12, whiteSpace: 'nowrap' }}>
                 <CheckCircle2 size={13} /> {resolved ? 'Resuelto' : 'Marcar resuelto'}
               </button>
+              {/^\d{8,15}$/.test(it.sessionId) && (
+                <a
+                  href={`https://wa.me/${it.sessionId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  data-testid={`open-wa-${it.sessionId}`}
+                  title="Abrir el chat en WhatsApp"
+                  style={{ alignSelf: 'center', display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 9, background: 'rgba(37,211,102,0.12)', color: '#25D366', border: '1px solid rgba(37,211,102,0.3)', textDecoration: 'none', fontSize: 12, whiteSpace: 'nowrap' }}
+                >
+                  <MessageCircle size={13} /> Abrir en WhatsApp
+                </a>
+              )}
             </div>
           );
         })}

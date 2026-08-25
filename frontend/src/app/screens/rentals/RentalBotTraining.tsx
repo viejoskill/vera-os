@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Bot, Plus, Trash2, Save, Sparkles, MessageSquareText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { env } from '@vera/config';
+import { ConnectWhatsApp } from './ConnectWhatsApp';
 
 const API = `${env.backendUrl}/api/rentals/bot`;
 
@@ -12,6 +13,7 @@ interface Cfg {
   nombre: string; saludo: string; tono: string; estilo: string;
   alquileresActivo: boolean; ventasActivo: boolean;
   derivaAlquileres: string; derivaVentas: string; datosFijos: string; reglas: Regla[];
+  digestEmail: string; digestEnabled: boolean;
 }
 
 const box: React.CSSProperties = { background: '#141412', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: 18, marginBottom: 16 };
@@ -27,6 +29,8 @@ export const RentalBotTraining = () => {
   const [nc, setNc] = useState({ nombre: '', telefono: '', rol: 'propietario', nota: '' });
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
+  const [emailMsg, setEmailMsg] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const load = async () => {
     const d = await fetch(`${API}/config`).then((r) => r.json());
@@ -50,6 +54,20 @@ export const RentalBotTraining = () => {
   };
 
   const seed = async () => { await fetch(`${API}/rules/seed`, { method: 'POST' }); await load(); };
+
+  const sendTestEmail = async () => {
+    if (!cfg) return;
+    setSendingEmail(true); setEmailMsg('');
+    try {
+      // Guardamos primero para que el backend use el email actual.
+      await fetch(`${API}/config`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) });
+      const r = await fetch(`${API}/digest/email`, { method: 'POST' });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.detail || 'No se pudo enviar');
+      setEmailMsg(`✅ Email de prueba enviado a ${j.sentTo}. Revisá tu casilla (y spam).`);
+    } catch (e: any) { setEmailMsg(`⚠️ ${e.message || 'No se pudo enviar el email.'}`); }
+    finally { setSendingEmail(false); }
+  };
   const addContacto = async () => {
     if (!nc.nombre.trim() || !nc.telefono.trim()) return;
     const c = await fetch(`${API}/contacts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(nc) }).then((r) => r.json());
@@ -69,6 +87,41 @@ export const RentalBotTraining = () => {
         </div>
         <button onClick={() => navigate('/bot-alquileres')} data-testid="go-simulator" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', color: '#c9c9c4', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', fontSize: 13 }}><MessageSquareText size={14} /> Simulador</button>
       </header>
+
+      <ConnectWhatsApp />
+
+      {/* Resumen por email */}
+      <section style={box} data-testid="digest-email-section">
+        <h2 style={h2}>📧 Resumen automático por email</h2>
+        <p style={{ color: '#9a9a95', fontSize: 12, margin: '0 0 8px' }}>
+          Vera te manda 2 veces por día (9:30 y 16:30) un resumen de los chats pendientes con el semáforo de urgencia 🔴🟡🟢.
+        </p>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#eee', fontSize: 14, marginBottom: 4 }}>
+          <input type="checkbox" checked={!!cfg.digestEnabled} onChange={(e) => set('digestEnabled', e.target.checked)} data-testid="cfg-digest-enabled" /> Activar envío automático
+        </label>
+        <label style={lbl}>Email donde recibir el resumen</label>
+        <input
+          style={inp}
+          type="email"
+          placeholder="tucorreo@ejemplo.com"
+          value={cfg.digestEmail || ''}
+          onChange={(e) => set('digestEmail', e.target.value)}
+          data-testid="cfg-digest-email"
+        />
+        <p style={{ color: '#77776f', fontSize: 11.5, margin: '6px 0 10px' }}>
+          Tip: al principio el correo solo llega a la casilla con la que te registraste en Resend. Para usar otra, verificá tu dominio.
+        </p>
+        <button
+          type="button"
+          onClick={sendTestEmail}
+          disabled={sendingEmail}
+          data-testid="send-test-email"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 15px', borderRadius: 10, background: 'rgba(143,227,196,0.12)', color: '#8fe3c4', border: '1px solid rgba(143,227,196,0.3)', fontWeight: 600, fontSize: 13, cursor: sendingEmail ? 'default' : 'pointer', opacity: sendingEmail ? 0.6 : 1 }}
+        >
+          {sendingEmail ? 'Enviando…' : 'Enviar email de prueba'}
+        </button>
+        {emailMsg && <p data-testid="digest-email-msg" style={{ color: emailMsg.startsWith('✅') ? '#8fe3c4' : '#e05a5a', fontSize: 12.5, marginTop: 10 }}>{emailMsg}</p>}
+      </section>
 
       {/* Identidad & tono */}
       <section style={box}>

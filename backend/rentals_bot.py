@@ -11,9 +11,12 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
+import os
 import uuid
 from datetime import datetime, time, timedelta, timezone
 
+import resend
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -55,6 +58,8 @@ DEFAULT_CONFIG = {
     "derivaAlquileres": "Mariana",
     "derivaVentas": "Sebastián",
     "datosFijos": "",
+    "digestEmail": "",
+    "digestEnabled": True,
 }
 
 SUGGESTED_RULES = [
@@ -327,6 +332,8 @@ class ConfigBody(BaseModel):
     derivaAlquileres: str | None = None
     derivaVentas: str | None = None
     datosFijos: str | None = None
+    digestEmail: str | None = None
+    digestEnabled: bool | None = None
     reglas: list[dict] | None = None
 
 
@@ -493,6 +500,20 @@ async def generate_digest(turno: str | None = None):
     return await _generar_digest(turno)
 
 
+@router.post("/digest/email")
+async def email_digest(turno: str | None = None):
+    """Genera (o toma el turno indicado) y lo envía por email. Útil para probar."""
+    cfg = await _get_config()
+    to = (cfg.get("digestEmail") or os.environ.get("DIGEST_EMAIL_TO") or "").strip()
+    if not os.environ.get("RESEND_API_KEY"):
+        raise HTTPException(400, "Falta la API key de email en el backend (RESEND_API_KEY).")
+    if not to:
+        raise HTTPException(400, "Falta el email de destino. Cargalo en 'Entrenar a Vera → Resumen por email'.")
+    doc = await _generar_digest(turno)
+    await _send_digest_email(doc)
+    return {"ok": True, "sentTo": to, "total": doc.get("total", 0)}
+
+
 @router.get("/digests")
 async def list_digests(limit: int = 10):
     docs = [d async for d in _digests_col().find({}).sort("generadoAt", -1).limit(limit)]
@@ -526,6 +547,58 @@ async def set_estado(sid: str, body: EstadoBody):
     return {"ok": True, "estado": body.estado}
 
 
+# --- Envío del resumen por email (Resend) ----------------------------------- #
+def _digest_html(doc: dict) -> str:
+    c = doc.get("counts", {})
+    labels = {"roja": ("🔴 Urgente", "#e05a5a"), "amarilla": ("🟡 Seguir", "#b58900"), "verde": ("🟢 Resuelto", "#2e9e78")}
+    rows = ""
+    for it in doc.get("items", []):
+        lab, col = labels.get(it.get("urgencia"), labels["amarilla"])
+        sid = str(it.get("sessionId", ""))
+        wa = (f'<a href="https://wa.me/{sid}" style="color:#25D366;text-decoration:none;font-weight:600;">Abrir WhatsApp &rarr;</a>'
+              if sid.isdigit() and 8 <= len(sid) <= 15 else "")
+        accion = it.get("accion", "")
+        accion_html = f'<br><span style="color:#888;font-size:12px;">&#128073; {accion}</span>' if accion else ""
+        resumen = it.get("resumen", "")
+        rows += (
+            '<tr>'
+            f'<td style="padding:9px 10px;border-bottom:1px solid #eee;color:{col};font-weight:600;white-space:nowrap;vertical-align:top;">{lab}</td>'
+            f'<td style="padding:9px 10px;border-bottom:1px solid #eee;color:#222;">{resumen}{accion_html}</td>'
+            f'<td style="padding:9px 10px;border-bottom:1px solid #eee;font-size:12px;white-space:nowrap;vertical-align:top;">{wa}</td>'
+            '</tr>'
+        )
+    body = rows or '<tr><td colspan="3" style="padding:14px;color:#888;">Sin conversaciones en este período.</td></tr>'
+    return (
+        '<div style="font-family:Arial,Helvetica,sans-serif;max-width:640px;margin:0 auto;padding:8px;">'
+        f'<h2 style="color:#0f2a22;margin:0 0 4px;">VERA · {doc.get("label","Resumen del turno")}</h2>'
+        f'<p style="color:#555;margin:0 0 14px;font-size:14px;">'
+        f'🔴 {c.get("roja",0)} urgentes &nbsp;·&nbsp; 🟡 {c.get("amarilla",0)} para seguir &nbsp;·&nbsp; '
+        f'🟢 {c.get("verde",0)} resueltos &nbsp;·&nbsp; Total {doc.get("total",0)}</p>'
+        f'<table style="width:100%;border-collapse:collapse;font-size:14px;">{body}</table>'
+        '<p style="color:#aaa;font-size:12px;margin-top:18px;">Enviado automáticamente por VERA · Alquileres.</p>'
+        '</div>'
+    )
+
+
+async def _send_digest_email(doc: dict):
+    api_key = os.environ.get("RESEND_API_KEY")
+    cfg = await _get_config()
+    to = (cfg.get("digestEmail") or os.environ.get("DIGEST_EMAIL_TO") or "").strip()
+    if not (api_key and to and cfg.get("digestEnabled", True)):
+        return
+    resend.api_key = api_key
+    params = {
+        "from": os.environ.get("SENDER_EMAIL") or "onboarding@resend.dev",
+        "to": [e.strip() for e in to.replace(";", ",").split(",") if e.strip()],
+        "subject": f"VERA · {doc.get('label','Resumen del turno')} — 🔴 {doc.get('counts',{}).get('roja',0)} urgentes",
+        "html": _digest_html(doc),
+    }
+    try:
+        await asyncio.to_thread(resend.Emails.send, params)
+    except Exception as e:  # noqa: BLE001
+        logging.getLogger("vera.bot").warning("No se pudo enviar el email del resumen: %s", e)
+
+
 # --- Scheduler liviano: dispara los resúmenes 09:30 y 16:30 (hora AR) -------- #
 async def _scheduler_loop():
     while True:
@@ -537,7 +610,8 @@ async def _scheduler_loop():
                 if now.hour == h and m <= now.minute < m + 10:
                     done = await marca.find_one({"_id": f"{turno}-{hoy}"})
                     if not done:
-                        await _generar_digest(turno)
+                        doc = await _generar_digest(turno)
+                        await _send_digest_email(doc)
                         await marca.update_one({"_id": f"{turno}-{hoy}"}, {"$set": {"at": _now()}}, upsert=True)
         except Exception:  # noqa: BLE001
             pass

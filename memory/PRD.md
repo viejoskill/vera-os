@@ -1654,3 +1654,16 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - .env backend: WHATSAPP_VERIFY_TOKEN=vera-alquileres-verify-2026 (elegido), WHATSAPP_TOKEN / WHATSAPP_PHONE_ID / WHATSAPP_APP_SECRET (vacíos; los completa el usuario con datos de Meta).
 - Verificado: GET verify (challenge OK / token malo 403); POST entrante procesa, el bot responde y guarda la conversación; envío salteado sin token real. tsc/backend OK.
 - PENDIENTE (usuario): setup en Meta (WABA + número alquileres via Embedded Signup/coexistencia), obtener WHATSAPP_TOKEN (token permanente de system user) y WHATSAPP_PHONE_ID, configurarlos como env vars EN PRODUCCIÓN, y apuntar el webhook de Meta a https://varelapropiedadescde.com.ar/api/webhooks/whatsapp con verify token vera-alquileres-verify-2026, suscribiendo el campo "messages". Requiere REDEPLOY.
+
+---
+## CHANGELOG 2026-06 (fork: WhatsApp coexistencia + resúmenes)
+### WhatsApp Cloud API (nativo, coexistencia)
+- Webhook operativo y verificado E2E con número de PRUEBA (+1 555-200-4561, phone_id 1253420091191496): cliente escribe → bot Gemini responde → guarda en rental_bot_convos. Envío saliente al test bloqueado por allow-list (limitación modo prueba de Meta).
+- Config webhook por API: app 1563888194602692 suscripta a fields messages, smb_message_echoes, smb_app_state_sync, history, account_update. WHATSAPP_APP_SECRET seteado (valida firma HMAC).
+- Coexistencia CONSTRUIDA (código listo): backend `whatsapp_connect.py` (GET config/status, POST connect exchange+subscribe+store, DELETE), `whatsapp_webhook.py` reescrito (usa token por conexión guardada, maneja smb_message_echoes como 'secretaria'). Frontend `ConnectWhatsApp.tsx` (Embedded Signup FB SDK, featureType whatsapp_business_app_onboarding v3) integrado en Entrenar a Vera.
+- BLOQUEADO en Meta: usuario eligió coexistencia (número real +54 9 2257 40-4000). Etapa 1 verificación de negocio ENVIADA/en revisión (Sebastian Jorge Varela, ~2 días). Falta: Tech Provider + FB Login for Business Config → cargar WHATSAPP_CONFIG_ID + dominios (prod www.varelapropiedadescde.com.ar/veraos + preview).
+### Bandeja / Resúmenes
+- Botón "Abrir en WhatsApp" (wa.me) en RentalBotInbox para sessionId telefónico.
+- Resumen por email (Resend): scheduler 9:30/16:30 AR envía digest; email configurable DESDE VERA (Entrenar a Vera → Resumen automático por email; campos digestEmail/digestEnabled en rental_bot_config). Probado: llega a varelavendecde@gmail.com (free tier solo a la casilla dueña de Resend). Endpoint POST /api/rentals/bot/digest/email.
+- Tarjeta resumen `DigestSummaryCard` (semáforo + top 3 + wa) en "Hoy" (WorkspaceHome) y arriba de AlquileresScreen. Deep-link /alquileres?tab=bot.
+- Testing frontend iteration_55: 100% PASS. Nota: /entrenar-vera es admin-only (AppLayout EMPLOYEE_PATHS=['/alquileres','/studio']); secretaria (empleada) ve el resumen vía /alquileres.
