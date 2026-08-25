@@ -1667,3 +1667,12 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Resumen por email (Resend): scheduler 9:30/16:30 AR envía digest; email configurable DESDE VERA (Entrenar a Vera → Resumen automático por email; campos digestEmail/digestEnabled en rental_bot_config). Probado: llega a varelavendecde@gmail.com (free tier solo a la casilla dueña de Resend). Endpoint POST /api/rentals/bot/digest/email.
 - Tarjeta resumen `DigestSummaryCard` (semáforo + top 3 + wa) en "Hoy" (WorkspaceHome) y arriba de AlquileresScreen. Deep-link /alquileres?tab=bot.
 - Testing frontend iteration_55: 100% PASS. Nota: /entrenar-vera es admin-only (AppLayout EMPLOYEE_PATHS=['/alquileres','/studio']); secretaria (empleada) ve el resumen vía /alquileres.
+
+## CHANGELOG 2026-06 (b) — Radio en Alquileres + Video/Reel Instagram + fix fotos web
+- Fix: ficha web pública Ventas mostraba solo 8 fotos (PublicPropertyDetail.tsx `gallery.slice(0,8)` → `gallery.map`). Backend ya devolvía todas. REQUIERE REDEPLOY.
+- Radio (AudioWidget) agregada a AlquileresScreen (junto al DigestSummaryCard, arriba de las tabs).
+- Video/Reel Instagram (embed oficial, Opción A): componente `app/public/InstagramReel.tsx` (carga embed.js, muestra portada real + play; fallback a link si no es IG).
+  - Ventas: reusa campo existente `videoUrl` (editor FeaturesSection, backend serializers.video_url, NO en _DETAIL_DROP → público). Render en PublicPropertyDetail bajo la galería si data.videoUrl.
+  - Alquileres: nuevo campo `reelUrl` (PropertyBody + _prop_out backend; editor RentalWorkspace input rt-reel-url; api.ts RentalProperty.reelUrl). Render en ReservarPropiedad bajo la galería.
+  - NOTA: el reel debe ser PÚBLICO en Instagram para que el embed muestre la portada.
+- Pendiente user: REDEPLOY a producción para ver todos estos cambios en varelapropiedadescde.com.ar.

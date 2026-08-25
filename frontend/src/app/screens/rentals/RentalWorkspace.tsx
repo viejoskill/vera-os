@@ -256,6 +256,8 @@ export const RentalWorkspace = () => {
             />
             <label className="rt-field"><span>Descripción</span>
               <textarea rows={4} value={f.descripcion || ''} onChange={(e) => set('descripcion', e.target.value)} data-testid="rt-descripcion" /></label>
+            <label className="rt-field"><span>Video / Reel de Instagram (link)</span>
+              <input type="url" placeholder="https://www.instagram.com/reel/…" value={(f as { reelUrl?: string }).reelUrl || ''} onChange={(e) => set('reelUrl' as never, e.target.value as never)} data-testid="rt-reel-url" /></label>
             <div className="rt-row3">
               <Input label="Capacidad (huéspedes)" type="number" value={String(f.capacidad ?? '')} onChange={(e) => set('capacidad', Number(e.target.value))} data-testid="rt-capacidad" />
               <Input label="Dormitorios" type="number" value={String(f.dormitorios ?? '')} onChange={(e) => set('dormitorios', Number(e.target.value))} data-testid="rt-dormitorios" />

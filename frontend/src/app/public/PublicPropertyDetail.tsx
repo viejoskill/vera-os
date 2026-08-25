@@ -5,6 +5,7 @@ import { ArrowLeft, BedDouble, Bath, Maximize, MapPin, Ruler, Compass, MessageCi
 import { env } from '@vera/config';
 import { logInquiry } from './whatsappInquiry';
 import { usePageMeta, SITE_URL } from './usePageMeta';
+import { InstagramReel } from './InstagramReel';
 
 interface Img { id: string; url: string; }
 interface Detail {
@@ -12,7 +13,7 @@ interface Detail {
   price: number; currency: string; address: string; city: string; neighborhood: string;
   province: string; description: string; bedrooms: number; bathrooms: number; rooms: number;
   areaM2: number; lotAreaM2: number; orientation: string; condition: string;
-  amenities: string[]; images: Img[]; coverImage: string; status: string;
+  amenities: string[]; images: Img[]; coverImage: string; status: string; videoUrl?: string;
   whatsappUrl: string; publicUrl: string; autoStamp?: boolean;
 }
 
@@ -161,6 +162,13 @@ export const PublicPropertyDetail = () => {
             </div>
           )}
         </div>
+
+        {data.videoUrl && (
+          <div className="vera-pub-detail__reel" data-testid="public-detail-reel" style={{ marginTop: 18 }}>
+            <h2 className="vera-pub-detail__h2">Video</h2>
+            <InstagramReel url={data.videoUrl} />
+          </div>
+        )}
 
         <aside className="vera-pub-detail__info">
           <span className="vera-pub-card__op">{data.operation}</span>

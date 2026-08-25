@@ -3,6 +3,7 @@ import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { Users, BedDouble, Bath, MapPin, Check, CheckCircle2, ArrowLeft, X, ShieldCheck, PawPrint, BedSingle, Clock, Wallet, AlertCircle } from 'lucide-react';
 import { api, fmtMoney, fmtDate, nightsBetween, type RentalProperty, type RentalSettings } from '@app/screens/rentals/api';
 import { RentalCalendar } from '@app/screens/rentals/RentalCalendar';
+import { InstagramReel } from './InstagramReel';
 import '@app/screens/rentals/rentals.css';
 
 interface Quote { noches: number; base: number; descuentoPct: number; total: number; moneda: string; }
@@ -80,6 +81,11 @@ export const ReservarPropiedad = () => {
               {p.imagenes.map((im, i) => (
                 <button type="button" key={im.id} className={i === gallery ? 'sel' : ''} style={{ backgroundImage: `url(${im.url})` }} onClick={() => setGallery(i)} data-testid={`rt-gthumb-${i}`} />
               ))}
+            </div>
+          )}
+          {(p as unknown as { reelUrl?: string }).reelUrl && (
+            <div className="vera-reel-wrap" data-testid="rt-detail-reel" style={{ marginTop: 14 }}>
+              <InstagramReel url={(p as unknown as { reelUrl?: string }).reelUrl as string} />
             </div>
           )}
         </div>

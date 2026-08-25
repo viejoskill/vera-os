@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Palmtree, Plus, Pencil, ExternalLink, Link2, Check, Users, BedDouble, Bath, XCircle, Building2, Search, X, SlidersHorizontal, Trash2, KeyRound } from 'lucide-react';
+import { Palmtree, Plus, Pencil, ExternalLink, Link2, Check, Users, BedDouble, Bath, XCircle, Building2, Search, X, SlidersHorizontal, Trash2, KeyRound, Radio } from 'lucide-react';
 import { Button } from '@vera/ui';
 import { api, fmtMoney, fmtDate, displayEstado, reservaBucket, type RentalProperty, type Reservation, type SaleProperty, type RentalSettings } from './api';
 import { CobrarSena } from './CobrarSena';
@@ -14,6 +14,7 @@ import { AvisoPendientes } from './AvisoPendientes';
 import { ReservaSemaforo } from './Semaforo';
 import { RentalBotInbox } from './RentalBotInbox';
 import { DigestSummaryCard } from './DigestSummaryCard';
+import { AudioWidget } from '@app/workspace/widgets';
 import './rentals.css';
 
 const Badge = ({ reserva }: { reserva: Reservation }) => {
@@ -127,8 +128,14 @@ export const AlquileresScreen = () => {
       <AvisoPendientes reservas={res} onVer={() => setTab('res')} />
 
       {tab !== 'bot' && (
-        <div style={{ marginBottom: 14 }}>
+        <div style={{ marginBottom: 14, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14, alignItems: 'start' }}>
           <DigestSummaryCard onVerBandeja={() => setTab('bot')} />
+          <div className="vera-widget" data-testid="alquileres-radio">
+            <div className="vera-widget__head">
+              <span className="vera-widget__title"><Radio size={15} /> Radio</span>
+            </div>
+            <div className="vera-widget__body"><AudioWidget /></div>
+          </div>
         </div>
       )}
 

@@ -15,6 +15,7 @@ export interface RentalProperty {
   penalidadDiaria?: number; limpieza?: number;
   checkInHora?: string; checkOutHora?: string; estadiaMinima?: number; condiciones?: string[];
   numeroLlave?: number | null;
+  reelUrl?: string;
   ocupados?: Occupied[]; descuentos?: { semana: number; quincena: number; mes: number };
 }
 export interface RentalSettings { condicionesGenerales: string[]; avisoValidez: string; whatsappAgencia?: string; }

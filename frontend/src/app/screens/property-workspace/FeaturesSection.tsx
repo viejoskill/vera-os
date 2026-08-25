@@ -87,7 +87,7 @@ export const FeaturesSection = () => {
               </span>
             )}
           </div>
-          <Input label="Video (link)" placeholder="https://youtube.com/…" data-testid="input-video" {...register('videoUrl')} />
+          <Input label="Video / Reel de Instagram (link)" placeholder="https://www.instagram.com/reel/…" data-testid="input-video" {...register('videoUrl')} />
         </div>
       </div>
     </div>
