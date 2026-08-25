@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import {
   BedDouble, Bath, Maximize, MapPin, MessageCircle, ArrowRight, Menu, X,
   Gauge, Bot, MessagesSquare, Radar, ShieldCheck, MapPinned, Sparkles, Handshake,
-  Mail, Umbrella, Star, Quote,
+  Mail, Umbrella, Star, Quote, Play,
 } from 'lucide-react';
 import { env } from '@vera/config';
 import { openWhatsAppInquiry } from './whatsappInquiry';
@@ -85,7 +85,7 @@ interface Listing {
   price: number; currency: string; city: string; neighborhood: string;
   coverImage: string; bedrooms: number; bathrooms: number; areaM2: number;
   lotAreaM2: number; rooms: number; status: string; radar: boolean; whatsappUrl: string; publicUrl: string;
-  autoStamp?: boolean;
+  autoStamp?: boolean; hasVideo?: boolean;
 }
 
 const money = (n: number, c: string) =>
@@ -149,6 +149,7 @@ const PropCard = ({ p }: { p: Listing }) => {
       <div className="vh-card__media">
         {p.coverImage ? <img src={p.coverImage} alt={p.title} loading="lazy" /> : <div className="vh-card__noimg" />}
         <span className="vh-card__op">{cap(p.operation)}</span>
+        {p.hasVideo && <span className="vera-pub-card__video"><Play size={11} /> Video</span>}
         {stamp && <span className={`vera-pub-stamp vera-pub-stamp--card ${stamp.cls}`}>{stamp.label}</span>}
       </div>
       <div className="vh-card__body">

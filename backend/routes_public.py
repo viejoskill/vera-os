@@ -47,6 +47,7 @@ async def public_listings():
         item = {k: resp.get(k) for k in _SUMMARY_KEYS}
         item["whatsappUrl"] = inquiries.whatsapp_url(r)
         item["publicUrl"] = web_publisher.stored_public_url(r)
+        item["hasVideo"] = bool(r.get("video_url"))
         out.append(item)
     return out
 

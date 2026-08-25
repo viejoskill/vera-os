@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { BedDouble, Bath, Maximize, MapPin, MessageCircle, ArrowLeft, ArrowRight } from 'lucide-react';
+import { BedDouble, Bath, Maximize, MapPin, MessageCircle, ArrowLeft, ArrowRight, Play } from 'lucide-react';
 import { env } from '@vera/config';
 import { openWhatsAppInquiry } from './whatsappInquiry';
 import { usePageMeta, SITE_URL } from './usePageMeta';
@@ -13,6 +13,7 @@ interface Listing {
   bedrooms: number; bathrooms: number; areaM2: number; lotAreaM2: number; rooms: number;
   status: string; whatsappUrl: string;
   autoStamp?: boolean;
+  hasVideo?: boolean;
 }
 
 const money = (n: number, c: string) =>
@@ -118,6 +119,7 @@ export const ZonaLanding = ({ config }: { config: LandingConfig }) => {
                 <div className="vera-pub-card__media">
                   {p.coverImage ? <img src={p.coverImage} alt={p.title} loading="lazy" /> : <div className="vera-pub-card__noimg" />}
                   <span className="vera-pub-card__op">{p.operation}</span>
+                  {p.hasVideo && <span className="vera-pub-card__video"><Play size={11} /> Video</span>}
                   {stamp && <span className={`vera-pub-stamp ${stamp.cls}`}>{stamp.label}</span>}
                 </div>
                 <div className="vera-pub-card__body">

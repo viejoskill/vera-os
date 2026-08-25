@@ -1676,3 +1676,8 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
   - Alquileres: nuevo campo `reelUrl` (PropertyBody + _prop_out backend; editor RentalWorkspace input rt-reel-url; api.ts RentalProperty.reelUrl). Render en ReservarPropiedad bajo la galería.
   - NOTA: el reel debe ser PÚBLICO en Instagram para que el embed muestre la portada.
 - Pendiente user: REDEPLOY a producción para ver todos estos cambios en varelapropiedadescde.com.ar.
+
+## CHANGELOG 2026-06 (c) — Badge "Video" en tarjetas del listado
+- Backend: /api/public/listings agrega `hasVideo` (bool desde row.video_url). Alquileres list ya trae reelUrl.
+- Frontend badge `.vera-pub-card__video` (verde, esquina sup. derecha de la foto): PublicListing, PublicHome (vh-card), ZonaLanding (Ventas), ReservarPublico (Alquileres via reelUrl).
+- Verificado: hasVideo:true para V577. REQUIERE REDEPLOY para producción.

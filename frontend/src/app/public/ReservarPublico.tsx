@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, BedDouble, Bath, Palmtree, MapPin } from 'lucide-react';
+import { Users, BedDouble, Bath, Palmtree, MapPin, Play } from 'lucide-react';
 import { api, fmtMoney, type RentalProperty } from '@app/screens/rentals/api';
 import '@app/screens/rentals/rentals.css';
 
@@ -26,7 +26,7 @@ export const ReservarPublico = () => {
             const cover = p.imagenes.find((i) => i.isCover) || p.imagenes[0];
             return (
               <Link to={`/reservar/${p.slug}`} className="rt-pub__card" key={p.id} data-testid={`rt-pub-card-${p.slug}`}>
-                <div className="rt-pub__img" style={cover ? { backgroundImage: `url(${cover.url})` } : undefined}>{!cover && <Palmtree size={28} />}</div>
+                <div className="rt-pub__img" style={cover ? { backgroundImage: `url(${cover.url})` } : undefined}>{!cover && <Palmtree size={28} />}{(p as { reelUrl?: string }).reelUrl && <span className="vera-pub-card__video"><Play size={11} /> Video</span>}</div>
                 <div className="rt-pub__cbody">
                   {p.codigo && <span className="rt-pub__code">{p.codigo}</span>}
                   <h3>{p.titulo}</h3>

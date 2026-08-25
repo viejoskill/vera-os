@@ -6831,6 +6831,25 @@ p {
   padding: 4px 10px;
   border-radius: 999px;
 }
+.vera-pub-card__video {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(37, 211, 102, 0.92);
+  color: #06331d;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 9px;
+  border-radius: 999px;
+  z-index: 2;
+}
+.rt-pub__img { position: relative; }
+
 .vera-pub-card__body {
   padding: 16px 18px 18px;
   display: flex;

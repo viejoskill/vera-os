@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { BedDouble, Bath, Maximize, MapPin, MessageCircle } from 'lucide-react';
+import { BedDouble, Bath, Maximize, MapPin, MessageCircle, Play } from 'lucide-react';
 import { env } from '@vera/config';
 import { openWhatsAppInquiry } from './whatsappInquiry';
 import { usePageMeta, SITE_URL } from './usePageMeta';
@@ -26,6 +26,7 @@ interface Listing {
   whatsappUrl: string;
   publicUrl: string;
   autoStamp?: boolean;
+  hasVideo?: boolean;
 }
 
 const money = (n: number, c: string) =>
@@ -160,6 +161,7 @@ export const PublicListing = () => {
                     <div className="vera-pub-card__noimg" />
                   )}
                   <span className="vera-pub-card__op">{p.operation}</span>
+                  {p.hasVideo && <span className="vera-pub-card__video" data-testid={`card-video-${p.id}`}><Play size={11} /> Video</span>}
                   {stamp && <span className={`vera-pub-stamp ${stamp.cls}`} data-testid={`stamp-${p.id}`}>{stamp.label}</span>}
                 </div>
                 <div className="vera-pub-card__body">
