@@ -1104,7 +1104,6 @@ async def recibo_saldo(rid: str, sid: str, dl: int = 0):
 
 async def _next_numero(tipo: str) -> int:
     """Numeración secuencial por tipo de documento. Contrato arranca después de 3435."""
-    from pymongo import ReturnDocument
     base = {"contrato": 3435, "reserva": 0}.get(tipo, 0)
     doc = await _db()["rental_counters"].find_one_and_update(
         {"_id": tipo}, {"$inc": {"seq": 1}, "$setOnInsert": {"base": base}},

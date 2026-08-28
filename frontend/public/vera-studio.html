@@ -153,11 +153,11 @@
     <button class="mode sel" id="modeCont" type="button">Carrusel de contenido</button>
     <button class="mode" id="modeProp" type="button">Post de propiedad</button>
     <button class="mode" id="modeCal" type="button">Calendario mensual</button>
-    <button class="mode" id="modeVid" type="button">Video</button>
+    <button class="mode" id="modeVid" type="button" style="display:none">Video</button>
     <button class="mode" id="modeFotos" type="button">Editor de fotos</button>
     <button class="mode" id="modePortada" type="button">Portadas</button>
     <button class="mode" id="modeCartel" type="button">Cartel viral IA ✨</button>
-    <button class="mode" id="modeInfo" type="button">Infografía IA 📊</button>
+    <button class="mode" id="modeInfo" type="button" style="display:none">Infografía IA 📊</button>
   </div>
 
   <div class="grid">
@@ -365,8 +365,8 @@
           <div>
             <label>Formato de salida</label>
             <select id="fRatio">
-              <option value="169" selected>16:9 (horizontal)</option>
-              <option value="43">4:3</option>
+              <option value="169">16:9 (horizontal)</option>
+              <option value="45" selected>4:5 (feed Instagram)</option>
               <option value="11">1:1 (cuadrado)</option>
               <option value="orig">Original (sin recortar)</option>
             </select>
@@ -2878,7 +2878,7 @@ function fRender(){
     const ratio = $("fRatio").value;
     let cw, ch;
     if(ratio==="orig"){ cw=1920; ch=1080; }
-    else{ const mapa={ "169":[1920,1080], "43":[1600,1200], "11":[1440,1440] }; [cw,ch]=mapa[ratio]; }
+    else{ const mapa={ "169":[1920,1080], "45":[1080,1350], "11":[1440,1440] }; [cw,ch]=mapa[ratio]; }
     if(cvEdit.width!==cw || cvEdit.height!==ch){ cvEdit.width=cw; cvEdit.height=ch; }
     renderFichaLoteWeb(f, cw, ch);
     return;
@@ -2898,7 +2898,7 @@ function fRender(){
     if(srcImg.width >= srcImg.height){ cw = Math.min(maxLado, srcImg.width); ch = Math.round(cw*srcImg.height/srcImg.width); }
     else{ ch = Math.min(maxLado, srcImg.height); cw = Math.round(ch*srcImg.width/srcImg.height); }
   }else{
-    const mapa = { "169":[1920,1080], "43":[1600,1200], "11":[1440,1440] };
+    const mapa = { "169":[1920,1080], "45":[1080,1350], "11":[1440,1440] };
     [cw,ch] = mapa[ratio];
   }
   if(cvEdit.width!==cw || cvEdit.height!==ch){ cvEdit.width=cw; cvEdit.height=ch; }
