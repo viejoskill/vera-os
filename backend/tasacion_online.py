@@ -36,8 +36,17 @@ async def estimar(inp: dict) -> dict:
     market = await comparables.market_pm2(inp.get("tipo", "casa"))
     area = _area_referencia(inp)
 
+    # ML solo scrapea "Costa del Este" en su conjunto (no hay filtro por zona/barrio
+    # en el sitio público), así que el pm2 que devuelve es un promedio plano de toda
+    # la localidad. Para no repetir el mismo valor en todas las zonas, lo escalamos
+    # por el diferencial de precio de zona ya calibrado en el modelo Varela local
+    # (tomando Zona Fondo como referencia, la más barata, factor 1.0).
+    zsuf = tasacion.ZONA_SUFIJO.get(inp.get("zona", "bosque"), "bosque")
+    zona_factor = float(cfg.get(f"precio_lote_{zsuf}") or cfg["precio_lote_fondo"]) / float(cfg["precio_lote_fondo"])
+
     if market.get("available") and area > 0:
-        base = market["medianPm2"] * area
+        pm2_zona = market["medianPm2"] * zona_factor
+        base = pm2_zona * area
         method = "mercadolibre"
     else:
         base = (r["pubMin"] + r["pubMax"]) / 2
@@ -71,6 +80,6 @@ async def estimar(inp: dict) -> dict:
         "market": {
             "available": market.get("available", False),
             "count": market.get("count", 0),
-            "medianPm2": market.get("medianPm2", 0),
+            "medianPm2": round(market.get("medianPm2", 0) * zona_factor) if market.get("available") else market.get("medianPm2", 0),
         },
     }

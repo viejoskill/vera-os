@@ -1709,3 +1709,10 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Además: en código nuevo, guardar arrays antes de `.map` (regla `emergent(safe-array-method-call)`) — se aplicó `(result.semaforo || []).map(...)` en TasarPublico.
 - Detalle completo y checklist de recurrencia en `/app/memory/LINTER_BLOCKER_FIX.md`.
 - Verificado: engine_success=True, reviewdog 0 findings en líneas cambiadas, frontend compila (HTTP 200).
+
+
+## CHANGELOG 2026-08 (h) — Fix bug: valor de mercado repetido en todas las zonas
+- **Bug reportado por usuario** (con screenshots): el "Valor de referencia de mercado" del Tasador daba el mismo rango (USD 32.000–34.000) para Zona Bosque, Zona Fondo y Zona Mar (mismos 24 comparables, USD 60/m²), y solo variaba si cambiaba el área. Solo Zona Fondo daba un valor razonable.
+- **Causa raíz**: `mercadolibre/comparables.market_pm2(tipo)` scrapea el sitio público de ML solo por localidad completa ("Costa del Este"), sin filtro de barrio/zona (ML no expone esa granularidad en su URL pública, confirmado por investigación). Por eso el pm2 de mercado era un promedio plano idéntico sin importar la zona ingresada.
+- **Fix** (`backend/tasacion_online.py`): se escala el pm2 plano de ML por un `zona_factor = precio_lote_{zona} / precio_lote_fondo` (usando la tabla de precios de zona ya calibrada en el modelo Varela local, con Zona Fondo —la más barata— como referencia 1.0). El campo `market.medianPm2` devuelto al frontend también se ajusta para que el texto "(promedio USD X/m²)" sea coherente con el cálculo.
+- Verificado con `/api/public/tasacion/simular` (lote 550m², sin guardar lead) en las 6 zonas: Fondo USD 32-34k (60/m², sin cambios), Bosque USD 45-48.5k (85/m²), Zona Mar USD 74.5-79.5k (140/m²), Interbalnearia USD 85-91k (160/m²), Av.2/Camelias USD 109-116.5k (205/m²), Costanera USD 160-170k (300/m²) — ahora cada zona da un valor distinto y coherente con su jerarquía de precios real. Sin cambios de UI/frontend. REQUIERE REDEPLOY para verse en producción.
