@@ -4,13 +4,11 @@ import { Input, Button } from '@vera/ui';
 import { env } from '@vera/config';
 import { useAuthUser } from '@app/auth/useAuthUser';
 import { TasadorConfig } from '@app/screens/TasadorConfig';
+import { ZONAS_TASADOR } from '@app/public/MapaZonas';
 
 const API = `${env.backendUrl}/api/tasacion`;
 
-const ZONAS = [
-  ['costanera', 'Av. Costanera'], ['zonamar', 'Zona Mar'], ['av2camelias', 'Av. 2 y Camelias'],
-  ['interbalnearia', 'Av. Interbalnearia'], ['bosque', 'Zona Bosque'], ['fondo', 'Zona Fondo'],
-];
+const ZONAS = ZONAS_TASADOR;
 const TIPOS = [['casa', 'Casa'], ['duplex', 'Duplex'], ['lote', 'Lote / Terreno'], ['depto', 'Departamento']];
 
 interface Result {
@@ -48,7 +46,7 @@ const Chk = ({ label, checked, onChange, testid }: {
 export const TasacionesScreen = () => {
   const { displayName } = useAuthUser();
   const [f, setF] = useState({
-    tipo: 'casa', zona: 'costanera', cubiertos: '', semicubiertos: '', lote: '',
+    tipo: 'casa', zona: 'playa', cubiertos: '', semicubiertos: '', lote: '',
     dormitorios: '', banos: '',
     calidad: 'estandar', estado: 'bueno', antiguedad: 'hasta10',
     ambientes: '2', vista: 'frente', antDepto: 'reciente',

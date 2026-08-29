@@ -2,13 +2,11 @@ import { useState } from 'react';
 import { Sparkles, TrendingUp, ShieldCheck, Loader2 } from 'lucide-react';
 import { env } from '@vera/config';
 import { usePageMeta, SITE_URL } from './usePageMeta';
+import { MapaZonas, ZONAS_TASADOR } from './MapaZonas';
 
 const API = `${env.backendUrl}/api/public/tasacion`;
 
-const ZONAS = [
-  ['costanera', 'Av. Costanera'], ['zonamar', 'Zona Mar'], ['av2camelias', 'Av. 2 y Camelias'],
-  ['interbalnearia', 'Av. Interbalnearia'], ['bosque', 'Zona Bosque'], ['fondo', 'Zona Fondo'],
-];
+const ZONAS = ZONAS_TASADOR;
 const TIPOS = [['casa', 'Casa'], ['duplex', 'Duplex'], ['lote', 'Lote / Terreno'], ['depto', 'Departamento']];
 
 interface SemaforoTier {
@@ -66,7 +64,7 @@ const Chk = ({ label, checked, onChange, testid }: {
 export const TasarPublico = () => {
   const sim = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('sim') === '1';
   const [f, setF] = useState({
-    tipo: 'casa', zona: 'costanera', cubiertos: '', lote: '',
+    tipo: 'casa', zona: 'playa', cubiertos: '', lote: '',
     calidad: 'estandar', estado: 'bueno', antiguedad: 'hasta10',
     ambientes: '2', vista: 'frente', antDepto: 'reciente',
     gas: false, cloacas: false, pileta: false, quincho: false, deck: false,
@@ -205,9 +203,11 @@ export const TasarPublico = () => {
 
           <div className="tasp__form" data-testid="tasp-form">
             <h3 className="tasp__section">Tu propiedad</h3>
+            <p className="tasp__hint" style={{ marginTop: -4 }}>Tocá tu zona en el mapa (o elegila en la lista más abajo).</p>
+            <MapaZonas value={f.zona} onChange={(v) => set('zona', v)} />
             <div className="tasp__row2">
               <Sel label="Tipo" value={f.tipo} onChange={(v) => set('tipo', v)} options={TIPOS} testid="tasp-tipo" />
-              <Sel label="Zona" value={f.zona} onChange={(v) => set('zona', v)} options={ZONAS} testid="tasp-zona" />
+              <Sel label="Zona (lista)" value={f.zona} onChange={(v) => set('zona', v)} options={ZONAS} testid="tasp-zona" />
             </div>
             <div className="tasp__row2">
               {!esDepto && <Num label="Superficie del lote (m²)" value={f.lote} onChange={(v) => set('lote', v)} testid="tasp-lote" />}

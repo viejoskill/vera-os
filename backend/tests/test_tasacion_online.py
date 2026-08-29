@@ -13,7 +13,7 @@ if not BASE_URL:
 
 CASA_PAYLOAD = {
     "tipo": "casa",
-    "zona": "costanera",
+    "zona": "playa",
     "cubiertos": 100,
     "lote": 300,
     "calidad": "estandar",
@@ -27,7 +27,7 @@ CASA_PAYLOAD = {
 
 LOTE_PAYLOAD = {
     "tipo": "lote",
-    "zona": "costanera",
+    "zona": "playa",
     "lote": 500,
     "nombre": "TEST_Lote",
     "telefono": "2257000001",

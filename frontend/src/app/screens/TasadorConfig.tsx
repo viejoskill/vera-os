@@ -2,13 +2,11 @@ import { useEffect, useState } from 'react';
 import { Save, RotateCcw, SlidersHorizontal, Check } from 'lucide-react';
 import { Button } from '@vera/ui';
 import { env } from '@vera/config';
+import { ZONAS_TASADOR } from '@app/public/MapaZonas';
 
 const API = `${env.backendUrl}/api/tasacion`;
 
-const ZONAS: [string, string][] = [
-  ['costa', 'Av. Costanera'], ['av2', 'Av. 2 y Camelias'], ['mar', 'Zona Mar'],
-  ['inter', 'Av. Interbalnearia'], ['bosque', 'Zona Bosque'], ['fondo', 'Zona Fondo'],
-];
+const ZONAS: [string, string][] = ZONAS_TASADOR;
 const CALIDADES: [string, string][] = [['economica', 'Económica'], ['estandar', 'Estándar'], ['superior', 'Superior'], ['premium', 'Premium']];
 
 interface Group { title: string; hint?: string; step: number; fields: [string, string][]; }

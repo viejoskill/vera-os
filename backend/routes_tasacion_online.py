@@ -21,7 +21,7 @@ logger = logging.getLogger("vera")
 
 class EstimarBody(BaseModel):
     tipo: str = "casa"
-    zona: str = "costanera"
+    zona: str = "playa"
     cubiertos: float | None = None
     lote: float | None = None
     calidad: str | None = None

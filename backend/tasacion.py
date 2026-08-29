@@ -26,18 +26,38 @@ SEED: dict[str, float] = {
     "mult_vista_frente": 1.2, "mult_vista_lateral": 1.0, "mult_vista_contra": 0.85,
     "precio_constr_economica": 850, "precio_constr_estandar": 1150, "precio_constr_superior": 1325, "precio_constr_premium": 1500,
     "precio_depto_1amb": 2200, "precio_depto_2amb": 2000, "precio_depto_3amb": 1850, "precio_depto_4amb": 1700,
-    "precio_lote_costa": 300, "precio_lote_av2": 205, "precio_lote_mar": 140,
-    "precio_lote_inter": 160, "precio_lote_bosque": 85, "precio_lote_fondo": 60,
+    # Precio de lote por zona (USD/m²). Plano real de Costa del Este (2026-08): 14 zonas
+    # internas + 4 avenidas/calles que funcionan como zona propia por su zonificación.
+    # Arrancan en 0 a propósito: el usuario los calibra zona por zona desde VERA (Tasador → Config).
+    "precio_lote_pensamientos_sur": 0, "precio_lote_pensamientos_centro": 0, "precio_lote_pensamientos_norte": 0,
+    "precio_lote_cristo_sur": 0, "precio_lote_cristo_centro": 0, "precio_lote_cristo_norte": 0,
+    "precio_lote_alelies": 0,
+    "precio_lote_centro_sur": 0, "precio_lote_centro": 0, "precio_lote_centro_norte": 0,
+    "precio_lote_reserva_residencial": 0, "precio_lote_reserva_multif": 0,
+    "precio_lote_premium": 0, "precio_lote_playa": 0, "precio_lote_comercial_ruta": 0,
+    "precio_lote_av_costanera": 0, "precio_lote_av2": 0, "precio_lote_av_interbalnearia": 0, "precio_lote_camelias": 0,
     "rango_apertura": 0.04,
 }
 
+# Plano real de Costa del Este: zona (valor usado en los selects) → sufijo de config
+# (identidad, ambos son el mismo slug). Se mantiene el dict por compatibilidad con `tasar()`.
 ZONA_SUFIJO = {
-    "costanera": "costa", "av2camelias": "av2", "zonamar": "mar",
-    "interbalnearia": "inter", "bosque": "bosque", "fondo": "fondo",
+    "pensamientos_sur": "pensamientos_sur", "pensamientos_centro": "pensamientos_centro", "pensamientos_norte": "pensamientos_norte",
+    "cristo_sur": "cristo_sur", "cristo_centro": "cristo_centro", "cristo_norte": "cristo_norte",
+    "alelies": "alelies",
+    "centro_sur": "centro_sur", "centro": "centro", "centro_norte": "centro_norte",
+    "reserva_residencial": "reserva_residencial", "reserva_multif": "reserva_multif",
+    "premium": "premium", "playa": "playa", "comercial_ruta": "comercial_ruta",
+    "av_costanera": "av_costanera", "av2": "av2", "av_interbalnearia": "av_interbalnearia", "camelias": "camelias",
 }
 NOMBRE_ZONA = {
-    "costanera": "Av. Costanera", "av2camelias": "Av. 2 y Camelias", "zonamar": "Zona Mar",
-    "interbalnearia": "Av. Interbalnearia", "bosque": "Zona Bosque", "fondo": "Zona Fondo",
+    "pensamientos_sur": "Zona Pensamientos Sur", "pensamientos_centro": "Zona Pensamientos Centro", "pensamientos_norte": "Zona Pensamientos Norte",
+    "cristo_sur": "Zona Cristo Sur", "cristo_centro": "Zona Cristo Centro", "cristo_norte": "Zona Cristo Norte",
+    "alelies": "Zona Alelies",
+    "centro_sur": "Zona Centro Sur", "centro": "Zona Centro", "centro_norte": "Zona Centro Norte",
+    "reserva_residencial": "La Reserva Residencial", "reserva_multif": "La Reserva Multif.",
+    "premium": "Zona Premium", "playa": "Zona Playa", "comercial_ruta": "Zona Comercial (Ruta)",
+    "av_costanera": "Av. Costanera", "av2": "Av. 2", "av_interbalnearia": "Av. Interbalnearia", "camelias": "Calle Camelias",
 }
 NOMBRE_TIPO = {"casa": "Casa", "duplex": "Duplex", "lote": "Lote / Terreno", "depto": "Departamento"}
 
@@ -79,7 +99,7 @@ def tasar(inp: dict, cfg: dict) -> dict:
         return float(val) if val is not None else default
 
     tipo = inp.get("tipo", "casa")
-    zsuf = ZONA_SUFIJO.get(inp.get("zona", "bosque"), "bosque")
+    zsuf = ZONA_SUFIJO.get(inp.get("zona", "playa"), "playa")
     breakdown: list[dict] = []
     base = 0.0
 

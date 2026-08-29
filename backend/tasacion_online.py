@@ -39,10 +39,16 @@ async def estimar(inp: dict) -> dict:
     # ML solo scrapea "Costa del Este" en su conjunto (no hay filtro por zona/barrio
     # en el sitio público), así que el pm2 que devuelve es un promedio plano de toda
     # la localidad. Para no repetir el mismo valor en todas las zonas, lo escalamos
-    # por el diferencial de precio de zona ya calibrado en el modelo Varela local
-    # (tomando Zona Fondo como referencia, la más barata, factor 1.0).
-    zsuf = tasacion.ZONA_SUFIJO.get(inp.get("zona", "bosque"), "bosque")
-    zona_factor = float(cfg.get(f"precio_lote_{zsuf}") or cfg["precio_lote_fondo"]) / float(cfg["precio_lote_fondo"])
+    # por el diferencial de precio de zona calibrado en el modelo Varela local, contra
+    # el PROMEDIO de las zonas ya calibradas (no cero). Mientras el usuario está
+    # cargando los precios zona por zona, las zonas en 0 no distorsionan el promedio
+    # y devuelven factor 1 (usan el valor plano de ML) hasta que se completen.
+    zsuf = tasacion.ZONA_SUFIJO.get(inp.get("zona", "playa"), "playa")
+    zona_precio = float(cfg.get(f"precio_lote_{zsuf}") or 0)
+    precios_calibrados = [float(cfg.get(f"precio_lote_{s}") or 0) for s in tasacion.ZONA_SUFIJO.values()]
+    precios_calibrados = [p for p in precios_calibrados if p > 0]
+    promedio_zonas = sum(precios_calibrados) / len(precios_calibrados) if precios_calibrados else 0
+    zona_factor = (zona_precio / promedio_zonas) if (promedio_zonas > 0 and zona_precio > 0) else 1.0
 
     if market.get("available") and area > 0:
         pm2_zona = market["medianPm2"] * zona_factor
