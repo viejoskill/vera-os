@@ -1711,6 +1711,13 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Verificado: engine_success=True, reviewdog 0 findings en líneas cambiadas, frontend compila (HTTP 200).
 
 
+## CHANGELOG 2026-08 (j) — Mapa con la FOTO REAL del plano (no ilustración abstracta)
+- **Pedido del usuario**: el mapa (i) usaba cajas abstractas estilizadas; pidió que las zonas estén literalmente aplicadas SOBRE la foto real del plano que subió, para que el cliente identifique visualmente su inmueble (calles, lotes, numeración reales).
+- Se descargó la imagen real (`WhatsApp Image 2026-08-29 at 19.02.43.jpeg`, 1131×1600px) a `frontend/public/costa-del-este-mapa-zonas.jpg`. `MapaZonas.tsx` reescrito: la imagen se muestra de fondo y encima se superponen 19 botones transparentes posicionados en % (izquierda/arriba/ancho/alto) recortados a mano sobre las líneas divisorias reales de la foto (detectadas con un script de análisis de píxeles para ubicar las líneas azules del plano con precisión, luego validado dibujando las cajas propuestas sobre la imagen y ajustando).
+- Las 4 avenidas/calles (Costanera, Av.2, Interbalnearia, Camelias) se dibujan como franjas con mayor z-index sobre las zonas (igual que en la foto original, que ya las resalta en rosa) — clic en la franja tiene prioridad sobre la zona de fondo. Siguen existiendo también como pills debajo del mapa para más comodidad táctil.
+- Al pie del mapa: texto "Zona seleccionada: X" (refuerza qué quedó marcado, ya que el overlay no duplica el texto — la foto ya tiene los nombres impresos).
+- Verificado con clicks automatizados: Cristo Centro y Av. 2 seleccionan correctamente y sincronizan con el dropdown de respaldo; visualmente la franja de Av. 2 coincide con la calle real de la imagen. REQUIERE REDEPLOY para verse en producción.
+
 ## CHANGELOG 2026-08 (i) — Mapa de zonas real (plano Costa del Este) en el Tasador
 - **Pedido del usuario**: reemplazar el desplegable simple de 6 zonas por un mapa ilustrado clickeable, basado en el plano REAL de Costa del Este que subió el usuario (imagen con 14 zonas internas: Pensamientos Sur/Centro/Norte, Cristo Sur/Centro/Norte, Alelies, Centro Sur/Centro/Norte, La Reserva Residencial, La Reserva Multif., Zona Premium, Zona Playa, Zona Comercial Ruta) + 4 avenidas/calles que funcionan como zona propia por su zonificación (Av. Costanera, Av. 2, Av. Interbalnearia, Calle Camelias) = 19 zonas en total.
 - **Precios**: usuario pidió arrancar TODOS los `precio_lote_*` en 0 para calibrarlos él mismo, zona por zona, desde el panel "Ajustar variables del cálculo" (TasadorConfig, ya existente).
