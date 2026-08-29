@@ -19,6 +19,9 @@ export default tseslint.config(
       ecmaVersion: 2022,
       sourceType: 'module',
     },
+    linterOptions: {
+      reportUnusedDisableDirectives: 'off',
+    },
     rules: {
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'warn',

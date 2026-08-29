@@ -140,6 +140,9 @@ export const TasacionesScreen = () => {
           <Button variant="secondary" size="sm" onClick={copyPublic} data-testid="tas-copy-public">
             {copied ? <><Check size={15} /> Link copiado</> : <><Share2 size={15} /> Copiar link público</>}
           </Button>
+          <a href={`${publicUrl}?sim=1`} target="_blank" rel="noreferrer" data-testid="tas-open-simulator" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 9, background: 'rgba(246,230,58,0.12)', color: '#e9e4b0', border: '1px solid rgba(246,230,58,0.35)', textDecoration: 'none', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}>
+            🧪 Abrir simulador
+          </a>
         </div>
       </header>
 

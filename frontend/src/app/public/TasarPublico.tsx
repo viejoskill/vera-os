@@ -50,6 +50,7 @@ const Chk = ({ label, checked, onChange, testid }: {
 );
 
 export const TasarPublico = () => {
+  const sim = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('sim') === '1';
   const [f, setF] = useState({
     tipo: 'casa', zona: 'costanera', cubiertos: '', lote: '',
     calidad: 'estandar', estado: 'bueno', antiguedad: 'hasta10',
@@ -75,7 +76,7 @@ export const TasarPublico = () => {
 
   const estimar = async () => {
     setError('');
-    if (!f.nombre.trim() || !f.telefono.trim()) {
+    if (!sim && (!f.nombre.trim() || !f.telefono.trim())) {
       setError('Completá tu nombre y teléfono para recibir la estimación.');
       return;
     }
@@ -83,7 +84,7 @@ export const TasarPublico = () => {
     if (!esLote && !f.cubiertos) { setError('Cargá los metros cubiertos.'); return; }
     setLoading(true);
     try {
-      const res = await fetch(`${API}/estimar`, {
+      const res = await fetch(`${API}/${sim ? 'simular' : 'estimar'}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...f,
@@ -107,6 +108,12 @@ export const TasarPublico = () => {
         <span className="vera-pub__count">Costa del Este · Mar del Tuyú</span>
         <img src="/varela-logo-brand.png" alt="Varela Inmobiliaria" style={{ height: 34, width: 'auto' }} data-testid="tasar-logo" />
       </header>
+
+      {sim && (
+        <div data-testid="tasp-sim-banner" style={{ margin: '0 auto 8px', maxWidth: 720, background: 'rgba(246,230,58,0.1)', border: '1px solid rgba(246,230,58,0.35)', color: '#e9e4b0', borderRadius: 10, padding: '10px 14px', fontSize: 13, fontWeight: 600, textAlign: 'center' }}>
+          🧪 Modo simulador — para calibrar el tasador. <span style={{ fontWeight: 400 }}>No genera contactos ni guarda tasaciones.</span>
+        </div>
+      )}
 
       {result ? (
         <section className="tasp__result-wrap" data-testid="tasp-result">
@@ -194,6 +201,8 @@ export const TasarPublico = () => {
               </>
             )}
 
+            {!sim && (
+            <>
             <h3 className="tasp__section">Tus datos</h3>
             <p className="tasp__hint">Te enviamos la estimación y un asesor te contacta para la tasación definitiva.</p>
             <div className="tasp__row2">
@@ -204,13 +213,15 @@ export const TasarPublico = () => {
             </div>
             <label className="tasp-field"><span>Email (opcional)</span>
               <input type="email" value={f.email} onChange={(e) => set('email', e.target.value)} data-testid="tasp-email" /></label>
+            </>
+            )}
 
             {error && <p className="tasp__error" data-testid="tasp-error">{error}</p>}
 
             <button type="button" className="tasp__submit" onClick={estimar} disabled={loading} data-testid="tasp-submit">
-              {loading ? <><Loader2 size={17} className="tasp__spin" /> Calculando…</> : <><Sparkles size={17} /> Ver el valor estimado</>}
+              {loading ? <><Loader2 size={17} className="tasp__spin" /> Calculando…</> : <><Sparkles size={17} /> {sim ? 'Simular valor' : 'Ver el valor estimado'}</>}
             </button>
-            <p className="tasp__legal">Al continuar aceptás ser contactado por Varela Propiedades.</p>
+            {!sim && <p className="tasp__legal">Al continuar aceptás ser contactado por Varela Propiedades.</p>}
           </div>
         </section>
       )}

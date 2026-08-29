@@ -88,3 +88,14 @@ async def estimar(body: EstimarBody):
 
     result["leadSaved"] = lead_id is not None
     return result
+
+
+@router.post("/simular")
+async def simular(body: EstimarBody):
+    """Simulador interno: misma lógica del tasador público pero SIN guardar lead.
+    Para calibrar la tasación sin generar contactos falsos."""
+    data = body.model_dump()
+    result = await tasacion_online.estimar(data)
+    result["leadSaved"] = False
+    result["simulado"] = True
+    return result

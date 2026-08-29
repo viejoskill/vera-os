@@ -1688,3 +1688,9 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - (b) Bandeja: GET /api/tasacion/online-leads (join events TasacionSolicitada + people.get → nombre/telefono/tipo/zona/estMin/estMax/fecha). Frontend: sección "Tasaciones recibidas" en TasacionesScreen con botón "WhatsApp" (wa.me).
 - Verificado E2E: POST /api/public/tasacion/estimar de prueba → persona con roles ['vendedor','tasacion'] + aparece en bandeja con contacto. Test data limpiada de Supabase+Mongo. Compila tsc+lint 0 errores.
 - Fix tooling: eslint.config.mjs — registrado plugin react-hooks y desactivado no-unused-expressions (crash de engine ESLint 9.23). REQUIERE REDEPLOY para producción.
+
+## CHANGELOG 2026-06 (e) — Simulador del tasador
+- Backend: POST /api/public/tasacion/simular (misma lógica tasacion_online.estimar que el público, NO guarda lead; devuelve simulado:True, leadSaved:False).
+- Frontend: TasarPublico soporta modo `?sim=1` → oculta datos de contacto, llama /simular, banner "Modo simulador", CTA "Simular valor".
+- TasacionesScreen: botón "🧪 Abrir simulador" (abre /tasar?sim=1 en nueva pestaña) junto a "Copiar link público".
+- Verificado: simular no crea lead (bandeja se mantuvo en 2) + screenshot OK. tsc 0 errores. REQUIERE REDEPLOY.
