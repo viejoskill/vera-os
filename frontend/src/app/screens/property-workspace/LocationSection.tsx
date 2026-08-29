@@ -6,8 +6,6 @@ import { Input } from '@vera/ui';
 import { env } from '@vera/config';
 import type { PropertyFormValues } from './form-schema';
 
-const DEFAULT_CENTER = { lat: -34.6037, lng: -58.3816 }; // Buenos Aires
-
 const pick = (place: google.maps.places.PlaceResult, types: string[]): string => {
   const c = place.address_components?.find((comp) => types.some((t) => comp.types.includes(t)));
   return c?.long_name ?? '';

@@ -11,7 +11,6 @@ import {
   assistantService,
   propertyFilesGateway,
   propertyService,
-  studioService,
   workspaceService,
 } from '@vera/services';
 import type { Property, PropertyDetail } from '@vera/types';

@@ -11,12 +11,26 @@ const ZONAS = [
 ];
 const TIPOS = [['casa', 'Casa'], ['duplex', 'Duplex'], ['lote', 'Lote / Terreno'], ['depto', 'Departamento']];
 
+interface SemaforoTier {
+  nivel: 'verde' | 'amarillo' | 'rojo';
+  meses: string;
+  ajuste: number;
+  valor: number;
+}
 interface Estimate {
   estMin: number; estMax: number; method: string;
+  mktMin: number; mktMax: number; base: number;
+  semaforo: SemaforoTier[];
   tipoNombre: string; zonaNombre: string; area: number | null;
   market: { available: boolean; count: number; medianPm2: number };
   leadSaved: boolean;
 }
+
+const SEMAFORO_META: Record<SemaforoTier['nivel'], { titulo: string; dot: string; ring: string; bg: string }> = {
+  verde: { titulo: 'Venta rápida', dot: '#22c55e', ring: 'rgba(34,197,94,0.4)', bg: 'rgba(34,197,94,0.08)' },
+  amarillo: { titulo: 'Venta media', dot: '#f5c518', ring: 'rgba(245,197,24,0.4)', bg: 'rgba(245,197,24,0.08)' },
+  rojo: { titulo: 'Venta lenta', dot: '#ef4444', ring: 'rgba(239,68,68,0.4)', bg: 'rgba(239,68,68,0.08)' },
+};
 
 const usd = (n: number) => 'USD ' + n.toLocaleString('de-DE');
 
@@ -118,21 +132,55 @@ export const TasarPublico = () => {
       {result ? (
         <section className="tasp__result-wrap" data-testid="tasp-result">
           <div className="tasp__result-card">
-            <span className="tasp__result-tag"><TrendingUp size={15} /> Valor estimado de tu propiedad</span>
+            <span className="tasp__result-tag"><TrendingUp size={15} /> Valor de referencia de mercado</span>
             <strong className="tasp__result-range" data-testid="tasp-range">
-              {usd(result.estMin)} – {usd(result.estMax)}
+              {usd(result.mktMin)} – {usd(result.mktMax)}
             </strong>
             <p className="tasp__result-meta">
               {result.tipoNombre} · {result.zonaNombre}{result.area ? ` · ${result.area} m²` : ''}
             </p>
             {result.market.available ? (
               <p className="tasp__result-note" data-testid="tasp-market">
-                Basado en <b>{result.market.count}</b> propiedades comparables publicadas hoy en la zona
-                {' '}(promedio {usd(result.market.medianPm2)}/m²) combinadas con nuestro modelo de valuación local.
+                Índice de mercado según <b>{result.market.count}</b> propiedades comparables publicadas hoy en la zona
+                {' '}(promedio {usd(result.market.medianPm2)}/m²).
               </p>
             ) : (
-              <p className="tasp__result-note">Estimación calculada con nuestro modelo de valuación local de Costa del Este.</p>
+              <p className="tasp__result-note">Índice de mercado estimado con nuestro modelo de valuación local de Costa del Este.</p>
             )}
+          </div>
+
+          <div className="tasp__semaforo" data-testid="tasp-semaforo">
+            <span className="tasp__semaforo-tag">Índice Varela de venta</span>
+            <p className="tasp__semaforo-sub">Precio de venta sugerido según en cuánto tiempo querés vender.</p>
+            <div className="tasp__semaforo-grid">
+              {(result.semaforo || []).map((t) => {
+                const m = SEMAFORO_META[t.nivel];
+                return (
+                  <div
+                    key={t.nivel}
+                    className="tasp__tier"
+                    data-testid={`tasp-tier-${t.nivel}`}
+                    style={{ borderColor: m.ring, background: m.bg }}
+                  >
+                    <span className="tasp__tier-head">
+                      <span className="tasp__tier-dot" style={{ background: m.dot }} />
+                      <b>{m.titulo}</b>
+                    </span>
+                    <span className="tasp__tier-meses">{t.meses}</span>
+                    <strong className="tasp__tier-valor" data-testid={`tasp-tier-valor-${t.nivel}`}>{usd(t.valor)}</strong>
+                    <span className="tasp__tier-ajuste">
+                      {t.ajuste === 0 ? 'Precio de mercado' : `${Math.round(t.ajuste * 100)}% vs. mercado`}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="tasp__semaforo-note" data-testid="tasp-semaforo-note">
+              En base a precios reales de venta en Costa del Este de los últimos 12 meses.
+            </p>
+          </div>
+
+          <div className="tasp__result-card tasp__result-card--cta">
             <div className="tasp__result-cta">
               <ShieldCheck size={16} />
               <span>Un asesor de Varela se va a contactar con vos para una tasación precisa y sin cargo.</span>

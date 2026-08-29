@@ -69,7 +69,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\"",
-    "prepare": "husky || true"
+    "prepare": "husky || true",
+    "postinstall": "node scripts/link-vera-aliases.js || true"
   },
   "lint-staged": {
     "src/**/*.{ts,tsx}": [

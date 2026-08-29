@@ -1,0 +1,17 @@
+{
+  "summary": "Tested Tasador Online público (semáforo model). All 4 pytest tests passed against public backend URL. Verified: (1) POST /api/public/tasacion/estimar for casa returns correct structure with mktMin<mktMax, semaforo of 3 niveles (verde/amarillo/rojo) with ajustes -0.12/-0.07/0.0, valor verde<amarillo<rojo, rojo==base; (2) POST /api/public/tasacion/simular returns simulado=true, leadSaved=false; (3) estMin==mktMin & estMax==mktMax (backward compat); (4) tipo=lote uses lote area (500); (5) GET /mercado returns {available,count,medianPm2}. In current test run, method returned 'varela' (ML scraping had no comparables) — valid fallback per spec.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": ["/app/backend/tests/test_tasacion_online.py", "/app/test_reports/pytest/tasacion_online.xml"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "routes_tasacion_online.py: exception handler in lead-save is broad (except Exception) — acceptable but logs stacktrace on any Supabase issue. OK for a public capture endpoint.",
+    "tasacion_online.py accesses tasacion._r500 (private). Consider exposing a public helper for rounding."
+  ],
+  "updated_files": ["/app/backend/tests/test_tasacion_online.py"],
+  "success_rate": {"backend": "100%", "frontend": "not tested"},
+  "seed_data_creation": "None persisted (Supabase not configured in test env — leadSaved=false in estimar as well).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Tasador Online endpoints verified. Test file at /app/backend/tests/test_tasacion_online.py can be re-run. ML scraping may be flaky; tests only assert method ∈ {mercadolibre, varela} to handle both cases."
+}

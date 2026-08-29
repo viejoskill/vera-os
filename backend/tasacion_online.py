@@ -1,11 +1,27 @@
-"""Tasador Online (público): modelo híbrido = Varela + comparables EN VIVO de
-Mercado Libre. Le muestra al visitante un rango estimado de su propiedad y lo
-captura como Lead (vendedor) en Personas. La matemática Varela no se toca; el
-mercado en vivo la ajusta cuando hay suficientes comparables."""
+"""Tasador Online (público): modelo SEMÁFORO.
+
+1) Valor de referencia de MERCADO (índice ML): precio/m² mediano EN VIVO de
+   Mercado Libre × superficie, con una apertura de ±3%.
+2) Índice VARELA de venta (semáforo): sobre ese valor de mercado, tres escenarios
+   según el tiempo estimado de venta, en base a precios reales de venta de los
+   últimos 12 meses:
+     🟢 Verde   · 2 a 6 meses    · −12%
+     🟡 Amarillo · 6 a 12 meses  · −7%
+     🔴 Rojo    · 12 meses o más · mismo valor que el mercado
+Si no hay suficientes comparables de ML, se usa el modelo Varela local como base.
+Además captura al visitante como Lead (vendedor) en Personas."""
 from __future__ import annotations
 
 import tasacion
 from mercadolibre import comparables
+
+# Índice Varela de venta: (nivel, rango de meses, ajuste sobre el valor de mercado).
+SEMAFORO = [
+    ("verde", "2 a 6 meses", -0.12),
+    ("amarillo", "6 a 12 meses", -0.07),
+    ("rojo", "12 meses o más", 0.0),
+]
+APERTURA_MERCADO = 0.03  # ±3% sobre el valor de mercado
 
 
 def _area_referencia(inp: dict) -> float:
@@ -20,20 +36,34 @@ async def estimar(inp: dict) -> dict:
     market = await comparables.market_pm2(inp.get("tipo", "casa"))
     area = _area_referencia(inp)
 
-    pub_mid = (r["pubMin"] + r["pubMax"]) / 2
     if market.get("available") and area > 0:
-        market_estimate = market["medianPm2"] * area
-        blended = (pub_mid + market_estimate) / 2
-        est_min = tasacion._r500(blended * 0.93, "down")
-        est_max = tasacion._r500(blended * 1.07, "up")
-        method = "hibrido"
+        base = market["medianPm2"] * area
+        method = "mercadolibre"
     else:
-        est_min, est_max = r["pubMin"], r["pubMax"]
+        base = (r["pubMin"] + r["pubMax"]) / 2
         method = "varela"
 
+    mkt_min = tasacion._r500(base * (1 - APERTURA_MERCADO), "down")
+    mkt_max = tasacion._r500(base * (1 + APERTURA_MERCADO), "up")
+
+    semaforo = [
+        {
+            "nivel": nivel,
+            "meses": meses,
+            "ajuste": ajuste,
+            "valor": tasacion._r500(base * (1 + ajuste), "nearest"),
+        }
+        for nivel, meses, ajuste in SEMAFORO
+    ]
+
     return {
-        "estMin": est_min,
-        "estMax": est_max,
+        # Compat: el rango "estimado" es el valor de mercado (índice ML).
+        "estMin": mkt_min,
+        "estMax": mkt_max,
+        "mktMin": mkt_min,
+        "mktMax": mkt_max,
+        "base": tasacion._r500(base, "nearest"),
+        "semaforo": semaforo,
         "method": method,
         "tipoNombre": r["tipoNombre"],
         "zonaNombre": r["zonaNombre"],
@@ -42,9 +72,5 @@ async def estimar(inp: dict) -> dict:
             "available": market.get("available", False),
             "count": market.get("count", 0),
             "medianPm2": market.get("medianPm2", 0),
-        },
-        "varela": {
-            "cierreMin": r["cierreMin"], "cierreMax": r["cierreMax"],
-            "pubMin": r["pubMin"], "pubMax": r["pubMax"], "coef": r["coef"],
         },
     }

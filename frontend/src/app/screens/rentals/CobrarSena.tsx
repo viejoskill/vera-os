@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CreditCard, Copy, Check, ExternalLink, RefreshCw, X, FileDown, RefreshCcw, BadgeCheck, Paperclip, MessageCircle } from 'lucide-react';
+import { CreditCard, Copy, Check, ExternalLink, RefreshCw, X, FileDown, RefreshCcw, BadgeCheck, Paperclip } from 'lucide-react';
 import { Button } from '@vera/ui';
 import { api, fmtMoney, waLink, mensajeRecibo, type Reservation } from './api';
 import { DocPreview } from './DocPreview';

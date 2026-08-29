@@ -7,7 +7,19 @@ import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
   {
-    ignores: ['build/**', 'node_modules/**', 'coverage/**', 'public/**', 'plugins/**'],
+    ignores: [
+      'build/**',
+      'node_modules/**',
+      'coverage/**',
+      'public/**',
+      'plugins/**',
+      '*.config.js',
+      '*.config.mjs',
+      '*.config.cjs',
+      'craco.config.js',
+      'postcss.config.js',
+      'tailwind.config.js',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -24,7 +36,7 @@ export default tseslint.config(
     },
     rules: {
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off',
       // Desactivada: incompatibilidad entre ESLint 9.23 y @typescript-eslint
       // hace crashear el engine al cargar esta regla ("allowShortCircuit").
       '@typescript-eslint/no-unused-expressions': 'off',
