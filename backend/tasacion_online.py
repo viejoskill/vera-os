@@ -36,27 +36,30 @@ async def estimar(inp: dict) -> dict:
     market = await comparables.market_pm2(inp.get("tipo", "casa"))
     area = _area_referencia(inp)
 
-    # ML solo scrapea "Costa del Este" en su conjunto (no hay filtro por zona/barrio
-    # en el sitio público), así que el pm2 que devuelve es un promedio plano de toda
-    # la localidad. Para no repetir el mismo valor en todas las zonas, lo escalamos
-    # por el diferencial de precio de zona calibrado en el modelo Varela local, contra
-    # el PROMEDIO de las zonas ya calibradas (no cero). Mientras el usuario está
-    # cargando los precios zona por zona, las zonas en 0 no distorsionan el promedio
-    # y devuelven factor 1 (usan el valor plano de ML) hasta que se completen.
+    # ML solo scrapea "Costa del Este" en su conjunto (no hay filtro por zona/barrio en el
+    # sitio público), así que su pm2 es un promedio plano de toda la localidad. Si el agente
+    # ya calibró el precio real de esta zona (precio_lote_{zona} > 0 en Tasador → Config), se
+    # usa DIRECTO ese valor como pm2 — es el dato más confiable, no hace falta promediarlo ni
+    # escalarlo contra otras zonas. Recién si la zona todavía está en 0 (sin calibrar) se cae
+    # al promedio plano de ML como aproximación provisoria.
     zsuf = tasacion.ZONA_SUFIJO.get(inp.get("zona", "playa"), "playa")
     zona_precio = float(cfg.get(f"precio_lote_{zsuf}") or 0)
-    precios_calibrados = [float(cfg.get(f"precio_lote_{s}") or 0) for s in tasacion.ZONA_SUFIJO.values()]
-    precios_calibrados = [p for p in precios_calibrados if p > 0]
-    promedio_zonas = sum(precios_calibrados) / len(precios_calibrados) if precios_calibrados else 0
-    zona_factor = (zona_precio / promedio_zonas) if (promedio_zonas > 0 and zona_precio > 0) else 1.0
 
-    if market.get("available") and area > 0:
-        pm2_zona = market["medianPm2"] * zona_factor
+    if zona_precio > 0:
+        pm2_zona = zona_precio
+        base = pm2_zona * area if area > 0 else (r["pubMin"] + r["pubMax"]) / 2
+        method = "varela"
+        market_available = False
+    elif market.get("available") and area > 0:
+        pm2_zona = market["medianPm2"]
         base = pm2_zona * area
         method = "mercadolibre"
+        market_available = True
     else:
+        pm2_zona = 0
         base = (r["pubMin"] + r["pubMax"]) / 2
         method = "varela"
+        market_available = False
 
     mkt_min = tasacion._r500(base * (1 - APERTURA_MERCADO), "down")
     mkt_max = tasacion._r500(base * (1 + APERTURA_MERCADO), "up")
@@ -84,8 +87,8 @@ async def estimar(inp: dict) -> dict:
         "zonaNombre": r["zonaNombre"],
         "area": int(area) if area else None,
         "market": {
-            "available": market.get("available", False),
-            "count": market.get("count", 0),
-            "medianPm2": round(market.get("medianPm2", 0) * zona_factor) if market.get("available") else market.get("medianPm2", 0),
+            "available": market_available,
+            "count": market.get("count", 0) if market_available else 0,
+            "medianPm2": round(pm2_zona),
         },
     }

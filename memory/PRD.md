@@ -1711,6 +1711,12 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Verificado: engine_success=True, reviewdog 0 findings en líneas cambiadas, frontend compila (HTTP 200).
 
 
+## CHANGELOG 2026-08 (m) — Fix bug: valor de zona calibrada se diluía en el promedio de ML
+- **Bug reportado** (con screenshot): usuario calibró "Zona Cristo Centro" en 60 USD/m² desde Tasador → Config, pero el simulador daba un promedio de 34 USD/m² y un valor "super bajo".
+- **Causa raíz**: el fix (i) escalaba el pm2 plano de ML por `zona_precio / promedio(zonas calibradas)`. Si solo había UNA zona calibrada, el promedio era igual a esa misma zona → factor siempre = 1 → el sistema terminaba usando el pm2 plano de ML (34) en vez del valor real cargado (60).
+- **Fix** (`tasacion_online.py`): si `precio_lote_{zona} > 0` (el agente ya calibró esa zona), se usa DIRECTO ese valor como pm2 — ya no se promedia ni se escala contra otras zonas. Sólo si la zona sigue en 0 (sin calibrar), se cae al pm2 plano de ML como aproximación provisoria; `market.available` pasa a `false` en ese caso para no mostrar "según N comparables de ML" cuando en realidad el valor viene del modelo local calibrado por el agente.
+- Verificado con curl: Cristo Centro calibrada en 60 USD/m² + lote 550m² → USD 32.000-34.000 (60×550 ±3%, correcto); reseteada a 0 → vuelve a usar el pm2 plano de ML (comportamiento de transición esperado). REQUIERE REDEPLOY para verse en producción.
+
 ## CHANGELOG 2026-08 (l) — Fix: el resaltado se desfasaba de la zona real
 - **Bug reportado** (con screenshot): al elegir "Zona Playa" el relleno amarillo cubría todo el bloque rectangular, pero como la foto real está rotada/inclinada, ese relleno no calzaba con los bordes reales de la zona ("se desfazan de zona"). El usuario sugirió resaltar el NOMBRE en vez de rellenar el área completa.
 - **Fix**: cada zona-bloque (14 de las 19) ahora tiene DOS cajas independientes — `hit` (área grande, se mantiene igual, para que sea fácil tocar con el dedo) y `label` (recorte chico y preciso, calcado a mano sobre el texto "ZONA X" real de la foto, leído con crops de alta resolución de la imagen). El toque sigue siendo cómodo pero el resaltado amarillo de "seleccionado" ahora queda pegado exactamente al nombre, sin desfasarse.
