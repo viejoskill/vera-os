@@ -12,6 +12,7 @@ from pydantic import BaseModel
 import config
 import tasacion_online
 from people import events
+from people.repository import people_repository
 from people.resolver import person_resolver
 
 router = APIRouter(prefix="/public/tasacion", tags=["tasacion-publica"])
@@ -68,6 +69,11 @@ async def estimar(body: EstimarBody):
             })
             person = resolved["person"]
             lead_id = person["id"]
+            # Etiquetar como vendedor + tasación para diferenciarlo en Personas.
+            roles = set(person.get("roles") or [])
+            if not {"vendedor", "tasacion"}.issubset(roles):
+                roles.update({"vendedor", "tasacion"})
+                await people_repository.update(lead_id, {"roles": list(roles)})
             await events.record(lead_id, "TasacionSolicitada", {
                 "source": "tasador-online",
                 "tipo": body.tipo,

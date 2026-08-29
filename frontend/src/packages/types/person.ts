@@ -10,6 +10,7 @@ export type PersonRole =
   | 'contacto'
   | 'arquitecto'
   | 'escribano'
+  | 'tasacion'
   | 'otro';
 
 /** Roles operables desde la UI (App Personas). */
@@ -26,9 +27,10 @@ export const PERSON_ROLES: { id: PersonRole; label: string }[] = [
   { id: 'otro', label: 'Otro' },
 ];
 
-export const PERSON_ROLE_LABELS: Record<string, string> = Object.fromEntries(
-  PERSON_ROLES.map((r) => [r.id, r.label]),
-);
+export const PERSON_ROLE_LABELS: Record<string, string> = {
+  ...Object.fromEntries(PERSON_ROLES.map((r) => [r.id, r.label])),
+  tasacion: 'Tasación',
+};
 
 export interface Person {
   id: string;

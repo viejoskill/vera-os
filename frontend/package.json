@@ -101,6 +101,8 @@
     "@types/node": "20.14.0",
     "@types/react": "19.0.0",
     "@types/react-dom": "19.0.0",
+    "@typescript-eslint/eslint-plugin": "8.13.0",
+    "@typescript-eslint/parser": "8.13.0",
     "autoprefixer": "10.4.20",
     "dotenv": "16.4.5",
     "eslint": "9.23.0",

@@ -1681,3 +1681,10 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Backend: /api/public/listings agrega `hasVideo` (bool desde row.video_url). Alquileres list ya trae reelUrl.
 - Frontend badge `.vera-pub-card__video` (verde, esquina sup. derecha de la foto): PublicListing, PublicHome (vh-card), ZonaLanding (Ventas), ReservarPublico (Alquileres via reelUrl).
 - Verificado: hasVideo:true para V577. REQUIERE REDEPLOY para producción.
+
+## CHANGELOG 2026-06 (d) — Tasador online diferenciado (etiqueta + bandeja)
+- Diagnóstico: el tasador online SÍ registra el lead (Persona rol vendedor + evento TasacionSolicitada) pero no estaba diferenciado/visible.
+- (a) Etiqueta: routes_tasacion_online ahora agrega roles ['vendedor','tasacion'] a la persona (merge idempotente vía people_repository.update). Frontend: PERSON_ROLE_LABELS.tasacion='Tasación' + tipo PersonRole 'tasacion' → badge visible en Personas.
+- (b) Bandeja: GET /api/tasacion/online-leads (join events TasacionSolicitada + people.get → nombre/telefono/tipo/zona/estMin/estMax/fecha). Frontend: sección "Tasaciones recibidas" en TasacionesScreen con botón "WhatsApp" (wa.me).
+- Verificado E2E: POST /api/public/tasacion/estimar de prueba → persona con roles ['vendedor','tasacion'] + aparece en bandeja con contacto. Test data limpiada de Supabase+Mongo. Compila tsc+lint 0 errores.
+- Fix tooling: eslint.config.mjs — registrado plugin react-hooks y desactivado no-unused-expressions (crash de engine ESLint 9.23). REQUIERE REDEPLOY para producción.

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Calculator, Download, UserPlus, Sparkles, Share2, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calculator, Download, UserPlus, Sparkles, Share2, Check, Inbox, MessageCircle, MapPin, RefreshCw } from 'lucide-react';
 import { Input, Button } from '@vera/ui';
 import { env } from '@vera/config';
 import { useAuthUser } from '@app/auth/useAuthUser';
@@ -16,6 +16,11 @@ const TIPOS = [['casa', 'Casa'], ['duplex', 'Duplex'], ['lote', 'Lote / Terreno'
 interface Result {
   pubMin: number; pubMax: number; cierreMin: number; cierreMax: number;
   coef: number; tipoNombre: string; zonaNombre: string;
+}
+
+interface OnlineLead {
+  id: string; personId: string; nombre: string; telefono: string; email: string;
+  tipo: string; zona: string; estMin: number; estMax: number; area: number; fecha: string;
 }
 
 const usd = (n: number) => 'USD ' + n.toLocaleString('de-DE');
@@ -55,6 +60,13 @@ export const TasacionesScreen = () => {
   const [loading, setLoading] = useState(false);
   const [flash, setFlash] = useState('');
   const [copied, setCopied] = useState(false);
+  const [leads, setLeads] = useState<OnlineLead[]>([]);
+  const [loadingLeads, setLoadingLeads] = useState(true);
+  const loadLeads = () => {
+    setLoadingLeads(true);
+    fetch(`${API}/online-leads`).then((r) => r.json()).then((d) => setLeads(d.leads || [])).catch(() => setLeads([])).finally(() => setLoadingLeads(false));
+  };
+  useEffect(() => { loadLeads(); }, []);
   const set = (k: string, val: string | boolean) => setF((s) => ({ ...s, [k]: val }));
 
   const publicUrl = `${window.location.origin}/tasar`;
@@ -130,6 +142,42 @@ export const TasacionesScreen = () => {
           </Button>
         </div>
       </header>
+
+      <section className="tas__inbox" data-testid="tasaciones-inbox" style={{ background: '#141412', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: 18, marginBottom: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}><Inbox size={17} /> Tasaciones recibidas</h3>
+          <span style={{ fontSize: 12, color: '#9a9a95' }}>({leads.length})</span>
+          <button type="button" onClick={loadLeads} title="Actualizar" data-testid="tas-inbox-refresh" style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: '#c9c9c4', borderRadius: 8, padding: '5px 9px', cursor: 'pointer', fontSize: 12 }}><RefreshCw size={13} /> Actualizar</button>
+        </div>
+        <p style={{ margin: '0 0 12px', color: '#9a9a95', fontSize: 12.5 }}>Contactos que tasaron su propiedad desde la web pública. Quedan etiquetados como <strong style={{ color: '#c9c9c4' }}>Tasación</strong> en Personas.</p>
+        {loadingLeads ? (
+          <p style={{ color: '#9a9a95', fontSize: 13 }}>Cargando…</p>
+        ) : leads.length === 0 ? (
+          <p style={{ color: '#6b6b66', fontSize: 13 }}>Todavía no hay tasaciones online. Compartí el link público para empezar a recibirlas.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {leads.map((l) => {
+              const tel = (l.telefono || '').replace(/\D/g, '');
+              return (
+                <div key={l.id} data-testid={`tas-lead-${l.id}`} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>{l.nombre}{l.telefono ? <span style={{ color: '#9a9a95', fontWeight: 400 }}> · {l.telefono}</span> : null}</div>
+                    <div style={{ color: '#9a9a95', fontSize: 12.5, marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <span style={{ textTransform: 'capitalize' }}>{l.tipo}</span>
+                      <span><MapPin size={11} style={{ verticalAlign: -1 }} /> {l.zona}</span>
+                      {(l.estMin || l.estMax) ? <span style={{ color: '#8fe3c4' }}>{usd(l.estMin)} – {usd(l.estMax)}</span> : null}
+                      {l.fecha ? <span>{new Date(l.fecha).toLocaleDateString('es-AR')}</span> : null}
+                    </div>
+                  </div>
+                  {tel && (
+                    <a href={`https://wa.me/${tel}`} target="_blank" rel="noreferrer" data-testid={`tas-lead-wa-${l.id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 9, background: 'rgba(37,211,102,0.12)', color: '#25D366', border: '1px solid rgba(37,211,102,0.3)', textDecoration: 'none', fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap' }}><MessageCircle size={14} /> WhatsApp</a>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       <TasadorConfig />
 

@@ -81,6 +81,34 @@ async def put_config(body: ConfigBody):
     return {"values": await tasacion.set_config(body.values)}
 
 
+@router.get("/online-leads")
+async def online_leads(limit: int = 200):
+    """Bandeja de tasaciones recibidas desde el tasador online público."""
+    from events.store import list_events
+    from people.repository import people_repository
+    evs = await list_events(event_type="TasacionSolicitada", limit=limit)
+    out = []
+    for e in evs:
+        pid = e.get("personId")
+        p = await people_repository.get(pid) if pid else None
+        p = p or {}
+        pl = e.get("payload") or {}
+        out.append({
+            "id": e.get("id"),
+            "personId": pid,
+            "nombre": p.get("full_name") or "Sin nombre",
+            "telefono": p.get("primary_phone") or p.get("phone") or "",
+            "email": p.get("primary_email") or p.get("email") or "",
+            "tipo": pl.get("tipo"),
+            "zona": pl.get("zona"),
+            "estMin": pl.get("estMin"),
+            "estMax": pl.get("estMax"),
+            "area": pl.get("area"),
+            "fecha": e.get("occurredAt") or e.get("createdAt"),
+        })
+    return {"leads": out}
+
+
 @router.post("/calcular")
 async def calcular(body: CalcularBody):
     cfg = await tasacion.get_config()
