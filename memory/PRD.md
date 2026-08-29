@@ -1711,6 +1711,12 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Verificado: engine_success=True, reviewdog 0 findings en líneas cambiadas, frontend compila (HTTP 200).
 
 
+## CHANGELOG 2026-08 (k) — Estética del mapa: amarillo con relieve + marco (modelo del usuario)
+- Usuario compartió una imagen de referencia (mismo plano, pero con líneas y texto en amarillo con efecto relieve/3D, fondo gris más oscuro, marco tipo cuadro y brújula) y pidió usarla como "modelo estético".
+- En vez de pedirle a un modelo generativo que restyleara la foto (riesgo de que desplace texto/líneas y rompa la alineación de los clics), se generó la nueva versión con PIL de forma determinística: se detectan por color los píxeles azul-marino originales (líneas + texto) y se repintan en amarillo de marca (#FBE000) con una sombra oscura desplazada 3-4px (efecto relieve/emboss), se desatura y oscurece levemente el resto (tono pizarra), se agrega un marco crema de 40px y una brújula simple abajo a la derecha.
+- Como el marco agrega padding, se recalcularon las 19 coordenadas % de los overlays clickeables contra el nuevo lienzo (1211×1680px, antes 1131×1600px) — la imagen base cambió pero la posición de cada zona (Cristo Centro, Playa, avenidas, etc.) sobre la foto se mantiene exacta.
+- Verificado con click automatizado en "Zona Playa": resalta correctamente sobre el sector amarillo de la foto restyleada. REQUIERE REDEPLOY para verse en producción.
+
 ## CHANGELOG 2026-08 (j) — Mapa con la FOTO REAL del plano (no ilustración abstracta)
 - **Pedido del usuario**: el mapa (i) usaba cajas abstractas estilizadas; pidió que las zonas estén literalmente aplicadas SOBRE la foto real del plano que subió, para que el cliente identifique visualmente su inmueble (calles, lotes, numeración reales).
 - Se descargó la imagen real (`WhatsApp Image 2026-08-29 at 19.02.43.jpeg`, 1131×1600px) a `frontend/public/costa-del-este-mapa-zonas.jpg`. `MapaZonas.tsx` reescrito: la imagen se muestra de fondo y encima se superponen 19 botones transparentes posicionados en % (izquierda/arriba/ancho/alto) recortados a mano sobre las líneas divisorias reales de la foto (detectadas con un script de análisis de píxeles para ubicar las líneas azules del plano con precisión, luego validado dibujando las cajas propuestas sobre la imagen y ajustando).

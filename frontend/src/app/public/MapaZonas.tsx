@@ -11,30 +11,29 @@ export const ZONAS_TASADOR: [string, string][] = [
 
 const NOMBRE: Record<string, string> = Object.fromEntries(ZONAS_TASADOR);
 
-// Coordenadas (%) recortadas a mano sobre la foto real del plano de Costa del Este
-// (public/costa-del-este-mapa-zonas.jpg, 1131×1600px). Cada celda es un overlay
-// transparente clickeable sobre la zona real dibujada en la imagen.
+// Coordenadas (%) recortadas a mano sobre la foto real del plano de Costa del Este, ya
+// restyleada en amarillo/gris con marco (public/costa-del-este-mapa-zonas.jpg, 1211×1680px).
 const OVERLAYS: { key: string; left: number; top: number; width: number; height: number; avenida?: boolean }[] = [
-  { key: 'comercial_ruta', left: 52.6, top: 5.9, width: 23.9, height: 6.6 },
-  { key: 'pensamientos_sur', left: 11.5, top: 12.5, width: 13.2, height: 9.1 },
-  { key: 'pensamientos_centro', left: 44.2, top: 12.5, width: 17.8, height: 9.1 },
-  { key: 'pensamientos_norte', left: 62.0, top: 12.5, width: 31.3, height: 9.1 },
-  { key: 'cristo_sur', left: 11.5, top: 21.6, width: 13.2, height: 17.2 },
-  { key: 'cristo_centro', left: 24.7, top: 21.6, width: 37.3, height: 17.2 },
-  { key: 'cristo_norte', left: 62.0, top: 21.6, width: 31.3, height: 17.2 },
-  { key: 'alelies', left: 11.5, top: 38.75, width: 81.8, height: 5.1 },
-  { key: 'centro_sur', left: 11.5, top: 43.8, width: 13.2, height: 14.1 },
-  { key: 'centro', left: 24.7, top: 43.8, width: 37.3, height: 14.1 },
-  { key: 'centro_norte', left: 62.0, top: 43.8, width: 31.3, height: 14.1 },
-  { key: 'reserva_residencial', left: 2.65, top: 61.1, width: 31.0, height: 13.5 },
-  { key: 'premium', left: 33.6, top: 61.1, width: 48.6, height: 13.5 },
-  { key: 'reserva_multif', left: 2.65, top: 74.6, width: 31.0, height: 7.9 },
-  { key: 'playa', left: 33.6, top: 74.6, width: 48.6, height: 7.9 },
+  { key: 'comercial_ruta', left: 52.44, top: 8.04, width: 22.3, height: 6.25 },
+  { key: 'pensamientos_sur', left: 14.04, top: 14.29, width: 12.3, height: 8.63 },
+  { key: 'pensamientos_centro', left: 44.59, top: 14.29, width: 16.6, height: 8.63 },
+  { key: 'pensamientos_norte', left: 61.19, top: 14.29, width: 29.23, height: 8.63 },
+  { key: 'cristo_sur', left: 14.04, top: 22.92, width: 12.3, height: 16.37 },
+  { key: 'cristo_centro', left: 26.34, top: 22.92, width: 34.85, height: 16.37 },
+  { key: 'cristo_norte', left: 61.19, top: 22.92, width: 29.23, height: 16.37 },
+  { key: 'alelies', left: 14.04, top: 39.29, width: 76.38, height: 4.82 },
+  { key: 'centro_sur', left: 14.04, top: 44.11, width: 12.3, height: 13.45 },
+  { key: 'centro', left: 26.34, top: 44.11, width: 34.85, height: 13.45 },
+  { key: 'centro_norte', left: 61.19, top: 44.11, width: 29.23, height: 13.45 },
+  { key: 'reserva_residencial', left: 5.78, top: 60.54, width: 28.9, height: 12.86 },
+  { key: 'premium', left: 34.68, top: 60.54, width: 45.42, height: 12.86 },
+  { key: 'reserva_multif', left: 5.78, top: 73.39, width: 28.9, height: 7.56 },
+  { key: 'playa', left: 34.68, top: 73.39, width: 45.42, height: 7.56 },
   // Avenidas/calles: van arriba de las zonas (mayor z-index), tal como las resalta el plano real.
-  { key: 'av_interbalnearia', left: 2.65, top: 57.2, width: 94.4, height: 3.9, avenida: true },
-  { key: 'camelias', left: 2.65, top: 73.1, width: 94.4, height: 2.5, avenida: true },
-  { key: 'av_costanera', left: 2.65, top: 80.3, width: 94.4, height: 2.5, avenida: true },
-  { key: 'av2', left: 67.2, top: 57.9, width: 3.5, height: 24.6, avenida: true },
+  { key: 'av_interbalnearia', left: 5.78, top: 56.85, width: 88.44, height: 3.69, avenida: true },
+  { key: 'camelias', left: 5.78, top: 72.02, width: 88.44, height: 2.38, avenida: true },
+  { key: 'av_costanera', left: 5.78, top: 78.87, width: 88.44, height: 2.38, avenida: true },
+  { key: 'av2', left: 66.06, top: 57.56, width: 3.3, height: 23.39, avenida: true },
 ];
 
 const AVENIDAS: [string, string][] = [
