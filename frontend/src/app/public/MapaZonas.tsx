@@ -11,29 +11,35 @@ export const ZONAS_TASADOR: [string, string][] = [
 
 const NOMBRE: Record<string, string> = Object.fromEntries(ZONAS_TASADOR);
 
-// Coordenadas (%) recortadas a mano sobre la foto real del plano de Costa del Este, ya
-// restyleada en amarillo/gris con marco (public/costa-del-este-mapa-zonas.jpg, 1211×1680px).
-const OVERLAYS: { key: string; left: number; top: number; width: number; height: number; avenida?: boolean }[] = [
-  { key: 'comercial_ruta', left: 52.44, top: 8.04, width: 22.3, height: 6.25 },
-  { key: 'pensamientos_sur', left: 14.04, top: 14.29, width: 12.3, height: 8.63 },
-  { key: 'pensamientos_centro', left: 44.59, top: 14.29, width: 16.6, height: 8.63 },
-  { key: 'pensamientos_norte', left: 61.19, top: 14.29, width: 29.23, height: 8.63 },
-  { key: 'cristo_sur', left: 14.04, top: 22.92, width: 12.3, height: 16.37 },
-  { key: 'cristo_centro', left: 26.34, top: 22.92, width: 34.85, height: 16.37 },
-  { key: 'cristo_norte', left: 61.19, top: 22.92, width: 29.23, height: 16.37 },
-  { key: 'alelies', left: 14.04, top: 39.29, width: 76.38, height: 4.82 },
-  { key: 'centro_sur', left: 14.04, top: 44.11, width: 12.3, height: 13.45 },
-  { key: 'centro', left: 26.34, top: 44.11, width: 34.85, height: 13.45 },
-  { key: 'centro_norte', left: 61.19, top: 44.11, width: 29.23, height: 13.45 },
-  { key: 'reserva_residencial', left: 5.78, top: 60.54, width: 28.9, height: 12.86 },
-  { key: 'premium', left: 34.68, top: 60.54, width: 45.42, height: 12.86 },
-  { key: 'reserva_multif', left: 5.78, top: 73.39, width: 28.9, height: 7.56 },
-  { key: 'playa', left: 34.68, top: 73.39, width: 45.42, height: 7.56 },
-  // Avenidas/calles: van arriba de las zonas (mayor z-index), tal como las resalta el plano real.
-  { key: 'av_interbalnearia', left: 5.78, top: 56.85, width: 88.44, height: 3.69, avenida: true },
-  { key: 'camelias', left: 5.78, top: 72.02, width: 88.44, height: 2.38, avenida: true },
-  { key: 'av_costanera', left: 5.78, top: 78.87, width: 88.44, height: 2.38, avenida: true },
-  { key: 'av2', left: 66.06, top: 57.56, width: 3.3, height: 23.39, avenida: true },
+// Coordenadas (%) sobre la foto real restyleada (public/costa-del-este-mapa-zonas.jpg, 1211×1680px).
+// Cada zona-bloque tiene DOS cajas: `hit` (área grande, fácil de tocar) y `label` (recorte
+// chico y preciso, calcado sobre el texto "ZONA X" real de la foto) — así el toque es cómodo
+// pero el resaltado amarillo queda pegado al nombre y no se desfasa de la zona real (que
+// está rotada en la foto y no calza con un rectángulo grande).
+const BLOQUES: { key: string; hit: [number, number, number, number]; label: [number, number, number, number] }[] = [
+  { key: 'comercial_ruta', hit: [52.44, 8.04, 22.3, 6.25], label: [62.3, 8.9, 7.85, 5.06] },
+  { key: 'pensamientos_sur', hit: [14.04, 14.29, 12.3, 8.63], label: [19.0, 17.0, 10.7, 4.5] },
+  { key: 'pensamientos_centro', hit: [44.59, 14.29, 16.6, 8.63], label: [47.9, 16.1, 12.8, 5.1] },
+  { key: 'pensamientos_norte', hit: [61.19, 14.29, 29.23, 8.63], label: [81.8, 16.7, 12.4, 4.5] },
+  { key: 'cristo_sur', hit: [14.04, 22.92, 12.3, 16.37], label: [19.0, 29.2, 7.85, 4.2] },
+  { key: 'cristo_centro', hit: [26.34, 22.92, 34.85, 16.37], label: [42.9, 28.0, 18.6, 5.7] },
+  { key: 'cristo_norte', hit: [61.19, 22.92, 29.23, 16.37], label: [82.2, 28.0, 8.7, 4.2] },
+  { key: 'alelies', hit: [14.04, 39.29, 76.38, 4.82], label: [41.7, 41.4, 23.5, 2.7] },
+  { key: 'centro_sur', hit: [14.04, 44.11, 12.3, 13.45], label: [14.4, 47.6, 7.4, 4.5] },
+  { key: 'centro', hit: [26.34, 44.11, 34.85, 13.45], label: [37.2, 48.5, 23.5, 2.4] },
+  { key: 'centro_norte', hit: [61.19, 44.11, 29.23, 13.45], label: [74.7, 47.6, 8.3, 4.5] },
+  { key: 'reserva_residencial', hit: [5.78, 60.54, 28.9, 12.86], label: [12.8, 64.3, 13.6, 3.6] },
+  { key: 'premium', hit: [34.68, 60.54, 45.42, 12.86], label: [42.1, 67.0, 24.4, 2.4] },
+  { key: 'reserva_multif', hit: [5.78, 73.39, 28.9, 7.56], label: [12.8, 73.8, 12.8, 3.0] },
+  { key: 'playa', hit: [34.68, 73.39, 45.42, 7.56], label: [39.6, 75.6, 19.8, 2.4] },
+];
+
+// Avenidas/calles: franjas angostas ya bien alineadas con la foto (van con mayor z-index).
+const AVENIDA_OVERLAYS: { key: string; box: [number, number, number, number] }[] = [
+  { key: 'av_interbalnearia', box: [5.78, 56.85, 88.44, 3.69] },
+  { key: 'camelias', box: [5.78, 72.02, 88.44, 2.38] },
+  { key: 'av_costanera', box: [5.78, 78.87, 88.44, 2.38] },
+  { key: 'av2', box: [66.06, 57.56, 3.3, 23.39] },
 ];
 
 const AVENIDAS: [string, string][] = [
@@ -43,21 +49,38 @@ const AVENIDAS: [string, string][] = [
 
 interface Props { value: string; onChange: (v: string) => void; }
 
+const box = ([left, top, width, height]: [number, number, number, number]) => ({
+  left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`,
+});
+
 export const MapaZonas = ({ value, onChange }: Props) => (
   <div className="mapz" data-testid="mapa-zonas">
     <p className="mapz__caption">Plano real de Costa del Este — tocá tu zona</p>
 
     <div className="mapz__imgwrap">
       <img src="/costa-del-este-mapa-zonas.jpg" alt="Mapa de zonas de Costa del Este" className="mapz__img" />
-      {OVERLAYS.map((o) => (
+      {BLOQUES.map((z) => (
+        <div key={z.key} className="mapz__zona">
+          <button
+            type="button"
+            className="mapz__hit"
+            style={box(z.hit)}
+            onClick={() => onChange(z.key)}
+            aria-label={NOMBRE[z.key]}
+            data-testid={`mapa-zona-${z.key}`}
+          />
+          <div className={`mapz__label ${value === z.key ? 'is-selected' : ''}`} style={box(z.label)} />
+        </div>
+      ))}
+      {AVENIDA_OVERLAYS.map((a) => (
         <button
-          key={o.key}
+          key={a.key}
           type="button"
-          className={`mapz__overlay ${o.avenida ? 'mapz__overlay--avenida' : ''} ${value === o.key ? 'is-selected' : ''}`}
-          style={{ left: `${o.left}%`, top: `${o.top}%`, width: `${o.width}%`, height: `${o.height}%` }}
-          onClick={() => onChange(o.key)}
-          aria-label={NOMBRE[o.key]}
-          data-testid={`mapa-zona-${o.key}`}
+          className={`mapz__overlay mapz__overlay--avenida ${value === a.key ? 'is-selected' : ''}`}
+          style={box(a.box)}
+          onClick={() => onChange(a.key)}
+          aria-label={NOMBRE[a.key]}
+          data-testid={`mapa-zona-${a.key}`}
         />
       ))}
     </div>

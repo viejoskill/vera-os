@@ -1711,6 +1711,12 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Verificado: engine_success=True, reviewdog 0 findings en líneas cambiadas, frontend compila (HTTP 200).
 
 
+## CHANGELOG 2026-08 (l) — Fix: el resaltado se desfasaba de la zona real
+- **Bug reportado** (con screenshot): al elegir "Zona Playa" el relleno amarillo cubría todo el bloque rectangular, pero como la foto real está rotada/inclinada, ese relleno no calzaba con los bordes reales de la zona ("se desfazan de zona"). El usuario sugirió resaltar el NOMBRE en vez de rellenar el área completa.
+- **Fix**: cada zona-bloque (14 de las 19) ahora tiene DOS cajas independientes — `hit` (área grande, se mantiene igual, para que sea fácil tocar con el dedo) y `label` (recorte chico y preciso, calcado a mano sobre el texto "ZONA X" real de la foto, leído con crops de alta resolución de la imagen). El toque sigue siendo cómodo pero el resaltado amarillo de "seleccionado" ahora queda pegado exactamente al nombre, sin desfasarse.
+- Bug de implementación encontrado y corregido en el camino: el `<div className="mapz__zona">` wrapper tenía `position:absolute` sin tamaño, lo que rompía el contexto de posicionamiento de sus hijos (quedaban con área 0 y Playwright los reportaba "not visible"). Se cambió a `display:contents` para que el wrapper no interfiera y los hijos se posicionen directamente contra `.mapz__imgwrap`.
+- Verificado con clicks automatizados en "Zona Playa" y "Zona Cristo Sur": ambos seleccionan y el resaltado amarillo queda visualmente centrado sobre el nombre correcto. REQUIERE REDEPLOY para verse en producción.
+
 ## CHANGELOG 2026-08 (k) — Estética del mapa: amarillo con relieve + marco (modelo del usuario)
 - Usuario compartió una imagen de referencia (mismo plano, pero con líneas y texto en amarillo con efecto relieve/3D, fondo gris más oscuro, marco tipo cuadro y brújula) y pidió usarla como "modelo estético".
 - En vez de pedirle a un modelo generativo que restyleara la foto (riesgo de que desplace texto/líneas y rompa la alineación de los clics), se generó la nueva versión con PIL de forma determinística: se detectan por color los píxeles azul-marino originales (líneas + texto) y se repintan en amarillo de marca (#FBE000) con una sombra oscura desplazada 3-4px (efecto relieve/emboss), se desatura y oscurece levemente el resto (tono pizarra), se agrega un marco crema de 40px y una brújula simple abajo a la derecha.

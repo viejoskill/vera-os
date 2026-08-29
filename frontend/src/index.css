@@ -8129,15 +8129,27 @@ p {
   overflow: hidden; box-shadow: 0 8px 28px rgba(0,0,0,0.45);
 }
 .mapz__img { display: block; width: 100%; height: auto; }
-.mapz__overlay {
-  position: absolute; border: 1px dashed rgba(251, 224, 0, 0.55); background: rgba(251, 224, 0, 0.02);
-  cursor: pointer; padding: 0; border-radius: 3px; transition: background-color 150ms, border-color 150ms; z-index: 1;
+.mapz__zona { display: contents; }
+.mapz__hit {
+  position: absolute; border: none; background: transparent; cursor: pointer; padding: 0; z-index: 1;
+  transition: background-color 150ms;
 }
-.mapz__overlay:hover { background: rgba(251, 224, 0, 0.22); border-color: #fbe000; }
-.mapz__overlay.is-selected { background: rgba(251, 224, 0, 0.42); border: 2px solid #fbe000; }
-.mapz__overlay--avenida { z-index: 2; border-style: solid; border-color: rgba(96, 165, 250, 0.55); background: rgba(96, 165, 250, 0.05); }
-.mapz__overlay--avenida:hover { background: rgba(96, 165, 250, 0.28); border-color: #60a5fa; }
-.mapz__overlay--avenida.is-selected { background: rgba(251, 224, 0, 0.5); border: 2px solid #fbe000; }
+.mapz__hit:hover { background: rgba(251, 224, 0, 0.10); }
+.mapz__label {
+  position: absolute; pointer-events: none; border-radius: 6px; z-index: 1;
+  transition: background-color 150ms, border-color 150ms, box-shadow 150ms;
+}
+.mapz__label.is-selected {
+  background: rgba(251, 224, 0, 0.4); border: 2px solid #fbe000;
+  box-shadow: 0 0 0 3px rgba(251, 224, 0, 0.18);
+}
+.mapz__overlay {
+  position: absolute; border: none; background: transparent;
+  cursor: pointer; padding: 0; border-radius: 3px; transition: background-color 150ms, border-color 150ms; z-index: 2;
+}
+.mapz__overlay--avenida { border: 1px dashed rgba(96, 165, 250, 0.5); }
+.mapz__overlay--avenida:hover { background: rgba(96, 165, 250, 0.25); border-color: #60a5fa; }
+.mapz__overlay--avenida.is-selected { background: rgba(251, 224, 0, 0.42); border: 2px solid #fbe000; }
 .mapz__selected { text-align: center; color: #d4d4d8; font-size: 13px; margin: 12px 0 0; }
 .mapz__selected b { color: #fbe000; }
 .mapz__avenidas { margin-top: 16px; text-align: center; }
