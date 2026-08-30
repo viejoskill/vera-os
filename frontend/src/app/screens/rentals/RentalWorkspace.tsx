@@ -21,7 +21,7 @@ import './rentals.css';
 const empty: Partial<RentalProperty> = {
   titulo: '', tipo: 'casa', direccion: '', localidad: 'Costa del Este', descripcion: '', capacidad: 4,
   dormitorios: 2, banos: 1, amenities: [], moneda: 'ARS', precioNoche: 0,
-  descSemana: 0, descQuincena: 0, descMes: 0, activa: true,
+  descSemana: 0, descQuincena: 0, descMes: 0, descSemanaMin: 6, descQuincenaMin: 12, descMesMin: 25, activa: true,
 };
 
 export const RentalWorkspace = () => {
@@ -329,11 +329,20 @@ export const RentalWorkspace = () => {
               </select></label>
             <MoneyInput label="Precio por noche" prefix={f.moneda === 'USD' ? 'USD' : '$'} value={f.precioNoche} onChange={(n) => set('precioNoche', n)} testId="rt-precio" />
           </div>
-          <p className="rt-hint">Descuentos automáticos por estadía (el cliente ve el total ya rebajado):</p>
+          <p className="rt-hint">Descuentos automáticos por estadía — vos definís desde cuántas noches arranca cada tramo (el cliente ve el total ya rebajado):</p>
           <div className="rt-row3">
-            <Input label="% x semana (7+)" type="number" value={String(f.descSemana ?? '')} onChange={(e) => set('descSemana', Number(e.target.value))} data-testid="rt-desc-semana" />
-            <Input label="% x quincena (15+)" type="number" value={String(f.descQuincena ?? '')} onChange={(e) => set('descQuincena', Number(e.target.value))} data-testid="rt-desc-quincena" />
-            <Input label="% x mes (30+)" type="number" value={String(f.descMes ?? '')} onChange={(e) => set('descMes', Number(e.target.value))} data-testid="rt-desc-mes" />
+            <div className="rt-field-combo">
+              <Input label="% x semana" type="number" value={String(f.descSemana ?? '')} onChange={(e) => set('descSemana', Number(e.target.value))} data-testid="rt-desc-semana" />
+              <Input label="Desde (noches)" type="number" value={String(f.descSemanaMin ?? '')} onChange={(e) => set('descSemanaMin', Number(e.target.value))} data-testid="rt-desc-semana-min" />
+            </div>
+            <div className="rt-field-combo">
+              <Input label="% x quincena" type="number" value={String(f.descQuincena ?? '')} onChange={(e) => set('descQuincena', Number(e.target.value))} data-testid="rt-desc-quincena" />
+              <Input label="Desde (noches)" type="number" value={String(f.descQuincenaMin ?? '')} onChange={(e) => set('descQuincenaMin', Number(e.target.value))} data-testid="rt-desc-quincena-min" />
+            </div>
+            <div className="rt-field-combo">
+              <Input label="% x mes" type="number" value={String(f.descMes ?? '')} onChange={(e) => set('descMes', Number(e.target.value))} data-testid="rt-desc-mes" />
+              <Input label="Desde (noches)" type="number" value={String(f.descMesMin ?? '')} onChange={(e) => set('descMesMin', Number(e.target.value))} data-testid="rt-desc-mes-min" />
+            </div>
           </div>
           <div className="rt-row2">
             <Input label="Comisión (%)" type="number" value={String(f.comisionPct ?? '')} onChange={(e) => set('comisionPct', Number(e.target.value))} data-testid="rt-comision-pct" />
@@ -343,9 +352,9 @@ export const RentalWorkspace = () => {
           <div className="rt-preview" data-testid="rt-precios-preview">
             <p className="rt-preview__titulo">Vista previa con descuento y comisión aplicados</p>
             {[
-              { label: 'Semana (7 noches)', noches: 7, desc: f.descSemana },
-              { label: 'Quincena (15 noches)', noches: 15, desc: f.descQuincena },
-              { label: 'Mes (30 noches)', noches: 30, desc: f.descMes },
+              { label: 'Semana', noches: f.descSemanaMin || 6, desc: f.descSemana },
+              { label: 'Quincena', noches: f.descQuincenaMin || 12, desc: f.descQuincena },
+              { label: 'Mes', noches: f.descMesMin || 25, desc: f.descMes },
             ].map((r) => {
               const base = (f.precioNoche || 0) * r.noches;
               const total = base * (1 - (r.desc || 0) / 100);
@@ -353,7 +362,7 @@ export const RentalWorkspace = () => {
               const simbolo = f.moneda === 'USD' ? 'USD' : '$';
               return (
                 <p className="rt-preview__row" key={r.label} data-testid={`rt-preview-${r.noches}`}>
-                  <span>{r.label}: </span>
+                  <span>{r.label} ({r.noches} noches): </span>
                   <b>{simbolo} {Math.round(total).toLocaleString('es-AR')}</b>
                   <span> (con {r.desc || 0}% desc.) · Comisión: </span>
                   <b>{simbolo} {Math.round(comision).toLocaleString('es-AR')}</b>

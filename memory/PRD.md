@@ -1711,6 +1711,12 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Verificado: engine_success=True, reviewdog 0 findings en líneas cambiadas, frontend compila (HTTP 200).
 
 
+## CHANGELOG 2026-08 (r) — Umbrales de descuento flexibles (Alquileres)
+- Pedido: el corte de "semana/quincena/mes" estaba fijo en 7/15/30 noches; el usuario necesita rangos flexibles (semana 6-7, quincena 12-15, mes 25-31).
+- Se agregaron 3 campos configurables por propiedad: `descSemanaMin` (default 6), `descQuincenaMin` (default 12), `descMesMin` (default 25) — editables en Precios, junto a cada % ("Desde (noches)"). El backend (`_quote()` en `routes_rentals.py`) ahora usa esos mínimos en vez de 7/15/30 hardcodeados, tanto para reservas internas como para la cotización pública (`/api/rentals/public/quote`) y el prompt del bot de WhatsApp.
+- La vista previa (changelog q) ahora se calcula sobre el mínimo configurado de cada tramo en vez de 7/15/30 fijos.
+- Verificado con curl en la propiedad de prueba (A161, calibrada temporalmente en 10%/20%/30% desde 6/12/25 noches, luego restaurada a los valores originales): 5 noches → 0% ($125.000); 6-11 noches → 10% (semana); 12-24 noches → 20% (quincena); 25+ noches → 30% (mes). Rangos funcionando exactamente como se pidió. REQUIERE REDEPLOY para verse en producción.
+
 ## CHANGELOG 2026-08 (q) — Vista previa de precio con descuento + comisión (Alquileres)
 - Pedido: en la pestaña Precios de cada propiedad de Alquileres, ver el valor ya con el descuento aplicado y la comisión resultante, chico y debajo de los campos.
 - `RentalWorkspace.tsx`: agregado bloque `.rt-preview` (chico, discreto) con 3 filas — Semana (7 noches), Quincena (15), Mes (30) — cada una calculando en vivo: precio total con el % de descuento de esa estadía, y la comisión resultante (usa el mayor entre % de comisión y comisión mínima, igual que la lógica real).

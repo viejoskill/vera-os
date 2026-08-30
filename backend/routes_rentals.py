@@ -94,11 +94,11 @@ def _quote(prop: dict, check_in: str, check_out: str) -> dict:
     precio = float(prop.get("precioNoche") or 0)
     base = n * precio
     disc = 0.0
-    if n >= 30 and prop.get("descMes"):
+    if n >= int(prop.get("descMesMin") or 25) and prop.get("descMes"):
         disc = float(prop["descMes"])
-    elif n >= 15 and prop.get("descQuincena"):
+    elif n >= int(prop.get("descQuincenaMin") or 12) and prop.get("descQuincena"):
         disc = float(prop["descQuincena"])
-    elif n >= 7 and prop.get("descSemana"):
+    elif n >= int(prop.get("descSemanaMin") or 6) and prop.get("descSemana"):
         disc = float(prop["descSemana"])
     total = round(base * (1 - disc / 100))
     return {
@@ -139,6 +139,8 @@ def _prop_out(p: dict, public: bool = False) -> dict:
         out.update({
             "descSemana": p.get("descSemana", 0), "descQuincena": p.get("descQuincena", 0),
             "descMes": p.get("descMes", 0), "createdAt": p.get("createdAt"),
+            "descSemanaMin": p.get("descSemanaMin", 6), "descQuincenaMin": p.get("descQuincenaMin", 12),
+            "descMesMin": p.get("descMesMin", 25),
             "comisionPct": p.get("comisionPct", 0), "comisionMinima": p.get("comisionMinima", 0),
             "notas": p.get("notas", ""),
             "numeroLlave": p.get("numeroLlave"),
@@ -230,6 +232,9 @@ class PropertyBody(BaseModel):
     descSemana: float = 0
     descQuincena: float = 0
     descMes: float = 0
+    descSemanaMin: int = 6
+    descQuincenaMin: int = 12
+    descMesMin: int = 25
     activa: bool = True
     comisionPct: float = 0
     comisionMinima: float = 0
@@ -1220,7 +1225,8 @@ async def import_from_sale(sale_id: str):
         "capacidad": max(2, bedrooms * 2) if bedrooms else 2,
         "dormitorios": bedrooms, "banos": int(sp.get("bathrooms") or 0),
         "amenities": [], "moneda": "ARS", "precioNoche": 0,
-        "descSemana": 0, "descQuincena": 0, "descMes": 0, "activa": False,
+        "descSemana": 0, "descQuincena": 0, "descMes": 0,
+        "descSemanaMin": 6, "descQuincenaMin": 12, "descMesMin": 25, "activa": False,
         "propietario": {}, "imagenes": [], "importadaDe": sale_id, "createdAt": _now(),
     }
     doc["codigo"] = await _next_code()
@@ -1260,6 +1266,7 @@ async def public_property(slug: str):
     out["ocupados"] = await _occupied(p["_id"])
     out["descuentos"] = {
         "semana": p.get("descSemana", 0), "quincena": p.get("descQuincena", 0), "mes": p.get("descMes", 0),
+        "semanaMin": p.get("descSemanaMin", 6), "quincenaMin": p.get("descQuincenaMin", 12), "mesMin": p.get("descMesMin", 25),
     }
     return out
 

@@ -9,6 +9,7 @@ export interface RentalProperty {
   amenities: string[]; moneda: string; precioNoche: number; activa: boolean;
   imagenes: RentalImage[];
   descSemana?: number; descQuincena?: number; descMes?: number;
+  descSemanaMin?: number; descQuincenaMin?: number; descMesMin?: number;
   comisionPct?: number; comisionMinima?: number; notas?: string;
   propietario?: { nombre?: string; telefono?: string; email?: string; dni?: string; observaciones?: string };
   ropaBlanca?: boolean; aceptaMascotas?: boolean; depositoGarantia?: number;

@@ -97,6 +97,7 @@
 .rt-ws__col > .rt-ws__sec:first-child { margin-top: 0; }
 .rt-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .rt-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.rt-field-combo { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .rt-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .rt-field span { font-size: .82rem; color: var(--vera-color-text-secondary); }
 .rt-field input, .rt-field select, .rt-field textarea {
