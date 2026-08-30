@@ -51,7 +51,7 @@ export const TasacionesScreen = () => {
     calidad: 'estandar', estado: 'bueno', antiguedad: 'hasta10',
     ambientes: '2', vista: 'frente', antDepto: 'reciente',
     gas: false, cloacas: false, pileta: false, quincho: false, deck: false,
-    estacCub: false, estacDesc: false, galeria: false,
+    estacCub: false, estacDesc: false, galeria: false, cercaniaMar: false,
     propietario: '', direccion: '', telefono: '', email: '',
   });
   const [result, setResult] = useState<Result | null>(null);
@@ -195,6 +195,7 @@ export const TasacionesScreen = () => {
             {f.tipo !== 'lote' && <label className="tas-field"><span>{esDepto ? 'Superficie cubierta (m²)' : 'Construido (m²)'}</span>
               <input type="number" value={f.cubiertos} onChange={(e) => set('cubiertos', e.target.value)} data-testid="tas-cubiertos" /></label>}
           </div>
+          <Chk label="A menos de 200m del mar" checked={f.cercaniaMar} onChange={(v) => set('cercaniaMar', v)} testid="tas-cercania-mar" />
 
           {f.tipo !== 'lote' && (
             <div className="tas__row2">
@@ -210,7 +211,7 @@ export const TasacionesScreen = () => {
           {esCasa && (
             <div className="tas__row2">
               <Sel label="Calidad" value={f.calidad} onChange={(v) => set('calidad', v)} testid="tas-calidad"
-                options={[['economica', 'Económica'], ['estandar', 'Estándar'], ['superior', 'Superior'], ['premium', 'Premium']]} />
+                options={[['economica', 'Económica'], ['estandar', 'Estándar'], ['estandar_plus', 'Estándar Plus'], ['superior', 'Superior'], ['premium', 'Premium']]} />
               <Sel label="Estado" value={f.estado} onChange={(v) => set('estado', v)} testid="tas-estado"
                 options={[['reciclar', 'A reciclar'], ['bueno', 'Bueno'], ['muybueno', 'Muy bueno'], ['excelente', 'Excelente']]} />
               <Sel label="Antigüedad" value={f.antiguedad} onChange={(v) => set('antiguedad', v)} testid="tas-antiguedad"

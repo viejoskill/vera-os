@@ -1711,6 +1711,14 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Verificado: engine_success=True, reviewdog 0 findings en líneas cambiadas, frontend compila (HTTP 200).
 
 
+## CHANGELOG 2026-08 (p) — Nueva calidad "Estándar Plus" + variable "Cercanía al mar"
+- Agregado tier de calidad "Estándar Plus" (`precio_constr_estandar_plus`, default 1240 USD/m² — interpolado entre Estándar 1150 y Superior 1325) en Casa/Duplex, en los 3 lugares (TasarPublico, TasacionesScreen, TasadorConfig).
+- Agregada variable "A menos de 200m del mar" (checkbox, visible para todos los tipos incl. lote) → aplica `mult_cercania_mar` (default 1.10, +10%, editable en Tasador → Config) sobre el valor final en `tasacion.tasar()`.
+- Bug encontrado y corregido en el camino: los modelos Pydantic de `routes_tasacion.py` y `routes_tasacion_online.py` no tenían declarado el campo `cercaniaMar`, así que FastAPI lo descartaba silenciosamente (el checkbox no tenía ningún efecto). Se agregó `cercaniaMar: bool = False` a ambos.
+- Verificado con curl: casa 100m² cubiertos/400m² lote sin mar → USD 119.000-129.000; misma casa con "cercanía al mar" → USD 130.500-142.000 (+10% correcto).
+- Nota de aprendizaje (guardada en /app/memory): tras editar `TasarPublico.tsx`, el HMR de CRA quedó en un estado obsoleto para ese archivo específico (el bundle servido no reflejaba el cambio aunque el compilador decía "sin errores"); un `sudo supervisorctl restart frontend` lo resolvió. Si un cambio de frontend no aparece en pantalla pese a compilar bien, restart antes de asumir que el código está mal.
+- REQUIERE REDEPLOY para verse en producción.
+
 ## CHANGELOG 2026-08 (o) — Revertir tramos + fix bug de cálculo casa/duplex
 - Usuario aclaró: no quería subdividir las avenidas en tramos-zona, solo que el mapa aclare de dónde a dónde va cada una. Se revirtió el punto (n): Costanera/Interbalnearia/Camelias vuelven a ser una sola zona cada una, y su nombre ahora incluye el rango real: "Av. Costanera (de Av.1 a Av.5)", "Av. Interbalnearia (de Av.1 a Av.7)", "Calle Camelias (de Av.1 a Av.4)", "Av. 2 (de Costanera a Interbalnearia)". También se agregó una leyenda con los 4 rangos debajo del mapa.
 - **Bug reportado y confirmado**: para Casa/Duplex, cuando la zona ya estaba calibrada (`precio_lote_{zona} > 0`), el fix (m) multiplicaba ese precio de LOTE directo por los m² de CONSTRUCCIÓN (mezclando unidades — "no suma entre lote y m2 de construcción").

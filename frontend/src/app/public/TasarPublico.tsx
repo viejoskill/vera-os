@@ -68,7 +68,7 @@ export const TasarPublico = () => {
     calidad: 'estandar', estado: 'bueno', antiguedad: 'hasta10',
     ambientes: '2', vista: 'frente', antDepto: 'reciente',
     gas: false, cloacas: false, pileta: false, quincho: false, deck: false,
-    estacCub: false, estacDesc: false, galeria: false,
+    estacCub: false, estacDesc: false, galeria: false, cercaniaMar: false,
     nombre: '', telefono: '', email: '',
   });
   const [result, setResult] = useState<Estimate | null>(null);
@@ -213,11 +213,12 @@ export const TasarPublico = () => {
               {!esDepto && <Num label="Superficie del lote (m²)" value={f.lote} onChange={(v) => set('lote', v)} testid="tasp-lote" />}
               {!esLote && <Num label={esDepto ? 'Superficie cubierta (m²)' : 'Metros cubiertos (m²)'} value={f.cubiertos} onChange={(v) => set('cubiertos', v)} testid="tasp-cubiertos" />}
             </div>
+            <Chk label="A menos de 200m del mar" checked={f.cercaniaMar} onChange={(v) => set('cercaniaMar', v)} testid="tasp-cercania-mar" />
 
             {esCasa && (
               <div className="tasp__row2">
                 <Sel label="Calidad" value={f.calidad} onChange={(v) => set('calidad', v)} testid="tasp-calidad"
-                  options={[['economica', 'Económica'], ['estandar', 'Estándar'], ['superior', 'Superior'], ['premium', 'Premium']]} />
+                  options={[['economica', 'Económica'], ['estandar', 'Estándar'], ['estandar_plus', 'Estándar Plus'], ['superior', 'Superior'], ['premium', 'Premium']]} />
                 <Sel label="Estado" value={f.estado} onChange={(v) => set('estado', v)} testid="tasp-estado"
                   options={[['reciclar', 'A reciclar'], ['bueno', 'Bueno'], ['muybueno', 'Muy bueno'], ['excelente', 'Excelente']]} />
                 <Sel label="Antigüedad" value={f.antiguedad} onChange={(v) => set('antiguedad', v)} testid="tasp-antiguedad"

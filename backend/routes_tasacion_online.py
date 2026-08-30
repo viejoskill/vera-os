@@ -38,6 +38,7 @@ class EstimarBody(BaseModel):
     estacCub: bool = False
     estacDesc: bool = False
     galeria: bool = False
+    cercaniaMar: bool = False
     # Contacto del visitante (Lead)
     nombre: str = ""
     telefono: str = ""

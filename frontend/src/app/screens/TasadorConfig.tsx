@@ -7,7 +7,7 @@ import { ZONAS_TASADOR } from '@app/public/MapaZonas';
 const API = `${env.backendUrl}/api/tasacion`;
 
 const ZONAS: [string, string][] = ZONAS_TASADOR;
-const CALIDADES: [string, string][] = [['economica', 'Económica'], ['estandar', 'Estándar'], ['superior', 'Superior'], ['premium', 'Premium']];
+const CALIDADES: [string, string][] = [['economica', 'Económica'], ['estandar', 'Estándar'], ['estandar_plus', 'Estándar Plus'], ['superior', 'Superior'], ['premium', 'Premium']];
 
 interface Group { title: string; hint?: string; step: number; fields: [string, string][]; }
 
@@ -51,7 +51,7 @@ const GROUPS: Group[] = [
   },
   {
     title: 'Servicios · multiplicador', step: 0.01,
-    fields: [['mult_serv_gas', 'Gas natural'], ['mult_serv_cloacas', 'Cloacas']],
+    fields: [['mult_serv_gas', 'Gas natural'], ['mult_serv_cloacas', 'Cloacas'], ['mult_cercania_mar', 'Cercanía al mar (≤200m)']],
   },
   {
     title: 'Vista (departamento) · multiplicador', step: 0.01,

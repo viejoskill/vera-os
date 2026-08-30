@@ -24,7 +24,9 @@ SEED: dict[str, float] = {
     "mult_est_excelente": 1.12, "mult_est_muybueno": 1.05, "mult_est_bueno": 1.0, "mult_est_reciclar": 0.78,
     "mult_serv_gas": 1.1, "mult_serv_cloacas": 1.05,
     "mult_vista_frente": 1.2, "mult_vista_lateral": 1.0, "mult_vista_contra": 0.85,
-    "precio_constr_economica": 850, "precio_constr_estandar": 1150, "precio_constr_superior": 1325, "precio_constr_premium": 1500,
+    "mult_cercania_mar": 1.10,
+    "precio_constr_economica": 850, "precio_constr_estandar": 1150, "precio_constr_estandar_plus": 1240,
+    "precio_constr_superior": 1325, "precio_constr_premium": 1500,
     "precio_depto_1amb": 2200, "precio_depto_2amb": 2000, "precio_depto_3amb": 1850, "precio_depto_4amb": 1700,
     # Precio de lote por zona (USD/m²). Plano real de Costa del Este (2026-08): 14 zonas
     # internas + 4 avenidas/calles que funcionan como zona propia por su zonificación.
@@ -157,6 +159,10 @@ def tasar(inp: dict, cfg: dict) -> dict:
         ])
         if suma:
             base *= (1 + suma)
+
+    # Cercanía al mar (≤200m): aplica a cualquier tipo, es un atributo de ubicación.
+    if inp.get("cercaniaMar"):
+        base *= v("mult_cercania_mar", 1.10)
 
     apertura = v("rango_apertura", 0.04)
     cmin = v("coef_varela_min", 0.83)
