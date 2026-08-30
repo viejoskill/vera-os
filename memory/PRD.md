@@ -1711,6 +1711,14 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Verificado: engine_success=True, reviewdog 0 findings en líneas cambiadas, frontend compila (HTTP 200).
 
 
+## CHANGELOG 2026-08 (n) — Avenidas divididas en tramos (entre avenidas transversales)
+- **Pedido del usuario**: Av. Costanera, Av. Interbalnearia y Calle Camelias no son una sola zona de precio — cada tramo entre avenidas transversales (Av.1 a Av.7) vale distinto. Av. 2 se mantiene como una sola zona (va de Costanera a Interbalnearia, sin tramos).
+- Confirmado con el usuario: Costanera = 5 tramos, Interbalnearia = 7 tramos, Camelias = 4 tramos; tramo N = el pedazo entre Av.N y Av.(N+1). Los valores ya calibrados no se pierden (Av.2 conservó su precio de 205 USD/m² ya cargado).
+- Backend `tasacion.py`: se reemplazaron las 3 zonas únicas (`av_costanera`, `av_interbalnearia`, `camelias`) por 16 zonas-tramo (`av_costanera_1..5`, `av_interbalnearia_1..7`, `camelias_1..4`), todas en 0 (ninguna estaba calibrada todavía). `av2` queda intacto.
+- Frontend `MapaZonas.tsx`: cada franja de avenida en la foto ahora se divide en N tramos iguales (Tramo 1 = extremo más cercano a Av.1, hacia la izquierda). El bloque de pills de respaldo debajo del mapa se agrupó por avenida con sub-encabezado, para no amontonar 17 botones sueltos.
+- Nota de precisión: los cortes de tramo son equiespaciados sobre el largo visual de cada avenida en la foto — no pude verificar con 100% de certeza el píxel exacto de cada cruce Av.1 a Av.7 (solo 2 de las 7 se detectaron con alta confianza). Si algún tramo se ve corrido respecto al cruce real, avisame para ajustarlo.
+- Verificado con curl (Interbalnearia Tramo 3, Av.2) y click en el mapa (Costanera Tramo 3 resalta correctamente). REQUIERE REDEPLOY para verse en producción.
+
 ## CHANGELOG 2026-08 (m) — Fix bug: valor de zona calibrada se diluía en el promedio de ML
 - **Bug reportado** (con screenshot): usuario calibró "Zona Cristo Centro" en 60 USD/m² desde Tasador → Config, pero el simulador daba un promedio de 34 USD/m² y un valor "super bajo".
 - **Causa raíz**: el fix (i) escalaba el pm2 plano de ML por `zona_precio / promedio(zonas calibradas)`. Si solo había UNA zona calibrada, el promedio era igual a esa misma zona → factor siempre = 1 → el sistema terminaba usando el pm2 plano de ML (34) en vez del valor real cargado (60).
