@@ -340,6 +340,27 @@ export const RentalWorkspace = () => {
             <MoneyInput label="Comisión mínima" value={f.comisionMinima} onChange={(n) => set('comisionMinima', n)} testId="rt-comision-min" />
           </div>
           <p className="rt-hint">La comisión se genera sola al confirmar una reserva (podés editarla en la ficha). Si el % da menos que el mínimo, se usa el mínimo.</p>
+          <div className="rt-preview" data-testid="rt-precios-preview">
+            <p className="rt-preview__titulo">Vista previa con descuento y comisión aplicados</p>
+            {[
+              { label: 'Semana (7 noches)', noches: 7, desc: f.descSemana },
+              { label: 'Quincena (15 noches)', noches: 15, desc: f.descQuincena },
+              { label: 'Mes (30 noches)', noches: 30, desc: f.descMes },
+            ].map((r) => {
+              const base = (f.precioNoche || 0) * r.noches;
+              const total = base * (1 - (r.desc || 0) / 100);
+              const comision = Math.max(total * (f.comisionPct || 0) / 100, f.comisionMinima || 0);
+              const simbolo = f.moneda === 'USD' ? 'USD' : '$';
+              return (
+                <p className="rt-preview__row" key={r.label} data-testid={`rt-preview-${r.noches}`}>
+                  <span>{r.label}: </span>
+                  <b>{simbolo} {Math.round(total).toLocaleString('es-AR')}</b>
+                  <span> (con {r.desc || 0}% desc.) · Comisión: </span>
+                  <b>{simbolo} {Math.round(comision).toLocaleString('es-AR')}</b>
+                </p>
+              );
+            })}
+          </div>
           <label className="rt-chk"><input type="checkbox" checked={!!f.activa} onChange={(e) => set('activa', e.target.checked)} data-testid="rt-activa" /><span>Publicada en la web (visible para reservar)</span></label>
         </section>
       )}

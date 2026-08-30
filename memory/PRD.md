@@ -1711,6 +1711,11 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Verificado: engine_success=True, reviewdog 0 findings en líneas cambiadas, frontend compila (HTTP 200).
 
 
+## CHANGELOG 2026-08 (q) — Vista previa de precio con descuento + comisión (Alquileres)
+- Pedido: en la pestaña Precios de cada propiedad de Alquileres, ver el valor ya con el descuento aplicado y la comisión resultante, chico y debajo de los campos.
+- `RentalWorkspace.tsx`: agregado bloque `.rt-preview` (chico, discreto) con 3 filas — Semana (7 noches), Quincena (15), Mes (30) — cada una calculando en vivo: precio total con el % de descuento de esa estadía, y la comisión resultante (usa el mayor entre % de comisión y comisión mínima, igual que la lógica real).
+- Verificado visualmente con propiedad real (A161): $25.000/noche, comisión 10%/mín $5.000 → Semana $175.000 (0% desc.) · Comisión $17.500; Quincena $375.000 · Comisión $37.500; Mes $750.000 · Comisión $75.000. Se actualiza en vivo al cambiar cualquier input. REQUIERE REDEPLOY para verse en producción.
+
 ## CHANGELOG 2026-08 (p) — Nueva calidad "Estándar Plus" + variable "Cercanía al mar"
 - Agregado tier de calidad "Estándar Plus" (`precio_constr_estandar_plus`, default 1240 USD/m² — interpolado entre Estándar 1150 y Superior 1325) en Casa/Duplex, en los 3 lugares (TasarPublico, TasacionesScreen, TasadorConfig).
 - Agregada variable "A menos de 200m del mar" (checkbox, visible para todos los tipos incl. lote) → aplica `mult_cercania_mar` (default 1.10, +10%, editable en Tasador → Config) sobre el valor final en `tasacion.tasar()`.
