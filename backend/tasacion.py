@@ -35,15 +35,7 @@ SEED: dict[str, float] = {
     "precio_lote_centro_sur": 0, "precio_lote_centro": 0, "precio_lote_centro_norte": 0,
     "precio_lote_reserva_residencial": 0, "precio_lote_reserva_multif": 0,
     "precio_lote_premium": 0, "precio_lote_playa": 0, "precio_lote_comercial_ruta": 0,
-    "precio_lote_av2": 0,
-    # Costanera/Interbalnearia/Camelias se subdividen en tramos entre avenidas transversales
-    # (Av.1 a Av.7), tal como se venden realmente los frentistas de esas calles.
-    "precio_lote_av_costanera_1": 0, "precio_lote_av_costanera_2": 0, "precio_lote_av_costanera_3": 0,
-    "precio_lote_av_costanera_4": 0, "precio_lote_av_costanera_5": 0,
-    "precio_lote_av_interbalnearia_1": 0, "precio_lote_av_interbalnearia_2": 0, "precio_lote_av_interbalnearia_3": 0,
-    "precio_lote_av_interbalnearia_4": 0, "precio_lote_av_interbalnearia_5": 0, "precio_lote_av_interbalnearia_6": 0,
-    "precio_lote_av_interbalnearia_7": 0,
-    "precio_lote_camelias_1": 0, "precio_lote_camelias_2": 0, "precio_lote_camelias_3": 0, "precio_lote_camelias_4": 0,
+    "precio_lote_av_costanera": 0, "precio_lote_av2": 0, "precio_lote_av_interbalnearia": 0, "precio_lote_camelias": 0,
     "rango_apertura": 0.04,
 }
 
@@ -56,15 +48,10 @@ ZONA_SUFIJO = {
     "centro_sur": "centro_sur", "centro": "centro", "centro_norte": "centro_norte",
     "reserva_residencial": "reserva_residencial", "reserva_multif": "reserva_multif",
     "premium": "premium", "playa": "playa", "comercial_ruta": "comercial_ruta",
-    "av2": "av2",
-    "av_costanera_1": "av_costanera_1", "av_costanera_2": "av_costanera_2", "av_costanera_3": "av_costanera_3",
-    "av_costanera_4": "av_costanera_4", "av_costanera_5": "av_costanera_5",
-    "av_interbalnearia_1": "av_interbalnearia_1", "av_interbalnearia_2": "av_interbalnearia_2",
-    "av_interbalnearia_3": "av_interbalnearia_3", "av_interbalnearia_4": "av_interbalnearia_4",
-    "av_interbalnearia_5": "av_interbalnearia_5", "av_interbalnearia_6": "av_interbalnearia_6",
-    "av_interbalnearia_7": "av_interbalnearia_7",
-    "camelias_1": "camelias_1", "camelias_2": "camelias_2", "camelias_3": "camelias_3", "camelias_4": "camelias_4",
+    "av_costanera": "av_costanera", "av2": "av2", "av_interbalnearia": "av_interbalnearia", "camelias": "camelias",
 }
+# Nombres incluyen a propósito el tramo real que cubre cada avenida (entre qué
+# avenidas transversales Av.1-Av.7 va), para que quede claro en el mapa/lista.
 NOMBRE_ZONA = {
     "pensamientos_sur": "Zona Pensamientos Sur", "pensamientos_centro": "Zona Pensamientos Centro", "pensamientos_norte": "Zona Pensamientos Norte",
     "cristo_sur": "Zona Cristo Sur", "cristo_centro": "Zona Cristo Centro", "cristo_norte": "Zona Cristo Norte",
@@ -72,16 +59,8 @@ NOMBRE_ZONA = {
     "centro_sur": "Zona Centro Sur", "centro": "Zona Centro", "centro_norte": "Zona Centro Norte",
     "reserva_residencial": "La Reserva Residencial", "reserva_multif": "La Reserva Multif.",
     "premium": "Zona Premium", "playa": "Zona Playa", "comercial_ruta": "Zona Comercial (Ruta)",
-    "av2": "Av. 2",
-    "av_costanera_1": "Av. Costanera · Tramo 1", "av_costanera_2": "Av. Costanera · Tramo 2",
-    "av_costanera_3": "Av. Costanera · Tramo 3", "av_costanera_4": "Av. Costanera · Tramo 4",
-    "av_costanera_5": "Av. Costanera · Tramo 5",
-    "av_interbalnearia_1": "Av. Interbalnearia · Tramo 1", "av_interbalnearia_2": "Av. Interbalnearia · Tramo 2",
-    "av_interbalnearia_3": "Av. Interbalnearia · Tramo 3", "av_interbalnearia_4": "Av. Interbalnearia · Tramo 4",
-    "av_interbalnearia_5": "Av. Interbalnearia · Tramo 5", "av_interbalnearia_6": "Av. Interbalnearia · Tramo 6",
-    "av_interbalnearia_7": "Av. Interbalnearia · Tramo 7",
-    "camelias_1": "Calle Camelias · Tramo 1", "camelias_2": "Calle Camelias · Tramo 2",
-    "camelias_3": "Calle Camelias · Tramo 3", "camelias_4": "Calle Camelias · Tramo 4",
+    "av_costanera": "Av. Costanera (de Av.1 a Av.5)", "av2": "Av. 2 (de Costanera a Interbalnearia)",
+    "av_interbalnearia": "Av. Interbalnearia (de Av.1 a Av.7)", "camelias": "Calle Camelias (de Av.1 a Av.4)",
 }
 NOMBRE_TIPO = {"casa": "Casa", "duplex": "Duplex", "lote": "Lote / Terreno", "depto": "Departamento"}
 

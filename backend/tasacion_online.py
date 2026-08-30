@@ -33,23 +33,33 @@ def _area_referencia(inp: dict) -> float:
 async def estimar(inp: dict) -> dict:
     cfg = await tasacion.get_config()
     r = tasacion.tasar(inp, cfg)
-    market = await comparables.market_pm2(inp.get("tipo", "casa"))
+    tipo = inp.get("tipo", "casa")
+    market = await comparables.market_pm2(tipo)
     area = _area_referencia(inp)
 
     # ML solo scrapea "Costa del Este" en su conjunto (no hay filtro por zona/barrio en el
     # sitio público), así que su pm2 es un promedio plano de toda la localidad. Si el agente
     # ya calibró el precio real de esta zona (precio_lote_{zona} > 0 en Tasador → Config), se
-    # usa DIRECTO ese valor como pm2 — es el dato más confiable, no hace falta promediarlo ni
-    # escalarlo contra otras zonas. Recién si la zona todavía está en 0 (sin calibrar) se cae
-    # al promedio plano de ML como aproximación provisoria.
+    # usa el modelo local en vez del promedio plano de ML. Recién si la zona todavía está en 0
+    # (sin calibrar) se cae al promedio plano de ML como aproximación provisoria.
     zsuf = tasacion.ZONA_SUFIJO.get(inp.get("zona", "playa"), "playa")
     zona_precio = float(cfg.get(f"precio_lote_{zsuf}") or 0)
 
-    if zona_precio > 0:
+    if tipo == "lote" and zona_precio > 0:
+        # Terreno: el precio de zona calibrado ES el USD/m² del lote — se usa directo.
         pm2_zona = zona_precio
         base = pm2_zona * area if area > 0 else (r["pubMin"] + r["pubMax"]) / 2
         method = "varela"
         market_available = False
+    elif tipo != "lote" and zona_precio > 0:
+        # Casa/duplex/depto: el precio de zona es del TERRENO, no se puede multiplicar
+        # directo por los m² de construcción (mezclaría unidades). `tasar()` ya combina
+        # bien construcción + lote libre (o precio por ambiente para depto), así que se
+        # usa ese cálculo completo en vez del pm2 plano de ML.
+        base = (r["pubMin"] + r["pubMax"]) / 2
+        method = "varela"
+        market_available = False
+        pm2_zona = (base / area) if area > 0 else 0
     elif market.get("available") and area > 0:
         pm2_zona = market["medianPm2"]
         base = pm2_zona * area

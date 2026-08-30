@@ -6,16 +6,8 @@ export const ZONAS_TASADOR: [string, string][] = [
   ['reserva_residencial', 'La Reserva Residencial'], ['premium', 'Zona Premium'],
   ['reserva_multif', 'La Reserva Multif.'], ['playa', 'Zona Playa'],
   ['comercial_ruta', 'Zona Comercial (Ruta)'],
-  ['av2', 'Av. 2'],
-  ['av_costanera_1', 'Av. Costanera · Tramo 1'], ['av_costanera_2', 'Av. Costanera · Tramo 2'],
-  ['av_costanera_3', 'Av. Costanera · Tramo 3'], ['av_costanera_4', 'Av. Costanera · Tramo 4'],
-  ['av_costanera_5', 'Av. Costanera · Tramo 5'],
-  ['av_interbalnearia_1', 'Av. Interbalnearia · Tramo 1'], ['av_interbalnearia_2', 'Av. Interbalnearia · Tramo 2'],
-  ['av_interbalnearia_3', 'Av. Interbalnearia · Tramo 3'], ['av_interbalnearia_4', 'Av. Interbalnearia · Tramo 4'],
-  ['av_interbalnearia_5', 'Av. Interbalnearia · Tramo 5'], ['av_interbalnearia_6', 'Av. Interbalnearia · Tramo 6'],
-  ['av_interbalnearia_7', 'Av. Interbalnearia · Tramo 7'],
-  ['camelias_1', 'Calle Camelias · Tramo 1'], ['camelias_2', 'Calle Camelias · Tramo 2'],
-  ['camelias_3', 'Calle Camelias · Tramo 3'], ['camelias_4', 'Calle Camelias · Tramo 4'],
+  ['av_costanera', 'Av. Costanera (de Av.1 a Av.5)'], ['av2', 'Av. 2 (de Costanera a Interbalnearia)'],
+  ['av_interbalnearia', 'Av. Interbalnearia (de Av.1 a Av.7)'], ['camelias', 'Calle Camelias (de Av.1 a Av.4)'],
 ];
 
 const NOMBRE: Record<string, string> = Object.fromEntries(ZONAS_TASADOR);
@@ -43,30 +35,20 @@ const BLOQUES: { key: string; hit: [number, number, number, number]; label: [num
   { key: 'playa', hit: [34.68, 73.39, 45.42, 7.56], label: [39.6, 75.6, 19.8, 2.4] },
 ];
 
-// Costanera/Interbalnearia/Camelias se dividen en tramos entre avenidas transversales
-// (Av.1 a Av.7, de derecha a izquierda en la foto) — cada tramo es su propia zona de precio.
 type Box = [number, number, number, number];
-const tramos = (prefix: string, n: number, [left, top, width, height]: Box) => {
-  const segW = width / n;
-  return Array.from({ length: n }, (_, i) => {
-    const num = i + 1; // Tramo 1 = extremo derecho (más cerca de Av.1)
-    return { key: `${prefix}_${num}`, box: [left + width - num * segW, top, segW, height] as Box };
-  });
-};
 
-// Avenidas/calles: franjas ya alineadas con la foto (van con mayor z-index que las zonas).
+// Avenidas/calles: cada una es UNA sola zona (franja completa en la foto, mayor z-index).
+// El rango real que cubre cada una (de qué Av. a qué Av.) está aclarado en su nombre (arriba).
 const AVENIDA_OVERLAYS: { key: string; box: Box }[] = [
-  ...tramos('av_interbalnearia', 7, [5.78, 56.85, 88.44, 3.69]),
-  ...tramos('camelias', 4, [5.78, 72.02, 88.44, 2.38]),
-  ...tramos('av_costanera', 5, [5.78, 78.87, 88.44, 2.38]),
+  { key: 'av_interbalnearia', box: [5.78, 56.85, 88.44, 3.69] },
+  { key: 'camelias', box: [5.78, 72.02, 88.44, 2.38] },
+  { key: 'av_costanera', box: [5.78, 78.87, 88.44, 2.38] },
   { key: 'av2', box: [66.06, 57.56, 3.3, 23.39] },
 ];
 
-const AVENIDAS_GRUPOS: { titulo: string; keys: string[] }[] = [
-  { titulo: 'Av. Costanera', keys: ['av_costanera_1', 'av_costanera_2', 'av_costanera_3', 'av_costanera_4', 'av_costanera_5'] },
-  { titulo: 'Av. 2', keys: ['av2'] },
-  { titulo: 'Av. Interbalnearia', keys: ['av_interbalnearia_1', 'av_interbalnearia_2', 'av_interbalnearia_3', 'av_interbalnearia_4', 'av_interbalnearia_5', 'av_interbalnearia_6', 'av_interbalnearia_7'] },
-  { titulo: 'Calle Camelias', keys: ['camelias_1', 'camelias_2', 'camelias_3', 'camelias_4'] },
+const AVENIDAS: [string, string][] = [
+  ['av_costanera', 'Av. Costanera'], ['av2', 'Av. 2'],
+  ['av_interbalnearia', 'Av. Interbalnearia'], ['camelias', 'Calle Camelias'],
 ];
 
 interface Props { value: string; onChange: (v: string) => void; }
@@ -112,24 +94,23 @@ export const MapaZonas = ({ value, onChange }: Props) => (
     </p>
 
     <div className="mapz__avenidas">
-      <span className="mapz__avenidas-tag">¿Tu lote da a una avenida o calle principal? Elegí el tramo acá:</span>
-      {AVENIDAS_GRUPOS.map((g) => (
-        <div key={g.titulo} className="mapz__avgrupo">
-          <span className="mapz__avgrupo-titulo">{g.titulo}</span>
-          <div className="mapz__pills">
-            {g.keys.map((k) => (
-              <button
-                key={k} type="button"
-                className={`mapz__pill ${value === k ? 'is-selected' : ''}`}
-                onClick={() => onChange(k)}
-                data-testid={`mapa-pill-${k}`}
-              >
-                {g.keys.length > 1 ? k.split('_').pop() : g.titulo}
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
+      <span className="mapz__avenidas-tag">¿Tu lote da a una avenida o calle principal? También podés elegirla acá:</span>
+      <div className="mapz__pills">
+        {AVENIDAS.map(([k, l]) => (
+          <button
+            key={k} type="button"
+            className={`mapz__pill ${value === k ? 'is-selected' : ''}`}
+            onClick={() => onChange(k)}
+            title={NOMBRE[k]}
+            data-testid={`mapa-pill-${k}`}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
+      <p className="mapz__avenidas-rango">
+        Av. Costanera: de Av.1 a Av.5 · Av. Interbalnearia: de Av.1 a Av.7 · Calle Camelias: de Av.1 a Av.4 · Av. 2: de Costanera a Interbalnearia
+      </p>
     </div>
   </div>
 );

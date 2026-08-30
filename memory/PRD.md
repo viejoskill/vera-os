@@ -1711,7 +1711,13 @@ Migración a UN dominio con paths (evita el problema de multi-dominio y que el O
 - Verificado: engine_success=True, reviewdog 0 findings en líneas cambiadas, frontend compila (HTTP 200).
 
 
-## CHANGELOG 2026-08 (n) — Avenidas divididas en tramos (entre avenidas transversales)
+## CHANGELOG 2026-08 (o) — Revertir tramos + fix bug de cálculo casa/duplex
+- Usuario aclaró: no quería subdividir las avenidas en tramos-zona, solo que el mapa aclare de dónde a dónde va cada una. Se revirtió el punto (n): Costanera/Interbalnearia/Camelias vuelven a ser una sola zona cada una, y su nombre ahora incluye el rango real: "Av. Costanera (de Av.1 a Av.5)", "Av. Interbalnearia (de Av.1 a Av.7)", "Calle Camelias (de Av.1 a Av.4)", "Av. 2 (de Costanera a Interbalnearia)". También se agregó una leyenda con los 4 rangos debajo del mapa.
+- **Bug reportado y confirmado**: para Casa/Duplex, cuando la zona ya estaba calibrada (`precio_lote_{zona} > 0`), el fix (m) multiplicaba ese precio de LOTE directo por los m² de CONSTRUCCIÓN (mezclando unidades — "no suma entre lote y m2 de construcción").
+- **Fix** (`tasacion_online.py`): ahora se distingue por tipo. Para `lote`, se sigue usando el precio de zona directo (correcto, sin cambios). Para `casa`/`duplex`/`depto` con zona calibrada, se usa el resultado completo de `tasacion.tasar()` (que ya combina bien construcción × precio de construcción + lote libre × precio de zona, o precio por ambiente para depto) en vez del pm2 plano. Si la zona sigue en 0, sigue cayendo al pm2 plano de ML como antes.
+- Verificado con curl: Casa 120m² cubiertos / lote 500m² en Cristo Centro (60 USD/m² calibrado) → USD 155.500-166.000 (construcción 138.000 + terreno libre 22.800 ≈ 161.000, coherente); misma casa en zona sin calibrar → cae a ML flat (169.500-180.500). REQUIERE REDEPLOY para verse en producción.
+
+## CHANGELOG 2026-08 (n) — Avenidas divididas en tramos (entre avenidas transversales) [REVERTIDO, ver (o)]
 - **Pedido del usuario**: Av. Costanera, Av. Interbalnearia y Calle Camelias no son una sola zona de precio — cada tramo entre avenidas transversales (Av.1 a Av.7) vale distinto. Av. 2 se mantiene como una sola zona (va de Costanera a Interbalnearia, sin tramos).
 - Confirmado con el usuario: Costanera = 5 tramos, Interbalnearia = 7 tramos, Camelias = 4 tramos; tramo N = el pedazo entre Av.N y Av.(N+1). Los valores ya calibrados no se pierden (Av.2 conservó su precio de 205 USD/m² ya cargado).
 - Backend `tasacion.py`: se reemplazaron las 3 zonas únicas (`av_costanera`, `av_interbalnearia`, `camelias`) por 16 zonas-tramo (`av_costanera_1..5`, `av_interbalnearia_1..7`, `camelias_1..4`), todas en 0 (ninguna estaba calibrada todavía). `av2` queda intacto.
