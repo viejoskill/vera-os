@@ -1,54 +1,57 @@
 export const ZONAS_TASADOR: [string, string][] = [
+  ['comercial_ruta', 'Zona Comercial Ruta'],
   ['pensamientos_sur', 'Zona Pensamientos Sur'], ['pensamientos_centro', 'Zona Pensamientos Centro'], ['pensamientos_norte', 'Zona Pensamientos Norte'],
   ['cristo_sur', 'Zona Cristo Sur'], ['cristo_centro', 'Zona Cristo Centro'], ['cristo_norte', 'Zona Cristo Norte'],
-  ['alelies', 'Zona Alelies'],
   ['centro_sur', 'Zona Centro Sur'], ['centro', 'Zona Centro'], ['centro_norte', 'Zona Centro Norte'],
-  ['reserva_residencial', 'La Reserva Residencial'], ['premium', 'Zona Premium'],
-  ['reserva_multif', 'La Reserva Multif.'], ['playa', 'Zona Playa'],
-  ['comercial_ruta', 'Zona Comercial (Ruta)'],
-  ['av_costanera', 'Av. Costanera (de Av.1 a Av.5)'], ['av2', 'Av. 2 (de Costanera a Interbalnearia)'],
-  ['av_interbalnearia', 'Av. Interbalnearia (de Av.1 a Av.7)'], ['camelias', 'Calle Camelias (de Av.1 a Av.4)'],
+  ['reserva_residencial', 'La Reserva Residencial'], ['reserva_comercial', 'La Reserva Comercial'],
+  ['premium', 'Zona Premium'], ['premium_norte', 'Zona Premium Norte'],
+  ['playa', 'Zona Playa'], ['playa_norte', 'Zona Playa Norte'],
+  ['av_interbalnearia', 'Av. Interbalnearia'], ['av_costanera', 'Av. Costanera'],
+  ['los_pensamientos', 'Los Pensamientos'], ['los_alelies', 'Los Alelies'],
+  ['camelias', 'Las Camelias'], ['av2', 'Av. 2'],
 ];
 
 const NOMBRE: Record<string, string> = Object.fromEntries(ZONAS_TASADOR);
 
-// Coordenadas (%) sobre la foto real restyleada (public/costa-del-este-mapa-zonas.jpg, 1211×1680px).
-// Cada zona-bloque tiene DOS cajas: `hit` (área grande, fácil de tocar) y `label` (recorte
-// chico y preciso, calcado sobre el texto "ZONA X" real de la foto) — así el toque es cómodo
-// pero el resaltado amarillo queda pegado al nombre y no se desfasa de la zona real (que
-// está rotada en la foto y no calza con un rectángulo grande).
-const BLOQUES: { key: string; hit: [number, number, number, number]; label: [number, number, number, number] }[] = [
-  { key: 'comercial_ruta', hit: [52.44, 8.04, 22.3, 6.25], label: [62.3, 8.9, 7.85, 5.06] },
-  { key: 'pensamientos_sur', hit: [14.04, 14.29, 12.3, 8.63], label: [19.0, 17.0, 10.7, 4.5] },
-  { key: 'pensamientos_centro', hit: [44.59, 14.29, 16.6, 8.63], label: [47.9, 16.1, 12.8, 5.1] },
-  { key: 'pensamientos_norte', hit: [61.19, 14.29, 29.23, 8.63], label: [81.8, 16.7, 12.4, 4.5] },
-  { key: 'cristo_sur', hit: [14.04, 22.92, 12.3, 16.37], label: [19.0, 29.2, 7.85, 4.2] },
-  { key: 'cristo_centro', hit: [26.34, 22.92, 34.85, 16.37], label: [42.9, 28.0, 18.6, 5.7] },
-  { key: 'cristo_norte', hit: [61.19, 22.92, 29.23, 16.37], label: [82.2, 28.0, 8.7, 4.2] },
-  { key: 'alelies', hit: [14.04, 39.29, 76.38, 4.82], label: [41.7, 41.4, 23.5, 2.7] },
-  { key: 'centro_sur', hit: [14.04, 44.11, 12.3, 13.45], label: [14.4, 47.6, 7.4, 4.5] },
-  { key: 'centro', hit: [26.34, 44.11, 34.85, 13.45], label: [37.2, 48.5, 23.5, 2.4] },
-  { key: 'centro_norte', hit: [61.19, 44.11, 29.23, 13.45], label: [74.7, 47.6, 8.3, 4.5] },
-  { key: 'reserva_residencial', hit: [5.78, 60.54, 28.9, 12.86], label: [12.8, 64.3, 13.6, 3.6] },
-  { key: 'premium', hit: [34.68, 60.54, 45.42, 12.86], label: [42.1, 67.0, 24.4, 2.4] },
-  { key: 'reserva_multif', hit: [5.78, 73.39, 28.9, 7.56], label: [12.8, 73.8, 12.8, 3.0] },
-  { key: 'playa', hit: [34.68, 73.39, 45.42, 7.56], label: [39.6, 75.6, 19.8, 2.4] },
+// Coordenadas (%) sobre el mapa de zonificación real (public/costa-del-este-mapa-zonas.jpg,
+// 1024×1536px). Es un diagrama prolijo (no una foto rotada): cada zona es una caja limpia,
+// medida a nivel píxel sobre la imagen, así que el resaltado cubre el rectángulo completo.
+const BLOQUES: { key: string; hit: [number, number, number, number] }[] = [
+  { key: 'comercial_ruta', hit: [51.37, 14.84, 40.82, 7.03] },
+  { key: 'pensamientos_sur', hit: [7.03, 26.17, 10.94, 6.51] },
+  { key: 'pensamientos_centro', hit: [21.09, 26.17, 56.64, 6.51] },
+  { key: 'pensamientos_norte', hit: [81.05, 26.17, 11.13, 6.51] },
+  { key: 'cristo_sur', hit: [7.23, 36.72, 10.74, 14.97] },
+  { key: 'cristo_centro', hit: [20.70, 36.72, 57.62, 14.97] },
+  { key: 'cristo_norte', hit: [81.05, 36.72, 11.13, 14.97] },
+  { key: 'centro_sur', hit: [7.23, 53.91, 10.74, 13.28] },
+  { key: 'centro', hit: [20.70, 53.91, 57.42, 13.28] },
+  { key: 'centro_norte', hit: [81.05, 53.91, 11.13, 13.28] },
+  { key: 'reserva_residencial', hit: [7.23, 69.27, 25.98, 8.20] },
+  { key: 'premium', hit: [36.52, 69.27, 41.21, 8.20] },
+  { key: 'premium_norte', hit: [81.25, 69.27, 10.94, 8.20] },
+  { key: 'reserva_comercial', hit: [7.23, 78.65, 25.98, 5.34] },
+  { key: 'playa', hit: [36.52, 78.65, 41.21, 5.34] },
+  { key: 'playa_norte', hit: [81.25, 78.65, 10.94, 5.34] },
 ];
 
 type Box = [number, number, number, number];
 
-// Avenidas/calles: cada una es UNA sola zona (franja completa en la foto, mayor z-index).
-// El rango real que cubre cada una (de qué Av. a qué Av.) está aclarado en su nombre (arriba).
+// Avenidas/calles: franjas finas (horizontales o verticales) que separan las zonas y también
+// funcionan como zona propia (lotes que dan a esa avenida). Mayor z-index que los bloques.
 const AVENIDA_OVERLAYS: { key: string; box: Box }[] = [
-  { key: 'av_interbalnearia', box: [5.78, 56.85, 88.44, 3.69] },
-  { key: 'camelias', box: [5.78, 72.02, 88.44, 2.38] },
-  { key: 'av_costanera', box: [5.78, 78.87, 88.44, 2.38] },
-  { key: 'av2', box: [66.06, 57.56, 3.3, 23.39] },
+  { key: 'los_pensamientos', box: [7.23, 32.68, 84.96, 4.04] },
+  { key: 'los_alelies', box: [7.23, 51.69, 84.96, 2.21] },
+  { key: 'av_interbalnearia', box: [7.23, 67.19, 84.96, 2.08] },
+  { key: 'camelias', box: [7.23, 77.47, 84.96, 1.17] },
+  { key: 'av_costanera', box: [7.23, 83.98, 84.96, 1.30] },
+  { key: 'av2', box: [77.73, 69.27, 3.52, 14.71] },
 ];
 
 const AVENIDAS: [string, string][] = [
   ['av_costanera', 'Av. Costanera'], ['av2', 'Av. 2'],
-  ['av_interbalnearia', 'Av. Interbalnearia'], ['camelias', 'Calle Camelias'],
+  ['av_interbalnearia', 'Av. Interbalnearia'], ['camelias', 'Las Camelias'],
+  ['los_pensamientos', 'Los Pensamientos'], ['los_alelies', 'Los Alelies'],
 ];
 
 interface Props { value: string; onChange: (v: string) => void; }
@@ -59,10 +62,10 @@ const box = ([left, top, width, height]: Box) => ({
 
 export const MapaZonas = ({ value, onChange }: Props) => (
   <div className="mapz" data-testid="mapa-zonas">
-    <p className="mapz__caption">Plano real de Costa del Este — tocá tu zona</p>
+    <p className="mapz__caption">Mapa de zonificación de Costa del Este — tocá tu zona</p>
 
     <div className="mapz__imgwrap">
-      <img src="/costa-del-este-mapa-zonas.jpg" alt="Mapa de zonas de Costa del Este" className="mapz__img" />
+      <img src="/costa-del-este-mapa-zonas.jpg" alt="Mapa de zonificación de Costa del Este" className="mapz__img" />
       {BLOQUES.map((z) => (
         <div key={z.key} className="mapz__zona">
           <button
@@ -73,7 +76,7 @@ export const MapaZonas = ({ value, onChange }: Props) => (
             aria-label={NOMBRE[z.key]}
             data-testid={`mapa-zona-${z.key}`}
           />
-          <div className={`mapz__label ${value === z.key ? 'is-selected' : ''}`} style={box(z.label)} />
+          <div className={`mapz__label ${value === z.key ? 'is-selected' : ''}`} style={box(z.hit)} />
         </div>
       ))}
       {AVENIDA_OVERLAYS.map((a) => (
@@ -108,9 +111,6 @@ export const MapaZonas = ({ value, onChange }: Props) => (
           </button>
         ))}
       </div>
-      <p className="mapz__avenidas-rango">
-        Av. Costanera: de Av.1 a Av.5 · Av. Interbalnearia: de Av.1 a Av.7 · Calle Camelias: de Av.1 a Av.4 · Av. 2: de Costanera a Interbalnearia
-      </p>
     </div>
   </div>
 );

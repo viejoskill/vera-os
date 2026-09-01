@@ -28,41 +28,44 @@ SEED: dict[str, float] = {
     "precio_constr_economica": 850, "precio_constr_estandar": 1150, "precio_constr_estandar_plus": 1240,
     "precio_constr_superior": 1325, "precio_constr_premium": 1500,
     "precio_depto_1amb": 2200, "precio_depto_2amb": 2000, "precio_depto_3amb": 1850, "precio_depto_4amb": 1700,
-    # Precio de lote por zona (USD/m²). Plano real de Costa del Este (2026-08): 14 zonas
-    # internas + 4 avenidas/calles que funcionan como zona propia por su zonificación.
+    # Precio de lote por zona (USD/m²). Mapa de zonificación de Costa del Este (2026-08):
+    # 16 zonas internas + 6 avenidas/calles que funcionan como zona propia por su zonificación.
     # Arrancan en 0 a propósito: el usuario los calibra zona por zona desde VERA (Tasador → Config).
     "precio_lote_pensamientos_sur": 0, "precio_lote_pensamientos_centro": 0, "precio_lote_pensamientos_norte": 0,
     "precio_lote_cristo_sur": 0, "precio_lote_cristo_centro": 0, "precio_lote_cristo_norte": 0,
-    "precio_lote_alelies": 0,
     "precio_lote_centro_sur": 0, "precio_lote_centro": 0, "precio_lote_centro_norte": 0,
-    "precio_lote_reserva_residencial": 0, "precio_lote_reserva_multif": 0,
-    "precio_lote_premium": 0, "precio_lote_playa": 0, "precio_lote_comercial_ruta": 0,
-    "precio_lote_av_costanera": 0, "precio_lote_av2": 0, "precio_lote_av_interbalnearia": 0, "precio_lote_camelias": 0,
+    "precio_lote_reserva_residencial": 0, "precio_lote_reserva_comercial": 0,
+    "precio_lote_premium": 0, "precio_lote_premium_norte": 0,
+    "precio_lote_playa": 0, "precio_lote_playa_norte": 0, "precio_lote_comercial_ruta": 0,
+    "precio_lote_av_costanera": 0, "precio_lote_av2": 0, "precio_lote_av_interbalnearia": 0,
+    "precio_lote_camelias": 0, "precio_lote_los_pensamientos": 0, "precio_lote_los_alelies": 0,
     "rango_apertura": 0.04,
 }
 
-# Plano real de Costa del Este: zona (valor usado en los selects) → sufijo de config
+# Zonas viejas (renombradas) → nueva clave, para migrar valores ya calibrados sin perderlos.
+_MIGRACION_ZONAS = {"reserva_multif": "reserva_comercial", "alelies": "los_alelies"}
+
+# Mapa de zonificación de Costa del Este: zona (valor usado en los selects) → sufijo de config
 # (identidad, ambos son el mismo slug). Se mantiene el dict por compatibilidad con `tasar()`.
 ZONA_SUFIJO = {
     "pensamientos_sur": "pensamientos_sur", "pensamientos_centro": "pensamientos_centro", "pensamientos_norte": "pensamientos_norte",
     "cristo_sur": "cristo_sur", "cristo_centro": "cristo_centro", "cristo_norte": "cristo_norte",
-    "alelies": "alelies",
     "centro_sur": "centro_sur", "centro": "centro", "centro_norte": "centro_norte",
-    "reserva_residencial": "reserva_residencial", "reserva_multif": "reserva_multif",
-    "premium": "premium", "playa": "playa", "comercial_ruta": "comercial_ruta",
-    "av_costanera": "av_costanera", "av2": "av2", "av_interbalnearia": "av_interbalnearia", "camelias": "camelias",
+    "reserva_residencial": "reserva_residencial", "reserva_comercial": "reserva_comercial",
+    "premium": "premium", "premium_norte": "premium_norte",
+    "playa": "playa", "playa_norte": "playa_norte", "comercial_ruta": "comercial_ruta",
+    "av_costanera": "av_costanera", "av2": "av2", "av_interbalnearia": "av_interbalnearia",
+    "camelias": "camelias", "los_pensamientos": "los_pensamientos", "los_alelies": "los_alelies",
 }
-# Nombres incluyen a propósito el tramo real que cubre cada avenida (entre qué
-# avenidas transversales Av.1-Av.7 va), para que quede claro en el mapa/lista.
 NOMBRE_ZONA = {
     "pensamientos_sur": "Zona Pensamientos Sur", "pensamientos_centro": "Zona Pensamientos Centro", "pensamientos_norte": "Zona Pensamientos Norte",
     "cristo_sur": "Zona Cristo Sur", "cristo_centro": "Zona Cristo Centro", "cristo_norte": "Zona Cristo Norte",
-    "alelies": "Zona Alelies",
     "centro_sur": "Zona Centro Sur", "centro": "Zona Centro", "centro_norte": "Zona Centro Norte",
-    "reserva_residencial": "La Reserva Residencial", "reserva_multif": "La Reserva Multif.",
-    "premium": "Zona Premium", "playa": "Zona Playa", "comercial_ruta": "Zona Comercial (Ruta)",
-    "av_costanera": "Av. Costanera (de Av.1 a Av.5)", "av2": "Av. 2 (de Costanera a Interbalnearia)",
-    "av_interbalnearia": "Av. Interbalnearia (de Av.1 a Av.7)", "camelias": "Calle Camelias (de Av.1 a Av.4)",
+    "reserva_residencial": "La Reserva Residencial", "reserva_comercial": "La Reserva Comercial",
+    "premium": "Zona Premium", "premium_norte": "Zona Premium Norte",
+    "playa": "Zona Playa", "playa_norte": "Zona Playa Norte", "comercial_ruta": "Zona Comercial Ruta",
+    "av_costanera": "Av. Costanera", "av2": "Av. 2", "av_interbalnearia": "Av. Interbalnearia",
+    "camelias": "Las Camelias", "los_pensamientos": "Los Pensamientos", "los_alelies": "Los Alelies",
 }
 NOMBRE_TIPO = {"casa": "Casa", "duplex": "Duplex", "lote": "Lote / Terreno", "depto": "Departamento"}
 
@@ -79,7 +82,14 @@ async def get_config() -> dict[str, float]:
     if not doc:
         await _col().update_one({"_id": "varela"}, {"$set": {"values": SEED}}, upsert=True)
         return dict(SEED)
-    return {**SEED, **(doc.get("values") or {})}
+    stored = doc.get("values") or {}
+    merged = {**SEED, **stored}
+    # Migra valores ya calibrados de zonas renombradas (mismo lugar, nueva clave).
+    for vieja, nueva in _MIGRACION_ZONAS.items():
+        campo_viejo, campo_nuevo = f"precio_lote_{vieja}", f"precio_lote_{nueva}"
+        if stored.get(campo_viejo) and not stored.get(campo_nuevo):
+            merged[campo_nuevo] = stored[campo_viejo]
+    return merged
 
 
 async def set_config(values: dict[str, float]) -> dict[str, float]:

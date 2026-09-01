@@ -1,0 +1,34 @@
+{
+  "summary": "Tested the 22-zone Tasador overhaul end-to-end. Backend config exposes all 22 precio_lote_* fields with av2=205 preserved. Public estimator returns correct zonaNombre for every zone. Frontend /tasar renders new zonification diagram (1024x1536 loaded), default zone is 'Zona Playa', all 22 zone hit-areas + 6 avenue pills correctly update the 'Zona seleccionada' text AND the highlight styling (is-selected class). Dropdown 'tasp-zona' lists all 22 unique zones (no duplicates, no legacy names). Form submit with tipo=lote/500m² returns 'Zona Premium Norte' and 'Av. 2' correctly. Admin screens TasadorConfig.tsx and TasacionesScreen.tsx both import ZONAS_TASADOR from MapaZonas.tsx (single source of truth) so they automatically reflect the 22-zone list. Everything passes.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/tasacion/config", "issue": "Response still contains legacy keys 'precio_lote_alelies' and 'precio_lote_reserva_multif' (both = 0, so functionally harmless — migration copied their values into the new keys but did not delete the originals). Frontend doesn't render these because dropdowns use ZONAS_TASADOR (22 keys only). Consider cleaning up the DB doc to fully remove them."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_tasador_zonas.py",
+    "/app/test_reports/pytest/tasador_zonas.xml"
+  ],
+  "action_items": [
+    "(Optional/minor) Clean up legacy keys 'precio_lote_alelies' and 'precio_lote_reserva_multif' from the tasacion config document in Mongo — the migration copies but never deletes them. Not user-visible."
+  ],
+  "critical_code_review_comments": [
+    "MapaZonas.tsx is clean — 22 zones in a single ZONAS_TASADOR export used by both public and admin screens (good single source of truth pattern).",
+    "Zone box coordinates in BLOQUES/AVENIDA_OVERLAYS are hardcoded percentages derived from pixel-scanning a 1024x1536 image. If the image is ever replaced/re-cropped these coordinates silently misalign — no automated visual regression protects this. Consider adding a lightweight snapshot check.",
+    "TasarPublico.tsx: the 'lote' input can be a negative number (input type=number with no min). Consider min=1 to avoid silly submissions."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_tasador_zonas.py (new)"
+  ],
+  "success_rate": {"backend": "100% (12/12 pytest)", "frontend": "100% (all clicks, pills, dropdown, submit)"},
+  "seed_data_creation": "None. Public sim endpoint used (?sim=1) so no leads persisted.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend regression: pytest /app/backend/tests/test_tasador_zonas.py (12 tests, ~22s runtime, hits the public preview URL). Covers config schema (22 lote zones + av2=205 preserved) and estimator (correct zonaNombre for all 22 zones + specific parametrized cases). Playwright coverage for /tasar map interactions was executed inline this iteration; can be re-run any time via the same script pattern (click each data-testid='mapa-zona-{key}' or 'mapa-pill-{key}' and assert '[data-testid=mapa-zona-seleccionada]' text)."
+}

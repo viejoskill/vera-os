@@ -168,6 +168,16 @@ Todo dentro del Workspace (sin apps/módulos/navegación nueva). Verificado 100%
 
 ### Nota deployment: estos cambios están en PREVIEW. Para verlos en producción (real-estate-os-10.emergent.host) hay que REDESPLEGAR. La tabla `property_visits` ya existe en el proyecto Supabase (compartido preview/prod).
 
+## Implemented (Sprint "Mapa de Zonificación 20+2 zonas" — Tasador Online — 2026-08/09)
+Overhaul completo del mapa interactivo del Tasador público (`/tasar`) a un nuevo diagrama de zonificación provisto por el usuario (imagen limpia 1024×1536, no una foto rotada). Verificado 100% por testing_agent (iteration_57): backend 12/12 pytest, frontend 100% (clicks de mapa, pills, dropdown, submit).
+- **22 zonas totales**: 16 zonas de área (comercial_ruta, pensamientos_sur/centro/norte, cristo_sur/centro/norte, centro_sur/centro/norte, reserva_residencial, reserva_comercial, premium, premium_norte, playa, playa_norte) + 6 avenidas/calles (av_interbalnearia, av_costanera, los_pensamientos, los_alelies, camelias, av2). Decisión del usuario: mantener "Camelias" y "Av2" (zonas viejas) ADEMÁS de las nuevas, no reemplazarlas.
+- **Coordenadas exactas por escaneo de píxeles**: cada caja de zona en `MapaZonas.tsx` (BLOQUES + AVENIDA_OVERLAYS) se midió programáticamente sobre la imagen real (detección de transiciones de color fondo/relleno vía PIL), no a ojo. Como el nuevo mapa es un diagrama prolijo (no una foto rotada), cada zona resalta como el rectángulo completo (ya no hace falta distinguir `hit` de `label`).
+- **Backend** (`tasacion.py`): `SEED`/`ZONA_SUFIJO`/`NOMBRE_ZONA` actualizados a las 22 zonas. Zonas renombradas migran su valor calibrado a la nueva clave sin perderlo (`alelies`→`los_alelies`, `reserva_multif`→`reserva_comercial`) vía `_MIGRACION_ZONAS` en `get_config()`. `av2` (único con valor real calibrado, USD 205) se mantuvo intacto. Claves huérfanas viejas limpiadas de Mongo tras la migración.
+- **Fuente única de verdad confirmada**: `TasadorConfig.tsx`, `TasacionesScreen.tsx` y `TasarPublico.tsx` ya importaban `ZONAS_TASADOR` desde `MapaZonas.tsx`, así que reflejan las 22 zonas automáticamente sin tocarlos.
+- Imagen nueva copiada a `/app/frontend/public/costa-del-este-mapa-zonas.jpg` (mismo nombre de archivo, sin tocar otras referencias).
+- Nit no bloqueante (testing agent): quedaban 2 claves huérfanas `precio_lote_alelies`/`precio_lote_reserva_multif` en Mongo tras la migración (valor 0, sin impacto funcional) — LIMPIADAS manualmente post-testing.
+- Bug incidental encontrado y resuelto: cache de webpack (`node_modules/.cache`) quedó stale y mostraba errores TS fantasma en `RentalWorkspace.tsx` (`descMesMin` etc. — en realidad ya declarados en `api.ts` desde el sprint de descuentos flexibles); se resolvió limpiando el cache y reiniciando frontend, sin cambios de código.
+
 ## Backlog (prioritized)
 - **P1**: `Hoy` App (AI-first daily dashboard); Property detail screen; extract PropertyCard.
 
