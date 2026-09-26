@@ -199,8 +199,17 @@ Nueva feature (pedida por el usuario): evitar recargar los mismos datos dos vece
 - Verificado 100% por testing_agent en 2 rondas (iteration_59 encontró un bug de mapeo de roles → corregido → iteration_60 confirmó fix end-to-end en ambos flujos, manual y leads online).
 - Nit conocido no bloqueante (reportado por testing agent, no arreglado — bajo impacto): warning de React "duplicate key" al avanzar el wizard (posible propiedad/persona duplicada en alguna lista); y el inbox de "Tasaciones recibidas" tarda 6-15s en cargar 38 leads en el primer render.
 
+## Implemented (Guardado automático de tasaciones manuales — 2026-09)
+Bug reportado: una tasación manual ("Mazzochi") se perdió porque solo "Guardar lead"/"Generar autorización" persistían datos — "Calcular tasación" y "Generar JPG" no guardaban nada.
+- Ahora TODA tasación manual con propietario o dirección se guarda sola en una nueva colección Mongo `tasaciones_manuales`, disparado desde `/calcular` Y `/jpg` (con clave determinística vía `uuid5` para no duplicar si se llaman ambos con los mismos datos).
+- Nueva sección **"Tasaciones realizadas"** en `TasacionesScreen.tsx` (espejo de "Tasaciones recibidas"), con botón "Generar autorización" por ítem y borrado (✕).
+- Refactor DRY: `generarAutorizacion`/`generarAutorizacionLead`/`generarAutorizacionManual` comparten helpers `crearPropiedadYAbrirWizard()` y `resolverPersona()`.
+- Verificado 100% por testing_agent (iteration_61), incluyendo caso negativo (sin propietario/dirección no persiste) y dedup Calcular+JPG.
+- Nota: la zona "Zona Premium Norte" del caso "Mazzochi" real del usuario sigue sin calibrar (USD 0/m²) — falta que el usuario cargue el precio en Tasador → Config para que el monto sea real al recrearla.
+
 ## Backlog (prioritized)
 - **P0 (retomar)**: Terminar "Solicitud de revisión de app" en Meta (whatsapp_business_management/messaging Advanced Access) para activar el botón "Conectar mi WhatsApp" con el número real.
+- **P0 (usuario)**: Recargar tasación real de "Mazzochi" (Marcos, 1141812941, Lote 550m², Zona Premium Norte) ahora que el guardado automático funciona — y calibrar precio de "Zona Premium Norte" en Tasador → Config primero para que el monto no salga en USD 0.
 - **P2**: Investigar warning "duplicate key" en DocumentWizard al avanzar pasos (no bloqueante); investigar carga lenta (6-15s) del inbox de Tasaciones recibidas.
 - **P1**: `Hoy` App (AI-first daily dashboard); Property detail screen; extract PropertyCard.
 

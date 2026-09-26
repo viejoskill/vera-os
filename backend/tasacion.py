@@ -107,7 +107,10 @@ def _manuales_col():
 
 
 async def save_manual(doc: dict) -> dict:
-    await _manuales_col().insert_one(doc)
+    key = {"_id": doc["_id"]}
+    update = {"$set": {k: v for k, v in doc.items() if k not in ("_id", "createdAt")},
+              "$setOnInsert": {"createdAt": doc["createdAt"]}}
+    await _manuales_col().update_one(key, update, upsert=True)
     return doc
 
 

@@ -239,8 +239,16 @@ export const TasacionesScreen = () => {
   };
 
   const eliminarManual = async (id: string) => {
-    setManuales((prev) => prev.filter((m) => m.id !== id));
-    await fetch(`${API}/manuales/${id}`, { method: 'DELETE' }).catch(() => {});
+    const prev = manuales;
+    setManuales((cur) => cur.filter((m) => m.id !== id));
+    try {
+      const res = await fetch(`${API}/manuales/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('delete failed');
+    } catch {
+      setManuales(prev);
+      setFlash('No pudimos eliminarla. Probá de nuevo.');
+      setTimeout(() => setFlash(''), 3000);
+    }
   };
 
   const esCasa = f.tipo === 'casa' || f.tipo === 'duplex';
@@ -322,7 +330,7 @@ export const TasacionesScreen = () => {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {manuales.map((m) => (
-              <div key={m.id} data-testid={`tas-manual-${m.id}`} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div key={m.id} data-testid={`tas-manual-row-${m.id}`} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>
                     {m.direccion || m.propietario || 'Sin nombre'}

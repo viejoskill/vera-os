@@ -127,11 +127,16 @@ async def eliminar_manual(manual_id: str):
 
 async def _persist_manual(body: "JpgBody", r: dict) -> None:
     """Guarda toda tasación manual con datos de propietario/dirección, para no
-    perderla si el usuario solo genera el JPG sin tocar 'Guardar lead'."""
+    perderla si el usuario solo genera el JPG sin tocar 'Guardar lead'. Usa una
+    clave estable (mismos datos de propiedad) para no duplicar si Calcular y
+    Generar JPG se llaman ambos para la misma tasación."""
     if not (body.propietario or body.direccion):
         return
+    key_src = "|".join(str(v) for v in (
+        body.propietario, body.direccion, body.telefono, body.tipo, body.zona, body.lote, body.cubiertos,
+    ))
     await tasacion.save_manual({
-        "_id": str(uuid.uuid4()),
+        "_id": str(uuid.uuid5(uuid.NAMESPACE_URL, key_src)),
         "createdAt": datetime.now(timezone.utc).isoformat(),
         "propietario": body.propietario, "direccion": body.direccion,
         "telefono": body.telefono, "email": body.email,

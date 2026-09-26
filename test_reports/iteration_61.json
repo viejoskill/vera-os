@@ -1,0 +1,33 @@
+{
+  "summary": "Verified new 'Tasaciones realizadas' history feature in /tasaciones. Both backend (6/6 pytest) and frontend (Playwright) tests pass. Auto-persistence works via BOTH /calcular and /jpg when propietario OR direccion is present; no persistence when both are absent. New history section renders the entry with all metadata (address, owner, phone, tipo, zona, USD range). 'Generar autorización' on a manual entry successfully creates draft property + resolves person + navigates to /veraos/documentos/nuevo. Optimistic delete works and the entry stays gone after refresh.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "TasacionesScreen result panel", "issue": "The 'Generar JPG' button (data-testid='tas-jpg') is nested inside the result panel (aside data-testid='tas-result') which only renders AFTER a successful 'Calcular tasación' call. This makes the task step 'Click ONLY Generar JPG — do NOT click Calcular first' impossible via the UI. Not a bug per se (both endpoints now persist so behavior is correct), but the wording implies JPG can be clicked directly. Consider surfacing a top-level 'Generar JPG' or updating the story to reflect UI flow.", "selector": "[data-testid='tas-jpg']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_tasacion_manuales.py", "/app/test_reports/pytest/tasacion_manuales.xml"],
+  "action_items": [
+    "OPTIONAL: The Calcular button also triggers persistence (via new JpgBody accepting propietario/direccion in /calcular). This is intentional and matches the story. Just document that behavior since the UI now creates 2 entries when the user runs Calcular then JPG (verified: 2 Mazzochi entries created). If de-duplication is desired, main agent could dedupe by (propietario,direccion,tipo,zona) within a short time window.",
+    "OPTIONAL cleanup: user-side deletion of the two draft properties + one resolved person created by the wizard test (Mazzochi QA / Mazzochi 123). We already cleaned the Mongo `tasaciones_manuales` entries and reverted qa_varela isAdmin=false.",
+    "Pre-existing 500 errors on GET /api/tasacion/online-leads, /api/people, /api/properties observed intermittently (Postgrest schema errors: 'Could not find table public.people' and 'Could not find document column of people') — appears to come from an older Supabase/postgrest integration branch; unrelated to this iteration but worth investigating separately since it clutters the console and shows 'Cargando…' forever in Tasaciones recibidas section."
+  ],
+  "critical_code_review_comments": [
+    "routes_tasacion.py:_persist_manual — no dedup: calling POST /calcular and then POST /jpg for the same manual tasación creates 2 identical items (verified during UI test). Consider using an upsert keyed on (propietario, direccion, tipo, zona) within a rolling window, or on a client-provided idempotency key.",
+    "backend/tasacion.py: `_client` is a module-level singleton created lazily in both `_col()` and `_manuales_col()` — fine, but DB name uses appconfig.DB_NAME which is correct. No _id leak in list_manuales because routes_tasacion.py renames it to id before returning. ✔",
+    "frontend TasacionesScreen.tsx: the `tas-manual-` prefix is shared by the container `data-testid='tas-manual-{id}'` and the child buttons `tas-manual-autorizacion-{id}` / `tas-manual-eliminar-{id}`. Using `[data-testid^=\"tas-manual-\"]` selectors matches both, which can trip up test automation. Consider renaming the container to `tas-manual-row-{id}` for clarity.",
+    "eliminarManual() has no error UI feedback if DELETE fails (optimistic UI hides the entry, then the .catch(() => {}) swallows the error). If the server delete fails the UI will show it gone but a manual refresh will bring it back — silent inconsistency. Add a toast + revert on error."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_tasacion_manuales.py (new pytest file, 6 tests)"
+  ],
+  "success_rate": {"backend": "100% (6/6 pytest)", "frontend": "100% (auto-persist on Calcular+JPG, history render, Generar autorización → wizard navigation with property+person resolved, delete optimistic+persisted, negative case verified)"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml — temporarily set isAdmin=true in Mongo app_access to reach /veraos/tasaciones + /veraos/documentos, then reverted to isAdmin=false. Cleanup done.",
+  "seed_data_creation": "2 'Mazzochi QA' manual tasaciones (Mazzochi 123 · Lote Zona Premium Norte) created and DELETED from `tasaciones_manuales`. During Generar autorización test, wizard flow created: 1 person (Mazzochi QA / 1141812941) via /api/people/resolve, 1 draft property (Mazzochi 123) via POST /api/properties. Those are still in DB — main agent can delete via DELETE /api/properties/{id} and DELETE /api/people/{id} if desired.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All aspects of the iteration_61 story verified end-to-end. Backend 6/6 pytest (test_tasacion_manuales.py) covers: GET returns list; /calcular without owner/direccion does NOT persist; /calcular with owner persists; /jpg with owner persists & DELETE works; /jpg without owner/direccion does NOT persist; direccion-only persists. UI verified: history section renders below 'Tasaciones recibidas', both Calcular AND JPG cause persistence (=> 2 entries per full flow — see action items about dedup), Generar autorización creates property+person and navigates to /documentos/nuevo, optimistic delete works. Zone premium_norte still shows USD 0 as expected (uncalibrated). Regression: existing 'Guardar lead', in-panel 'Generar autorización' and inbox lead 'Generar autorización' were not re-tested per request (already 100% in iterations 59/60); refactored helpers crearPropiedadYAbrirWizard/resolverPersona look correct.",
+  "rca of the issue": "N/A — feature story implemented correctly. Only minor smell: no dedup between /calcular and /jpg persistence for the same manual tasación (produces duplicate history rows if user runs Calcular then JPG)."
+}
