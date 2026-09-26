@@ -24,6 +24,13 @@ interface OnlineLead {
   tipo: string; zona: string; estMin: number; estMax: number; area: number; fecha: string;
 }
 
+interface ManualTasacion {
+  id: string; createdAt: string; propietario: string; direccion: string; telefono: string; email: string;
+  tipo: string; zona: string; zonaNombre: string; tipoNombre: string;
+  lote: number | null; cubiertos: number | null; dormitorios: number | null; banos: number | null;
+  cierreMin: number; cierreMax: number; asesor: string;
+}
+
 const usd = (n: number) => 'USD ' + n.toLocaleString('de-DE');
 
 const TIPO_A_PROPERTY_TYPE: Record<string, PropertyType> = {
@@ -72,7 +79,13 @@ export const TasacionesScreen = () => {
     setLoadingLeads(true);
     fetch(`${API}/online-leads`).then((r) => r.json()).then((d) => setLeads(d.leads || [])).catch(() => setLeads([])).finally(() => setLoadingLeads(false));
   };
-  useEffect(() => { loadLeads(); }, []);
+  const [manuales, setManuales] = useState<ManualTasacion[]>([]);
+  const [loadingManuales, setLoadingManuales] = useState(true);
+  const loadManuales = () => {
+    setLoadingManuales(true);
+    fetch(`${API}/manuales`).then((r) => r.json()).then((d) => setManuales(d.items || [])).catch(() => setManuales([])).finally(() => setLoadingManuales(false));
+  };
+  useEffect(() => { loadLeads(); loadManuales(); }, []);
   const set = (k: string, val: string | boolean) => setF((s) => ({ ...s, [k]: val }));
 
   const publicUrl = `${window.location.origin}/tasar`;
@@ -103,6 +116,7 @@ export const TasacionesScreen = () => {
     });
     setResult(await res.json());
     setLoading(false);
+    loadManuales();
   };
 
   const generarJpg = async () => {
@@ -118,6 +132,7 @@ export const TasacionesScreen = () => {
     a.click();
     setFlash('Imagen descargada. Compartila por WhatsApp 📲');
     setTimeout(() => setFlash(''), 4000);
+    loadManuales();
   };
 
   const guardarLead = async () => {
@@ -131,19 +146,32 @@ export const TasacionesScreen = () => {
   };
 
   const [generandoAutorizacion, setGenerandoAutorizacion] = useState(false);
+  const [generandoLeadId, setGenerandoLeadId] = useState<string | null>(null);
+  const [generandoManualId, setGenerandoManualId] = useState<string | null>(null);
+
+  const resolverPersona = async (fullName: string, phone: string, email?: string) => {
+    const res = await fetch(`${env.backendUrl}/api/people/resolve`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fullName, phone, whatsapp: phone, email: email || undefined, role: 'propietario' }),
+    });
+    if (!res.ok) throw new Error('resolve failed');
+    return res.json();
+  };
+
+  const crearPropiedadYAbrirWizard = async (payloadProp: Record<string, unknown>, personId?: string) => {
+    const property = await propertyService.createProperty(payloadProp);
+    navigate('/documentos/nuevo', {
+      state: { prefillPropertyId: property.id, prefillPersonId: personId, prefillPersonRole: 'propietario' },
+    });
+  };
 
   const generarAutorizacion = async () => {
     if (!f.propietario || !f.telefono) { setFlash('Cargá nombre y teléfono del propietario para generar la autorización.'); setTimeout(() => setFlash(''), 3500); return; }
     if (!result) return;
     setGenerandoAutorizacion(true);
     try {
-      const personRes = await fetch(`${env.backendUrl}/api/people/resolve`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName: f.propietario, phone: f.telefono, whatsapp: f.telefono, email: f.email || undefined, role: 'vendedor' }),
-      });
-      if (!personRes.ok) throw new Error('resolve failed');
-      const person = await personRes.json();
-      const property = await propertyService.createProperty({
+      const person = await resolverPersona(f.propietario, f.telefono, f.email);
+      await crearPropiedadYAbrirWizard({
         title: f.direccion.trim() || `${result.tipoNombre} en ${result.zonaNombre}`,
         address: f.direccion.trim(),
         city: 'Costa del Este',
@@ -154,10 +182,7 @@ export const TasacionesScreen = () => {
         bathrooms: f.banos ? Number(f.banos) : 0,
         price: Math.round(result.cierreMin) || 0,
         ownerId: person.id,
-      });
-      navigate('/documentos/nuevo', {
-        state: { prefillPropertyId: property.id, prefillPersonId: person.id, prefillPersonRole: 'propietario' },
-      });
+      }, person.id);
     } catch {
       setFlash('No pudimos generar la autorización. Probá de nuevo.');
       setTimeout(() => setFlash(''), 3500);
@@ -166,28 +191,56 @@ export const TasacionesScreen = () => {
     }
   };
 
-  const [generandoLeadId, setGenerandoLeadId] = useState<string | null>(null);
-
   const generarAutorizacionLead = async (l: OnlineLead) => {
     setGenerandoLeadId(l.id);
     try {
-      const property = await propertyService.createProperty({
+      await crearPropiedadYAbrirWizard({
         title: `${l.tipo || 'Propiedad'} en ${l.zona || 'Costa del Este'}`,
         city: 'Costa del Este',
         type: TIPO_A_PROPERTY_TYPE[l.tipo] ?? 'terreno',
         areaM2: l.area || 0,
         price: Math.round(l.estMin) || 0,
         ownerId: l.personId,
-      });
-      navigate('/documentos/nuevo', {
-        state: { prefillPropertyId: property.id, prefillPersonId: l.personId, prefillPersonRole: 'propietario' },
-      });
+      }, l.personId);
     } catch {
       setFlash('No pudimos generar la autorización de este lead. Probá de nuevo.');
       setTimeout(() => setFlash(''), 3500);
     } finally {
       setGenerandoLeadId(null);
     }
+  };
+
+  const generarAutorizacionManual = async (m: ManualTasacion) => {
+    setGenerandoManualId(m.id);
+    try {
+      let personId: string | undefined;
+      if (m.propietario && m.telefono) {
+        const person = await resolverPersona(m.propietario, m.telefono, m.email || undefined);
+        personId = person.id;
+      }
+      await crearPropiedadYAbrirWizard({
+        title: (m.direccion || '').trim() || `${m.tipoNombre} en ${m.zonaNombre}`,
+        address: (m.direccion || '').trim(),
+        city: 'Costa del Este',
+        type: TIPO_A_PROPERTY_TYPE[m.tipo] ?? 'terreno',
+        areaM2: m.cubiertos || m.lote || 0,
+        lotAreaM2: m.lote || undefined,
+        bedrooms: m.dormitorios || 0,
+        bathrooms: m.banos || 0,
+        price: Math.round(m.cierreMin) || 0,
+        ownerId: personId,
+      }, personId);
+    } catch {
+      setFlash('No pudimos generar la autorización de esta tasación. Probá de nuevo.');
+      setTimeout(() => setFlash(''), 3500);
+    } finally {
+      setGenerandoManualId(null);
+    }
+  };
+
+  const eliminarManual = async (id: string) => {
+    setManuales((prev) => prev.filter((m) => m.id !== id));
+    await fetch(`${API}/manuales/${id}`, { method: 'DELETE' }).catch(() => {});
   };
 
   const esCasa = f.tipo === 'casa' || f.tipo === 'duplex';
@@ -251,6 +304,53 @@ export const TasacionesScreen = () => {
                 </div>
               );
             })}
+          </div>
+        )}
+      </section>
+
+      <section className="tas__inbox" data-testid="tasaciones-manuales" style={{ background: '#141412', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: 18, marginBottom: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}><Calculator size={17} /> Tasaciones realizadas</h3>
+          <span style={{ fontSize: 12, color: '#9a9a95' }}>({manuales.length})</span>
+          <button type="button" onClick={loadManuales} title="Actualizar" data-testid="tas-manuales-refresh" style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: '#c9c9c4', borderRadius: 8, padding: '5px 9px', cursor: 'pointer', fontSize: 12 }}><RefreshCw size={13} /> Actualizar</button>
+        </div>
+        <p style={{ margin: '0 0 12px', color: '#9a9a95', fontSize: 12.5 }}>Toda tasación manual con propietario o dirección se guarda sola acá, aunque solo hayas generado el JPG.</p>
+        {loadingManuales ? (
+          <p style={{ color: '#9a9a95', fontSize: 13 }}>Cargando…</p>
+        ) : manuales.length === 0 ? (
+          <p style={{ color: '#6b6b66', fontSize: 13 }}>Todavía no hay tasaciones manuales guardadas.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {manuales.map((m) => (
+              <div key={m.id} data-testid={`tas-manual-${m.id}`} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>
+                    {m.direccion || m.propietario || 'Sin nombre'}
+                    {m.propietario && m.direccion ? <span style={{ color: '#9a9a95', fontWeight: 400 }}> · {m.propietario}</span> : null}
+                    {m.telefono ? <span style={{ color: '#9a9a95', fontWeight: 400 }}> · {m.telefono}</span> : null}
+                  </div>
+                  <div style={{ color: '#9a9a95', fontSize: 12.5, marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <span>{m.tipoNombre}</span>
+                    <span><MapPin size={11} style={{ verticalAlign: -1 }} /> {m.zonaNombre}</span>
+                    {(m.cierreMin || m.cierreMax) ? <span style={{ color: '#8fe3c4' }}>{usd(m.cierreMin)} – {usd(m.cierreMax)}</span> : null}
+                    {m.createdAt ? <span>{new Date(m.createdAt).toLocaleDateString('es-AR')}</span> : null}
+                  </div>
+                </div>
+                <button
+                  type="button" onClick={() => generarAutorizacionManual(m)} disabled={generandoManualId === m.id}
+                  data-testid={`tas-manual-autorizacion-${m.id}`}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 9, background: 'rgba(246,230,58,0.12)', color: '#e9e4b0', border: '1px solid rgba(246,230,58,0.35)', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap' }}
+                >
+                  <FileSignature size={14} /> {generandoManualId === m.id ? 'Generando…' : 'Generar autorización'}
+                </button>
+                <button
+                  type="button" onClick={() => eliminarManual(m.id)} title="Eliminar" data-testid={`tas-manual-eliminar-${m.id}`}
+                  style={{ display: 'inline-flex', alignItems: 'center', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#9a9a95', borderRadius: 9, padding: '7px 9px', cursor: 'pointer', fontSize: 12.5 }}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </section>

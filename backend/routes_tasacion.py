@@ -5,7 +5,8 @@ import base64
 import io
 import os
 import random
-from datetime import datetime
+import uuid
+from datetime import datetime, timezone
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -110,10 +111,45 @@ async def online_leads(limit: int = 200):
     return {"leads": out}
 
 
+@router.get("/manuales")
+async def manuales(limit: int = 100):
+    items = await tasacion.list_manuales(limit)
+    for it in items:
+        it["id"] = it.pop("_id")
+    return {"items": items}
+
+
+@router.delete("/manuales/{manual_id}")
+async def eliminar_manual(manual_id: str):
+    await tasacion.delete_manual(manual_id)
+    return {"ok": True}
+
+
+async def _persist_manual(body: "JpgBody", r: dict) -> None:
+    """Guarda toda tasación manual con datos de propietario/dirección, para no
+    perderla si el usuario solo genera el JPG sin tocar 'Guardar lead'."""
+    if not (body.propietario or body.direccion):
+        return
+    await tasacion.save_manual({
+        "_id": str(uuid.uuid4()),
+        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "propietario": body.propietario, "direccion": body.direccion,
+        "telefono": body.telefono, "email": body.email,
+        "tipo": body.tipo, "zona": body.zona,
+        "zonaNombre": r["zonaNombre"], "tipoNombre": r["tipoNombre"],
+        "lote": body.lote, "cubiertos": body.cubiertos,
+        "dormitorios": getattr(body, "dormitorios", None), "banos": getattr(body, "banos", None),
+        "cierreMin": r["cierreMin"], "cierreMax": r["cierreMax"],
+        "asesor": getattr(body, "asesor", None),
+    })
+
+
 @router.post("/calcular")
-async def calcular(body: CalcularBody):
+async def calcular(body: JpgBody):
     cfg = await tasacion.get_config()
-    return tasacion.tasar(body.model_dump(), cfg)
+    r = tasacion.tasar(body.model_dump(), cfg)
+    await _persist_manual(body, r)
+    return r
 
 
 def _usd(n: float) -> str:
@@ -242,6 +278,7 @@ def _ic_spark(d, x, y, s, c):
 async def jpg(body: JpgBody):
     cfg = await tasacion.get_config()
     r = tasacion.tasar(body.model_dump(), cfg)
+    await _persist_manual(body, r)
 
     W, H, MX = 1080, 1620, 72
     RX = W - MX

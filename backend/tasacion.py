@@ -99,6 +99,27 @@ async def set_config(values: dict[str, float]) -> dict[str, float]:
     return merged
 
 
+def _manuales_col():
+    global _client
+    if _client is None:
+        _client = AsyncIOMotorClient(appconfig.MONGO_URL)
+    return _client[appconfig.DB_NAME]["tasaciones_manuales"]
+
+
+async def save_manual(doc: dict) -> dict:
+    await _manuales_col().insert_one(doc)
+    return doc
+
+
+async def list_manuales(limit: int = 100) -> list[dict]:
+    return [d async for d in _manuales_col().find({}).sort("createdAt", -1).limit(limit)]
+
+
+async def delete_manual(manual_id: str) -> bool:
+    res = await _manuales_col().delete_one({"_id": manual_id})
+    return res.deleted_count > 0
+
+
 def _r500(n: float, modo: str) -> int:
     paso = 500
     if modo == "down":
