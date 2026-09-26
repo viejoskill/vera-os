@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Calculator, Download, UserPlus, Sparkles, Share2, Check, Inbox, MessageCircle, MapPin, RefreshCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Calculator, Download, UserPlus, Sparkles, Share2, Check, Inbox, MessageCircle, MapPin, RefreshCw, FileSignature } from 'lucide-react';
 import { Input, Button } from '@vera/ui';
 import { env } from '@vera/config';
+import { propertyService } from '@vera/services';
+import type { PropertyType } from '@vera/types';
 import { useAuthUser } from '@app/auth/useAuthUser';
 import { TasadorConfig } from '@app/screens/TasadorConfig';
 import { ZONAS_TASADOR } from '@app/public/MapaZonas';
@@ -22,6 +25,10 @@ interface OnlineLead {
 }
 
 const usd = (n: number) => 'USD ' + n.toLocaleString('de-DE');
+
+const TIPO_A_PROPERTY_TYPE: Record<string, PropertyType> = {
+  casa: 'casa', duplex: 'casa', lote: 'terreno', depto: 'departamento',
+};
 
 const Sel = ({ label, value, onChange, options, testid }: {
   label: string; value: string; onChange: (v: string) => void; options: string[][]; testid: string;
@@ -44,6 +51,7 @@ const Chk = ({ label, checked, onChange, testid }: {
 );
 
 export const TasacionesScreen = () => {
+  const navigate = useNavigate();
   const { displayName } = useAuthUser();
   const [f, setF] = useState({
     tipo: 'casa', zona: 'playa', cubiertos: '', semicubiertos: '', lote: '',
@@ -122,6 +130,65 @@ export const TasacionesScreen = () => {
     setTimeout(() => setFlash(''), 4000);
   };
 
+  const [generandoAutorizacion, setGenerandoAutorizacion] = useState(false);
+
+  const generarAutorizacion = async () => {
+    if (!f.propietario || !f.telefono) { setFlash('Cargá nombre y teléfono del propietario para generar la autorización.'); setTimeout(() => setFlash(''), 3500); return; }
+    if (!result) return;
+    setGenerandoAutorizacion(true);
+    try {
+      const personRes = await fetch(`${env.backendUrl}/api/people/resolve`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName: f.propietario, phone: f.telefono, whatsapp: f.telefono, email: f.email || undefined, role: 'vendedor' }),
+      });
+      const person = await personRes.json();
+      const property = await propertyService.createProperty({
+        title: f.direccion.trim() || `${result.tipoNombre} en ${result.zonaNombre}`,
+        address: f.direccion.trim(),
+        city: 'Costa del Este',
+        type: TIPO_A_PROPERTY_TYPE[f.tipo] ?? 'terreno',
+        areaM2: f.cubiertos ? Number(f.cubiertos) : (f.lote ? Number(f.lote) : 0),
+        lotAreaM2: f.lote ? Number(f.lote) : undefined,
+        bedrooms: f.dormitorios ? Number(f.dormitorios) : 0,
+        bathrooms: f.banos ? Number(f.banos) : 0,
+        price: Math.round(result.cierreMin) || 0,
+        ownerId: person.id,
+      });
+      navigate('/documentos/nuevo', {
+        state: { prefillPropertyId: property.id, prefillPersonId: person.id, prefillPersonRole: 'vendedor' },
+      });
+    } catch {
+      setFlash('No pudimos generar la autorización. Probá de nuevo.');
+      setTimeout(() => setFlash(''), 3500);
+    } finally {
+      setGenerandoAutorizacion(false);
+    }
+  };
+
+  const [generandoLeadId, setGenerandoLeadId] = useState<string | null>(null);
+
+  const generarAutorizacionLead = async (l: OnlineLead) => {
+    setGenerandoLeadId(l.id);
+    try {
+      const property = await propertyService.createProperty({
+        title: `${l.tipo || 'Propiedad'} en ${l.zona || 'Costa del Este'}`,
+        city: 'Costa del Este',
+        type: TIPO_A_PROPERTY_TYPE[l.tipo] ?? 'terreno',
+        areaM2: l.area || 0,
+        price: Math.round(l.estMin) || 0,
+        ownerId: l.personId,
+      });
+      navigate('/documentos/nuevo', {
+        state: { prefillPropertyId: property.id, prefillPersonId: l.personId, prefillPersonRole: 'vendedor' },
+      });
+    } catch {
+      setFlash('No pudimos generar la autorización de este lead. Probá de nuevo.');
+      setTimeout(() => setFlash(''), 3500);
+    } finally {
+      setGenerandoLeadId(null);
+    }
+  };
+
   const esCasa = f.tipo === 'casa' || f.tipo === 'duplex';
   const esDepto = f.tipo === 'depto';
 
@@ -173,6 +240,13 @@ export const TasacionesScreen = () => {
                   {tel && (
                     <a href={`https://wa.me/${tel}`} target="_blank" rel="noreferrer" data-testid={`tas-lead-wa-${l.id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 9, background: 'rgba(37,211,102,0.12)', color: '#25D366', border: '1px solid rgba(37,211,102,0.3)', textDecoration: 'none', fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap' }}><MessageCircle size={14} /> WhatsApp</a>
                   )}
+                  <button
+                    type="button" onClick={() => generarAutorizacionLead(l)} disabled={generandoLeadId === l.id}
+                    data-testid={`tas-lead-autorizacion-${l.id}`}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 9, background: 'rgba(246,230,58,0.12)', color: '#e9e4b0', border: '1px solid rgba(246,230,58,0.35)', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap' }}
+                  >
+                    <FileSignature size={14} /> {generandoLeadId === l.id ? 'Generando…' : 'Generar autorización'}
+                  </button>
                 </div>
               );
             })}
@@ -278,6 +352,9 @@ export const TasacionesScreen = () => {
               <div className="tas__actions">
                 <Button variant="secondary" size="md" onClick={generarJpg} data-testid="tas-jpg"><Download size={15} /> Generar JPG</Button>
                 <Button variant="ghost" size="md" onClick={guardarLead} data-testid="tas-lead"><UserPlus size={15} /> Guardar lead</Button>
+                <Button variant="ghost" size="md" onClick={generarAutorizacion} disabled={generandoAutorizacion} data-testid="tas-autorizacion">
+                  <FileSignature size={15} /> {generandoAutorizacion ? 'Generando…' : 'Generar autorización'}
+                </Button>
               </div>
             </>
           )}

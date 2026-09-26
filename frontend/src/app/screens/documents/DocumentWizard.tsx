@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, ArrowRight, Check, CheckCircle2, FileText, Home, Layers,
@@ -37,15 +37,23 @@ function roleLabel(role: string): string {
  * el usuario solo aporta lo que falta. */
 export const DocumentWizard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const prefill = (location.state ?? {}) as {
+    prefillPropertyId?: string; prefillPersonId?: string; prefillPersonRole?: string;
+  };
   const [step, setStep] = useState<Step>('template');
   const [templateId, setTemplateId] = useState<string>('');
-  const [propertyId, setPropertyId] = useState<string>('');
+  const [propertyId, setPropertyId] = useState<string>(prefill.prefillPropertyId ?? '');
   const [propertyQuery, setPropertyQuery] = useState<string>('');
   const [showQuickAddProperty, setShowQuickAddProperty] = useState(false);
   const [quickAddProperty, setQuickAddProperty] = useState({ title: '', address: '', city: '', type: 'terreno' });
   const [creatingProperty, setCreatingProperty] = useState(false);
   const [quickAddPropertyError, setQuickAddPropertyError] = useState<string | null>(null);
-  const [personsByRole, setPersonsByRole] = useState<Record<string, string[]>>({});
+  const [personsByRole, setPersonsByRole] = useState<Record<string, string[]>>(
+    prefill.prefillPersonRole && prefill.prefillPersonId
+      ? { [prefill.prefillPersonRole]: [prefill.prefillPersonId] }
+      : {},
+  );
   const [quickAddRole, setQuickAddRole] = useState<string | null>(null);
   const [quickAdd, setQuickAdd] = useState({ fullName: '', document: '', primaryPhone: '', primaryEmail: '' });
   const [inputs, setInputs] = useState<Record<string, string>>({});
