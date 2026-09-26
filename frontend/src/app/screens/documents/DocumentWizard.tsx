@@ -44,6 +44,7 @@ export const DocumentWizard = () => {
   const [showQuickAddProperty, setShowQuickAddProperty] = useState(false);
   const [quickAddProperty, setQuickAddProperty] = useState({ title: '', address: '', city: '', type: 'terreno' });
   const [creatingProperty, setCreatingProperty] = useState(false);
+  const [quickAddPropertyError, setQuickAddPropertyError] = useState<string | null>(null);
   const [personsByRole, setPersonsByRole] = useState<Record<string, string[]>>({});
   const [quickAddRole, setQuickAddRole] = useState<string | null>(null);
   const [quickAdd, setQuickAdd] = useState({ fullName: '', document: '', primaryPhone: '', primaryEmail: '' });
@@ -75,6 +76,7 @@ export const DocumentWizard = () => {
   const submitQuickAddProperty = async () => {
     if (!quickAddProperty.title.trim()) return;
     setCreatingProperty(true);
+    setQuickAddPropertyError(null);
     try {
       const created = await propertyService.createProperty({
         title: quickAddProperty.title.trim(),
@@ -86,6 +88,8 @@ export const DocumentWizard = () => {
       setPropertyId(created.id);
       setQuickAddProperty({ title: '', address: '', city: '', type: 'terreno' });
       setShowQuickAddProperty(false);
+    } catch {
+      setQuickAddPropertyError('No pudimos crear la propiedad. Probá de nuevo.');
     } finally {
       setCreatingProperty(false);
     }
@@ -345,6 +349,9 @@ export const DocumentWizard = () => {
                 disabled={!quickAddProperty.title.trim() || creatingProperty} onClick={submitQuickAddProperty}>
                 {creatingProperty ? 'Agregando…' : 'Agregar propiedad'}
               </Button>
+              {quickAddPropertyError && (
+                <p className="vera-field__error" data-testid="quickadd-property-error">{quickAddPropertyError}</p>
+              )}
             </div>
           )}
         </section>

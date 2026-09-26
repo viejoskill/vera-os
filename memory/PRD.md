@@ -178,7 +178,21 @@ Overhaul completo del mapa interactivo del Tasador público (`/tasar`) a un nuev
 - Nit no bloqueante (testing agent): quedaban 2 claves huérfanas `precio_lote_alelies`/`precio_lote_reserva_multif` en Mongo tras la migración (valor 0, sin impacto funcional) — LIMPIADAS manualmente post-testing.
 - Bug incidental encontrado y resuelto: cache de webpack (`node_modules/.cache`) quedó stale y mostraba errores TS fantasma en `RentalWorkspace.tsx` (`descMesMin` etc. — en realidad ya declarados en `api.ts` desde el sprint de descuentos flexibles); se resolvió limpiando el cache y reiniciando frontend, sin cambios de código.
 
+## Implemented (Bug fix — Alta rápida de propiedad en Documentos — 2026-09)
+Bug: en el wizard "Nuevo Documento" (`/documentos/nuevo`), el paso "Elegí la propiedad" solo permitía elegir propiedades YA cargadas — imposible generar una Autorización de venta para una propiedad nueva que el cliente recién trae.
+- Agregado botón "+ Es una propiedad nueva, todavía no está cargada" en el paso Propiedad del wizard (mismo patrón que el quick-add de Personas), con mini-formulario (título*, dirección, ciudad, tipo) que crea la propiedad como `status:'draft'` vía nuevo método `PropertyService.createProperty()`.
+- Backend no necesitó cambios (`PropertyCreate` en `schemas.py` solo exige `title`, el resto tiene defaults).
+- Verificado 100% por testing_agent (iteration_58): creación end-to-end, selección automática, aparece en Propiedades con badge "Borrador", regresión de la lista existente OK.
+- Fix menor post-testing: agregado manejo de error (antes fallaba silenciosamente si el POST fallaba).
+- Nota testing: usuario QA (`qa_varela@vera.test`) es de tipo empleado y no accedía a `/documentos` — requiere `isAdmin=true` temporal en Mongo `app_access` para probar esa área (revertido tras el test).
+
+## Implemented (WhatsApp Coexistencia — número real en curso — 2026-09)
+- Negocio de Meta verificado; se completó config técnica: `WHATSAPP_CONFIG_ID`, `WHATSAPP_CALLBACK_URL` (apuntando a producción), dominios de la app corregidos (typo detectado y arreglado), JS SDK habilitado, app publicada/activa, página `/privacidad` creada (requerida por Meta) y token de prueba renovado (el anterior había expirado).
+- BLOQUEADO: falta aprobar el "Acceso avanzado" a `whatsapp_business_management`/`whatsapp_business_messaging` vía Solicitud de revisión de app — bug conocido del panel de Meta (el video sube al 100% pero no se guarda). Pendiente reintentar (recomendado: otro horario). Todo lo demás ya está listo, solo falta ese último paso para que el botón "Conectar mi WhatsApp" complete la vinculación real.
+- Usuario decidió NO migrar a bot por QR (Baileys/whatsapp-web.js) tras análisis de riesgo/costo — se mantiene 100% en API oficial + Coexistencia.
+
 ## Backlog (prioritized)
+- **P0 (retomar)**: Terminar "Solicitud de revisión de app" en Meta (whatsapp_business_management/messaging Advanced Access) para activar el botón "Conectar mi WhatsApp" con el número real.
 - **P1**: `Hoy` App (AI-first daily dashboard); Property detail screen; extract PropertyCard.
 
 ## Implemented (Sprint "Construir para usar" — VIE catálogo de reglas — 2026-06)
