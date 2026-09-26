@@ -1,0 +1,34 @@
+{
+  "summary": "Tested new 'Generar autorización' feature in TasacionesScreen (both manual tasador and online-leads inbox). Backend property creation, navigation to /documentos/nuevo, and pre-selection of the PROPERTY in the wizard all work correctly. HOWEVER a critical business-logic bug prevents the PERSON (owner) from being pre-selected: the frontend passes prefillPersonRole='vendedor' but the 'Autorización de Venta' template requires role='propietario'. Result: on the Personas step the Propietario selector is empty and the wizard cannot advance (Siguiente disabled), defeating the whole purpose of the one-click feature.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Generar autorización → DocumentWizard person pre-selection",
+        "issue": "TasacionesScreen.tsx hardcodes prefillPersonRole='vendedor' in BOTH generarAutorizacion() (line 158) and generarAutorizacionLead() (line 182). The Autorización de Venta template (templateKey='autorizacion_venta') declares its person variables with role='propietario' (verified via GET /api/documents/templates/{id}). DocumentWizard initializes personsByRole = {[prefillPersonRole]: [prefillPersonId]}, so the owner ends up under 'vendedor' key while the wizard's Personas step only shows/needs 'propietario'. The Propietario selector renders empty, and the Siguiente button on step 3 is disabled — user must manually pick the owner they just typed 5 seconds earlier, which is exactly what the feature was supposed to avoid.",
+        "affected_selectors": ["tas-autorizacion", "tas-lead-autorizacion-{id}", "wizard-next"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "FIX (one-line, both places): change `prefillPersonRole: 'vendedor'` → `prefillPersonRole: 'propietario'` in /app/frontend/src/app/screens/TasacionesScreen.tsx lines 158 and 182. Consider also aligning the /api/people/resolve body role field ('vendedor') with the wizard role, or at least documenting that the person's storage role and the wizard role can differ.",
+    "Retest after fix: verify Personas step shows the owner (Juan QA Test / TEST_qa) already checked/selected for Propietario, and that Siguiente becomes enabled without any manual person picking.",
+    "QA credential note (unchanged from iteration_58): qa_varela@vera.test is employee-typed; I flipped isAdmin=true in Mongo app_access to reach /documentos and reverted it back to false after the test. Same recommendation stands: provision a permanent admin QA user or add the owner's admin creds for Documents-area testing."
+  ],
+  "critical_code_review_comments": [
+    "The role mismatch bug above is symptomatic of a wider risk: the code assumes the template's owner role is 'vendedor', but templates control their own required roles. Safer approach: after the template loads in DocumentWizard, if prefillPersonId is present and no role is set (or the given role isn't among the template's required roles), auto-map the prefilled person into the FIRST person-typed variable's role (e.g. template.variables.find(v=>v.source==='person').role). That way the tasador screen doesn't need to know the template's internal role naming.",
+    "Both generarAutorizacion() and generarAutorizacionLead() swallow the propertyService.createProperty() error with a bare catch and only show a generic flash. If /api/people/resolve fails (manual flow) the created property would still succeed and orphan a draft property in the DB. Consider resolving the person first and only creating the property after person.id is confirmed (which is already the order in generarAutorizacion — good — but there's no verification that personRes.ok before reading .id).",
+    "areaM2 fallback in manual flow uses cubiertos-or-lote — for lotes this is wrong for casas (uses cubiertos even when it might be blank). For casa/duplex a saner default is cubiertos ? Number(cubiertos) : 0 and pass lotAreaM2 separately, which is already done. Low priority."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "60% (property pre-selection OK, person pre-selection broken → wizard cannot proceed)"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml — again required temporary isAdmin=true in Mongo app_access.qa_varela@vera.test to reach /veraos/documentos. Reverted to false after test.",
+  "seed_data_creation": "1 draft property created via manual flow: id=7964fd4b-c139-426b-aa5c-e81808c542ff, title='Los Aromos 123', address='Los Aromos 123', city='Costa del Este', status='draft', type='casa', ownerId=3e580655-9fce-4570-9271-6d0e03c4130a (Juan QA Test). 1 draft property created via online-lead flow (lead id 6a9759410aba77f276c93262 → 'lote en Los Alelies', ownerId of TEST_qa lead person 6c4318dc-bc9a-445e-922f-0cb1148da482). Safe to delete via DELETE /api/properties/{id}.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "The role-mismatch is the ONLY blocker. Backend (POST /api/properties + /api/people/resolve) works fine and returns 201/200. Validation flash correctly blocks navigation when propietario or telefono is empty. Regression: 'Guardar lead' (tas-lead) still shows its success flash; tas-jpg was not exercised (it triggers a client-side download — low risk, unrelated code path). After main agent's fix, just re-run the happy path once for each of the two entry points and verify Personas step shows the pre-selected owner and Siguiente is enabled.",
+  "rca of the issue": "Root cause: hardcoded person role in TasacionesScreen.tsx does not match the Autorización de Venta template's variable role. Template declares role='propietario' for propietario_nombre & propietario_dni (backend GET /api/documents/templates/ba0e6d91-f96c-4d95-b069-70c612315d3e confirmed). TasacionesScreen passes 'vendedor'. DocumentWizard blindly trusts the prefill and stores personsByRole['vendedor'] = [id], which is never read by the Personas step that only looks up personsByRole['propietario']. Reproduction: Login → /veraos/tasaciones → fill manual form + Calcular → Generar autorización → pick 'Autorización de Venta' → advance to Personas step → observe empty Propietario selector and disabled Siguiente. Mitigation: change the string literal 'vendedor' → 'propietario' in the two navigate() calls; longer-term, make DocumentWizard smart enough to auto-place the prefilled personId into whichever role the template needs (see code review comment)."
+}

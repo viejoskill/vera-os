@@ -141,6 +141,7 @@ export const TasacionesScreen = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fullName: f.propietario, phone: f.telefono, whatsapp: f.telefono, email: f.email || undefined, role: 'vendedor' }),
       });
+      if (!personRes.ok) throw new Error('resolve failed');
       const person = await personRes.json();
       const property = await propertyService.createProperty({
         title: f.direccion.trim() || `${result.tipoNombre} en ${result.zonaNombre}`,

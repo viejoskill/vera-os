@@ -131,6 +131,24 @@ export const DocumentWizard = () => {
 
   const signatureMethods = template.data?.signatureMethods ?? [];
 
+  // Si vinimos con una persona pre-cargada (ej. desde "Generar autorización" en
+  // Tasaciones) pero el rol sugerido no coincide con el que pide ESTE template,
+  // la reubicamos en el primer rol que el template realmente necesita.
+  const [appliedPrefillPerson, setAppliedPrefillPerson] = useState(false);
+  useEffect(() => {
+    if (!prefill.prefillPersonId || appliedPrefillPerson || !template.data) return;
+    const roles = requirements.personRoles;
+    if (roles.length === 0) return;
+    const alreadyPlaced = roles.some((r) => (personsByRole[r] || []).includes(prefill.prefillPersonId!));
+    if (!alreadyPlaced) {
+      const targetRole = prefill.prefillPersonRole && roles.includes(prefill.prefillPersonRole)
+        ? prefill.prefillPersonRole : roles[0];
+      setPersonsByRole((prev) => ({ ...prev, [targetRole]: [prefill.prefillPersonId!] }));
+    }
+    setAppliedPrefillPerson(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [template.data, requirements.personRoles.join(',')]);
+
   // Pasos activos según lo que el template pide (extensible por definición).
   const steps = useMemo<Step[]>(() => {
     const s: Step[] = ['template'];
