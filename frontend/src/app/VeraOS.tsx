@@ -35,6 +35,7 @@ import { LegacyFichaRedirect } from '@app/public/LegacyFichaRedirect';
 import { ZonaLanding } from '@app/public/ZonaLanding';
 import { LANDINGS } from '@app/public/landingConfigs';
 import { SignScreen } from '@app/public/SignScreen';
+import { PoliticaPrivacidad } from '@app/public/PoliticaPrivacidad';
 import { AuthProvider } from '@app/auth/AuthProvider';
 import { RequireAuth } from '@app/auth/RequireAuth';
 
@@ -108,6 +109,7 @@ const PublicSiteRoutes = () => (
     <Route path="/venta/lotes-costa-del-este" element={<ZonaLanding config={LANDINGS.lotes} />} />
     <Route path="/venta/ph-costa-del-este" element={<ZonaLanding config={LANDINGS.ph} />} />
     <Route path="/firma/:token" element={<SignScreen />} />
+    <Route path="/privacidad" element={<PoliticaPrivacidad />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 );

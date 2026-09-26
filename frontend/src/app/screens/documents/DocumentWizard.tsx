@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, ArrowRight, Check, CheckCircle2, FileText, Home, Layers,
   Loader2, PencilLine, PenLine, Plus, TriangleAlert, Users,
 } from 'lucide-react';
 import { Button, Input } from '@vera/ui';
 import { PERSON_ROLE_LABELS } from '@vera/types';
+import type { PropertyType } from '@vera/types';
+import { propertyService } from '@vera/services';
 import { useProperties } from '@app/hooks/useProperties';
 import { usePeople, useCreatePerson } from '@app/hooks/usePeople';
 import {
@@ -38,6 +41,9 @@ export const DocumentWizard = () => {
   const [templateId, setTemplateId] = useState<string>('');
   const [propertyId, setPropertyId] = useState<string>('');
   const [propertyQuery, setPropertyQuery] = useState<string>('');
+  const [showQuickAddProperty, setShowQuickAddProperty] = useState(false);
+  const [quickAddProperty, setQuickAddProperty] = useState({ title: '', address: '', city: '', type: 'terreno' });
+  const [creatingProperty, setCreatingProperty] = useState(false);
   const [personsByRole, setPersonsByRole] = useState<Record<string, string[]>>({});
   const [quickAddRole, setQuickAddRole] = useState<string | null>(null);
   const [quickAdd, setQuickAdd] = useState({ fullName: '', document: '', primaryPhone: '', primaryEmail: '' });
@@ -64,6 +70,26 @@ export const DocumentWizard = () => {
   const people = usePeople();
   const resolve = useResolveDocument();
   const create = useCreateDocument();
+  const queryClient = useQueryClient();
+
+  const submitQuickAddProperty = async () => {
+    if (!quickAddProperty.title.trim()) return;
+    setCreatingProperty(true);
+    try {
+      const created = await propertyService.createProperty({
+        title: quickAddProperty.title.trim(),
+        address: quickAddProperty.address.trim(),
+        city: quickAddProperty.city.trim(),
+        type: quickAddProperty.type as PropertyType,
+      });
+      await queryClient.invalidateQueries({ queryKey: ['properties'] });
+      setPropertyId(created.id);
+      setQuickAddProperty({ title: '', address: '', city: '', type: 'terreno' });
+      setShowQuickAddProperty(false);
+    } finally {
+      setCreatingProperty(false);
+    }
+  };
 
   // Búsqueda de propiedad (client-side, insensible a acentos) para el paso 2.
   const filteredProperties = useMemo(() => {
@@ -276,6 +302,51 @@ export const DocumentWizard = () => {
               </button>
             ))}
           </div>
+
+          <div className="vera-wizard__role-add">
+            <Button
+              variant="secondary" size="sm" type="button"
+              data-testid="wizard-quickadd-property-toggle"
+              onClick={() => setShowQuickAddProperty((s) => !s)}
+            >
+              <Plus size={15} /> Es una propiedad nueva, todavía no está cargada
+            </Button>
+          </div>
+
+          {showQuickAddProperty && (
+            <div className="vera-wizard__quickadd" data-testid="wizard-quickadd-property">
+              <p className="vera-wizard__hint">
+                La cargamos como borrador con lo mínimo para esta autorización; después la completás del todo en Propiedades.
+              </p>
+              <Input
+                placeholder="Título o descripción corta *" value={quickAddProperty.title} data-testid="quickadd-property-title"
+                onChange={(e) => setQuickAddProperty((q) => ({ ...q, title: e.target.value }))}
+              />
+              <Input
+                placeholder="Dirección" value={quickAddProperty.address} data-testid="quickadd-property-address"
+                onChange={(e) => setQuickAddProperty((q) => ({ ...q, address: e.target.value }))}
+              />
+              <Input
+                placeholder="Ciudad" value={quickAddProperty.city} data-testid="quickadd-property-city"
+                onChange={(e) => setQuickAddProperty((q) => ({ ...q, city: e.target.value }))}
+              />
+              <select
+                className="vera-select" value={quickAddProperty.type} data-testid="quickadd-property-type"
+                onChange={(e) => setQuickAddProperty((q) => ({ ...q, type: e.target.value }))}
+              >
+                <option value="terreno">Terreno</option>
+                <option value="casa">Casa</option>
+                <option value="departamento">Departamento</option>
+                <option value="ph">PH</option>
+                <option value="oficina">Oficina</option>
+                <option value="local">Local</option>
+              </select>
+              <Button type="button" size="sm" data-testid="quickadd-property-submit"
+                disabled={!quickAddProperty.title.trim() || creatingProperty} onClick={submitQuickAddProperty}>
+                {creatingProperty ? 'Agregando…' : 'Agregar propiedad'}
+              </Button>
+            </div>
+          )}
         </section>
       )}
 

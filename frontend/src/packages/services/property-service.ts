@@ -21,6 +21,17 @@ export class PropertyService {
     return this.repository.getById(id);
   }
 
+  /** Alta rápida (ej. desde el wizard de Documentos) para una propiedad que
+   * todavía no está cargada: arranca como borrador, se completa después. */
+  createProperty(values: Partial<Property>): Promise<Property> {
+    return this.repository.create({
+      operation: 'venta', type: 'terreno', price: 0, currency: 'USD',
+      neighborhood: '', bedrooms: 0, bathrooms: 0, areaM2: 0,
+      status: 'draft', description: '', archived: false,
+      ...values,
+    } as Property);
+  }
+
   updateProperty(id: string, patch: Partial<Property>): Promise<PropertyDetail | null> {
     return this.repository.update(id, patch) as Promise<PropertyDetail | null>;
   }
