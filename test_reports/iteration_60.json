@@ -1,0 +1,28 @@
+{
+  "summary": "RETEST of iteration_59 bug (role mismatch preventing person pre-selection in 'Generar autorización' → DocumentWizard). FIX VERIFIED ✅. The new useEffect in DocumentWizard.tsx (~lines 137-150) reconciles the prefilled personId into whichever role the loaded template actually requires (requirements.personRoles), so even though TasacionesScreen still passes prefillPersonRole='vendedor', the wizard correctly re-maps the person to the template's actual required role ('propietario'). Verified in BOTH entry points: (a) Manual tasador flow — filled form, calculated, clicked 'Generar autorización', picked 'Autorización de Venta' template, advanced through Propiedad → Personas: 'Pedro QA Retest2' appeared already selected as Propietario, Siguiente enabled, advanced through Firma → Revisión, filled required inputs, clicked Crear → document created successfully (id=237bbd51-4f20-46a5-b547-543e778035e0). (b) Online-leads inbox flow — created a lead via POST /api/public/tasacion/estimar, clicked 'Generar autorización' on the lead row: person '+5492257000444' appeared already selected as Propietario, Siguiente enabled.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "OPTIONAL cleanup: TasacionesScreen.tsx still hardcodes prefillPersonRole: 'vendedor' in both generarAutorizacion() (line ~159) and generarAutorizacionLead() (line ~183). The DocumentWizard now auto-reconciles this so it no longer causes the bug, but the literal is dead/misleading — consider passing 'propietario' (or omitting the field) to match reality and reduce confusion for future maintainers.",
+    "React duplicate-key warning observed in console during wizard advance: 'Encountered two children with the same key' (e.g. keys b3021c55-60e6-42a2-904c-d5f287528930 and e4864578-74a3-4bbe-a9a1-28b15c913042). Likely in the People or Property list — a person/property is being rendered twice with the same id. Non-blocking but should be fixed to avoid future rendering glitches.",
+    "Minor UX: Tasaciones inbox 'Cargando…' takes 6-15 seconds to render 38 leads (GET /api/tasacion/online-leads returns fast when called directly from console). Might be caused by an early aborted request or blocking work on mount; worth profiling. Manual 'Actualizar' click reliably populates the list.",
+    "Cleanup: 3 draft properties + 1 test document created during retest (see seed_data_creation)."
+  ],
+  "critical_code_review_comments": [
+    "The DocumentWizard reconciliation useEffect uses the first role of requirements.personRoles (sorted alphabetically) as fallback when the caller-supplied role isn't in the template's roles. This works for the current single-role Autorización de Venta template but could misassign the prefilled person if a future template has multiple required roles (e.g. 'comprador' + 'propietario'). Consider passing a semantic hint (e.g. 'owner-like') instead of a literal role.",
+    "Same DRY smell as noted in iteration_59: TasacionesScreen.tsx duplicates ~15 lines between generarAutorizacion() and generarAutorizacionLead(). Refactor into a single helper taking { personId, propertyPayload }."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (per request)", "frontend": "100% (both manual + lead flows: person pre-selection, Siguiente enabled, doc creation all work)"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml — needed temporary isAdmin=true in Mongo app_access to reach /veraos/documentos, reverted to isAdmin=false after testing.",
+  "seed_data_creation": "Draft properties created during retest (safe to delete via DELETE /api/properties/{id}): (1) Las Magnolias 45 (owner 'Pedro QA Retest') — from first manual run; (2) Las Magnolias 46 (owner 'Pedro QA Retest2') — used to create the document below; (3) 'Casa en Zona Playa' created from the lead-flow test (owner personId 4c266aa2-d610-4e37-a2a8-a3aa5707b3c6, '+5492257000444'). One document created: id=237bbd51-4f20-46a5-b547-543e778035e0 (Autorización de Venta for Pedro QA Retest2 / Las Magnolias 46). Also created public leads via POST /api/public/tasacion/estimar for 'Lucia QA Lead Retest' / '+5492257000444' (personId 4c266aa2-d610-4e37-a2a8-a3aa5707b3c6).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "iteration_59 bug is fully fixed. The fix lives in DocumentWizard.tsx (new useEffect that re-maps prefilled personId into the template's required role). No changes needed in TasacionesScreen (though the 'vendedor' string is now dead code, see action items). All wizard steps end-to-end verified. React duplicate-key warning in console is a separate pre-existing minor bug worth chasing.",
+  "rca of the issue": "N/A — bug from iteration_59 is fixed. Fix approach chosen: instead of correcting the caller's role string, DocumentWizard now defensively reconciles any prefilled personId into whichever role the loaded template actually requires (requirements.personRoles). This is the more robust option recommended in the iteration_59 code-review comment and future-proofs the wizard against callers that don't know the template's internal role naming."
+}

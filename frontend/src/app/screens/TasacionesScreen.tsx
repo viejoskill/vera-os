@@ -156,7 +156,7 @@ export const TasacionesScreen = () => {
         ownerId: person.id,
       });
       navigate('/documentos/nuevo', {
-        state: { prefillPropertyId: property.id, prefillPersonId: person.id, prefillPersonRole: 'vendedor' },
+        state: { prefillPropertyId: property.id, prefillPersonId: person.id, prefillPersonRole: 'propietario' },
       });
     } catch {
       setFlash('No pudimos generar la autorización. Probá de nuevo.');
@@ -180,7 +180,7 @@ export const TasacionesScreen = () => {
         ownerId: l.personId,
       });
       navigate('/documentos/nuevo', {
-        state: { prefillPropertyId: property.id, prefillPersonId: l.personId, prefillPersonRole: 'vendedor' },
+        state: { prefillPropertyId: property.id, prefillPersonId: l.personId, prefillPersonRole: 'propietario' },
       });
     } catch {
       setFlash('No pudimos generar la autorización de este lead. Probá de nuevo.');

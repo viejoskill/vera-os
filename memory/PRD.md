@@ -191,8 +191,17 @@ Bug: en el wizard "Nuevo Documento" (`/documentos/nuevo`), el paso "Elegí la pr
 - BLOQUEADO: falta aprobar el "Acceso avanzado" a `whatsapp_business_management`/`whatsapp_business_messaging` vía Solicitud de revisión de app — bug conocido del panel de Meta (el video sube al 100% pero no se guarda). Pendiente reintentar (recomendado: otro horario). Todo lo demás ya está listo, solo falta ese último paso para que el botón "Conectar mi WhatsApp" complete la vinculación real.
 - Usuario decidió NO migrar a bot por QR (Baileys/whatsapp-web.js) tras análisis de riesgo/costo — se mantiene 100% en API oficial + Coexistencia.
 
+## Implemented (Generar autorización desde una tasación — 2026-09)
+Nueva feature (pedida por el usuario): evitar recargar los mismos datos dos veces al pasar de una tasación a una Autorización de venta.
+- Botón **"Generar autorización"** en el Tasador manual (`TasacionesScreen.tsx`): guarda al propietario como persona (exige nombre+teléfono, igual que "Guardar lead"), crea la propiedad como borrador con los datos ya cargados (dirección, tipo, m², dormitorios/baños, ciudad fija "Costa del Este"), y navega a `/documentos/nuevo` con propiedad+propietario YA seleccionados.
+- Mismo botón por cada fila de "Tasaciones recibidas" (leads online): crea el borrador con título "{tipo} en {zona}" (sin dirección exacta, no la captura el form público) vinculado al personId ya existente del lead.
+- `DocumentWizard.tsx`: nuevo `useEffect` que reconcilia la persona pre-cargada al rol REAL que pide el template elegido (`requirements.personRoles`), en vez de confiar en el string de rol que manda el caller — más robusto a futuro.
+- Verificado 100% por testing_agent en 2 rondas (iteration_59 encontró un bug de mapeo de roles → corregido → iteration_60 confirmó fix end-to-end en ambos flujos, manual y leads online).
+- Nit conocido no bloqueante (reportado por testing agent, no arreglado — bajo impacto): warning de React "duplicate key" al avanzar el wizard (posible propiedad/persona duplicada en alguna lista); y el inbox de "Tasaciones recibidas" tarda 6-15s en cargar 38 leads en el primer render.
+
 ## Backlog (prioritized)
 - **P0 (retomar)**: Terminar "Solicitud de revisión de app" en Meta (whatsapp_business_management/messaging Advanced Access) para activar el botón "Conectar mi WhatsApp" con el número real.
+- **P2**: Investigar warning "duplicate key" en DocumentWizard al avanzar pasos (no bloqueante); investigar carga lenta (6-15s) del inbox de Tasaciones recibidas.
 - **P1**: `Hoy` App (AI-first daily dashboard); Property detail screen; extract PropertyCard.
 
 ## Implemented (Sprint "Construir para usar" — VIE catálogo de reglas — 2026-06)
