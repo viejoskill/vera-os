@@ -207,6 +207,13 @@ Bug reportado: una tasación manual ("Mazzochi") se perdió porque solo "Guardar
 - Verificado 100% por testing_agent (iteration_61), incluyendo caso negativo (sin propietario/dirección no persiste) y dedup Calcular+JPG.
 - Nota: la zona "Zona Premium Norte" del caso "Mazzochi" real del usuario sigue sin calibrar (USD 0/m²) — falta que el usuario cargue el precio en Tasador → Config para que el monto sea real al recrearla.
 
+## Implemented (Calendario de Alquileres — "Pendiente" en amarillo — 2026-08)
+Pedido del usuario: una pre-reserva pública NO debe figurar como "Reservado" hasta que el admin la acepte, pero igual debe bloquear esas fechas para que nadie más pueda reservarlas (decisión confirmada: amarillo = pendiente, bloquea calendario). Verificado 100% por testing_agent (iteration_62): backend 5/5 pytest (nuevo `test_rentals_prereserva_calendar.py`), frontend E2E en calendario público (`/alquileres/reservar/{slug}`) y admin (`/veraos/alquileres/{id}` → tab Reservas).
+- Backend (`routes_rentals.py`) y los badges/pills de las listas de reservas ya estaban implementados en el fork anterior (estado `prereserva` ya bloqueaba fechas vía `OCUPA`, badge amarillo "Pre-reserva" ya en tabs/listas). Sin cambios de backend en este fork.
+- Único fix pendiente: `RentalCalendar.tsx` pintaba cualquier estado distinto de `bloqueo` en ROJO (igual que confirmada). Ahora distingue 3 estados con prioridad `reserva`(rojo) > `pendiente`(amarillo) > `bloqueo`(gris) para fechas superpuestas; usa clases CSS ya existentes en `rentals.css` (`.rt-cal__cell--pendiente`/`.rt-lg--pendiente`). Leyenda del calendario ampliada a 4 items.
+- Flujo completo verificado: pre-reserva pública (201) → amarillo en ambos calendarios → doble-booking de las mismas fechas rechazado (409) → admin acepta (PATCH estado=confirmada) → pasa a rojo + genera comisión → admin rechaza otra → libera el calendario (vuelve a disponible). Bloqueos manuales siguen en gris (sin regresión).
+- Nits no bloqueantes (code review, no arreglados): mapeo de estados desconocidos cae implícitamente a rojo (hoy inofensivo, solo 'cancelada' queda fuera de OCUPA); no hay endpoint dedicado `/blocks/{id}` (bloqueos se borran via `/reservations/{id}`).
+
 ## Backlog (prioritized)
 - **P0 (retomar)**: Terminar "Solicitud de revisión de app" en Meta (whatsapp_business_management/messaging Advanced Access) para activar el botón "Conectar mi WhatsApp" con el número real.
 - **P0 (usuario)**: Recargar tasación real de "Mazzochi" (Marcos, 1141812941, Lote 550m², Zona Premium Norte) ahora que el guardado automático funciona — y calibrar precio de "Zona Premium Norte" en Tasador → Config primero para que el monto no salga en USD 0.

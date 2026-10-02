@@ -1,0 +1,29 @@
+{
+  "summary": "Verified iteration 62 fix for RentalCalendar.tsx: pre-reservas now render YELLOW (rt-cal__cell--pendiente), confirmadas RED (rt-cal__cell--reserva), bloqueos GRAY (rt-cal__cell--bloqueo). Backend 5/5 pytest pass (public prereserva creation, double-booking 409, accept->confirmada, reject->frees calendar, bloqueo preserved). Frontend Playwright validated all 3 colors on BOTH public (/alquileres/reservar/{slug}) and admin (/veraos/alquileres/{id} > Reservas tab) calendars, plus the 4-item legend (Ocupado por reserva / Pendiente de aprobación / Bloqueo manual / Disponible). Promoted a prereserva via PATCH /reservations/{rid} and verified the UI color flipped from yellow to red after reload. Overlapping public POST rejected with 409 as expected.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_rentals_prereserva_calendar.py",
+    "/app/test_reports/pytest/iter62_rentals.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "RentalCalendar.tsx: prereserva/confirmada/encurso/finalizada/bloqueo mapping via ternary (line 32) is readable but implicitly maps unknown estados ('cancelada', custom values) to 'reserva' (RED). Since OCUPA set in backend excludes 'cancelada', this is safe today, but a future estado added to OCUPA without the UI being updated will silently paint it red. Consider explicit mapping with a default of returning null/skip for unknown states to fail fast.",
+    "routes_rentals.py: no DELETE endpoint for blocks (blocks are stored as reservas with estado='bloqueo' and deleted via DELETE /reservations/{rid}). Documented, but a dedicated /blocks/{id} would be more discoverable (minor API ergonomics).",
+    "RentalCalendar `prevDisabled` compares months only when years match (line 100). If view year > today year, prev stays enabled across any boundary; if view year < today year it never disables - edge case only relevant if someone manually sets startDate in the past. Not a bug today."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_rentals_prereserva_calendar.py (new)"
+  ],
+  "success_rate": {"backend": "100% (5/5 pytest)", "frontend": "100% (3 colors verified end-to-end on public + admin, legend verified)"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (used for admin workspace verification, no DB mutations)",
+  "seed_data_creation": "During testing: created 1 prereserva (2027-11-10..15), promoted to confirmada, then DELETED. Created 1 bloqueo (2027-07-01..05) via POST /api/rentals/blocks, then DELETED via DELETE /api/rentals/reservations/{id}. Pytest fixture auto-cleaned its own 2027-05-10 and 2027-06-10 fixtures. Property casa-de-prueba-costa-del-este-borrar-d79b0a was left with its original 7 seed reservations (unchanged).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "iteration 62 story (yellow/pending calendar color) is COMPLETE and verified E2E. Backend regression suite at /app/backend/tests/test_rentals_prereserva_calendar.py covers the whole prereserva lifecycle. Public rental URL is /alquileres/reservar/{slug}; admin workspace is /veraos/alquileres/{propertyId} and the calendar lives inside the 'Reservas' tab (data-testid='rt-wstab-reservas'). The ConfirmarReserva mini-calendar flow was NOT re-tested because it reuses the same RentalCalendar component (the inherited fix covers it), and the task note said to focus on colors+blocking; main agent can verify ConfirmarReserva visually if needed with the 'Confirmar' button on any Pre-reserva row in Reservas tab.",
+  "rca of the issue": "N/A — this iteration was the fix itself. Previously RentalCalendar mapped any non-'bloqueo' estado to 'reserva' (red). The fix (lines 28-41 of RentalCalendar.tsx) correctly distinguishes 'prereserva'->'pendiente' (yellow) with explicit priority ordering reserva(2) > pendiente(1) > bloqueo(0) for overlapping dates. CSS classes rt-cal__cell--pendiente and rt-lg--pendiente were already present in rentals.css (lines 334, 348), confirmed applied correctly in UI."
+}
