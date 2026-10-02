@@ -16,7 +16,7 @@ interface Props {
 const WD = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'];
 const MES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-/** Calendario de rango estilo Airbnb. Rojo = reserva, gris = bloqueo manual. */
+/** Calendario de rango estilo Airbnb. Rojo = reserva confirmada, amarillo = pendiente de aprobación, gris = bloqueo manual. */
 export const RentalCalendar = ({ ocupados, value, onChange, months = 1, readOnly = false, legend = false, startDate, className }: Props) => {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const [view, setView] = useState(() => {
@@ -24,13 +24,18 @@ export const RentalCalendar = ({ ocupados, value, onChange, months = 1, readOnly
     return new Date(base.getFullYear(), base.getMonth(), 1);
   });
 
-  // Mapa fecha -> tipo de ocupación ('reserva' | 'bloqueo').
+  // Mapa fecha -> tipo de ocupación ('reserva' | 'pendiente' | 'bloqueo'). Prioridad: reserva > pendiente > bloqueo.
+  const PRIORIDAD = { bloqueo: 0, pendiente: 1, reserva: 2 } as const;
   const kind = useMemo(() => {
-    const m = new Map<string, 'reserva' | 'bloqueo'>();
+    const m = new Map<string, 'reserva' | 'pendiente' | 'bloqueo'>();
     ocupados.forEach((o) => {
-      const tipo = o.estado === 'bloqueo' ? 'bloqueo' : 'reserva';
+      const tipo = o.estado === 'bloqueo' ? 'bloqueo' : o.estado === 'prereserva' ? 'pendiente' : 'reserva';
       let d = parseISO(o.checkIn); const end = parseISO(o.checkOut);
-      while (d < end) { const s = iso(d); if (!(m.get(s) === 'reserva')) m.set(s, tipo); d = addDays(d, 1); }
+      while (d < end) {
+        const s = iso(d); const prev = m.get(s);
+        if (!prev || PRIORIDAD[tipo] > PRIORIDAD[prev]) m.set(s, tipo);
+        d = addDays(d, 1);
+      }
     });
     return m;
   }, [ocupados]);
@@ -75,6 +80,7 @@ export const RentalCalendar = ({ ocupados, value, onChange, months = 1, readOnly
             const cls = ['rt-cal__cell'];
             if (past) cls.push('rt-cal__cell--past');
             else if (k === 'reserva') cls.push('rt-cal__cell--reserva');
+            else if (k === 'pendiente') cls.push('rt-cal__cell--pendiente');
             else if (k === 'bloqueo') cls.push('rt-cal__cell--bloqueo');
             if (isIn || isOut) cls.push('rt-cal__cell--edge');
             if (inRange) cls.push('rt-cal__cell--range');
@@ -103,6 +109,7 @@ export const RentalCalendar = ({ ocupados, value, onChange, months = 1, readOnly
       {legend && (
         <div className="rt-cal__legend" data-testid="rt-cal-legend">
           <span><i className="rt-lg rt-lg--reserva" /> Ocupado por reserva</span>
+          <span><i className="rt-lg rt-lg--pendiente" /> Pendiente de aprobación</span>
           <span><i className="rt-lg rt-lg--bloqueo" /> Bloqueo manual</span>
           <span><i className="rt-lg rt-lg--libre" /> Disponible</span>
         </div>
