@@ -474,7 +474,9 @@ async def resumen(desde: str = Query(...), hasta: str = Query(...)):
     #    confirmar" (no suma). Cualquier otro estado descarta la comisión.
     pendientes_list = []
     pmap = await _prop_map()
+    con_comision_ids: set[str] = set()
     async for d in _ventas().find({}):
+        con_comision_ids.add(d.get("propertyId"))
         p = pmap.get(d.get("propertyId"))
         pstatus = p.get("status") if p else None
         est = _estado_por_status(pstatus)
@@ -506,6 +508,14 @@ async def resumen(desde: str = Query(...), hasta: str = Query(...)):
                 "propertyLabel": etiqueta, "descripcion": d.get("descripcion") or "",
             })
 
+    # Propiedades Reservada/Vendida que TODAVÍA no tienen ninguna comisión cargada
+    # (aviso para que no se le pase al usuario cargarla desde el Workspace de la propiedad).
+    comisiones_faltantes = [
+        {"propertyId": pid, "propertyLabel": _label_prop(p), "status": p.get("status")}
+        for pid, p in pmap.items()
+        if p.get("status") in ("sold", "reserved") and pid not in con_comision_ids
+    ]
+
     # Cierre: neto y redondeos.
     for cur in monedas.values():
         cur["ingresos"] = round(cur["ingresos"])
@@ -531,4 +541,5 @@ async def resumen(desde: str = Query(...), hasta: str = Query(...)):
         "mensual": serie,
         "movimientos": detalle,
         "ventasPendientes": pendientes_list,
+        "comisionesFaltantes": comisiones_faltantes,
     }

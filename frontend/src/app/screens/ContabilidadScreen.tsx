@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   PiggyBank, Plus, Trash2, TrendingUp, TrendingDown, Scale, BarChart3, ListFilter,
-  ArrowUpRight, ArrowDownRight, Repeat, Power,
+  ArrowUpRight, ArrowDownRight, Repeat, Power, AlertTriangle, ChevronRight,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
@@ -26,6 +27,7 @@ interface Resumen {
   monedas: Record<string, CurStats>;
   mensual: MesRow[];
   movimientos: Entry[];
+  comisionesFaltantes?: { propertyId: string; propertyLabel: string; status: string }[];
 }
 interface Categorias { ingreso: string[]; gasto: string[]; custom: { id: string; nombre: string; tipo: string }[]; }
 interface Recurrente {
@@ -93,6 +95,7 @@ const Delta = ({ actual, anterior }: { actual: number; anterior: number }) => {
 };
 
 export const ContabilidadScreen = () => {
+  const nav = useNavigate();
   const [preset, setPreset] = useState<PresetKey>('anio');
   const [rango, setRango] = useState(rangoDe('anio'));
   const [data, setData] = useState<Resumen | null>(null);
@@ -219,6 +222,27 @@ export const ContabilidadScreen = () => {
       </div>
 
       {err && <p className="cont__flash" data-testid="cont-error">{err}</p>}
+
+      {data && data.comisionesFaltantes && data.comisionesFaltantes.length > 0 && (
+        <div className="cont__pending cont__pending--warn" data-testid="cont-comisiones-faltantes">
+          <AlertTriangle size={16} className="cont__pending-dot cont__pending-dot--warn" />
+          <div>
+            <strong>Te falta cargar {data.comisionesFaltantes.length} comisión{data.comisionesFaltantes.length > 1 ? 'es' : ''} de venta</strong>
+            <p>Estas propiedades están Reservadas o Vendidas pero todavía no tienen un monto de comisión cargado — por eso no suman en Contabilidad.</p>
+            <ul className="cont__faltantes-list">
+              {data.comisionesFaltantes.map((f) => (
+                <li key={f.propertyId}>
+                  <button type="button" className="cont__faltantes-item" data-testid={`cont-comision-faltante-${f.propertyId}`} onClick={() => nav(`/propiedades/${f.propertyId}`)}>
+                    <span>{f.propertyLabel || 'Propiedad sin título'}</span>
+                    <em>{f.status === 'sold' ? 'Vendida' : 'Reservada'}</em>
+                    <ChevronRight size={14} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
 
       {/* Alta de movimiento */}
       <div className="cont__addcard" data-testid="cont-addcard">

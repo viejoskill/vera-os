@@ -226,7 +226,14 @@ Bug reportado: cuando un huésped envía un pago adicional DESPUÉS de la reserv
 - Sin cambios de frontend: el botón "Reserva N°X" (`DocsReserva.tsx`) regenera el PDF en cada apertura/descarga, así que el fix aplica automáticamente sin tocar la UI.
 - Sin cambios en el Contrato (`documento/contrato`) ni en los recibos individuales de saldo (`/saldos/{sid}/recibo`) — esos ya mostraban correctamente su propio monto puntual.
 
+## Implemented (Aviso de comisiones de venta sin cargar — Contabilidad — 2026-08)
+Consulta del usuario: "ya tengo varias reservas, pero en contabilidad no veo las comisiones". Investigación: encontré que las 8 propiedades reales en estado Reservada/Vendida NUNCA tuvieron cargada su "Comisión de la venta" (campo manual por diseño, en el Workspace de cada propiedad) — por eso Contabilidad no mostraba nada de ventas, sin ser un bug. El usuario aclaró que en Alquileres solo hay datos de prueba (QA), no reservas reales todavía.
+- Agregado aviso proactivo en `ContabilidadScreen.tsx`: banner rojo "Te falta cargar N comisiones de venta" que lista cada propiedad Reservada/Vendida sin comisión cargada, con click → navega directo a su Workspace (`/propiedades/{id}`).
+- Backend: `GET /api/contabilidad/resumen` ahora devuelve `comisionesFaltantes` (propertyId/propertyLabel/status), calculado comparando las propiedades con status sold/reserved contra la colección `venta_comisiones`. Verificado por curl: detecta las 8 propiedades reales correctamente.
+- Nota para el usuario: las "reservas" visibles ahora mismo en Alquileres (Carlos Test, Marta ConfirmTest, etc.) son datos de prueba dejados por sesiones de testing anteriores sobre la propiedad "CASA DE PRUEBA — Costa del Este (borrar)" — no son reservas reales. Pendiente decisión del usuario sobre si limpiar esos datos de prueba.
+
 ## Backlog (prioritized)
+- **P1 (pendiente confirmación usuario)**: Limpiar datos de prueba (reservas QA + propiedad "CASA DE PRUEBA — borrar") del Alquileres en vivo, si el usuario lo confirma.
 - **P0 (retomar)**: Terminar "Solicitud de revisión de app" en Meta (whatsapp_business_management/messaging Advanced Access) para activar el botón "Conectar mi WhatsApp" con el número real.
 - **P0 (usuario)**: Recargar tasación real de "Mazzochi" (Marcos, 1141812941, Lote 550m², Zona Premium Norte) ahora que el guardado automático funciona — y calibrar precio de "Zona Premium Norte" en Tasador → Config primero para que el monto no salga en USD 0.
 - **P2**: Investigar warning "duplicate key" en DocumentWizard al avanzar pasos (no bloqueante); investigar carga lenta (6-15s) del inbox de Tasaciones recibidas.
