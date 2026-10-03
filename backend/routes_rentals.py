@@ -300,6 +300,17 @@ class StatusBody(BaseModel):
     motivo: str | None = None
 
 
+class HuespedBody(BaseModel):
+    nombre: str | None = None
+    telefono: str | None = None
+    email: str | None = None
+    dni: str | None = None
+    domicilio: str | None = None
+    localidad: str | None = None
+    huespedes: int | None = None
+    comentario: str | None = None
+
+
 class PaymentLinkBody(BaseModel):
     monto: float
     descripcion: str | None = None
@@ -641,6 +652,19 @@ async def update_status(rid: str, body: StatusBody):
                     await _create_sena_link(r2, sena)
                 except Exception:
                     pass
+    return _res_out(await _res().find_one({"_id": rid}))
+
+
+@router.patch("/reservations/{rid}/huesped")
+async def update_huesped(rid: str, body: HuespedBody):
+    """Edita manualmente los datos del huésped (frecuente en pre-reservas incompletas)."""
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    huesped = dict(r.get("huesped") or {})
+    for k, v in body.model_dump(exclude_unset=True).items():
+        huesped[k] = v
+    await _res().update_one({"_id": rid}, {"$set": {"huesped": huesped, "updatedAt": _now()}})
     return _res_out(await _res().find_one({"_id": rid}))
 
 

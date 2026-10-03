@@ -100,6 +100,8 @@ export const api = {
     fetch(`${RENTALS_API}/blocks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(json),
   setStatus: (rid: string, estado: string, motivo?: string): Promise<Reservation> =>
     fetch(`${RENTALS_API}/reservations/${rid}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estado, motivo }) }).then(json),
+  updateHuesped: (rid: string, body: Partial<Reservation['huesped']>): Promise<Reservation> =>
+    fetch(`${RENTALS_API}/reservations/${rid}/huesped`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(json),
   deleteReservation: (rid: string) => fetch(`${RENTALS_API}/reservations/${rid}`, { method: 'DELETE' }).then(json),
   listMovimientos: (pid: string): Promise<Movimiento[]> => fetch(`${RENTALS_API}/properties/${pid}/movimientos`).then(json),
   createMovimiento: (body: Record<string, unknown>): Promise<Movimiento> =>

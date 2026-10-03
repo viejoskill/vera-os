@@ -6,6 +6,7 @@ import { api, fmtMoney, fmtDate, displayEstado, reservaBucket, type RentalProper
 import { CobrarSena } from './CobrarSena';
 import { ConfirmarReserva } from './ConfirmarReserva';
 import { RechazarReserva } from './RechazarReserva';
+import { EditarHuesped } from './EditarHuesped';
 import { WhatsappReserva } from './WhatsappReserva';
 import { Comprobantes } from './Comprobantes';
 import { CobrarSaldo } from './CobrarSaldo';
@@ -37,6 +38,7 @@ export const AlquileresScreen = () => {
   const [q, setQ] = useState('');
   const [confirming, setConfirming] = useState<Reservation | null>(null);
   const [rejecting, setRejecting] = useState<Reservation | null>(null);
+  const [editingHuesped, setEditingHuesped] = useState<Reservation | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState<RentalSettings>({ condicionesGenerales: [], avisoValidez: '' });
   const [condText, setCondText] = useState('');
@@ -259,6 +261,7 @@ export const AlquileresScreen = () => {
                     <CobrarSaldo reserva={r} onUpdated={load} />
                     <DocsReserva reserva={r} />
                     <Comprobantes reserva={r} onUpdated={load} />
+                    <button type="button" className="rt-mini" onClick={() => setEditingHuesped(r)} data-testid={`rt-edit-huesped-${r.id}`}><Pencil size={14} /> Editar datos</button>
                     {r.estado === 'confirmada' && (
                       <button type="button" className="rt-mini" onClick={() => finalizarReserva(r.id)} data-testid={`rt-finalizar-${r.id}`}>Finalizar</button>
                     )}
@@ -317,6 +320,11 @@ export const AlquileresScreen = () => {
       {rejecting && (
         <RechazarReserva reserva={rejecting} onClose={() => setRejecting(null)}
           onDone={async () => { setRejecting(null); await load(); }} />
+      )}
+
+      {editingHuesped && (
+        <EditarHuesped reserva={editingHuesped} onClose={() => setEditingHuesped(null)}
+          onDone={() => { setEditingHuesped(null); load(); }} />
       )}
 
       {showSettings && (

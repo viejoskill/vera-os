@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { CalendarCheck, X, AlertTriangle, Users, CheckCircle2 } from 'lucide-react';
+import { CalendarCheck, X, AlertTriangle, Users, CheckCircle2, Pencil } from 'lucide-react';
 import { Button } from '@vera/ui';
 import { api, fmtMoney, fmtDate, nightsBetween, parseISO, iso, type Reservation, type Occupied } from './api';
 import { RentalCalendar } from './RentalCalendar';
+import { EditarHuesped } from './EditarHuesped';
 
 /** Vista previa del calendario al confirmar una reserva, con aviso de "días perdidos". */
 export const ConfirmarReserva = ({ reserva, onConfirmed, onClose }: {
@@ -11,6 +12,8 @@ export const ConfirmarReserva = ({ reserva, onConfirmed, onClose }: {
   const [ocupados, setOcupados] = useState<Occupied[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [huesped, setHuesped] = useState(reserva.huesped);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     api.calendar(reserva.propertyId).then((d) => setOcupados(d.ocupados)).catch(() => setOcupados([])).finally(() => setLoading(false));
@@ -43,9 +46,12 @@ export const ConfirmarReserva = ({ reserva, onConfirmed, onClose }: {
         </div>
 
         <div className="rt-confirm__summary" data-testid="rt-confirm-summary">
-          <div><strong>{reserva.huesped.nombre || 'Sin nombre'}</strong> · <Users size={13} /> {reserva.huesped.huespedes || 1} huéspedes</div>
+          <div><strong>{huesped?.nombre || 'Sin nombre'}</strong> · <Users size={13} /> {huesped?.huespedes || 1} huéspedes</div>
           <div>{fmtDate(reserva.checkIn)} → {fmtDate(reserva.checkOut)} · <strong>{reserva.noches} noches</strong></div>
           <div>Total estimado: <strong>{fmtMoney(reserva.montoEstimado, reserva.moneda)}</strong></div>
+          <button type="button" className="rt-mini" style={{ alignSelf: 'flex-start', marginTop: 4 }} onClick={() => setEditing(true)} data-testid={`rt-confirm-edit-huesped-${reserva.id}`}>
+            <Pencil size={13} /> Editar datos del huésped
+          </button>
         </div>
 
         {avisos.length > 0 && (
@@ -80,6 +86,10 @@ export const ConfirmarReserva = ({ reserva, onConfirmed, onClose }: {
           </Button>
         </div>
       </div>
+      {editing && (
+        <EditarHuesped reserva={{ ...reserva, huesped }} onClose={() => setEditing(false)}
+          onDone={(r) => { setHuesped(r.huesped); setEditing(false); }} />
+      )}
     </div>
   );
 };
