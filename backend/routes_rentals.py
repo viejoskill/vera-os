@@ -1168,8 +1168,9 @@ async def documento_reserva(rid: str, dl: int = 0):
     prop = await _props().find_one({"_id": r.get("propertyId")})
     nro = await _assign_numero(rid, r, "nroReserva", "reserva")
     calc = _pagos_calc(r)
-    pago = r.get("pago") or {}
-    sena = float(pago.get("monto") or 0) if pago.get("estado") == "pagado" else 0.0
+    # "sena" del documento = total cobrado hasta ahora (seña + adelantos registrados luego vía Cobrar saldo),
+    # para que el texto (números y en letras) quede consistente con el saldo pendiente mostrado abajo.
+    sena = float(calc["totalCobrado"])
     from rentals_pdf import build_reserva_pdf
     data = {
         "nroReserva": nro, "propiedad": _doc_prop(prop, r), "huesped": r.get("huesped") or {},
