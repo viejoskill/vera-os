@@ -214,6 +214,12 @@ Pedido del usuario: una pre-reserva pública NO debe figurar como "Reservado" ha
 - Flujo completo verificado: pre-reserva pública (201) → amarillo en ambos calendarios → doble-booking de las mismas fechas rechazado (409) → admin acepta (PATCH estado=confirmada) → pasa a rojo + genera comisión → admin rechaza otra → libera el calendario (vuelve a disponible). Bloqueos manuales siguen en gris (sin regresión).
 - Nits no bloqueantes (code review, no arreglados): mapeo de estados desconocidos cae implícitamente a rojo (hoy inofensivo, solo 'cancelada' queda fuera de OCUPA); no hay endpoint dedicado `/blocks/{id}` (bloqueos se borran via `/reservations/{id}`).
 
+## Implemented (Editar datos del huésped manualmente — 2026-08)
+Pedido del usuario: a veces el cliente no completa todos sus datos al hacer la pre-reserva pública, y al confirmar falta información — necesita poder editarla a mano. Verificado 100% por testing_agent (iteration_63): backend 4/4 pytest (`test_huesped_edit.py`), frontend E2E completo.
+- Backend: `PATCH /api/rentals/reservations/{rid}/huesped` (`HuespedBody`) hace merge PARCIAL (`exclude_unset=True`) sobre nombre/telefono/email/dni/domicilio/localidad/huespedes/comentario, sin tocar el resto de la reserva.
+- Frontend: nuevo modal `EditarHuesped.tsx` (mismo patrón visual que `RechazarReserva.tsx`), accesible desde 2 lugares: (1) botón "Editar datos" en CADA fila de la lista de Reservas (`AlquileresScreen.tsx`, cualquier estado), y (2) botón "Editar datos del huésped" dentro del modal `ConfirmarReserva.tsx` — este último actualiza el resumen EN VIVO (estado local) sin cerrar el modal de confirmación, permitiendo completar datos faltantes justo antes de confirmar.
+- Nota (no bloqueante): el form siempre envía los 8 campos (no solo los editados); si el admin borra un campo a mano queda vacío en la base — comportamiento esperado de edición manual.
+
 ## Backlog (prioritized)
 - **P0 (retomar)**: Terminar "Solicitud de revisión de app" en Meta (whatsapp_business_management/messaging Advanced Access) para activar el botón "Conectar mi WhatsApp" con el número real.
 - **P0 (usuario)**: Recargar tasación real de "Mazzochi" (Marcos, 1141812941, Lote 550m², Zona Premium Norte) ahora que el guardado automático funciona — y calibrar precio de "Zona Premium Norte" en Tasador → Config primero para que el monto no salga en USD 0.
