@@ -1,0 +1,26 @@
+{
+  "summary": "Testing frontend-only de la nueva feature 'Ver en mapa' embebida en /web (PublicListing). Validé: toggle lista/mapa, estado inicial = lista, render de ~21 pines (coincide con las 21 propiedades con coords), popup con foto + precio formateado (US$ 120.000) + título + ubicación + CTA 'Ver propiedad' con href=/web/{id}, filtros (zona, tipo, precio, ambientes) aplican en vivo sobre el mapa, vuelta a 'Ver en lista' restaura la grilla de 30 cards, mobile 390x844 sin overflow horizontal y canvas ~590px (≈70vh), ruta /mapa standalone no existe (cae a home). Todo funciona correctamente. Único hallazgo menor: warning de deprecación de google.maps.Marker en consola.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "ListingsMap.tsx: google.maps.Marker está deprecado (warning en consola). Google recomienda migrar a google.maps.marker.AdvancedMarkerElement. No bloquea, pero conviene planificar migración.",
+    "ListingsMap.tsx line 47-55 (pinIcon): se crea un nuevo google.maps.Size/Point en cada render de cada Marker. Convendría memoizar los iconos por color (useMemo) para evitar recrear objetos en cada re-render del filtro.",
+    "ListingsMap.tsx usa defaultCenter/defaultZoom: cuando el usuario aplica un filtro que deja los pines fuera del viewport inicial, el mapa NO se re-encuadra automáticamente. Sería un buen UX usar fitBounds al cambiar `withCoords` (pasar a `center`/`zoom` controlados o usar useMap + fitBounds en un useEffect).",
+    "ListingsMap.tsx withCoords usa `typeof === 'number'` — correcto para excluir null/undefined, pero también excluye explícitamente 0 (irrelevante para Argentina, no es un bug real).",
+    "PublicListing.tsx: el contador '0 propiedades encontradas' se ve en el primer paint antes de que resuelva react-query (data=[] inicial). Mínimo flash. Considerar mostrar 'Cargando…' en lugar del contador durante isLoading."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100%"},
+  "test_credentials": "N/A (public page)",
+  "seed_data_creation": "N/A - usa datos reales de la cartera (30 propiedades, 21 con coords)",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Feature de mapa embebido en /web funciona end-to-end. Base URL: https://real-estate-os-10.preview.emergentagent.com/web. Toggle usa data-testid='view-toggle-lista'/'view-toggle-mapa'. Popups: data-testid='map-popup-{id}' y CTA 'map-popup-cta-{id}'. Importante: Google Maps a veces renderiza los markers como <img data:image/svg...> sin role='button' tras re-renders por filtro — los selectores por role='button' pueden dar 0 pero los pines están visibles y clickeables (clickear la img svg abre el popup correctamente).",
+  "rca of the issue": "N/A - no se encontraron issues"
+}

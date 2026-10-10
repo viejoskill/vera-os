@@ -295,7 +295,18 @@ Bug reportado: desde que se vinculó el CRM con ML, las propiedades se ven activ
 - Cambio acotado a `build_reserva_pdf` en `rentals_pdf.py` (el documento de "Reserva"). NO se tocó el Contrato (`build_contrato_pdf`), que tiene su propia cláusula CUARTA con estructura distinta — el usuario solo pidió el formulario de reserva.
 - Verificado por curl + extracción de PDF.
 
+## Implemented (Mapa interactivo embebido en /web — 2026-10)
+Pedido del usuario: ver el listado público de propiedades también en un mapa. Pidió ver un mockup antes de decidir dónde viviría. Verificado 100% por testing_agent (iteration_64): frontend, sin bugs, solo notas de code review no bloqueantes.
+- **Mockup inicial con Leaflet+CARTO descartado**: CARTO empezó a exigir API key propia desde sep/2026 (watermark "API KEY REQUIRED"), lo que hubiera obligado al usuario a crear una cuenta nueva solo para un mockup. Se pivoteó a **Google Maps** (`@vis.gl/react-google-maps`, ya instalado y usado en `LocationSection.tsx`), reutilizando la MISMA `REACT_APP_GOOGLE_MAPS_API_KEY` ya configurada y con billing ya resuelto — cero fricción nueva para el usuario.
+- **Decisión final del usuario tras ver el mockup real** (no un dibujo, una ruta `/mapa` funcional que luego se eliminó): el mapa queda **embebido dentro de `/web`** (no como página separada) como vista alternativa "Ver en mapa", mostrando TODAS las propiedades activas (venta + alquiler).
+- `ListingsMap.tsx` (nuevo): recibe la lista YA FILTRADA de `PublicListing.tsx` (mismos filtros de tipo/zona/precio/ambientes aplican en ambas vistas), filtra internamente por `latitude`/`longitude` presentes, pines SVG custom (amarillo `#F6E63A` venta / turquesa `#5FD6C0` alquiler), tema oscuro vía `styles` de Google Maps (array "night mode"), popup (`InfoWindow`) con foto + precio + título + ubicación + botón "Ver propiedad" → `/web/{id}`.
+- `PublicListing.tsx`: toggle "Ver en lista" / "Ver en mapa" (`view-toggle-lista`/`view-toggle-mapa`) junto al contador de resultados; estado `vista` local, sin cambios en la lógica de filtros existente.
+- Backend: `GET /api/public/listings` ahora expone `latitude`/`longitude` en `_SUMMARY_KEYS` (antes no los exponía). Sin otros cambios.
+- De 30 propiedades activas, 21 tienen coordenadas cargadas y aparecen en el mapa; las 9 restantes solo se ven en la vista de lista (dato preexistente, no es un bug de esta feature).
+- Notas de code review (no bloqueantes, quedan en backlog): `google.maps.Marker` está deprecado (migrar a `AdvancedMarkerElement` más adelante); al filtrar, el mapa no hace `fitBounds` automático (si los pines quedan fuera del viewport inicial, el usuario tiene que hacer scroll/zoom manual); memoizar `pinIcon()` por color.
+
 ## Backlog (prioritized)
+- **P2**: Mapa — migrar `Marker` a `AdvancedMarkerElement` (requiere Map ID con estilo dark configurado en Google Cloud Console) + `fitBounds` automático al cambiar filtros.
 - **P0 (pendiente redeploy)**: ajustes de texto en Reserva (limpieza/depósito), fix de seller_contact en ML, recibo automático al cobrar saldo, comisión editable por %, depósito/limpieza editables por reserva, leyenda de cargos no incluidos en la vista pública.
 - **P1 (a revisar cuando haya tiempo)**: 9 propiedades archivadas en VERA OS que quedaron con `mercadolibre.status=published` — confirmar si siguen vivas en ML y, si corresponde, pausarlas/cerrarlas ahí también.
 - **P0 (pendiente usuario, ya con datos reales generados)**: Re-guardar el % de comisión en las propiedades que todavía falten + cargar comisión en V595/V395 (ventas) — confirmar que aparece el mensaje de guardado esta vez.
