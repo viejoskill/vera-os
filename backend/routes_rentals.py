@@ -166,6 +166,7 @@ def _mov_out(m: dict) -> dict:
         "id": m["_id"], "propertyId": m.get("propertyId"), "fecha": m.get("fecha"),
         "tipo": m.get("tipo"), "monto": m.get("monto"), "descripcion": m.get("descripcion"),
         "reservaId": m.get("reservaId"), "createdAt": m.get("createdAt"),
+        "comisionPct": m.get("comisionPct"),
     }
 
 
@@ -205,6 +206,8 @@ def _res_out(r: dict) -> dict:
                     "fecha": s.get("fecha"), "comprobanteId": s.get("comprobanteId")} for s in (r.get("saldos") or [])],
         "saldoPendiente": calc["saldoPendiente"], "totalCobrado": calc["totalCobrado"],
         "nroReserva": r.get("nroReserva"), "nroContrato": r.get("nroContrato"),
+        "depositoOverride": r.get("depositoOverride"),
+        "limpiezaOverride": r.get("limpiezaOverride"),
     }
 
 
@@ -554,7 +557,7 @@ async def _gen_comision(rid: str, r: dict) -> None:
     if com > 0:
         await _movs().insert_one({
             "_id": uuid4().hex, "propertyId": r["propertyId"], "reservaId": rid,
-            "fecha": r.get("checkIn"), "tipo": "comision", "monto": com,
+            "fecha": r.get("checkIn"), "tipo": "comision", "monto": com, "comisionPct": pct,
             "descripcion": f"Comisión {pct}% · {r.get('huesped', {}).get('nombre', '')}".strip(),
             "createdAt": _now(),
         })
@@ -668,6 +671,36 @@ async def update_huesped(rid: str, body: HuespedBody):
     return _res_out(await _res().find_one({"_id": rid}))
 
 
+class DepositoBody(BaseModel):
+    deposito: float | None = None  # None = volver a usar el depósito de la propiedad
+
+
+@router.patch("/reservations/{rid}/deposito")
+async def update_deposito(rid: str, body: DepositoBody):
+    """Override del depósito de garantía para ESTA reserva puntual (ej. estadías cortas
+    o acuerdos distintos al depósito configurado en la propiedad). No afecta otras reservas."""
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    await _res().update_one({"_id": rid}, {"$set": {"depositoOverride": body.deposito, "updatedAt": _now()}})
+    return _res_out(await _res().find_one({"_id": rid}))
+
+
+class LimpiezaBody(BaseModel):
+    limpieza: float | None = None  # None = volver a usar el cargo de limpieza de la propiedad
+
+
+@router.patch("/reservations/{rid}/limpieza")
+async def update_limpieza(rid: str, body: LimpiezaBody):
+    """Override del cargo de limpieza (se cobra siempre, se suma al total a abonar en el
+    ingreso) para ESTA reserva puntual. No afecta otras reservas."""
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    await _res().update_one({"_id": rid}, {"$set": {"limpiezaOverride": body.limpieza, "updatedAt": _now()}})
+    return _res_out(await _res().find_one({"_id": rid}))
+
+
 @router.delete("/reservations/{rid}", status_code=204)
 async def delete_reservation(rid: str):
     await _res().delete_one({"_id": rid})
@@ -725,6 +758,42 @@ async def create_movimiento(body: MovimientoBody):
 @router.delete("/movimientos/{mid}", status_code=204)
 async def delete_movimiento(mid: str):
     await _movs().delete_one({"_id": mid})
+
+
+class MovimientoEditBody(BaseModel):
+    monto: float | None = None
+    descripcion: str | None = None
+    comisionPct: float | None = None
+
+
+@router.put("/movimientos/{mid}")
+async def update_movimiento(mid: str, body: MovimientoEditBody):
+    """Edita UN movimiento puntual (p.ej. la comisión de una reserva específica), sin
+    afectar la config de la propiedad ni otras reservas. Si se manda `comisionPct` en
+    una comisión, recalcula el monto en base al total de ESA reserva (queda constancia
+    de qué % se cobró realmente, y se refleja solo en la liquidación correspondiente)."""
+    m = await _movs().find_one({"_id": mid})
+    if not m:
+        raise HTTPException(404, "Movimiento no encontrado")
+    patch: dict = {}
+    if body.comisionPct is not None and m.get("tipo") == "comision" and m.get("reservaId"):
+        r = await _res().find_one({"_id": m["reservaId"]})
+        if not r:
+            raise HTTPException(400, "No se encontró la reserva asociada a esta comisión.")
+        base = float(r.get("montoEstimado") or 0)
+        pct = float(body.comisionPct)
+        patch["comisionPct"] = pct
+        patch["monto"] = round(base * pct / 100)
+        nombre = r.get("huesped", {}).get("nombre", "")
+        patch["descripcion"] = f"Comisión {pct}% · {nombre}".strip(" ·")
+    elif body.monto is not None:
+        patch["monto"] = round(float(body.monto))
+    if body.descripcion is not None and "descripcion" not in patch:
+        patch["descripcion"] = body.descripcion
+    if not patch:
+        raise HTTPException(400, "Nada para actualizar")
+    await _movs().update_one({"_id": mid}, {"$set": patch})
+    return _mov_out(await _movs().find_one({"_id": mid}))
 
 
 @router.get("/liquidacion")
@@ -1150,13 +1219,16 @@ async def _assign_numero(rid: str, r: dict, campo: str, tipo: str) -> int:
 
 def _doc_prop(prop: dict, r: dict) -> dict:
     prop = prop or {}
+    limpieza = r.get("limpiezaOverride")
+    if limpieza is None:
+        limpieza = prop.get("limpieza") or 0
     return {
         "codigo": prop.get("codigo"), "titulo": r.get("propertyTitulo") or prop.get("titulo"),
         "direccion": prop.get("direccion"), "localidad": prop.get("localidad"),
         "checkInHora": prop.get("checkInHora"), "checkOutHora": prop.get("checkOutHora"),
         "capacidad": prop.get("capacidad"), "aceptaMascotas": prop.get("aceptaMascotas"),
         "ropaBlanca": prop.get("ropaBlanca"), "tipo": prop.get("tipo"), "dormitorios": prop.get("dormitorios"),
-        "penalidadDiaria": prop.get("penalidadDiaria") or 0, "limpieza": prop.get("limpieza") or 0,
+        "penalidadDiaria": prop.get("penalidadDiaria") or 0, "limpieza": limpieza,
     }
 
 
@@ -1171,12 +1243,18 @@ async def documento_reserva(rid: str, dl: int = 0):
     # "sena" del documento = total cobrado hasta ahora (seña + adelantos registrados luego vía Cobrar saldo),
     # para que el texto (números y en letras) quede consistente con el saldo pendiente mostrado abajo.
     sena = float(calc["totalCobrado"])
+    deposito = r.get("depositoOverride")
+    if deposito is None:
+        deposito = (prop or {}).get("depositoGarantia") or 0
+    limpieza = r.get("limpiezaOverride")
+    if limpieza is None:
+        limpieza = (prop or {}).get("limpieza") or 0
     from rentals_pdf import build_reserva_pdf
     data = {
         "nroReserva": nro, "propiedad": _doc_prop(prop, r), "huesped": r.get("huesped") or {},
         "moneda": r.get("moneda", "ARS"), "checkIn": r.get("checkIn"), "checkOut": r.get("checkOut"),
         "noches": r.get("noches"), "montoEstimado": r.get("montoEstimado"), "sena": sena,
-        "depositoGarantia": (prop or {}).get("depositoGarantia") or 0, "saldoPendiente": calc["saldoPendiente"],
+        "depositoGarantia": deposito, "limpieza": limpieza, "saldoPendiente": calc["saldoPendiente"],
     }
     pdf = build_reserva_pdf(data)
     disp = "attachment" if dl else "inline"
@@ -1191,12 +1269,15 @@ async def documento_contrato(rid: str, dl: int = 0):
         raise HTTPException(404, "Reserva no encontrada")
     prop = await _props().find_one({"_id": r.get("propertyId")})
     nro = await _assign_numero(rid, r, "nroContrato", "contrato")
+    deposito = r.get("depositoOverride")
+    if deposito is None:
+        deposito = (prop or {}).get("depositoGarantia") or 0
     from rentals_pdf import build_contrato_pdf
     data = {
         "nroContrato": nro, "propiedad": _doc_prop(prop, r), "huesped": r.get("huesped") or {},
         "moneda": r.get("moneda", "ARS"), "checkIn": r.get("checkIn"), "checkOut": r.get("checkOut"),
         "noches": r.get("noches"), "montoEstimado": r.get("montoEstimado"),
-        "depositoGarantia": (prop or {}).get("depositoGarantia") or 0,
+        "depositoGarantia": deposito,
     }
     pdf = build_contrato_pdf(data)
     disp = "attachment" if dl else "inline"

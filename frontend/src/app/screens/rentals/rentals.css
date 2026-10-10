@@ -278,7 +278,7 @@
 .rt-mov__add { display: grid; grid-template-columns: 140px 150px 120px 1fr 180px auto; gap: 8px; margin-bottom: 14px; align-items: center; }
 .rt-mov__add input, .rt-mov__add select { background: var(--vera-color-surface); border: 1px solid var(--vera-color-border); color: var(--vera-color-text); padding: 9px 11px; border-radius: var(--vera-radius-md, 10px); font: inherit; }
 .rt-mov { display: flex; flex-direction: column; gap: 6px; }
-.rt-mov__row { display: grid; grid-template-columns: 110px 150px 1fr 130px auto; gap: 10px; align-items: center; padding: 9px 14px; background: var(--vera-color-surface); border: 1px solid var(--vera-color-border); border-left: 3px solid var(--vera-color-border); border-radius: var(--vera-radius-md, 10px); font-size: .85rem; }
+.rt-mov__row { display: grid; grid-template-columns: 110px 150px 1fr 130px auto auto; gap: 10px; align-items: center; padding: 9px 14px; background: var(--vera-color-surface); border: 1px solid var(--vera-color-border); border-left: 3px solid var(--vera-color-border); border-radius: var(--vera-radius-md, 10px); font-size: .85rem; }
 .rt-mov__row--ingreso { border-left-color: #4bbf6b; }
 .rt-mov__row--comision { border-left-color: var(--vera-color-primary); }
 .rt-mov__row--gasto_prop { border-left-color: #e0a04b; }
@@ -286,6 +286,13 @@
 .rt-mov__fecha { color: var(--vera-color-text-secondary); }
 .rt-mov__monto { text-align: right; font-weight: 600; }
 .rt-mov__row button { background: none; border: none; color: #e07575; cursor: pointer; }
+.rt-mov__row button.rt-mov__editbtn { color: var(--vera-color-text-secondary); }
+.rt-mov__row button.rt-mov__editbtn:hover { color: var(--vera-color-primary); }
+.rt-mov__edit { display: flex; align-items: center; gap: 4px; justify-self: end; }
+.rt-mov__edit input { width: 72px; background: var(--vera-color-bg); border: 1px solid var(--vera-color-primary); color: var(--vera-color-text); padding: 4px 6px; border-radius: 6px; font: inherit; }
+.rt-mov__pctsign { color: var(--vera-color-text-secondary); font-size: .8rem; }
+.rt-mov__edit button { color: var(--vera-color-text-secondary); }
+.rt-mov__edit button:first-of-type { color: #4bbf6b; }
 .rt-mov__imput { margin-left: 8px; font-size: .74rem; color: var(--vera-color-primary); white-space: nowrap; }
 .rt-liq__filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
 .rt-liq__filters select, .rt-liq__filters input { background: var(--vera-color-surface); border: 1px solid var(--vera-color-border); color: var(--vera-color-text); padding: 10px 12px; border-radius: var(--vera-radius-md, 10px); font: inherit; }

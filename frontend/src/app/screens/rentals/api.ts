@@ -22,7 +22,7 @@ export interface RentalProperty {
 export interface RentalSettings { condicionesGenerales: string[]; avisoValidez: string; whatsappAgencia?: string; }
 export interface Movimiento {
   id: string; propertyId: string; fecha: string; tipo: string; monto: number;
-  descripcion?: string; reservaId?: string; createdAt?: string;
+  descripcion?: string; reservaId?: string; createdAt?: string; comisionPct?: number;
 }
 export interface Liquidacion {
   propiedad: { id: string; codigo?: string; titulo: string; moneda: string };
@@ -58,6 +58,7 @@ export interface Reservation {
   comprobantes?: { id: string; nombre?: string; fecha?: string }[];
   saldos?: SaldoCobro[]; saldoPendiente?: number; totalCobrado?: number;
   nroReserva?: number | null; nroContrato?: number | null;
+  depositoOverride?: number | null; limpiezaOverride?: number | null;
   huesped: { nombre?: string; telefono?: string; email?: string; dni?: string; domicilio?: string; localidad?: string; huespedes?: number; comentario?: string };
 }
 
@@ -102,11 +103,17 @@ export const api = {
     fetch(`${RENTALS_API}/reservations/${rid}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estado, motivo }) }).then(json),
   updateHuesped: (rid: string, body: Partial<Reservation['huesped']>): Promise<Reservation> =>
     fetch(`${RENTALS_API}/reservations/${rid}/huesped`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(json),
+  updateDeposito: (rid: string, deposito: number | null): Promise<Reservation> =>
+    fetch(`${RENTALS_API}/reservations/${rid}/deposito`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ deposito }) }).then(json),
+  updateLimpieza: (rid: string, limpieza: number | null): Promise<Reservation> =>
+    fetch(`${RENTALS_API}/reservations/${rid}/limpieza`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limpieza }) }).then(json),
   deleteReservation: (rid: string) => fetch(`${RENTALS_API}/reservations/${rid}`, { method: 'DELETE' }).then(json),
   listMovimientos: (pid: string): Promise<Movimiento[]> => fetch(`${RENTALS_API}/properties/${pid}/movimientos`).then(json),
   createMovimiento: (body: Record<string, unknown>): Promise<Movimiento> =>
     fetch(`${RENTALS_API}/movimientos`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(json),
   deleteMovimiento: (mid: string) => fetch(`${RENTALS_API}/movimientos/${mid}`, { method: 'DELETE' }).then(json),
+  updateMovimiento: (mid: string, body: { monto?: number; descripcion?: string; comisionPct?: number }): Promise<Movimiento> =>
+    fetch(`${RENTALS_API}/movimientos/${mid}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(json),
   liquidacion: (propertyId: string, desde: string, hasta: string): Promise<Liquidacion> =>
     fetch(`${RENTALS_API}/liquidacion?propertyId=${propertyId}&desde=${desde}&hasta=${hasta}`).then(json),
   liquidacionPdfUrl: (propertyId: string, desde: string, hasta: string): string =>

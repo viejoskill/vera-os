@@ -135,6 +135,29 @@ async def ml_resync_patch(prop: dict) -> dict:
     }}
 
 
+@router.post("/contacto/backfill")
+async def backfill_contacto():
+    """Re-sincroniza (PUT) el `seller_contact` en TODOS los avisos ya publicados, sin
+    esperar a que cada propiedad se edite/guarde de nuevo. Pensado para aplicar de una
+    sola vez el teléfono/email exigido por ML y recuperar visibilidad en el buscador."""
+    _ensure()
+    props = await property_repository.list_properties(status="all")
+    ok, fail = [], []
+    for prop in props:
+        ml_pub = (prop.get("publications") or {}).get("mercadolibre") or {}
+        if ml_pub.get("status") != "published" or not ml_pub.get("itemId"):
+            continue
+        patch = await ml_resync_patch(prop)
+        mlpatch = patch.get("mercadolibre") or {}
+        if mlpatch.get("status") == "published":
+            ok.append({"propertyId": prop["id"], "itemId": ml_pub.get("itemId")})
+        else:
+            fail.append({"propertyId": prop["id"], "itemId": ml_pub.get("itemId"), "error": mlpatch.get("error")})
+        if mlpatch:
+            await _set_channel(prop, mlpatch)
+    return {"actualizados": len(ok), "fallidos": fail}
+
+
 @router.post("/listings/{property_id}/publish")
 async def publish_listing(property_id: str, relist: bool = True):
     """Publica o actualiza el aviso en Mercado Libre.

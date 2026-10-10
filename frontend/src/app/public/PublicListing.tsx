@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { BedDouble, Bath, Maximize, MapPin, MessageCircle, Play } from 'lucide-react';
+import { BedDouble, Bath, Maximize, MapPin, MessageCircle, Play, List, Map as MapIcon } from 'lucide-react';
 import { env } from '@vera/config';
 import { openWhatsAppInquiry } from './whatsappInquiry';
 import { usePageMeta, SITE_URL } from './usePageMeta';
+import { ListingsMap } from './ListingsMap';
 
 interface Listing {
   id: string;
@@ -27,6 +28,8 @@ interface Listing {
   publicUrl: string;
   autoStamp?: boolean;
   hasVideo?: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 const money = (n: number, c: string) =>
@@ -57,6 +60,7 @@ export const PublicListing = () => {
   const [zona, setZona] = useState('');
   const [precioMax, setPrecioMax] = useState('');
   const [ambientes, setAmbientes] = useState('');
+  const [vista, setVista] = useState<'lista' | 'mapa'>('lista');
 
   const tipos = useMemo(() => Array.from(new Set(data.map((p) => p.type).filter(Boolean))).sort(), [data]);
   const zonas = useMemo(() => {
@@ -142,12 +146,34 @@ export const PublicListing = () => {
         <button type="button" className="vera-pub__clear" onClick={clear} data-testid="filter-clear">Limpiar</button>
       </div>
 
-      <p className="vera-pub__found" data-testid="public-count">{filtered.length} propiedades encontradas</p>
+      <p className="vera-pub__found" data-testid="public-count">
+        {filtered.length} propiedades encontradas
+        <span className="vera-pub__viewtoggle" data-testid="view-toggle">
+          <button
+            type="button"
+            className={vista === 'lista' ? 'is-active' : ''}
+            onClick={() => setVista('lista')}
+            data-testid="view-toggle-lista"
+          >
+            <List size={14} /> Ver en lista
+          </button>
+          <button
+            type="button"
+            className={vista === 'mapa' ? 'is-active' : ''}
+            onClick={() => setVista('mapa')}
+            data-testid="view-toggle-mapa"
+          >
+            <MapIcon size={14} /> Ver en mapa
+          </button>
+        </span>
+      </p>
 
       {isLoading ? (
         <p className="vera-pub__empty">Cargando propiedades…</p>
       ) : filtered.length === 0 ? (
         <p className="vera-pub__empty" data-testid="public-empty">No hay propiedades que coincidan con tu búsqueda.</p>
+      ) : vista === 'mapa' ? (
+        <ListingsMap listings={filtered} />
       ) : (
         <div className="vera-pub__grid">
           {filtered.map((p) => {

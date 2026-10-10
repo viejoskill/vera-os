@@ -86,3 +86,8 @@ PUBLIC_WEB_BASE_URL = os.environ.get(
 RENTALS_PUBLIC_BASE_URL = os.environ.get(
     "RENTALS_PUBLIC_BASE_URL", "https://alquileres.varelapropiedadescde.com.ar"
 ).rstrip("/")
+# Contacto público para avisos de Mercado Libre (seller_contact). Desde oct/2026, ML
+# exige country_code2 + phone2 (WhatsApp) en todo aviso de inmuebles, sino le baja la
+# visibilidad en el buscador aunque el aviso siga "activo" vía link directo.
+ML_CONTACT_PHONE = os.environ.get("ML_CONTACT_PHONE", "2257404000")
+ML_CONTACT_EMAIL = os.environ.get("ML_CONTACT_EMAIL", "varelavendecde@gmail.com")

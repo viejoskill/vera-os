@@ -108,6 +108,10 @@ def _res():
     return _db()["rental_reservations"]
 
 
+def _rprops():
+    return _db()["rental_properties"]
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -429,6 +433,37 @@ async def _reservas_moneda_map(reserva_ids: set[str]) -> dict[str, str]:
     return out
 
 
+@router.post("/comisiones/backfill")
+async def backfill_comisiones_alquiler():
+    """Genera (retroactivo, idempotente) las comisiones de alquiler de reservas ya
+    confirmadas cuya propiedad no tenía % de comisión configurado al momento de
+    confirmarse, y luego sí se configuró. No duplica (salta si ya existe el movimiento)."""
+    generadas = 0
+    montos: dict[str, float] = {}
+    async for p in _rprops().find({}):
+        pct = float(p.get("comisionPct") or 0)
+        minima = float(p.get("comisionMinima") or 0)
+        if pct <= 0 and minima <= 0:
+            continue
+        async for r in _res().find({"propertyId": p["_id"], "estado": {"$in": ["confirmada", "encurso", "finalizada"]}}):
+            if await _movs().find_one({"reservaId": r["_id"], "tipo": "comision"}):
+                continue
+            base = float(r.get("montoEstimado") or 0)
+            com = max(round(base * pct / 100), minima)
+            if com <= 0:
+                continue
+            moneda = _norm_moneda(r.get("moneda"))
+            await _movs().insert_one({
+                "_id": uuid4().hex, "propertyId": p["_id"], "reservaId": r["_id"],
+                "fecha": r.get("checkIn"), "tipo": "comision", "monto": com, "comisionPct": pct,
+                "descripcion": f"Comisión {pct}% · {(r.get('huesped') or {}).get('nombre', '')}".strip(),
+                "createdAt": _now(),
+            })
+            generadas += 1
+            montos[moneda] = montos.get(moneda, 0) + com
+    return {"generadas": generadas, "montos": {k: round(v) for k, v in montos.items()}}
+
+
 @router.get("/resumen")
 async def resumen(desde: str = Query(...), hasta: str = Query(...)):
     await _materializar_recurrentes()
@@ -511,10 +546,25 @@ async def resumen(desde: str = Query(...), hasta: str = Query(...)):
     # Propiedades Reservada/Vendida que TODAVÍA no tienen ninguna comisión cargada
     # (aviso para que no se le pase al usuario cargarla desde el Workspace de la propiedad).
     comisiones_faltantes = [
-        {"propertyId": pid, "propertyLabel": _label_prop(p), "status": p.get("status")}
+        {"propertyId": pid, "propertyLabel": _label_prop(p), "status": p.get("status"), "tipo": "venta"}
         for pid, p in pmap.items()
         if p.get("status") in ("sold", "reserved") and pid not in con_comision_ids
     ]
+
+    # 4) Alquileres: propiedades con % de comisión en 0 (nunca configurado) que ya tienen
+    #    reservas confirmadas sin comisión generada (se generan solas apenas se configura el %
+    #    + se usa "Recalcular comisiones de alquiler" para las ya confirmadas).
+    async for p in _rprops().find({}):
+        pct = float(p.get("comisionPct") or 0)
+        minima = float(p.get("comisionMinima") or 0)
+        if pct > 0 or minima > 0:
+            continue
+        n = await _res().count_documents({"propertyId": p["_id"], "estado": {"$in": ["confirmada", "encurso", "finalizada"]}})
+        if n > 0:
+            comisiones_faltantes.append({
+                "propertyId": p["_id"], "propertyLabel": p.get("titulo") or p.get("codigo") or "Propiedad de alquiler",
+                "status": "sin_comision", "tipo": "alquiler", "reservas": n,
+            })
 
     # Cierre: neto y redondeos.
     for cur in monedas.values():

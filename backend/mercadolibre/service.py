@@ -308,6 +308,14 @@ def _payload(prop: dict, images: list[dict], category_id: str, attributes: list[
         "location": location,
         "attributes": attributes,
         "seller_custom_field": str(prop.get("id") or ""),
+        # Requerido por ML para inmuebles: sin esto, el aviso queda "activo" (el link
+        # anda) pero pierde visibilidad en el buscador. country_code2/phone2 = WhatsApp.
+        "seller_contact": {
+            "contact": "Inmobiliaria Varela",
+            "country_code": "54", "area_code": "", "phone": config.ML_CONTACT_PHONE,
+            "country_code2": "54", "phone2": config.ML_CONTACT_PHONE,
+            "email": config.ML_CONTACT_EMAIL, "webpage": config.PUBLIC_WEB_BASE_URL,
+        },
     }
 
 
@@ -454,6 +462,7 @@ async def publish(prop: dict, images: list[dict], existing_item_id: str | None, 
                 "price": payload["price"],
                 "pictures": payload["pictures"],
                 "seller_custom_field": str(prop.get("id") or ""),
+                "seller_contact": payload["seller_contact"],
             }
             r = await h.put(f"{config.MELI_API}/items/{item_id}", headers=headers, json=upd)
             if r.status_code >= 400:
@@ -462,7 +471,8 @@ async def publish(prop: dict, images: list[dict], existing_item_id: str | None, 
                 r = await h.put(
                     f"{config.MELI_API}/items/{item_id}",
                     headers=headers,
-                    json={"price": payload["price"], "pictures": payload["pictures"], "seller_custom_field": str(prop.get("id") or "")},
+                    json={"price": payload["price"], "pictures": payload["pictures"],
+                          "seller_custom_field": str(prop.get("id") or ""), "seller_contact": payload["seller_contact"]},
                 )
             if r.status_code >= 400:
                 raise MeliError(r.status_code, r.text)

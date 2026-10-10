@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Trash2, Upload, Star, CalendarX2, ExternalLink, UserPlus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Upload, Star, CalendarX2, ExternalLink, UserPlus, ChevronLeft, ChevronRight, Pencil, Check, X } from 'lucide-react';
 import { Button, Input } from '@vera/ui';
 import { api, fmtMoney, fmtDate, nightsBetween, displayEstado, TIPO_MOV, type RentalProperty, type Reservation, type RentalImage, type Movimiento, type Occupied } from './api';
 import { RentalCalendar } from './RentalCalendar';
@@ -39,6 +39,9 @@ export const RentalWorkspace = () => {
   const [bloqueos, setBloqueos] = useState<Reservation[]>([]);
   const [movs, setMovs] = useState<Movimiento[]>([]);
   const [nm, setNm] = useState({ fecha: '', tipo: 'ingreso', monto: '', descripcion: '', reservaId: '' });
+  const [editingMov, setEditingMov] = useState<string | null>(null);
+  const [editMonto, setEditMonto] = useState('');
+  const [editPct, setEditPct] = useState('');
   const [condText, setCondText] = useState('');
   const [confirming, setConfirming] = useState<Reservation | null>(null);
   const [rejecting, setRejecting] = useState<Reservation | null>(null);
@@ -78,6 +81,17 @@ export const RentalWorkspace = () => {
     await loadMovs(pid);
   };
   const delMov = async (mid: string) => { if (pid) { await api.deleteMovimiento(mid); await loadMovs(pid); } };
+  const guardarEditMov = async (m: Movimiento) => {
+    if (m.tipo === 'comision') {
+      if (!editPct) return;
+      await api.updateMovimiento(m.id, { comisionPct: Number(editPct) });
+    } else {
+      if (!editMonto) return;
+      await api.updateMovimiento(m.id, { monto: Number(editMonto) });
+    }
+    setEditingMov(null);
+    if (pid) await loadMovs(pid);
+  };
 
   useEffect(() => {
     if (isNew) return;
@@ -482,7 +496,7 @@ export const RentalWorkspace = () => {
               </select>
               <Button variant="secondary" size="sm" onClick={addMov} data-testid="rt-mov-save">Agregar</Button>
             </div>
-            <p className="rt-hint">Podés dejar el gasto como <strong>general</strong> de la propiedad o <strong>imputarlo a una reserva</strong>. En la liquidación por reserva se suman los movimientos imputados y, además, los gastos generales que caigan dentro de las fechas de la estadía.</p>
+            <p className="rt-hint">Podés dejar el gasto como <strong>general</strong> de la propiedad o <strong>imputarlo a una reserva</strong>. En la liquidación por reserva se suman los movimientos imputados y, además, los gastos generales que caigan dentro de las fechas de la estadía. La comisión que se genera sola al confirmar una reserva también se puede editar acá (ej. si esa estadía tenía un % distinto al configurado en la propiedad) sin afectar a las demás reservas.</p>
             {movs.length === 0 ? <p className="rt-hint">Sin movimientos cargados.</p> : (
               <div className="rt-mov">
                 {movs.map((m) => {
@@ -492,7 +506,33 @@ export const RentalWorkspace = () => {
                     <span className="rt-mov__fecha">{fmtDate(m.fecha)}</span>
                     <span className="rt-mov__tipo">{TIPO_MOV[m.tipo] || m.tipo}</span>
                     <span className="rt-mov__desc">{m.descripcion}{res && <span className="rt-mov__imput" data-testid={`rt-mov-imput-${m.id}`}>↳ {res.huesped.nombre || 'reserva'}</span>}</span>
-                    <span className="rt-mov__monto">{fmtMoney(m.monto, f.moneda)}</span>
+                    {editingMov === m.id ? (
+                      m.tipo === 'comision' ? (
+                        <span className="rt-mov__edit" data-testid={`rt-mov-edit-pct-group-${m.id}`}>
+                          <input type="number" autoFocus value={editPct} onChange={(e) => setEditPct(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') guardarEditMov(m); if (e.key === 'Escape') setEditingMov(null); }}
+                            data-testid={`rt-mov-edit-pct-${m.id}`} />
+                          <span className="rt-mov__pctsign">%</span>
+                          <button type="button" onClick={() => guardarEditMov(m)} data-testid={`rt-mov-edit-save-${m.id}`}><Check size={13} /></button>
+                          <button type="button" onClick={() => setEditingMov(null)} data-testid={`rt-mov-edit-cancel-${m.id}`}><X size={13} /></button>
+                        </span>
+                      ) : (
+                        <span className="rt-mov__edit">
+                          <input type="number" autoFocus value={editMonto} onChange={(e) => setEditMonto(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') guardarEditMov(m); if (e.key === 'Escape') setEditingMov(null); }}
+                            data-testid={`rt-mov-edit-input-${m.id}`} />
+                          <button type="button" onClick={() => guardarEditMov(m)} data-testid={`rt-mov-edit-save-${m.id}`}><Check size={13} /></button>
+                          <button type="button" onClick={() => setEditingMov(null)} data-testid={`rt-mov-edit-cancel-${m.id}`}><X size={13} /></button>
+                        </span>
+                      )
+                    ) : (
+                      <span className="rt-mov__monto">{fmtMoney(m.monto, f.moneda)}</span>
+                    )}
+                    {editingMov !== m.id && (
+                      <button type="button" className="rt-mov__editbtn" title={m.tipo === 'comision' ? 'Editar el % de esta comisión' : 'Editar monto'}
+                        onClick={() => { setEditingMov(m.id); setEditMonto(String(m.monto)); setEditPct(String(m.comisionPct ?? '')); }}
+                        data-testid={`rt-editmov-${m.id}`}><Pencil size={13} /></button>
+                    )}
                     <button type="button" onClick={() => delMov(m.id)} data-testid={`rt-delmov-${m.id}`}><Trash2 size={13} /></button>
                   </div>
                   );

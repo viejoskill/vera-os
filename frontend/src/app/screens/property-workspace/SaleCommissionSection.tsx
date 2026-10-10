@@ -16,6 +16,7 @@ export const SaleCommissionSection = ({ propertyId, propertyLabel, status }: {
   const [editing, setEditing] = useState(false);
   const [moneda, setMoneda] = useState('USD');
   const [monto, setMonto] = useState('');
+  const [flash, setFlash] = useState('');
 
   const load = useCallback(async () => {
     const r = await fetch(`${CONTA}/ventas/by-property/${propertyId}`);
@@ -29,13 +30,20 @@ export const SaleCommissionSection = ({ propertyId, propertyLabel, status }: {
   if (status !== 'reserved' && status !== 'sold' && !venta) return null;
 
   const save = async () => {
-    if (!monto) return;
-    await fetch(`${CONTA}/ventas`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ propertyId, propertyLabel, moneda, monto: Number(monto) }),
-    });
-    setEditing(false);
-    await load();
+    if (!monto) { setFlash('Escribí un monto antes de guardar.'); setTimeout(() => setFlash(''), 3000); return; }
+    try {
+      const r = await fetch(`${CONTA}/ventas`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ propertyId, propertyLabel, moneda, monto: Number(monto) }),
+      });
+      if (!r.ok) throw new Error('No se pudo guardar');
+      setEditing(false);
+      await load();
+      setFlash('Comisión guardada ✅');
+    } catch {
+      setFlash('No se pudo guardar la comisión. Probá de nuevo.');
+    }
+    setTimeout(() => setFlash(''), 3000);
   };
   const del = async () => {
     await fetch(`${CONTA}/ventas/by-property/${propertyId}`, { method: 'DELETE' });
@@ -49,6 +57,7 @@ export const SaleCommissionSection = ({ propertyId, propertyLabel, status }: {
       <div className="vera-salecom__head">
         <DollarSign size={16} />
         <span>Comisión de la venta</span>
+        {flash && <span className="vera-salecom__flash" data-testid="sale-commission-flash">{flash}</span>}
       </div>
 
       {venta && !editing ? (

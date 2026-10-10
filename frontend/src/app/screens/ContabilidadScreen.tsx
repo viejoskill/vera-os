@@ -27,7 +27,7 @@ interface Resumen {
   monedas: Record<string, CurStats>;
   mensual: MesRow[];
   movimientos: Entry[];
-  comisionesFaltantes?: { propertyId: string; propertyLabel: string; status: string }[];
+  comisionesFaltantes?: { propertyId: string; propertyLabel: string; status: string; tipo: 'venta' | 'alquiler'; reservas?: number }[];
 }
 interface Categorias { ingreso: string[]; gasto: string[]; custom: { id: string; nombre: string; tipo: string }[]; }
 interface Recurrente {
@@ -106,6 +106,8 @@ export const ContabilidadScreen = () => {
   const [showRecs, setShowRecs] = useState(false);
   const [cur, setCur] = useState('ARS');
   const [err, setErr] = useState('');
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillMsg, setBackfillMsg] = useState('');
 
   const [f, setF] = useState({ tipo: 'gasto' as 'ingreso' | 'gasto', categoria: '', moneda: 'ARS', monto: '', fecha: isoDate(HOY), descripcion: '' });
   const [newCat, setNewCat] = useState<string | null>(null);
@@ -174,6 +176,20 @@ export const ContabilidadScreen = () => {
   };
   const delRec = async (id: string) => { await fetch(`${API}/recurrentes/${id}`, { method: 'DELETE' }); await loadRecs(); };
 
+  const recalcularComisionesAlquiler = async () => {
+    setBackfilling(true); setBackfillMsg('');
+    try {
+      const r = await fetch(`${API}/comisiones/backfill`, { method: 'POST' });
+      const d = await r.json();
+      setBackfillMsg(d.generadas > 0
+        ? `Se generaron ${d.generadas} comisión${d.generadas > 1 ? 'es' : ''} de alquiler.`
+        : 'No había comisiones pendientes de generar (revisá que el % ya esté guardado en la propiedad).');
+      await load();
+    } catch {
+      setBackfillMsg('No se pudo recalcular. Probá de nuevo.');
+    } finally { setBackfilling(false); }
+  };
+
   const stats = data?.monedas[cur];
   const prevStats = prev?.monedas[cur];
   const monedasPresentes = data ? Object.keys(data.monedas) : [];
@@ -227,19 +243,29 @@ export const ContabilidadScreen = () => {
         <div className="cont__pending cont__pending--warn" data-testid="cont-comisiones-faltantes">
           <AlertTriangle size={16} className="cont__pending-dot cont__pending-dot--warn" />
           <div>
-            <strong>Te falta cargar {data.comisionesFaltantes.length} comisión{data.comisionesFaltantes.length > 1 ? 'es' : ''} de venta</strong>
-            <p>Estas propiedades están Reservadas o Vendidas pero todavía no tienen un monto de comisión cargado — por eso no suman en Contabilidad.</p>
+            <strong>Te falta cargar {data.comisionesFaltantes.length} comisión{data.comisionesFaltantes.length > 1 ? 'es' : ''}</strong>
+            <p>Estas propiedades tienen operaciones (venta o alquiler) sin comisión cargada o sin % configurado — por eso no suman en Contabilidad.</p>
             <ul className="cont__faltantes-list">
               {data.comisionesFaltantes.map((f) => (
                 <li key={f.propertyId}>
-                  <button type="button" className="cont__faltantes-item" data-testid={`cont-comision-faltante-${f.propertyId}`} onClick={() => nav(`/propiedades/${f.propertyId}`)}>
+                  <button type="button" className="cont__faltantes-item" data-testid={`cont-comision-faltante-${f.propertyId}`}
+                    onClick={() => nav(f.tipo === 'alquiler' ? `/alquileres/${f.propertyId}` : `/propiedades/${f.propertyId}`)}>
                     <span>{f.propertyLabel || 'Propiedad sin título'}</span>
-                    <em>{f.status === 'sold' ? 'Vendida' : 'Reservada'}</em>
+                    <em>{f.tipo === 'alquiler' ? `Alquiler · ${f.reservas} reserva${(f.reservas || 0) > 1 ? 's' : ''} sin %` : f.status === 'sold' ? 'Venta · Vendida' : 'Venta · Reservada'}</em>
                     <ChevronRight size={14} />
                   </button>
                 </li>
               ))}
             </ul>
+            {data.comisionesFaltantes.some((f) => f.tipo === 'alquiler') && (
+              <div className="cont__faltantes-actions">
+                <p className="cont__faltantes-hint">Primero configurá el % de comisión en cada propiedad de alquiler (botón de arriba). Después tocá este botón para generar las comisiones de las reservas ya confirmadas:</p>
+                <Button variant="secondary" size="sm" onClick={recalcularComisionesAlquiler} disabled={backfilling} data-testid="cont-recalcular-comisiones">
+                  {backfilling ? 'Recalculando…' : 'Recalcular comisiones de alquiler'}
+                </Button>
+                {backfillMsg && <p className="cont__faltantes-msg" data-testid="cont-recalcular-msg">{backfillMsg}</p>}
+              </div>
+            )}
           </div>
         </div>
       )}

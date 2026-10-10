@@ -119,6 +119,7 @@ export const ReservarPropiedad = () => {
               <div className="rt-book__line"><span>{fmtMoney(p.precioNoche, p.moneda)} × {quote.noches} noches</span><span>{fmtMoney(quote.base, quote.moneda)}</span></div>
               {quote.descuentoPct > 0 && <div className="rt-book__line rt-book__line--disc"><span>Descuento por estadía ({quote.descuentoPct}%)</span><span>-{fmtMoney(quote.base - quote.total, quote.moneda)}</span></div>}
               <div className="rt-book__total"><span>Total estimado</span><strong data-testid="rt-total">{fmtMoney(quote.total, quote.moneda)}</strong></div>
+              <p className="rt-book__note" data-testid="rt-book-note-cargos">Este valor no incluye el depósito en garantía ni el cargo de limpieza, que se abonan al ingreso.</p>
             </div>
           ) : <p className="rt-book__hint">Seleccioná check-in y check-out para ver el total.</p>}
 

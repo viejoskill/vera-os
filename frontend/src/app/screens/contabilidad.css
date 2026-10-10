@@ -109,4 +109,7 @@
 .cont__faltantes-item:hover { border-color: #e07575; transform: translateX(2px); }
 .cont__faltantes-item em { font-style: normal; color: var(--vera-color-text-secondary); font-size: .76rem; white-space: nowrap; }
 .cont__faltantes-item svg { color: var(--vera-color-text-secondary); flex-shrink: 0; }
+.cont__faltantes-actions { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(200,80,80,.2); }
+.cont__faltantes-hint { font-size: .78rem; color: var(--vera-color-text-secondary); margin: 0 0 8px; }
+.cont__faltantes-msg { font-size: .8rem; color: #4bbf6b; margin: 8px 0 0; }
 

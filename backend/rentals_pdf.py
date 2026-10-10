@@ -406,8 +406,9 @@ def build_reserva_pdf(data: dict) -> bytes:
     total = float(data.get("montoEstimado") or 0)
     sena = float(data.get("sena") or 0)
     deposito = float(data.get("depositoGarantia") or 0)
+    limpieza = float(data.get("limpieza") or 0)
     saldo = float(data.get("saldoPendiente") if data.get("saldoPendiente") is not None else max(0.0, total - sena))
-    total_ingreso = saldo + deposito
+    total_ingreso = saldo + deposito + limpieza
 
     story: list = []
     _doc_header(story, st, "Reserva de alquiler temporario", f"Reserva N° {nro}" if nro else None)
@@ -416,7 +417,6 @@ def build_reserva_pdf(data: dict) -> bytes:
     loc_h = h.get("localidad") or ""
     tel = h.get("telefono") or ""
     email = h.get("email") or ""
-    limpieza = float(prop.get("limpieza") or 0) or 40000
     story.append(Paragraph(
         f"Recibimos del Señor/a <b>{h.get('nombre') or '________'}</b>, DNI N° {_num_or_blank(h.get('dni'))}, "
         f"con domicilio legal y a todos los efectos en {dom or '________________'} de la localidad de {loc_h or '________'}, "
@@ -433,14 +433,15 @@ def build_reserva_pdf(data: dict) -> bytes:
         "los siguientes importes:", just))
     filas = [["Saldo de alquiler", _fmt(saldo, mon)],
              ["Depósito de garantía", _fmt(deposito, mon)],
+             ["Cargo de limpieza", _fmt(limpieza, mon)],
              ["TOTAL a abonar en el ingreso", _fmt(total_ingreso, mon)]]
     t = Table(filas, colWidths=[11.5 * cm, 4 * cm])
     t.setStyle(TableStyle([
         ("FONT", (0, 0), (-1, -1), "Helvetica", 10),
-        ("FONT", (0, 2), (-1, 2), "Helvetica-Bold", 11),
+        ("FONT", (0, 3), (-1, 3), "Helvetica-Bold", 11),
         ("ALIGN", (1, 0), (1, -1), "RIGHT"),
         ("LINEBELOW", (0, 0), (-1, -2), 0.3, colors.HexColor("#eeeeee")),
-        ("BACKGROUND", (0, 2), (-1, 2), colors.HexColor("#f6f6e8")),
+        ("BACKGROUND", (0, 3), (-1, 3), colors.HexColor("#f6f6e8")),
         ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
         ("LEFTPADDING", (0, 0), (-1, -1), 8), ("RIGHTPADDING", (0, 0), (-1, -1), 8),
     ]))
@@ -461,10 +462,6 @@ def build_reserva_pdf(data: dict) -> bytes:
         f"• Mascotas: {mascotas}<br/>"
         "• Gas: a cargo del Propietario<br/>"
         "• Luz: a cargo del Propietario", small))
-    story.append(Paragraph(
-        "• Limpieza: LA PROPIEDAD SE ENTREGA LIMPIA Y EN ÓPTIMAS CONDICIONES. SI EN LA DEVOLUCIÓN NO SE "
-        f"ENCONTRARA EN EL MISMO ESTADO SE COBRARÁ UN ADICIONAL DE {_fmt(limpieza, mon)} EN CONCEPTO DE LIMPIEZA Y "
-        "PRODUCTOS DE LIMPIEZA.", small))
     story.append(Paragraph(f"• {ropa}", small))
     story.append(Paragraph(
         "• Los horarios de Check-in / Check-out se efectúan en los horarios pactados en la presente reserva. "
@@ -472,14 +469,14 @@ def build_reserva_pdf(data: dict) -> bytes:
 
     story.append(Paragraph("Cargos por cancelación, modificación de fechas, no presentación o salida anticipada:", st["sec"]))
     story.append(Paragraph(
+        "• <b>El depósito en garantía será devuelto al finalizar el alquiler en la misma moneda e importe "
+        "entregados al momento del ingreso.</b><br/>"
         "• Si la cancelación o modificación de fechas ocurriera dentro de los 60 días previos a la fecha de "
         "ingreso, el reintegro del importe abonado en concepto de seña quedará sujeto a la reserva de igual "
         "estadía por parte de un tercero.<br/>"
         "• En el caso de no presentación o salida anticipada, no se reintegrarán los importes abonados.<br/>"
         "• En el caso de no poder llevarse a cabo el alquiler por alguna eventualidad/problema con la propiedad "
-        "de fuerza mayor, la inmobiliaria solo reintegrará el mismo importe abonado por seña.<br/>"
-        "• El depósito en garantía será devuelto al finalizar el alquiler en la misma moneda e importe entregados "
-        "al momento del ingreso.", small))
+        "de fuerza mayor, la inmobiliaria solo reintegrará el mismo importe abonado por seña.", small))
     story.append(Paragraph(
         "Horario de oficina a partir de Enero, todos los días de 09:30 hs a 13:30 hs y de 17:00 hs a 20:30 hs. "
         "SIN EXCEPCIONES.", small))

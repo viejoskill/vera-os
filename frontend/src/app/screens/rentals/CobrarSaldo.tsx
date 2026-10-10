@@ -64,7 +64,12 @@ export const CobrarSaldo = ({ reserva, onUpdated }: { reserva: Reservation; onUp
           reserva={reserva}
           sugerido={pend}
           onClose={() => setOpen(false)}
-          onDone={() => { setOpen(false); onUpdated?.(); }}
+          onDone={(actualizada) => {
+            setOpen(false);
+            const nuevo = (actualizada.saldos || [])[actualizada.saldos!.length - 1];
+            if (nuevo) setReciboSid(nuevo.id);
+            onUpdated?.();
+          }}
         />
       )}
     </>
@@ -72,7 +77,7 @@ export const CobrarSaldo = ({ reserva, onUpdated }: { reserva: Reservation; onUp
 };
 
 const SaldoModal = ({ reserva, sugerido, onClose, onDone }: {
-  reserva: Reservation; sugerido: number; onClose: () => void; onDone: () => void;
+  reserva: Reservation; sugerido: number; onClose: () => void; onDone: (actualizada: Reservation) => void;
 }) => {
   const hoy = new Date().toISOString().slice(0, 10);
   const [monto, setMonto] = useState(String(sugerido || ''));
@@ -86,7 +91,7 @@ const SaldoModal = ({ reserva, sugerido, onClose, onDone }: {
     const n = Number(monto);
     if (!n || n <= 0) { setErr('Ingresá el monto cobrado.'); return; }
     setErr(''); setSaving(true);
-    try { await api.cobrarSaldo(reserva.id, n, metodo, fecha, file); onDone(); }
+    try { const actualizada = await api.cobrarSaldo(reserva.id, n, metodo, fecha, file); onDone(actualizada); }
     catch (e) { setErr((e as Error).message); setSaving(false); }
   };
 
