@@ -1,0 +1,45 @@
+{
+  "summary": "Full E2E of Rentals map feature (admin + public) completed. Admin: Google Places Autocomplete on 'Dirección' field returns suggestions, selecting one renders the mini preview map (rt-location-preview) with a turquoise pin immediately. Saving persists latitude/longitude in MongoDB and survives reload. Public ficha (/alquileres/reservar/{slug}) shows Ubicación section with dark map, turquoise pin #5FD6C0, 'Cómo llegar' link opening Google Maps with the correct coordinates, and the address as text. No Error Boundary across 3 desktop reloads + 2 mobile reloads (googleMapTheme race-condition fix confirmed). No mobile horizontal overflow at 390x844. Public listing (/alquileres) shows '1 propiedades encontradas' with lista/mapa toggle (rt-pub-view-toggle-lista/mapa); Ver en mapa renders Google Map with the turquoise pin; clicking the pin opens an InfoWindow with price/title/address and a 'Ver propiedad' button whose href is /alquileres/reservar/casa-de-prueba-costa-del-este-borrar-d79b0a (correct — alquileres detail page, NOT /web/{id}). Regression /web, /web map toggle and / (home) all render with no error boundary. Property A161 was reset to direccion='', latitude=null, longitude=null at the end (verified via GET).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results_detail": {
+    "admin_autocomplete_dropdown": "PASS - pac-container visible with 5 real suggestions for 'Av. Costanera'",
+    "admin_preview_map_after_select": "PASS - rt-location-preview rendered with pin, direccion value became 'Av. Costanera Rafael Obligado, Buenos Aires, Argentina'",
+    "admin_save": "PASS - toast '✅' present after click rt-save-prop",
+    "admin_persistence_after_reload": "PASS - direccion and rt-location-preview still present after full reload",
+    "public_ficha_error_boundary_desktop_3_reloads": "PASS (0 occurrences)",
+    "public_ficha_error_boundary_mobile_2_reloads": "PASS (0 occurrences)",
+    "public_ficha_pin_color": "#5FD6C0 (turquoise) ✓",
+    "public_ficha_como_llegar_href": "https://www.google.com/maps/dir/?api=1&destination=-36.5932,-56.6823 ✓",
+    "public_ficha_address_text": "'Av. Costanera 1450' visible ✓",
+    "mobile_horizontal_overflow": "NONE",
+    "listing_count_line": "'1 propiedades encontradas' ✓",
+    "listing_toggle_testids_present": "rt-pub-view-toggle-lista ✓, rt-pub-view-toggle-mapa ✓",
+    "listing_map_pin_turquoise": "#5FD6C0 ✓",
+    "listing_popup_ver_propiedad_href": "/alquileres/reservar/casa-de-prueba-costa-del-este-borrar-d79b0a ✓ (alquileres detail, not /web)",
+    "regression_web_root": "No error boundary",
+    "regression_web_map_toggle": "No error boundary",
+    "regression_home": "No error boundary",
+    "cleanup_a161_final_state": "direccion='', latitude=null, longitude=null ✓ (verified via GET)"
+  },
+  "console_warnings": [
+    "google.maps.places.Autocomplete deprecation notice (informational, not blocking) — consider migrating to PlaceAutocompleteElement eventually",
+    "google.maps.Marker deprecation notice (informational, not blocking) — consider AdvancedMarkerElement"
+  ],
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Non-blocking: Google deprecations for google.maps.places.Autocomplete and google.maps.Marker will eventually require migration to PlaceAutocompleteElement and AdvancedMarkerElement respectively. Not an issue today."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only task)", "frontend": "100%"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (as provided)",
+  "seed_data_creation": "Temporarily set A161 lat=-36.5932, lon=-56.6823, direccion='Av. Costanera 1450' then reset to empty/null at end as instructed. Verified via GET.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Rentals map feature fully validated. A161 left clean (direccion='', lat=null, lon=null). The googleMapTheme.ts race-condition fix (typeof google.maps.Size === 'function' check) is confirmed stable across many reloads on both desktop and mobile. No action items."
+}

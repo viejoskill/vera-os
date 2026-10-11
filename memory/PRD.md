@@ -326,7 +326,18 @@ Pedido del usuario: sacar "Nosotros" y "Contacto" del menú principal del Home y
 - Las secciones `#nosotros` y `#contacto` NO se borraron del HTML, solo se quitó el link directo del nav (siguen alcanzables por scroll manual o desde el footer).
 - Ícono: se usa `Map` de lucide-react (no `MapPinned`, que a 15px se confundía con un ícono de persona).
 
+## Implemented (Mismo patrón de mapas en Alquileres — 2026-10)
+Pedido del usuario: replicar en Alquileres lo mismo hecho en Ventas (mapa por ficha + mapa-buscador general), reemplazando un espacio vacío que marcó en la ficha pública (video se corre debajo del mapa). Decisión: dirección escrita a mano con geocodificación automática (Google Places Autocomplete), sin pin manual. Verificado 100% por testing_agent (iteration_68).
+- Backend (`routes_rentals.py`): `PropertyBody` acepta `latitude`/`longitude`; `_prop_out` los expone (público y privado).
+- `RentalLocationField.tsx` (nuevo, en `screens/rentals/`): input "Dirección" con Google Places Autocomplete (restringido a Argentina) + mini-mapa de preview instantáneo al elegir una sugerencia. Integrado en `RentalWorkspace.tsx` reemplazando el input plano.
+- `ReservarPropiedad.tsx` (ficha pública de alquiler): mapa de "Ubicación" (pin turquesa `#5FD6C0`, distinto del amarillo de Ventas) arriba, video (Instagram Reel) debajo, ambos en `.vera-pub-detail__side` (reusa `PropertyMap.tsx` de Ventas con `operation="alquiler"`).
+- `ReservarPublico.tsx` (listado público `/alquileres`): mismo toggle "Ver en lista"/"Ver en mapa" que Ventas, reusando `ListingsMap.tsx`.
+- `ListingsMap.tsx`: nueva prop opcional `getHref` para que el link "Ver propiedad" del popup resuelva correctamente según el módulo (`/web/{id}` en Ventas, `/reservar/{slug}` en Alquileres).
+- **Bug crítico corregido** (`googleMapTheme.ts`, compartido por ambos módulos): `mapPinIcon` llamaba `new window.google.maps.Size(...)` validando solo `window.google` truthy, no que `Size` ya fuera una función real → race condition que crasheaba la ficha pública con el Error Boundary genérico de la app en cargas frescas (sobre todo mobile). Fix: `typeof google.maps.Size === 'function'` antes de instanciar. Verificado estable en 5 reloads (3 desktop + 2 mobile).
+- Única propiedad de alquiler activa en el ambiente de preview es A161 (de prueba, "CASA DE PRUEBA — borrar") — se usó para testear y se dejó limpia (direccion='', lat/lng=null) al finalizar. Datos reales de Alquileres viven solo en producción.
+
 ## Backlog (prioritized)
+- **P2**: Mapas — migrar `google.maps.Marker`/`places.Autocomplete` (legacy, deprecados por Google) a `AdvancedMarkerElement`/`PlaceAutocompleteElement`. No urgente, sin fecha de discontinuación anunciada.
 - **P2**: Extraer `<ListingsBrowser>` compartido entre `PublicHome.tsx` (#cartera) y `PublicListing.tsx` (/web) para no duplicar el patrón de toggle+filtros.
 - **P2**: Ficha de propiedad — cuando hay mapa sin video, la columna derecha queda con espacio vacío debajo; evaluar qué mostrar ahí.
 - **P2**: Mapa — migrar `Marker` a `AdvancedMarkerElement` (requiere Map ID con estilo dark configurado en Google Cloud Console) + `fitBounds` automático al cambiar filtros.
