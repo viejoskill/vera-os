@@ -249,6 +249,11 @@ export const PublicHome = () => {
   const cClients = useCountUp(1200, stats.seen);
 
   const nav = (id: string) => { setMenuOpen(false); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }); };
+  const goToMap = () => {
+    setVista('mapa');
+    setMenuOpen(false);
+    window.setTimeout(() => document.getElementById('cartera')?.scrollIntoView({ behavior: 'smooth' }), 50);
+  };
 
   usePageMeta({
     title: 'Varela Inmobiliaria | Costa del Este y Mar del Tuyú',
@@ -282,8 +287,7 @@ export const PublicHome = () => {
             <button type="button" onClick={() => nav('cartera')} data-testid="nav-propiedades">Propiedades</button>
             <a className="vh-nav__rentals" href={ALQUILERES_URL} target="_blank" rel="noreferrer" data-testid="nav-alquileres"><Umbrella size={15} /> Alquileres</a>
             <Link to="/tasar" onClick={() => setMenuOpen(false)} data-testid="nav-tasar">Tasar</Link>
-            <button type="button" onClick={() => nav('nosotros')} data-testid="nav-nosotros">Nosotros</button>
-            <button type="button" onClick={() => nav('contacto')} data-testid="nav-contacto">Contacto</button>
+            <button type="button" onClick={goToMap} data-testid="nav-mapa"><MapIcon size={15} /> Mapa</button>
             <a className="vh-btn vh-btn--brand vh-nav__cta" href={wa(WA_VENTAS, 'Hola Varela Inmobiliaria, quiero consultar')} target="_blank" rel="noreferrer" data-testid="nav-wa">
               <MessageCircle size={16} /> WhatsApp
             </a>
