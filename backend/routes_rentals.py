@@ -7,11 +7,13 @@ crea una PRE-RESERVA que siempre requiere confirmación interna.
 """
 from __future__ import annotations
 
+import os
 import random
 import re
 from datetime import date, datetime, timezone
 from uuid import uuid4
 
+import httpx
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import Response
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -25,6 +27,27 @@ from storage_service import get_storage
 router = APIRouter(prefix="/rentals", tags=["rentals"])
 
 _client: AsyncIOMotorClient | None = None
+
+
+async def _geocode_address(direccion: str, localidad: str | None) -> tuple[float, float] | None:
+    """Convierte una dirección en texto a lat/lng vía Google Geocoding API."""
+    key = os.environ.get("GOOGLE_MAPS_API_KEY")
+    if not key or not direccion:
+        return None
+    query = ", ".join([p for p in [direccion, localidad, "Argentina"] if p])
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            resp = await client.get(
+                "https://maps.googleapis.com/maps/api/geocode/json",
+                params={"address": query, "key": key},
+            )
+            data = resp.json()
+    except Exception:
+        return None
+    if data.get("status") != "OK" or not data.get("results"):
+        return None
+    loc = data["results"][0]["geometry"]["location"]
+    return loc["lat"], loc["lng"]
 
 # Estados que ocupan fechas en el calendario.
 OCUPA = {"prereserva", "confirmada", "encurso", "finalizada", "bloqueo"}
@@ -378,6 +401,10 @@ async def list_properties():
 @router.post("/properties", status_code=201)
 async def create_property(body: PropertyBody):
     doc = body.model_dump()
+    if doc.get("direccion") and doc.get("latitude") is None:
+        geo = await _geocode_address(doc["direccion"], doc.get("localidad"))
+        if geo:
+            doc["latitude"], doc["longitude"] = geo
     doc["_id"] = uuid4().hex
     doc["slug"] = _slugify(body.titulo)
     doc["codigo"] = await _next_code()
@@ -395,8 +422,28 @@ async def get_property(pid: str):
 @router.put("/properties/{pid}")
 async def update_property(pid: str, body: PropertyBody):
     await _get_prop(pid)
-    await _props().update_one({"_id": pid}, {"$set": {**body.model_dump(), "updatedAt": _now()}})
+    update = body.model_dump()
+    if update.get("direccion") and update.get("latitude") is None:
+        geo = await _geocode_address(update["direccion"], update.get("localidad"))
+        if geo:
+            update["latitude"], update["longitude"] = geo
+    await _props().update_one({"_id": pid}, {"$set": {**update, "updatedAt": _now()}})
     return _prop_out(await _get_prop(pid))
+
+
+@router.post("/properties/geocode-pendientes")
+async def geocode_pendientes():
+    """Backfill: geocodifica las propiedades que tienen dirección pero no lat/lng."""
+    cur = _props().find({"direccion": {"$nin": [None, ""]}, "latitude": None})
+    updated, failed = [], []
+    async for p in cur:
+        geo = await _geocode_address(p["direccion"], p.get("localidad"))
+        if geo:
+            await _props().update_one({"_id": p["_id"]}, {"$set": {"latitude": geo[0], "longitude": geo[1]}})
+            updated.append(p.get("codigo") or p["_id"])
+        else:
+            failed.append(p.get("codigo") or p["_id"])
+    return {"updated": updated, "failed": failed}
 
 
 @router.delete("/properties/{pid}", status_code=204)
