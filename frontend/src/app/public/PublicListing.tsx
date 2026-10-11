@@ -173,7 +173,9 @@ export const PublicListing = () => {
       ) : filtered.length === 0 ? (
         <p className="vera-pub__empty" data-testid="public-empty">No hay propiedades que coincidan con tu búsqueda.</p>
       ) : vista === 'mapa' ? (
-        <ListingsMap listings={filtered} />
+        <div className="vera-pub__mapwrap">
+          <ListingsMap listings={filtered} />
+        </div>
       ) : (
         <div className="vera-pub__grid">
           {filtered.map((p) => {

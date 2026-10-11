@@ -6718,16 +6718,16 @@ p {
 }
 .vera-map-canvas {
   height: 620px;
-  max-width: 1200px;
-  width: calc(100% - 64px);
-  margin: 0 auto 40px;
+  width: 100%;
   border-radius: 20px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
 }
+.vera-pub__mapwrap { max-width: 1200px; margin: 0 auto 40px; padding: 0 32px; }
 @media (max-width: 640px) {
-  .vera-map-canvas { height: 70vh; width: calc(100% - 32px); }
+  .vera-map-canvas { height: 70vh; }
+  .vera-pub__mapwrap { padding: 0 16px; margin-bottom: 24px; }
 }
 .vera-pub__found {
   display: flex;
@@ -8453,7 +8453,17 @@ p {
 .vh-filter select option { background: #121214; color: #fff; }
 .vh-filter__clear { background: rgba(255,255,255,0.05); border: 1px solid var(--vh-border); color: #fff; border-radius: 11px; padding: 11px 20px; font-family: inherit; font-weight: 600; cursor: pointer; height: fit-content; transition: background-color 0.15s ease; }
 .vh-filter__clear:hover { background: rgba(255,255,255,0.1); }
-.vh-found { color: var(--vh-muted); font-size: 0.9rem; font-weight: 600; margin: 22px 0 0; }
+.vh-found {
+  color: var(--vh-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 22px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 .vh-empty { color: var(--vh-muted); text-align: center; padding: 50px 0; }
 
 /* REVIEWS */

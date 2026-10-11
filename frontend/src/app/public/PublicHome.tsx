@@ -4,12 +4,13 @@ import { Link, useSearchParams } from 'react-router-dom';
 import {
   BedDouble, Bath, Maximize, MapPin, MessageCircle, ArrowRight, Menu, X,
   Gauge, Bot, MessagesSquare, Radar, ShieldCheck, MapPinned, Sparkles, Handshake,
-  Mail, Umbrella, Star, Quote, Play,
+  Mail, Umbrella, Star, Quote, Play, List, Map as MapIcon,
 } from 'lucide-react';
 import { env } from '@vera/config';
 import { openWhatsAppInquiry } from './whatsappInquiry';
 import { usePageMeta, SITE_URL } from './usePageMeta';
 import { REVIEWS, GOOGLE_RATING, GOOGLE_TOTAL, GOOGLE_REVIEW_URL } from './reviews';
+import { ListingsMap } from './ListingsMap';
 import heroJpg from '../../assets/home/home-hero-16x9.jpg';
 import heroWebp from '../../assets/home/home-hero-16x9.webp';
 import rentalsJpg from '../../assets/home/home-rentals-16x9.jpg';
@@ -85,7 +86,7 @@ interface Listing {
   price: number; currency: string; city: string; neighborhood: string;
   coverImage: string; bedrooms: number; bathrooms: number; areaM2: number;
   lotAreaM2: number; rooms: number; status: string; radar: boolean; whatsappUrl: string; publicUrl: string;
-  autoStamp?: boolean; hasVideo?: boolean;
+  autoStamp?: boolean; hasVideo?: boolean; latitude?: number | null; longitude?: number | null;
 }
 
 const money = (n: number, c: string) =>
@@ -196,6 +197,7 @@ export const PublicHome = () => {
   const [zona, setZona] = useState(searchParams.get('zona') || '');
   const [precioMax, setPrecioMax] = useState(searchParams.get('precio') || '');
   const [ambientes, setAmbientes] = useState(searchParams.get('ambientes') || '');
+  const [vista, setVista] = useState<'lista' | 'mapa'>('lista');
 
   // Sincroniza los filtros con la URL para poder compartir la lista ya filtrada.
   useEffect(() => {
@@ -453,11 +455,33 @@ export const PublicHome = () => {
             </label>
             <button type="button" className="vh-filter__clear" onClick={clear} data-testid="home-filter-clear">Limpiar</button>
           </div>
-          <p className="vh-found" data-testid="home-count">{filtered.length} propiedades encontradas</p>
+          <p className="vh-found" data-testid="home-count">
+            {filtered.length} propiedades encontradas
+            <span className="vera-pub__viewtoggle" data-testid="home-view-toggle">
+              <button
+                type="button"
+                className={vista === 'lista' ? 'is-active' : ''}
+                onClick={() => setVista('lista')}
+                data-testid="home-view-toggle-lista"
+              >
+                <List size={14} /> Ver en lista
+              </button>
+              <button
+                type="button"
+                className={vista === 'mapa' ? 'is-active' : ''}
+                onClick={() => setVista('mapa')}
+                data-testid="home-view-toggle-mapa"
+              >
+                <MapIcon size={14} /> Ver en mapa
+              </button>
+            </span>
+          </p>
           {isLoading ? (
             <p className="vh-empty">Cargando propiedades…</p>
           ) : filtered.length === 0 ? (
             <p className="vh-empty" data-testid="home-empty">No hay propiedades que coincidan con tu búsqueda.</p>
+          ) : vista === 'mapa' ? (
+            <div style={{ marginTop: 28 }}><ListingsMap listings={filtered} /></div>
           ) : (
             <div className="vh-grid">{filtered.map((p) => <PropCard key={p.id} p={p} />)}</div>
           )}
