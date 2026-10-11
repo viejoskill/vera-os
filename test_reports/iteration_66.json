@@ -1,0 +1,28 @@
+{
+  "summary": "Validated the discoverability fix for the general map on the Home. Clicking 'Propiedades' in the nav scrolls to #cartera, which now shows 'home-view-toggle-lista'/'home-view-toggle-mapa' next to the 'home-count'. The 'Ver en mapa' toggle renders the Google Maps dark theme with yellow pins and the pin popup contains the 'Ver propiedad' button. Returning to 'Ver en lista' restores the 30 cards. Filters remain visible/applicable. Regression on /web passes: '.vera-pub__mapwrap' wraps '.vera-map-canvas' (desktop: wrap width=1200 centered, canvas width=1136; mobile 390: wrap=390 full width, no horizontal overflow sw=cw=390). Regression on /web/{id} passes: '.vera-pub-detail__map' + '.gm-style' render correctly, unaffected by CSS refactor. NOTE: initial run showed stale JS where '.vera-pub__mapwrap' was missing on /web; a frontend supervisor restart was required to pick up the compiled code — hot reload apparently did not emit this change on the preview URL. After restart all assertions pass.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/web and Home map", "issues": ["Google Maps console warning: 'google.maps.Marker is deprecated' — recommend migrating to AdvancedMarkerElement (non-blocking, pre-existing)"]},
+      {"screen": "PublicListing filters select", "issues": ["React hydration warning: '<span> cannot be a child of <option>' coming from editor-injected x-ve-dynamic span inside <option> in filter-precio. Preexisting, not part of this fix."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "If main agent sees '.vera-pub__mapwrap' missing on preview, run `sudo supervisorctl restart frontend` — hot reload did not reflect the CSS wrapper div change until a restart.",
+    "(Optional / preexisting) Migrate google.maps.Marker to AdvancedMarkerElement to remove console warning."
+  ],
+  "critical_code_review_comments": [
+    "PublicHome.tsx embeds ListingsMap inside .vh-sec__inner with inline style marginTop:28; works because .vh-sec__inner enforces max-width. Consider reusing a shared wrapper class to keep styling consistent with PublicListing's .vera-pub__mapwrap.",
+    "PublicHome.tsx is large (>480 lines) and duplicates the toggle+filter pattern of PublicListing.tsx — consider extracting a shared <ListingsBrowser> component to avoid future drift between the two surfaces."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "iter 64 covered /web map, iter 65 covered /web/{id} map, iter 66 covered the Home #cartera section new toggle + regression of /web and /web/{id}. If any map wrap/CSS regression is suspected, the first debugging step is restarting the frontend supervisor; the Home nav uses data-testid='nav-propiedades' and scrolls to section id='cartera'. Toggle testids: home-view-toggle-lista / home-view-toggle-mapa (Home) and view-toggle-lista / view-toggle-mapa (/web).",
+  "rca of the issue": "Not applicable — fix verified. One operational note: the preview URL served stale JS during the first run (DOM lacked the newly added <div class='vera-pub__mapwrap'>). Restarting the frontend supervisor rebuilt the bundle and the wrapper + centered 1200px layout rendered as expected."
+}

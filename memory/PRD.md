@@ -313,7 +313,15 @@ Tras ver el mapa general en /web, el usuario pidió además un mapa en CADA fich
 - Nota de diseño (no bloqueante, reportada por testing): cuando hay mapa pero NO hay video, la columna derecha queda con espacio vacío debajo del mapa — a revisar más adelante (ej. mover specs/precio ahí, o reducir alto del mapa).
 - Confirmado en producción (antes de este cambio) que el mapa GENERAL de `/web` (toggle "Ver en lista"/"Ver en mapa") ya funcionaba correctamente tras el primer redeploy.
 
+## Implemented (Fix de visibilidad — mapa general no se encontraba desde el Home — 2026-10)
+Causa raíz: el link "Propiedades" del menú principal del Home (`/`) hace scroll a una sección "cartera" EMBEBIDA dentro de `PublicHome.tsx` (grilla+filtros propios), totalmente separada de `/web` — por eso el usuario nunca veía el toggle de mapa agregado antes (vivía solo en `/web`, al que nadie navegaba desde el nav principal). Verificado 100% por testing_agent (iteration_66).
+- Se agregó el mismo toggle "Ver en lista"/"Ver en mapa" (`home-view-toggle-lista`/`home-view-toggle-mapa`) + `<ListingsMap/>` también en la sección `#cartera` del Home.
+- CSS: `.vera-map-canvas` simplificado (sin max-width propio); nuevo wrapper `.vera-pub__mapwrap` (max-width 1200, centrado) usado solo en `PublicListing.tsx` (`/web`), ya que el Home tiene su propio contenedor `.vh-sec__inner` con max-width.
+- Nota operativa: durante el testing, el preview sirvió JS stale hasta reiniciar el frontend (hot reload no reflejó el wrapper nuevo) — ya resuelto con restart.
+- Code review (no bloqueante): `PublicHome.tsx` y `PublicListing.tsx` duplican el patrón de toggle+filtros; considerar extraer un `<ListingsBrowser>` compartido a futuro para evitar drift entre ambas superficies.
+
 ## Backlog (prioritized)
+- **P2**: Extraer `<ListingsBrowser>` compartido entre `PublicHome.tsx` (#cartera) y `PublicListing.tsx` (/web) para no duplicar el patrón de toggle+filtros.
 - **P2**: Ficha de propiedad — cuando hay mapa sin video, la columna derecha queda con espacio vacío debajo; evaluar qué mostrar ahí.
 - **P2**: Mapa — migrar `Marker` a `AdvancedMarkerElement` (requiere Map ID con estilo dark configurado en Google Cloud Console) + `fitBounds` automático al cambiar filtros.
 - **P0 (pendiente redeploy)**: ajustes de texto en Reserva (limpieza/depósito), fix de seller_contact en ML, recibo automático al cobrar saldo, comisión editable por %, depósito/limpieza editables por reserva, leyenda de cargos no incluidos en la vista pública.
