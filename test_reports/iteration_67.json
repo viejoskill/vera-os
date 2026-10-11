@@ -1,0 +1,38 @@
+{
+  "summary": "Validated nav change on PublicHome: removed 'Nosotros'/'Contacto' and added 'Mapa' link that scrolls to #cartera and activates map view. Desktop and mobile both pass core requirements. One minor UX concern on the mobile icon rendering.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Mobile hamburger menu (390x844)", "issues": ["The icon next to 'Mapa' uses lucide 'MapPinned' at 15x15 which, at that small size and alongside other menu items, visually resembles a person/user silhouette (user explicitly warned against this). Consider using lucide 'Map' icon instead for clearer semantics."]}
+    ]
+  },
+  "test_results_detail": {
+    "desktop_nav_items": ["Propiedades", "Alquileres", "Tasar", "Mapa", "WhatsApp"],
+    "nav-nosotros_removed": true,
+    "nav-contacto_removed": true,
+    "nav-mapa_present": true,
+    "click_mapa_scrolls_to_cartera": true,
+    "click_mapa_activates_map_view": "YES - 'Ver en mapa' toggle is-active, Google Map rendered with pins",
+    "sections_nosotros_contacto_still_in_DOM": true,
+    "mobile_burger_opens_menu": true,
+    "mobile_nav-mapa_in_burger": true,
+    "mobile_nav-nosotros_absent": true,
+    "mobile_nav-contacto_absent": true,
+    "mobile_mapa_click_closes_menu_and_shows_map": true,
+    "regression_manual_toggle_ver_en_lista": "works - 406 cards rendered, map hidden",
+    "regression_manual_toggle_ver_en_mapa": "works - Google Map re-renders"
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Consider swapping lucide 'MapPinned' icon for lucide 'Map' in the nav-mapa button (both desktop and mobile) — the current icon at small sizes can read like a user/person icon, which the user explicitly flagged. Not a blocker."
+  ],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100% functional, minor icon-choice concern"},
+  "seed_data_creation": "",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Nav change verified fully on desktop (1920x1080) and mobile (390x844). All functional requirements met. Only outstanding note is the mobile icon choice for 'Mapa'. /web and /web/{id} were not re-tested as instructed."
+}

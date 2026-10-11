@@ -320,6 +320,12 @@ Causa raíz: el link "Propiedades" del menú principal del Home (`/`) hace scrol
 - Nota operativa: durante el testing, el preview sirvió JS stale hasta reiniciar el frontend (hot reload no reflejó el wrapper nuevo) — ya resuelto con restart.
 - Code review (no bloqueante): `PublicHome.tsx` y `PublicListing.tsx` duplican el patrón de toggle+filtros; considerar extraer un `<ListingsBrowser>` compartido a futuro para evitar drift entre ambas superficies.
 
+## Implemented (Nav del Home: Nosotros/Contacto → Mapa — 2026-10)
+Pedido del usuario: sacar "Nosotros" y "Contacto" del menú principal del Home y poner en su lugar un acceso directo al mapa de propiedades. Verificado por testing_agent (iteration_67, 100% funcional).
+- `PublicHome.tsx`: nav superior (desktop + mobile) ahora es Propiedades · Alquileres · Tasar · **Mapa** · WhatsApp. Botón "Mapa" (`nav-mapa`) ejecuta `goToMap()`: activa `vista='mapa'` y hace scroll a `#cartera`.
+- Las secciones `#nosotros` y `#contacto` NO se borraron del HTML, solo se quitó el link directo del nav (siguen alcanzables por scroll manual o desde el footer).
+- Ícono: se usa `Map` de lucide-react (no `MapPinned`, que a 15px se confundía con un ícono de persona).
+
 ## Backlog (prioritized)
 - **P2**: Extraer `<ListingsBrowser>` compartido entre `PublicHome.tsx` (#cartera) y `PublicListing.tsx` (/web) para no duplicar el patrón de toggle+filtros.
 - **P2**: Ficha de propiedad — cuando hay mapa sin video, la columna derecha queda con espacio vacío debajo; evaluar qué mostrar ahí.
