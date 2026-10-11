@@ -6,6 +6,7 @@ import { env } from '@vera/config';
 import { logInquiry } from './whatsappInquiry';
 import { usePageMeta, SITE_URL } from './usePageMeta';
 import { InstagramReel } from './InstagramReel';
+import { PropertyMap } from './PropertyMap';
 
 interface Img { id: string; url: string; }
 interface Detail {
@@ -15,6 +16,7 @@ interface Detail {
   areaM2: number; lotAreaM2: number; orientation: string; condition: string;
   amenities: string[]; images: Img[]; coverImage: string; status: string; videoUrl?: string;
   whatsappUrl: string; publicUrl: string; autoStamp?: boolean;
+  latitude?: number | null; longitude?: number | null;
 }
 
 const money = (n: number, c: string) =>
@@ -163,12 +165,24 @@ export const PublicPropertyDetail = () => {
           )}
         </div>
 
-        {data.videoUrl && (
-          <div className="vera-pub-detail__reel" data-testid="public-detail-reel" style={{ marginTop: 18 }}>
-            <h2 className="vera-pub-detail__h2">Video</h2>
-            <InstagramReel url={data.videoUrl} />
+        {(typeof data.latitude === 'number' && typeof data.longitude === 'number') || data.videoUrl ? (
+          <div className="vera-pub-detail__side">
+            {typeof data.latitude === 'number' && typeof data.longitude === 'number' && (
+              <PropertyMap
+                latitude={data.latitude}
+                longitude={data.longitude}
+                operation={data.operation}
+                address={[data.address, data.neighborhood, data.city].filter(Boolean).join(', ')}
+              />
+            )}
+            {data.videoUrl && (
+              <div className="vera-pub-detail__reel" data-testid="public-detail-reel">
+                <h2 className="vera-pub-detail__h2">Video</h2>
+                <InstagramReel url={data.videoUrl} />
+              </div>
+            )}
           </div>
-        )}
+        ) : null}
 
         <aside className="vera-pub-detail__info">
           <span className="vera-pub-card__op">{data.operation}</span>

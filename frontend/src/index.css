@@ -7149,6 +7149,38 @@ p {
   text-transform: capitalize;
   color: #e4e4e7;
 }
+.vera-pub-detail__side {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.vera-pub-detail__mapwrap { display: flex; flex-direction: column; gap: 6px; }
+.vera-pub-detail__maphead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.vera-pub-detail__maphead h2 { margin: 0; }
+.vera-pub-detail__maphead a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #fbe000;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.vera-pub-detail__maphead a:hover { text-decoration: underline; }
+.vera-pub-detail__map {
+  height: 220px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.vera-pub-detail__mapaddr {
+  font-size: 12.5px;
+  color: #8a8a8f;
+}
 @media (max-width: 860px) {
   .vera-pub-detail {
     grid-template-columns: 1fr;
