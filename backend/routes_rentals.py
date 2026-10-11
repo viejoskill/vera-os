@@ -134,6 +134,8 @@ def _prop_out(p: dict, public: bool = False) -> dict:
         "estadiaMinima": p.get("estadiaMinima", 0),
         "condiciones": p.get("condiciones") or [],
         "reelUrl": p.get("reelUrl", "") or "",
+        "latitude": p.get("latitude"),
+        "longitude": p.get("longitude"),
     }
     if not public:
         out.update({
@@ -254,6 +256,8 @@ class PropertyBody(BaseModel):
     condiciones: list[str] = []
     numeroLlave: int | None = None
     reelUrl: str | None = ""
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 class ReservationBody(BaseModel):

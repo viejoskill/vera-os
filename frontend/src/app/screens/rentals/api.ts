@@ -17,6 +17,7 @@ export interface RentalProperty {
   checkInHora?: string; checkOutHora?: string; estadiaMinima?: number; condiciones?: string[];
   numeroLlave?: number | null;
   reelUrl?: string;
+  latitude?: number | null; longitude?: number | null;
   ocupados?: Occupied[]; descuentos?: { semana: number; quincena: number; mes: number };
 }
 export interface RentalSettings { condicionesGenerales: string[]; avisoValidez: string; whatsappAgencia?: string; }

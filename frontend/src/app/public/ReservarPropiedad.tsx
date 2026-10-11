@@ -4,6 +4,7 @@ import { Users, BedDouble, Bath, MapPin, Check, CheckCircle2, ArrowLeft, X, Shie
 import { api, fmtMoney, fmtDate, nightsBetween, type RentalProperty, type RentalSettings } from '@app/screens/rentals/api';
 import { RentalCalendar } from '@app/screens/rentals/RentalCalendar';
 import { InstagramReel } from './InstagramReel';
+import { PropertyMap } from './PropertyMap';
 import '@app/screens/rentals/rentals.css';
 
 interface Quote { noches: number; base: number; descuentoPct: number; total: number; moneda: string; }
@@ -83,9 +84,21 @@ export const ReservarPropiedad = () => {
               ))}
             </div>
           )}
-          {(p as unknown as { reelUrl?: string }).reelUrl && (
-            <div className="vera-reel-wrap" data-testid="rt-detail-reel" style={{ marginTop: 14 }}>
-              <InstagramReel url={(p as unknown as { reelUrl?: string }).reelUrl as string} />
+          {((typeof p.latitude === 'number' && typeof p.longitude === 'number') || (p as unknown as { reelUrl?: string }).reelUrl) && (
+            <div className="vera-pub-detail__side" style={{ marginTop: 14 }}>
+              {typeof p.latitude === 'number' && typeof p.longitude === 'number' && (
+                <PropertyMap
+                  latitude={p.latitude}
+                  longitude={p.longitude}
+                  operation="alquiler"
+                  address={[p.direccion, p.localidad].filter(Boolean).join(', ')}
+                />
+              )}
+              {(p as unknown as { reelUrl?: string }).reelUrl && (
+                <div className="vera-reel-wrap" data-testid="rt-detail-reel">
+                  <InstagramReel url={(p as unknown as { reelUrl?: string }).reelUrl as string} />
+                </div>
+              )}
             </div>
           )}
         </div>

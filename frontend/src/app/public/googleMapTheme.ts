@@ -21,12 +21,16 @@ export const DARK_MAP_STYLE = [
   { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#3d3d3d' }] },
 ];
 
-export const mapPinIcon = (color: string) => ({
-  url:
-    'data:image/svg+xml;charset=UTF-8,' +
-    encodeURIComponent(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="40" viewBox="0 0 30 40"><path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 25 15 25s15-14.5 15-25C30 6.7 23.3 0 15 0z" fill="${color}" stroke="#0e0f13" stroke-width="2.5"/><circle cx="15" cy="15" r="5.5" fill="#0e0f13"/></svg>`,
-    ),
-  scaledSize: typeof window !== 'undefined' && window.google ? new window.google.maps.Size(30, 40) : undefined,
-  anchor: typeof window !== 'undefined' && window.google ? new window.google.maps.Point(15, 40) : undefined,
-});
+export const mapPinIcon = (color: string) => {
+  const maps = typeof window !== 'undefined' ? window.google?.maps : undefined;
+  const hasCore = typeof maps?.Size === 'function' && typeof maps?.Point === 'function';
+  return {
+    url:
+      'data:image/svg+xml;charset=UTF-8,' +
+      encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="40" viewBox="0 0 30 40"><path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 25 15 25s15-14.5 15-25C30 6.7 23.3 0 15 0z" fill="${color}" stroke="#0e0f13" stroke-width="2.5"/><circle cx="15" cy="15" r="5.5" fill="#0e0f13"/></svg>`,
+      ),
+    scaledSize: hasCore ? new maps.Size(30, 40) : undefined,
+    anchor: hasCore ? new maps.Point(15, 40) : undefined,
+  };
+};

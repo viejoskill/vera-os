@@ -16,6 +16,7 @@ import { ReservaSemaforo } from './Semaforo';
 import { AvisoPendientes } from './AvisoPendientes';
 import { MoneyInput } from './MoneyInput';
 import { MlRentalPublish } from './MlRentalPublish';
+import { RentalLocationField } from './RentalLocationField';
 import './rentals.css';
 
 const empty: Partial<RentalProperty> = {
@@ -245,7 +246,13 @@ export const RentalWorkspace = () => {
               </label>
             )}
             <div className="rt-row2">
-              <Input label="Dirección" value={f.direccion || ''} onChange={(e) => set('direccion', e.target.value)} data-testid="rt-direccion" />
+              <RentalLocationField
+                address={f.direccion || ''}
+                onAddressChange={(v) => set('direccion', v)}
+                latitude={f.latitude}
+                longitude={f.longitude}
+                onLocationChange={(lat, lng) => setF((s) => ({ ...s, latitude: lat, longitude: lng }))}
+              />
               <Input label="Localidad" value={f.localidad || ''} onChange={(e) => set('localidad', e.target.value)} data-testid="rt-localidad" />
             </div>
             <label className="rt-field"><span>Tipo de inmueble (para Mercado Libre)</span>

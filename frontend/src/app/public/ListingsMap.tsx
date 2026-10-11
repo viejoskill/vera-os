@@ -21,7 +21,7 @@ interface MapListing {
 const money = (n: number, c: string) =>
   n ? `${c === 'USD' ? 'US$' : '$'} ${n.toLocaleString('es-AR')}` : 'Consultar';
 
-const MapaInner = ({ listings }: { listings: MapListing[] }) => {
+const MapaInner = ({ listings, getHref }: { listings: MapListing[]; getHref: (id: string) => string }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const center = useMemo(() => {
@@ -70,7 +70,7 @@ const MapaInner = ({ listings }: { listings: MapListing[] }) => {
               <span className="vera-map-popup__price">{money(active.price, active.currency)}</span>
               <h3 className="vera-map-popup__title">{active.title}</h3>
               <span className="vera-map-popup__loc">{[active.neighborhood, active.city].filter(Boolean).join(', ')}</span>
-              <Link to={`/web/${active.id}`} className="vera-map-popup__cta" data-testid={`map-popup-cta-${active.id}`}>
+              <Link to={getHref(active.id)} className="vera-map-popup__cta" data-testid={`map-popup-cta-${active.id}`}>
                 Ver propiedad
               </Link>
             </div>
@@ -81,11 +81,13 @@ const MapaInner = ({ listings }: { listings: MapListing[] }) => {
   );
 };
 
-/** Vista en mapa, embebida como alternativa de "/web" ("Ver en mapa"). Recibe la
- * MISMA lista ya filtrada por PublicListing, así los filtros (tipo/zona/precio/
- * ambientes) aplican igual en ambas vistas. Usa Google Maps (API key ya configurada
- * en LocationSection), sin pedir ninguna credencial nueva. */
-export const ListingsMap = ({ listings }: { listings: MapListing[] }) => {
+/** Vista en mapa, embebida como alternativa a la grilla de listado ("Ver en mapa"),
+ * reutilizada tanto en /web (Ventas) como en /alquileres (Alquileres). Recibe la
+ * MISMA lista ya filtrada por el caller, así los filtros aplican igual en ambas
+ * vistas. `getHref` resuelve el link "Ver propiedad" según la sección (Ventas usa
+ * /web/{id}, Alquileres usa /reservar/{slug}). Usa Google Maps (API key ya
+ * configurada en LocationSection), sin pedir ninguna credencial nueva. */
+export const ListingsMap = ({ listings, getHref = (id) => `/web/${id}` }: { listings: MapListing[]; getHref?: (id: string) => string }) => {
   const withCoords = useMemo(
     () => listings.filter((p) => typeof p.latitude === 'number' && typeof p.longitude === 'number'),
     [listings],
@@ -96,7 +98,7 @@ export const ListingsMap = ({ listings }: { listings: MapListing[] }) => {
       {env.googleMapsApiKey ? (
         withCoords.length > 0 ? (
           <APIProvider apiKey={env.googleMapsApiKey}>
-            <MapaInner listings={withCoords} />
+            <MapaInner listings={withCoords} getHref={getHref} />
           </APIProvider>
         ) : (
           <p className="vera-pub__empty" data-testid="map-empty">Ninguna de estas propiedades tiene ubicación cargada todavía.</p>

@@ -1,14 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, BedDouble, Bath, Palmtree, MapPin, Play } from 'lucide-react';
+import { Users, BedDouble, Bath, Palmtree, MapPin, Play, List, Map as MapIcon } from 'lucide-react';
 import { api, fmtMoney, type RentalProperty } from '@app/screens/rentals/api';
+import { ListingsMap } from './ListingsMap';
 import '@app/screens/rentals/rentals.css';
 
 export const ReservarPublico = () => {
   const [props, setProps] = useState<RentalProperty[]>([]);
   const [loading, setLoading] = useState(true);
+  const [vista, setVista] = useState<'lista' | 'mapa'>('lista');
 
   useEffect(() => { api.publicList().then((p) => { setProps(p); setLoading(false); }).catch(() => setLoading(false)); }, []);
+
+  const mapListings = useMemo(() => props.map((p) => {
+    const cover = p.imagenes.find((i) => i.isCover) || p.imagenes[0];
+    return {
+      id: p.slug, title: p.titulo, operation: 'alquiler', price: p.precioNoche, currency: p.moneda,
+      city: p.localidad || '', neighborhood: p.direccion || '', coverImage: cover?.url || '',
+      latitude: p.latitude, longitude: p.longitude,
+    };
+  }), [props]);
 
   return (
     <div className="rt-pub" data-testid="reservar-publico">
@@ -18,8 +29,36 @@ export const ReservarPublico = () => {
         <p>Elegí tu propiedad, mirá la disponibilidad y reservá online. Coordinamos todo con vos.</p>
       </header>
 
+      {!loading && props.length > 0 && (
+        <p className="vera-pub__found" data-testid="rt-pub-count">
+          {props.length} propiedades encontradas
+          <span className="vera-pub__viewtoggle" data-testid="rt-pub-view-toggle">
+            <button
+              type="button"
+              className={vista === 'lista' ? 'is-active' : ''}
+              onClick={() => setVista('lista')}
+              data-testid="rt-pub-view-toggle-lista"
+            >
+              <List size={14} /> Ver en lista
+            </button>
+            <button
+              type="button"
+              className={vista === 'mapa' ? 'is-active' : ''}
+              onClick={() => setVista('mapa')}
+              data-testid="rt-pub-view-toggle-mapa"
+            >
+              <MapIcon size={14} /> Ver en mapa
+            </button>
+          </span>
+        </p>
+      )}
+
       {loading ? <p className="rt-pub__loading">Cargando propiedades…</p> : props.length === 0 ? (
         <p className="rt-pub__loading">Pronto vas a ver acá nuestras propiedades disponibles.</p>
+      ) : vista === 'mapa' ? (
+        <div className="vera-pub__mapwrap">
+          <ListingsMap listings={mapListings} getHref={(slug) => `/reservar/${slug}`} />
+        </div>
       ) : (
         <div className="rt-pub__grid" data-testid="rt-pub-grid">
           {props.map((p) => {
