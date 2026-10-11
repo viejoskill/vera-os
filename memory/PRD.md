@@ -305,7 +305,16 @@ Pedido del usuario: ver el listado público de propiedades también en un mapa. 
 - De 30 propiedades activas, 21 tienen coordenadas cargadas y aparecen en el mapa; las 9 restantes solo se ven en la vista de lista (dato preexistente, no es un bug de esta feature).
 - Notas de code review (no bloqueantes, quedan en backlog): `google.maps.Marker` está deprecado (migrar a `AdvancedMarkerElement` más adelante); al filtrar, el mapa no hace `fitBounds` automático (si los pines quedan fuera del viewport inicial, el usuario tiene que hacer scroll/zoom manual); memoizar `pinIcon()` por color.
 
+## Implemented (Mapa de ubicación por propiedad en la ficha pública — 2026-10)
+Tras ver el mapa general en /web, el usuario pidió además un mapa en CADA ficha de propiedad (`/web/{id}`), marcando con un rectángulo en una captura que debía ir en el lugar donde estaba el bloque de Video, con el video corrido hacia abajo. Verificado 100% por testing_agent (iteration_65).
+- `PropertyMap.tsx` (nuevo): mapa de una sola propiedad, solo lectura (sin autocompletado/drag), pin + link "Cómo llegar" (abre Google Maps externo con `/dir/?api=1&destination={lat},{lng}`) + dirección como texto.
+- `googleMapTheme.ts` (nuevo): `DARK_MAP_STYLE` + `mapPinIcon()` extraídos como módulo compartido entre `PropertyMap.tsx` y `ListingsMap.tsx` (sin cambio de comportamiento en el mapa general, solo DRY).
+- `PublicPropertyDetail.tsx`: nuevo wrapper `.vera-pub-detail__side` que agrupa Mapa (si hay coords) + Video (si hay `videoUrl`), en ese orden, en la columna derecha de la ficha (al lado de la galería). Si la propiedad no tiene coordenadas, el mapa no se renderiza (degrada con gracia).
+- Nota de diseño (no bloqueante, reportada por testing): cuando hay mapa pero NO hay video, la columna derecha queda con espacio vacío debajo del mapa — a revisar más adelante (ej. mover specs/precio ahí, o reducir alto del mapa).
+- Confirmado en producción (antes de este cambio) que el mapa GENERAL de `/web` (toggle "Ver en lista"/"Ver en mapa") ya funcionaba correctamente tras el primer redeploy.
+
 ## Backlog (prioritized)
+- **P2**: Ficha de propiedad — cuando hay mapa sin video, la columna derecha queda con espacio vacío debajo; evaluar qué mostrar ahí.
 - **P2**: Mapa — migrar `Marker` a `AdvancedMarkerElement` (requiere Map ID con estilo dark configurado en Google Cloud Console) + `fitBounds` automático al cambiar filtros.
 - **P0 (pendiente redeploy)**: ajustes de texto en Reserva (limpieza/depósito), fix de seller_contact en ML, recibo automático al cobrar saldo, comisión editable por %, depósito/limpieza editables por reserva, leyenda de cargos no incluidos en la vista pública.
 - **P1 (a revisar cuando haya tiempo)**: 9 propiedades archivadas en VERA OS que quedaron con `mercadolibre.status=published` — confirmar si siguen vivas en ML y, si corresponde, pausarlas/cerrarlas ahí también.

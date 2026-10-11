@@ -1,0 +1,24 @@
+{
+  "summary": "Frontend-only testing of the new per-property location map on /web/{id}. All 5 test scenarios + regression on general /web map passed. Map shows with correct dark theme, yellow pin, 'Cómo llegar' link opens Google Maps directions in new tab with correct lat/lng, address text appears below map. Order on properties with both coords+video is correct: map first then Video block. Properties without coords degrade gracefully (no map). Mobile viewport (390x844) renders without horizontal overflow. Regression on /web list/map toggle still works after googleMapTheme.ts extraction.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "PublicPropertyDetail (desktop with coords only, no video)", "issues": ["Ubicación/map sits in a right-side column alongside the gallery, leaving a large empty space below the map. Not a bug but when there's no video and no other side content the right column looks sparse."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "google.maps.Marker deprecation warning in console (library-level, @vis.gl/react-google-maps). Not blocking but migrating to AdvancedMarkerElement in future would silence warnings.",
+    "PropertyMap gracefully returns null when API key missing — good.",
+    "The condition `typeof data.latitude === 'number'` correctly excludes null/undefined. Good guard."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (not tested per request)", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "iteration_65 verified: (1) /web/0c8012a3-... shows map, no reel. (2) /web/6b41617b-... shows map ABOVE Video (map y=101, reel y=391). (3) 9 listings without coords exist; 62f93427-... tested, no map rendered. (4) Mobile 390x844 scrollWidth==clientWidth, map width 326px within column. (5) 'Cómo llegar' href=https://www.google.com/maps/dir/?api=1&destination={lat},{lng} target=_blank. (6) /web toggle lista/mapa still works. No action items for main agent."
+}
