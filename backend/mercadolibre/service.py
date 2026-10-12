@@ -179,6 +179,7 @@ def _int(value) -> int:
 import unicodedata
 
 _STATES_CACHE: list[dict] = []
+_CITIES_CACHE: dict[str, list[dict]] = {}
 
 
 def _norm(s: str) -> str:
@@ -202,39 +203,78 @@ async def _ar_states(access: str) -> list[dict]:
     return _STATES_CACHE
 
 
+async def _state_cities(access: str, state_id: str) -> list[dict]:
+    if state_id not in _CITIES_CACHE:
+        try:
+            async with httpx.AsyncClient(timeout=20) as h:
+                r = await h.get(
+                    f"{config.MELI_API}/classified_locations/states/{state_id}",
+                    headers={"Authorization": f"Bearer {access}"},
+                )
+            _CITIES_CACHE[state_id] = r.json().get("cities", []) if r.status_code == 200 else []
+        except Exception:  # noqa: BLE001
+            logger.warning("ML: no se pudo leer el catálogo de ciudades de %s", state_id)
+            _CITIES_CACHE[state_id] = []
+    return _CITIES_CACHE[state_id]
+
+
 async def _resolve_state_id(access: str, prop: dict) -> str | None:
     states = await _ar_states(access)
     prov = _norm(prop.get("province"))
     if not states:
         return None
-    for s in states:  # match exacto por nombre
+    if not prov or "buenos aires" in prov:  # TODA la cartera de Varela es costera (Costa del Este,
+        # Santa Teresita, Mar del Tuyú) → forzar "Bs.As. Costa Atlántica" SIEMPRE.
+        # Importante: chequear esto ANTES del match exacto, porque el catálogo de ML
+        # tiene una entrada genérica "Buenos Aires" (y "Província de Buenos Aires") que
+        # no corresponde a ninguna rama real de búsqueda — publicar ahí deja el aviso
+        # invisible en la búsqueda normal, aunque el alta se procese sin error.
+        for s in states:
+            if _norm(s["name"]) == "bs.as. costa atlantica":
+                return s["id"]
+    for s in states:  # match exacto por nombre (otras provincias)
         if _norm(s["name"]) == prov:
             return s["id"]
-    if "buenos aires" in prov:  # zona costera de Varela → Interior
-        for s in states:
-            if _norm(s["name"]) == "buenos aires interior":
-                return s["id"]
     for s in states:  # match parcial
         if prov and prov in _norm(s["name"]):
             return s["id"]
     return None
 
 
+async def _resolve_city_id(access: str, state_id: str | None, prop: dict) -> str | None:
+    if not state_id:
+        return None
+    cities = await _state_cities(access, state_id)
+    city = _norm(prop.get("city"))
+    if not city or not cities:
+        return None
+    for c in cities:  # match exacto
+        if _norm(c["name"]) == city:
+            return c["id"]
+    for c in cities:  # match parcial
+        if city in _norm(c["name"]) or _norm(c["name"]) in city:
+            return c["id"]
+    return None
+
+
 async def _location(access: str, prop: dict) -> dict:
-    """ML valida la ubicación hasta nivel ciudad. Se resuelve la provincia contra el
-    catálogo oficial (state.id) + city.name libre + coordenadas."""
+    """ML valida la ubicación hasta nivel ciudad. Se resuelve provincia + ciudad contra
+    el catálogo oficial (state.id + city.id) para que el breadcrumb y la búsqueda por
+    zona funcionen (si se manda solo el nombre, ML puede no linkearla a la rama correcta)."""
+    state_id = await _resolve_state_id(access, prop)
+    city_id = await _resolve_city_id(access, state_id, prop)
     loc: dict = {
         "address_line": prop.get("address") or "",
         "country": {"id": "AR"},
-        "city": {"name": prop.get("city") or ""},
+        "city": {"id": city_id} if city_id else {"name": prop.get("city") or ""},
+        "state": {"id": state_id} if state_id else {"name": prop.get("province") or ""},
     }
-    state_id = await _resolve_state_id(access, prop)
-    loc["state"] = {"id": state_id} if state_id else {"name": prop.get("province") or ""}
     lat, lng = prop.get("latitude"), prop.get("longitude")
     if lat is not None and lng is not None:
         loc["latitude"] = lat
         loc["longitude"] = lng
     return loc
+
 
 
 # Mapeo id-de-atributo-ML → valor numérico tomado de la propiedad VERA.
@@ -463,6 +503,7 @@ async def publish(prop: dict, images: list[dict], existing_item_id: str | None, 
                 "pictures": payload["pictures"],
                 "seller_custom_field": str(prop.get("id") or ""),
                 "seller_contact": payload["seller_contact"],
+                "location": payload["location"],
             }
             r = await h.put(f"{config.MELI_API}/items/{item_id}", headers=headers, json=upd)
             if r.status_code >= 400:
@@ -472,7 +513,8 @@ async def publish(prop: dict, images: list[dict], existing_item_id: str | None, 
                     f"{config.MELI_API}/items/{item_id}",
                     headers=headers,
                     json={"price": payload["price"], "pictures": payload["pictures"],
-                          "seller_custom_field": str(prop.get("id") or ""), "seller_contact": payload["seller_contact"]},
+                          "seller_custom_field": str(prop.get("id") or ""), "seller_contact": payload["seller_contact"],
+                          "location": payload["location"]},
                 )
             if r.status_code >= 400:
                 raise MeliError(r.status_code, r.text)
