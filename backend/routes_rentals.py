@@ -10,6 +10,8 @@ from __future__ import annotations
 import os
 import random
 import re
+from pathlib import Path
+from urllib.parse import quote
 from datetime import date, datetime, timezone
 from uuid import uuid4
 
@@ -21,8 +23,31 @@ from pymongo import ReturnDocument
 from pydantic import BaseModel
 
 import config as appconfig
+from property_export import ExportEntry, build_zip
 from property_repository import property_repository
 from storage_service import get_storage
+
+_EXT_BY_MIME = {
+    "image/jpeg": ".jpg", "image/jpg": ".jpg", "image/png": ".png",
+    "image/webp": ".webp", "image/heic": ".heic", "image/heif": ".heif",
+    "image/gif": ".gif", "image/avif": ".avif",
+}
+
+
+def _content_disposition(filename: str) -> str:
+    """Content-Disposition seguro para nombres con acentos/emojis (RFC 5987)."""
+    ascii_name = (filename.encode("ascii", "ignore").decode() or "download").replace('"', "")
+    return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(filename)}"
+
+
+def _rental_photo_entries(p: dict) -> list[ExportEntry]:
+    """Fotos de un alquiler en el orden definido por el usuario (position)."""
+    imgs = sorted(p.get("imagenes") or [], key=lambda i: i.get("position", 0))
+    entries: list[ExportEntry] = []
+    for idx, img in enumerate(imgs, start=1):
+        ext = _EXT_BY_MIME.get((img.get("contentType") or "").lower(), ".jpg")
+        entries.append(ExportEntry(arcname=f"{idx:02d}-foto{ext}", bucket=img["bucket"], object_path=img["object_path"]))
+    return entries
 
 router = APIRouter(prefix="/rentals", tags=["rentals"])
 
@@ -465,7 +490,6 @@ async def upload_image(pid: str, file: UploadFile = File(...)):
     p = await _get_prop(pid)
     if not appconfig.supabase_configured():
         raise HTTPException(503, "Storage no configurado.")
-    from pathlib import Path
     ext = Path(file.filename or "img.jpg").suffix.lower() or ".jpg"
     img_id = uuid4().hex
     object_path = f"rentals/{pid}/images/{img_id}{ext}"
@@ -494,6 +518,39 @@ async def delete_image(pid: str, img_id: str):
     except Exception:
         pass
     await _props().update_one({"_id": pid}, {"$pull": {"imagenes": {"id": img_id}}})
+
+
+@router.get("/properties/{pid}/images/{img_id}/download")
+async def download_image(pid: str, img_id: str):
+    """Descarga UNA foto de la propiedad con su nombre de archivo original."""
+    p = await _get_prop(pid)
+    imgs = sorted(p.get("imagenes") or [], key=lambda i: i.get("position", 0))
+    img = next((i for i in imgs if i["id"] == img_id), None)
+    if not img:
+        raise HTTPException(404, "Foto no encontrada")
+    data = await get_storage().download(img["bucket"], img["object_path"])
+    idx = imgs.index(img) + 1
+    ext = _EXT_BY_MIME.get((img.get("contentType") or "").lower(), ".jpg")
+    filename = f"{p.get('codigo') or pid}-foto{idx:02d}{ext}"
+    return Response(
+        content=data, media_type=img.get("contentType") or "application/octet-stream",
+        headers={"Content-Disposition": _content_disposition(filename)},
+    )
+
+
+@router.get("/properties/{pid}/export/photos.zip")
+async def export_photos_zip(pid: str):
+    """Descarga todas las fotos de la propiedad en un único .zip."""
+    p = await _get_prop(pid)
+    entries = _rental_photo_entries(p)
+    if not entries:
+        raise HTTPException(404, "La propiedad no tiene fotos para exportar.")
+    data = await build_zip(entries)
+    filename = f"{p.get('codigo') or pid}-fotos.zip"
+    return Response(
+        content=data, media_type="application/zip",
+        headers={"Content-Disposition": _content_disposition(filename)},
+    )
 
 
 class ImageOrderBody(BaseModel):
@@ -1112,7 +1169,6 @@ async def marcar_pagada(rid: str, monto: float = Form(0), metodo: str = Form("ma
     comp = prev.get("comprobante")
     push_comp = None
     if file is not None and appconfig.supabase_configured():
-        from pathlib import Path
         ext = Path(file.filename or "comp.jpg").suffix.lower() or ".jpg"
         obj = f"rentals/{r.get('propertyId')}/comprobantes/{uuid4().hex}{ext}"
         content = await file.read()
@@ -1154,7 +1210,6 @@ async def add_comprobante(rid: str, file: UploadFile = File(...)):
         raise HTTPException(404, "Reserva no encontrada")
     if not appconfig.supabase_configured():
         raise HTTPException(503, "Almacenamiento no configurado.")
-    from pathlib import Path
     ext = Path(file.filename or "comp.jpg").suffix.lower() or ".jpg"
     obj = f"rentals/{r.get('propertyId')}/comprobantes/{uuid4().hex}{ext}"
     content = await file.read()
@@ -1198,7 +1253,6 @@ async def cobrar_saldo(
     comprobante_id = None
     push: dict = {}
     if file is not None and appconfig.supabase_configured():
-        from pathlib import Path
         ext = Path(file.filename or "comp.jpg").suffix.lower() or ".jpg"
         obj = f"rentals/{r.get('propertyId')}/comprobantes/{uuid4().hex}{ext}"
         content = await file.read()
@@ -1372,7 +1426,6 @@ async def import_from_sale(sale_id: str):
     sp = await property_repository.get(sale_id)
     if not sp:
         raise HTTPException(404, "Propiedad de venta no encontrada")
-    from pathlib import Path
     pid = uuid4().hex
     bedrooms = int(sp.get("bedrooms") or 0)
     doc = {

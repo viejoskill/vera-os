@@ -499,3 +499,6 @@
 .rt-thumb__move { position: absolute; bottom: 5px; left: 5px; right: 5px; display: flex; justify-content: space-between; gap: 4px; }
 .rt-thumb__move button { position: static; top: auto; right: auto; width: 26px; height: 26px; background: rgba(0,0,0,.65); }
 .rt-thumb__move button:disabled { opacity: .3; cursor: default; }
+.rt-thumb__download { right: 34px !important; }
+.rt-ws__photoactions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rt-upload--ghost { background: transparent; border-style: solid; }

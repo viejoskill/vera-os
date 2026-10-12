@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Trash2, Upload, Star, CalendarX2, ExternalLink, UserPlus, ChevronLeft, ChevronRight, Pencil, Check, X } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Upload, Star, CalendarX2, ExternalLink, UserPlus, ChevronLeft, ChevronRight, Pencil, Check, X, Download, Archive } from 'lucide-react';
 import { Button, Input } from '@vera/ui';
 import { api, fmtMoney, fmtDate, nightsBetween, displayEstado, TIPO_MOV, type RentalProperty, type Reservation, type RentalImage, type Movimiento, type Occupied } from './api';
 import { RentalCalendar } from './RentalCalendar';
@@ -18,6 +18,15 @@ import { MoneyInput } from './MoneyInput';
 import { MlRentalPublish } from './MlRentalPublish';
 import { RentalLocationField } from './RentalLocationField';
 import './rentals.css';
+
+const triggerBrowserDownload = (url: string) => {
+  const a = document.createElement('a');
+  a.href = url;
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+};
 
 const empty: Partial<RentalProperty> = {
   titulo: '', tipo: 'casa', direccion: '', localidad: 'Costa del Este', descripcion: '', capacidad: 4,
@@ -316,14 +325,35 @@ export const RentalWorkspace = () => {
             <h3 className="rt-ws__sec">Fotos</h3>
             {!pid ? <p className="rt-hint">Guardá la propiedad para poder subir fotos.</p> : (
               <>
-                <label className="rt-upload" data-testid="rt-upload">
-                  <Upload size={16} /> Subir fotos
-                  <input type="file" accept="image/*" multiple onChange={onUpload} hidden />
-                </label>
+                <div className="rt-ws__photoactions">
+                  <label className="rt-upload" data-testid="rt-upload">
+                    <Upload size={16} /> Subir fotos
+                    <input type="file" accept="image/*" multiple onChange={onUpload} hidden />
+                  </label>
+                  {images.length > 0 && (
+                    <button
+                      type="button"
+                      className="rt-upload rt-upload--ghost"
+                      onClick={() => triggerBrowserDownload(api.photosZipUrl(pid))}
+                      title="Descargar todas las fotos originales en un ZIP"
+                      data-testid="rt-download-all-photos"
+                    >
+                      <Archive size={15} /> Descargar todas (.zip)
+                    </button>
+                  )}
+                </div>
                 <div className="rt-thumbs">
                   {images.map((im, idx) => (
                     <div className="rt-thumb" key={im.id} style={{ backgroundImage: `url(${im.url})` }} data-testid={`rt-thumb-${im.id}`}>
                       {idx === 0 && <span className="rt-thumb__cover"><Star size={12} /> Portada</span>}
+                      <button
+                        type="button"
+                        className="rt-thumb__download"
+                        onClick={() => triggerBrowserDownload(api.imageDownloadUrl(pid, im.id))}
+                        title="Descargar foto original"
+                        aria-label="Descargar foto original"
+                        data-testid={`rt-downloadimg-${im.id}`}
+                      ><Download size={13} /></button>
                       <button type="button" onClick={() => delImage(im.id)} data-testid={`rt-delimg-${im.id}`}><Trash2 size={13} /></button>
                       <div className="rt-thumb__move">
                         <button type="button" disabled={idx === 0} onClick={() => moveImage(idx, -1)} title="Mover antes" data-testid={`rt-moveleft-${im.id}`}><ChevronLeft size={15} /></button>

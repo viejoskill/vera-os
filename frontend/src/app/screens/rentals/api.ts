@@ -88,6 +88,8 @@ export const api = {
     return fetch(`${RENTALS_API}/properties/${id}/images`, { method: 'POST', body: fd }).then(json);
   },
   deleteImage: (id: string, imgId: string) => fetch(`${RENTALS_API}/properties/${id}/images/${imgId}`, { method: 'DELETE' }).then(json),
+  imageDownloadUrl: (id: string, imgId: string) => `${RENTALS_API}/properties/${id}/images/${imgId}/download`,
+  photosZipUrl: (id: string) => `${RENTALS_API}/properties/${id}/export/photos.zip`,
   reorderImages: (id: string, order: string[]): Promise<RentalProperty> =>
     fetch(`${RENTALS_API}/properties/${id}/images/order`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order }) }).then(json),
   updateCodigo: (id: string, codigo: string): Promise<RentalProperty> =>
