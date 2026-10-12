@@ -1,0 +1,23 @@
+{
+  "summary": "Tested nueva feature de descarga de fotos en Alquileres (A161): descarga individual + ZIP masivo. Backend (pytest, 4/4) + Frontend (Playwright E2E completo). Regresión Ventas: no se tocó código, feature espejo confirmada funcionando. A161 queda sin fotos (estado original).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_rentals_photo_download.py",
+    "/app/test_reports/pytest/rentals_photo_download.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "routes_rentals.py ya supera las 1500 líneas — considerar split (fotos/reservas/pagos/documentos) a futuro, no bloqueante.",
+    "Google Maps console warnings sobre google.maps.places.Autocomplete deprecated (no relacionado a este sprint, backlog).",
+    "Nombres de archivos dentro del ZIP: `01-foto.jpg`, `02-foto.jpg` (sin código de propiedad, como fue pedido). OK."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (ya documentado en /app/memory/test_credentials.md)",
+  "seed_data_creation": "Durante los tests se subieron 2 fotos a A161 y se eliminaron al finalizar (verificado: GET /api/rentals/properties/{A161} devuelve imagenes=[]). Propiedad queda igual que al inicio.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Feature de descarga de fotos (Alquileres) validada end-to-end. A161 (6744cf8a907f4a239a7504101c66a2df) es la propiedad compartida de testing — siempre dejarla sin fotos. Endpoints: GET /api/rentals/properties/{pid}/images/{imgId}/download (nombre A161-foto01.jpg) y GET /api/rentals/properties/{pid}/export/photos.zip (nombre A161-fotos.zip, archivos internos 01-foto.ext). Caso borde 404 cuando no hay fotos verificado. Botón 'Descargar todas (.zip)' solo visible si hay >=1 foto. data-testids: rt-upload, rt-download-all-photos, rt-downloadimg-{id}, rt-delimg-{id}.",
+  "rca of the issue": "N/A — todos los tests pasaron en primera ejecución."
+}

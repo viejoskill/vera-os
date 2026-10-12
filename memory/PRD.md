@@ -336,9 +336,20 @@ Pedido del usuario: replicar en Alquileres lo mismo hecho en Ventas (mapa por fi
 - **Bug crítico corregido** (`googleMapTheme.ts`, compartido por ambos módulos): `mapPinIcon` llamaba `new window.google.maps.Size(...)` validando solo `window.google` truthy, no que `Size` ya fuera una función real → race condition que crasheaba la ficha pública con el Error Boundary genérico de la app en cargas frescas (sobre todo mobile). Fix: `typeof google.maps.Size === 'function'` antes de instanciar. Verificado estable en 5 reloads (3 desktop + 2 mobile).
 - Única propiedad de alquiler activa en el ambiente de preview es A161 (de prueba, "CASA DE PRUEBA — borrar") — se usó para testear y se dejó limpia (direccion='', lat/lng=null) al finalizar. Datos reales de Alquileres viven solo en producción.
 
+## Implemented (Descarga de fotos en Alquileres — 2026-10)
+Pedido del usuario: poder descargar fotos de Alquileres de a una o todas en .zip, igual que en Ventas. Verificado 100% por testing_agent (iteration_70).
+- Backend (`routes_rentals.py`): `GET /properties/{pid}/images/{img_id}/download` (foto individual, nombre `{codigo}-fotoNN.ext`) y `GET /properties/{pid}/export/photos.zip` (todas, nombre `{codigo}-fotos.zip`, archivos internos `01-foto.ext`...). Reutiliza `ExportEntry`/`build_zip` de `property_export.py` (mismo código ya probado de Ventas). 404 claro si no hay fotos.
+- Frontend (`RentalWorkspace.tsx`): botón "Descargar todas (.zip)" junto a "Subir fotos" (solo si hay ≥1 foto) + ícono de descarga en cada miniatura (junto al de eliminar). `api.ts`: `imageDownloadUrl()`/`photosZipUrl()`.
+- Limpieza de código: se removieron 5 imports locales redundantes de `from pathlib import Path` (ya importado a nivel de módulo), detectados por el linter al agregar el import global.
+
+## RCA resuelto (mapa de Alquileres en producción — 2026-10)
+Causa confirmada (RCA del deployer agent + diagnóstico propio coincidieron): las 23 propiedades reales de Alquileres en producción ya tenían `direccion` (texto) pero NINGUNA tenía `latitude`/`longitude` — por eso el mapa se veía vacío, no era un problema de build/env/deploy. Fix: geocodificación automática en el backend (`_geocode_address()` vía Google Geocoding API, usa `GOOGLE_MAPS_API_KEY` ya presente en `backend/.env`) en `create_property`/`update_property`, + endpoint `POST /properties/geocode-pendientes` para backfill masivo de las propiedades existentes. Verificado 100% por testing_agent (iteration_69) y manualmente en preview.
+- **PENDIENTE**: ejecutar `POST /api/rentals/properties/geocode-pendientes` contra PRODUCCIÓN (no solo preview) para completar las coordenadas de las 23 propiedades reales. Debe hacerse en el próximo turno tras confirmar que el deploy actual (que incluye este fix) está live.
+
 ## Backlog (prioritized)
-- **P2**: Mapas — migrar `google.maps.Marker`/`places.Autocomplete` (legacy, deprecados por Google) a `AdvancedMarkerElement`/`PlaceAutocompleteElement`. No urgente, sin fecha de discontinuación anunciada.
-- **P2**: Extraer `<ListingsBrowser>` compartido entre `PublicHome.tsx` (#cartera) y `PublicListing.tsx` (/web) para no duplicar el patrón de toggle+filtros.
+- **P0**: Correr el backfill de geocodificación en producción (ver arriba) y confirmar visualmente con capturas que el mapa de Alquileres ya muestra pines reales.
+- **P2**: Mapas — migrar `google.maps.Marker`/`places.Autocomplete` (legacy, deprecados por Google) a `AdvancedMarkerElement`/`PlaceAutocompleteElement`. No urgente.
+- **P2**: `routes_rentals.py` superó las 1500 líneas — considerar split (fotos/reservas/pagos/documentos) a futuro, no bloqueante.
 - **P2**: Ficha de propiedad — cuando hay mapa sin video, la columna derecha queda con espacio vacío debajo; evaluar qué mostrar ahí.
 - **P2**: Mapa — migrar `Marker` a `AdvancedMarkerElement` (requiere Map ID con estilo dark configurado en Google Cloud Console) + `fitBounds` automático al cambiar filtros.
 - **P0 (pendiente redeploy)**: ajustes de texto en Reserva (limpieza/depósito), fix de seller_contact en ML, recibo automático al cobrar saldo, comisión editable por %, depósito/limpieza editables por reserva, leyenda de cargos no incluidos en la vista pública.
