@@ -42,9 +42,11 @@ async def _geocode_address(direccion: str, localidad: str | None) -> tuple[float
                 params={"address": query, "key": key},
             )
             data = resp.json()
-    except Exception:
+    except Exception as exc:
+        print(f"[geocode] error geocodificando '{query}': {exc}")
         return None
     if data.get("status") != "OK" or not data.get("results"):
+        print(f"[geocode] sin resultado para '{query}': status={data.get('status')}")
         return None
     loc = data["results"][0]["geometry"]["location"]
     return loc["lat"], loc["lng"]

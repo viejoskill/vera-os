@@ -1,0 +1,32 @@
+{
+  "summary": "Backend-only testing of iteration_69 auto-geocoding fix for rentals. All 4 pytest tests PASSED (4/4). Validated: (1) PUT /api/rentals/properties/{id} auto-geocodes when direccion is set and latitude is null, (2) POST /api/rentals/properties/geocode-pendientes backfill correctly geocodes legacy docs (simulated by force-setting latitude=None directly in Mongo for A161), (3) POST /api/rentals/properties auto-geocodes on creation (new property 'TEST BORRAR regresion geocoding' created with Av. 3 1218 and deleted after), (4) sending direccion='' via PUT does NOT trigger geocoding, so A161 cleanup works correctly. A161 left in baseline state: direccion='', latitude=null, longitude=null. No stray test data remaining.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_rentals_geocoding.py",
+    "/app/test_reports/pytest/iteration_69_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "routes_rentals.py is now 1490 lines — recommended to split into submodules (properties, reservations, movimientos, etc.) for maintainability.",
+    "_geocode_address swallows ALL exceptions silently (except Exception: return None). Consider logging the error so geocoding failures are debuggable in production (useful if API key is wrong, quota exceeded, etc.).",
+    "geocode-pendientes endpoint has no auth and could be abused (runs N Google Geocoding API calls). Consider adding an admin guard or rate limit."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_rentals_geocoding.py (new)"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "N/A (not in scope)"},
+  "test_credentials": "N/A - endpoints are public in this environment",
+  "seed_data_creation": "Transient only: created A161 state 'Claveles 368' with coords, then 'Av. Interbalnearia 568' with coords via backfill, finally restored to direccion='' lat=null lng=null. Also created+deleted a regression test property with titulo='TEST BORRAR regresion geocoding'.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Auto-geocoding backend fix is fully verified. A161 (id=6744cf8a907f4a239a7504101c66a2df) is reset to baseline (direccion='', lat/lng=null). The pytest test file at /app/backend/tests/test_rentals_geocoding.py can be re-run anytime; it self-cleans and leaves A161 pristine. Google Geocoding API returns lat around -36.6 and lng around -56.7 for Costa del Este addresses; assertions use loose bounds (-37.5<lat<-35.5, -57.5<lng<-55.5).",
+  "rca of the issue": "Production had 23 real rental properties with 'direccion' saved as plain text but no latitude/longitude because they predate the autocomplete flow. The map component correctly filters by lat/lng != null, so none rendered. Fix adds server-side auto-geocoding in POST/PUT (so going forward every save with direccion gets coords) + a bulk backfill endpoint for existing docs. Both paths verified end-to-end against the real Google Geocoding API using the GOOGLE_MAPS_API_KEY in backend/.env."
+}
