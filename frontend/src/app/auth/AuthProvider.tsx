@@ -7,6 +7,9 @@ export interface Approval {
   email: string;
   approved: boolean;
   isAdmin: boolean;
+  /** null = sin restricción propia (admins ven todo; no-admins caen al default Alquileres+Studio).
+   *  array = el usuario solo ve esas secciones (ids de navRoutes), aunque esté vacío. */
+  sections: string[] | null;
 }
 
 interface AuthContextValue {

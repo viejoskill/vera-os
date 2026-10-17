@@ -66,8 +66,22 @@ class TeamActionBody(BaseModel):
     actorEmail: str
 
 
+class TeamSectionsBody(BaseModel):
+    email: str
+    actorEmail: str
+    sections: list[str] | None = None
+
+
 def _row(doc: dict) -> dict:
-    return {"email": doc["email"], "approved": bool(doc.get("approved")), "isAdmin": bool(doc.get("isAdmin"))}
+    sections = doc.get("sections")
+    return {
+        "email": doc["email"],
+        "approved": bool(doc.get("approved")),
+        "isAdmin": bool(doc.get("isAdmin")),
+        # None = acceso completo (admin) o restricción por defecto (Alquileres + Studio) según el frontend.
+        # Lista (incluso vacía) = restringido exactamente a esas secciones.
+        "sections": sections if isinstance(sections, list) else None,
+    }
 
 
 @router.post("/approval")
@@ -125,4 +139,22 @@ async def team_make_admin(body: TeamActionBody):
     await _require_admin(body.actorEmail)
     email = _norm(body.email)
     await _col().update_one({"_id": email}, {"$set": {"approved": True, "isAdmin": True, "email": email}}, upsert=True)
+    return {"ok": True}
+
+
+@router.post("/team/set-sections")
+async def team_set_sections(body: TeamSectionsBody):
+    """Restringe (o quita la restricción de) un miembro no-admin a determinadas secciones.
+
+    `sections=None` → vuelve al comportamiento por defecto (Alquileres + Studio).
+    `sections=[]` o con ids → el miembro solo ve esas secciones del menú.
+    """
+    await _require_admin(body.actorEmail)
+    email = _norm(body.email)
+    update = {"approved": True, "email": email} if body.sections is not None else {}
+    if body.sections is not None:
+        update["sections"] = body.sections
+        await _col().update_one({"_id": email}, {"$set": update}, upsert=True)
+    else:
+        await _col().update_one({"_id": email}, {"$unset": {"sections": ""}}, upsert=True)
     return {"ok": True}

@@ -17,20 +17,23 @@ export const AppLayout = () => {
   const { approval, approvalReady } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Empleados (aprobados, no admin): acceso restringido a Alquileres + Studio (editor de fotos).
+  // Empleados (aprobados, no admin): acceso restringido a ciertas secciones del menú.
+  // Por defecto, Alquileres + Studio (editor de fotos); un admin puede personalizarlo
+  // por usuario desde "Equipo" (approval.sections).
   const isEmployee = approvalReady && approval && !approval.isAdmin;
-  const EMPLOYEE_PATHS = ['/alquileres', '/studio'];
+  const employeeSectionIds = approval?.sections ?? ['alquileres', 'studio'];
+  const EMPLOYEE_PATHS = navRoutes.filter((r) => employeeSectionIds.includes(r.id)).map((r) => r.path);
   useEffect(() => {
     if (isEmployee && !EMPLOYEE_PATHS.some((p) => location.pathname.startsWith(p))) {
-      navigate('/alquileres', { replace: true });
+      navigate(EMPLOYEE_PATHS[0] ?? '/login', { replace: true });
     }
-  }, [isEmployee, location.pathname, navigate]);
+  }, [isEmployee, location.pathname, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const active = navRoutes.find((r) => location.pathname.startsWith(r.path)) ?? navRoutes[1];
 
   const items: SidebarItem[] = navRoutes
     .filter((r) => r.enabled !== false)
-    .filter((r) => (approval?.isAdmin ? true : (r.id === 'alquileres' || r.id === 'studio')))
+    .filter((r) => (approval?.isAdmin ? true : employeeSectionIds.includes(r.id)))
     .map((r) => ({
       id: r.id,
       label: r.label,
