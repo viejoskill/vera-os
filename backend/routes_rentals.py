@@ -244,10 +244,11 @@ def _pagos_calc(r: dict) -> dict:
     }
 
 
-def _res_out(r: dict) -> dict:
+def _res_out(r: dict, codigo: str | None = None) -> dict:
     calc = _pagos_calc(r)
     return {
         "id": r["_id"], "propertyId": r.get("propertyId"), "propertyTitulo": r.get("propertyTitulo"),
+        "propertyCodigo": codigo,
         "estado": r.get("estado"), "checkIn": r.get("checkIn"), "checkOut": r.get("checkOut"),
         "noches": r.get("noches"), "montoEstimado": r.get("montoEstimado"), "moneda": r.get("moneda", "ARS"),
         "origen": r.get("origen"), "motivo": r.get("motivo"),
@@ -598,7 +599,13 @@ async def list_reservations(propertyId: str | None = Query(None), estado: str | 
     if estado:
         q["estado"] = estado
     cur = _res().find(q).sort("createdAt", -1)
-    return [_res_out(r) async for r in cur]
+    rows = [r async for r in cur]
+    prop_ids = {r.get("propertyId") for r in rows if r.get("propertyId")}
+    codigos: dict[str, str] = {}
+    if prop_ids:
+        async for p in _props().find({"_id": {"$in": list(prop_ids)}}, {"codigo": 1}):
+            codigos[p["_id"]] = p.get("codigo")
+    return [_res_out(r, codigos.get(r.get("propertyId"))) for r in rows]
 
 
 @router.post("/reservations", status_code=201)

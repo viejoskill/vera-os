@@ -237,7 +237,10 @@ export const AlquileresScreen = () => {
                 <div className="rt-res__row" key={r.id} data-testid={`rt-res-${r.id}`}>
                   <div className="rt-res__main">
                     <strong>{r.huesped.nombre || 'Sin nombre'}</strong>
-                    <span className="rt-res__prop">{r.propertyTitulo}</span>
+                    <span className="rt-res__prop">
+                      {r.propertyCodigo && <span className="rt-res__code" data-testid={`rt-res-code-${r.id}`}>{r.propertyCodigo}</span>}
+                      {r.propertyTitulo}
+                    </span>
                   </div>
                   <div className="rt-res__dates">{fmtDate(r.checkIn)} → {fmtDate(r.checkOut)} · {r.noches} noches</div>
                   <div className="rt-res__meta">

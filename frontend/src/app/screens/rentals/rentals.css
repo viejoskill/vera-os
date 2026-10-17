@@ -53,6 +53,12 @@
 .rt-res__main { display: flex; flex-direction: column; }
 .rt-res__main strong { font-size: .98rem; color: var(--vera-color-primary); }
 .rt-res__prop { color: var(--vera-color-text-secondary); font-size: .8rem; }
+.rt-res__code {
+  display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+  color: var(--vera-color-primary); background: rgba(214,170,40,.12);
+  border: 1px solid rgba(214,170,40,.3); padding: 1px 7px; border-radius: 6px;
+  margin-right: 6px; vertical-align: middle;
+}
 .rt-res__dates { color: var(--vera-color-text-secondary); font-size: .86rem; }
 .rt-res__meta { display: flex; align-items: center; gap: 10px; font-size: .86rem; flex-wrap: wrap; }
 .rt-res__monto { color: var(--vera-color-primary); font-weight: 700; }

@@ -53,7 +53,7 @@ export interface Pago {
 }
 export interface SaldoCobro { id: string; monto: number; metodo: string; fecha?: string; comprobanteId?: string | null; }
 export interface Reservation {
-  id: string; propertyId: string; propertyTitulo?: string; estado: string;
+  id: string; propertyId: string; propertyTitulo?: string; propertyCodigo?: string; estado: string;
   checkIn: string; checkOut: string; noches: number; montoEstimado: number; moneda: string;
   origen?: string; motivo?: string; createdAt?: string; pago?: Pago | null;
   comprobantes?: { id: string; nombre?: string; fecha?: string }[];
