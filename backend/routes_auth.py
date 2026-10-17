@@ -75,7 +75,7 @@ class TeamSectionsBody(BaseModel):
 def _row(doc: dict) -> dict:
     sections = doc.get("sections")
     return {
-        "email": doc["email"],
+        "email": doc.get("email", doc.get("_id", "")),
         "approved": bool(doc.get("approved")),
         "isAdmin": bool(doc.get("isAdmin")),
         # None = acceso completo (admin) o restricción por defecto (Alquileres + Studio) según el frontend.
@@ -151,10 +151,13 @@ async def team_set_sections(body: TeamSectionsBody):
     """
     await _require_admin(body.actorEmail)
     email = _norm(body.email)
-    update = {"approved": True, "email": email} if body.sections is not None else {}
     if body.sections is not None:
-        update["sections"] = body.sections
-        await _col().update_one({"_id": email}, {"$set": update}, upsert=True)
+        await _col().update_one(
+            {"_id": email},
+            {"$set": {"approved": True, "email": email, "sections": body.sections}},
+            upsert=True,
+        )
     else:
-        await _col().update_one({"_id": email}, {"$unset": {"sections": ""}}, upsert=True)
+        # Volver al default: no crear el doc si el email no existía todavía.
+        await _col().update_one({"_id": email}, {"$unset": {"sections": ""}})
     return {"ok": True}

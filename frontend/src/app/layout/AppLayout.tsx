@@ -14,7 +14,7 @@ export const AppLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { displayName } = useAuthUser();
-  const { approval, approvalReady } = useAuth();
+  const { approval, approvalReady, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // Empleados (aprobados, no admin): acceso restringido a ciertas secciones del menú.
@@ -23,9 +23,10 @@ export const AppLayout = () => {
   const isEmployee = approvalReady && approval && !approval.isAdmin;
   const employeeSectionIds = approval?.sections ?? ['alquileres', 'studio'];
   const EMPLOYEE_PATHS = navRoutes.filter((r) => employeeSectionIds.includes(r.id)).map((r) => r.path);
+  const noSectionsAssigned = Boolean(isEmployee && EMPLOYEE_PATHS.length === 0);
   useEffect(() => {
-    if (isEmployee && !EMPLOYEE_PATHS.some((p) => location.pathname.startsWith(p))) {
-      navigate(EMPLOYEE_PATHS[0] ?? '/login', { replace: true });
+    if (isEmployee && EMPLOYEE_PATHS.length > 0 && !EMPLOYEE_PATHS.some((p) => location.pathname.startsWith(p))) {
+      navigate(EMPLOYEE_PATHS[0], { replace: true });
     }
   }, [isEmployee, location.pathname, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -46,6 +47,23 @@ export const AppLayout = () => {
     if (route) navigate(route.path);
     setMobileOpen(false);
   };
+
+  if (noSectionsAssigned) {
+    return (
+      <div className="vera-shell vera-shell--empty" data-testid="no-sections-screen">
+        <div className="vera-no-sections">
+          <h2 className="vera-no-sections__title">Sin secciones asignadas</h2>
+          <p className="vera-no-sections__text">
+            Tu cuenta todavía no tiene ninguna sección habilitada. Pedile a un administrador
+            que te asigne acceso desde Equipo.
+          </p>
+          <button type="button" className="vera-no-sections__signout" data-testid="no-sections-signout" onClick={signOut}>
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="vera-shell">

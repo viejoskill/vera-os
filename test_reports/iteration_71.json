@@ -1,0 +1,38 @@
+{
+  "summary": "Tested per-section permissions (backend set-sections contract + UI). All 7 requested features PASS: restricted user (sections=['liquidaciones']) sees only 'Liquidaciones' in sidebar, is redirected from /hoy,/propiedades,/alquileres,/equipo,/contabilidad to /veraos/liquidaciones, Liquidaciones screen loads with no page errors. Default (sections=null) non-admin sees only Alquileres+Studio (liquidaciones redirected to /alquileres). Admin sees all 15 items incl. Equipo. Equipo screen shows 'Acceso: ...' text, 'Secciones' toggle opens 14 checkboxes (equipo excluded), check/uncheck calls backend and persists after reload. set-sections returns 403 for non-admin actor, accepts list/[]/null. Login via data-testid selectors works fine in automation (no stale screenshot issue). Found 1 backend bug (500 on GET /team after set-sections null for unknown email) and 1 frontend edge case (sections=[] -> blank screen).",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /api/auth/team/set-sections (sections=null)", "issue": "For an email not in app_access, update_one({_id}, {$unset}, upsert=True) creates a doc with ONLY _id (no 'email'). Then GET /api/auth/team crashes with 500 (KeyError doc['email'] in _row) -> Equipo screen breaks for admin. Reproduced and cleaned up (deleted ghost doc test_ghost@vera.test). Fix: use upsert=False for the $unset branch (or $set email too), and make _row use doc.get('email', doc['_id']).", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "POST /api/auth/team/set-sections", "issue": "Setting a list silently sets approved:True (re-approves a revoked user). Section ids are not validated against known ids."},
+      {"endpoint": "/api/auth/team/*", "issue": "Pre-existing: admin check trusts client-supplied actorEmail (no JWT verification) - anyone can pass the admin email and change permissions. Section restriction is UI-only; backend APIs (e.g. properties, contabilidad) are not restricted per section."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AppLayout", "issue": "Non-admin with sections=[] (possible by unchecking all boxes in Equipo) gets a completely blank dark screen (EMPLOYEE_PATHS empty -> navigate('/login') while session exists). Should show a friendly 'Sin secciones asignadas' message or block unchecking the last section.", "selector": "aside nav", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Equipo", "issues": ["No UI way to restore the default (sections=null) once a member was customized", "'Acceso: ...' text is small and low-contrast grey"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_team_sections.py", "/app/test_reports/pytest/team_sections.xml"],
+  "action_items": [
+    "Fix set-sections null upsert creating email-less doc -> 500 on GET /auth/team (upsert=False in $unset branch; defensive _row)",
+    "Handle sections=[] in AppLayout (empty-state message instead of blank screen) or prevent unchecking last section in TeamScreen",
+    "Optional: add 'Restablecer por defecto' button in Equipo panel (sections=null)"
+  ],
+  "critical_code_review_comments": [
+    "routes_auth._row: doc['email'] KeyError risk for any doc missing email",
+    "Permissions enforced only in frontend; backend data endpoints remain accessible to restricted users",
+    "TeamScreen fetch calls lack error handling (no toast on non-200)"
+  ],
+  "updated_files": ["/app/backend/tests/test_team_sections.py"],
+  "success_rate": {"backend": "4/4 contract tests pass; 1 bug found", "frontend": "100% of requested flows pass; 1 edge case bug"},
+  "seed_data_creation": "None persisted. Temporarily changed qa_varela (sections/admin) and qa_temp sections; all reverted: qa_varela approved,non-admin,sections=null; qa_temp sections=null. inmovarelacde@gmail.com untouched (sections=['liquidaciones']).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Login with qa_varela@vera.test / VeraQA!2026ml works in Playwright. Use set-sections/make-admin with actorEmail varelavendecde@gmail.com to simulate roles; always revert. Don't call set-sections null on unknown emails (breaks GET /team until doc removed)."
+}

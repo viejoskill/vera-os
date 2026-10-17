@@ -2307,6 +2307,23 @@ p {
   border-color: var(--vera-color-primary);
   background: color-mix(in srgb, var(--vera-color-primary) 12%, transparent);
 }
+.vera-team__sections-reset {
+  background: none; border: 0; color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-xs);
+  text-decoration: underline; cursor: pointer; padding: 4px 0;
+}
+.vera-team__sections-reset:hover { color: var(--vera-color-primary); }
+.vera-shell--empty { display: flex; align-items: center; justify-content: center; }
+.vera-no-sections {
+  max-width: 420px; text-align: center; padding: var(--vera-space-xl);
+  border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-lg);
+  background: var(--vera-color-surface);
+}
+.vera-no-sections__title { margin: 0 0 8px; }
+.vera-no-sections__text { color: var(--vera-color-text-secondary); font-size: var(--vera-font-size-sm); margin: 0 0 var(--vera-space-md); }
+.vera-no-sections__signout {
+  background: var(--vera-color-primary); border: 0; border-radius: var(--vera-radius-sm);
+  padding: 8px 16px; font-weight: 600; cursor: pointer;
+}
 
 
 /* ============================= User menu ============================= */

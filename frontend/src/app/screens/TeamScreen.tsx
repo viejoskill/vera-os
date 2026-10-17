@@ -63,6 +63,17 @@ export const TeamScreen = () => {
     setBusy(null);
   };
 
+  const resetSections = async (member: Member) => {
+    setBusy(member.email);
+    await fetch(`${env.backendUrl}/api/auth/team/set-sections`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: member.email, actorEmail, sections: null }),
+    });
+    await load();
+    setBusy(null);
+  };
+
   if (!approval?.isAdmin) {
     return (
       <div className="vera-screen" data-testid="team-screen">
@@ -178,6 +189,17 @@ export const TeamScreen = () => {
                             </label>
                           );
                         })}
+                        {m.sections !== null && (
+                          <button
+                            type="button"
+                            className="vera-team__sections-reset"
+                            data-testid={`team-reset-sections-${m.email}`}
+                            disabled={busy === m.email}
+                            onClick={() => resetSections(m)}
+                          >
+                            Restablecer a Alquileres + Studio (default)
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
