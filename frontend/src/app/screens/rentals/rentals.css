@@ -189,10 +189,12 @@
 .rt-book__panel { position: sticky; top: 20px; background: #fff; border: 1px solid #eae5db; border-radius: 18px; padding: 22px; box-shadow: 0 10px 30px rgba(0,0,0,.06); }
 .rt-book__from { font-size: 1.3rem; font-weight: 700; margin-bottom: 14px; }
 .rt-book__from em { font-size: .82rem; font-weight: 400; color: #6a675f; }
+.rt-book__shortstay { display: flex; align-items: center; gap: 6px; font-size: .78rem; color: #8a7a3a; background: #f6e63a22; border: 1px solid #e3d98a; border-radius: 8px; padding: 7px 10px; margin-bottom: 14px; }
 .rt-book__hint { color: #6a675f; font-size: .88rem; margin-bottom: 14px; }
 .rt-book__quote { border: 1px solid #eae5db; border-radius: 12px; padding: 14px; margin-bottom: 16px; }
 .rt-book__line { display: flex; justify-content: space-between; font-size: .9rem; margin-bottom: 8px; color: #48453f; }
 .rt-book__line--disc { color: #3a9a5a; }
+.rt-book__line--recargo { color: #c08a2e; }
 .rt-book__total { display: flex; justify-content: space-between; padding-top: 10px; border-top: 1px solid #eae5db; font-weight: 700; }
 .rt-book__total strong { font-size: 1.15rem; }
 .rt-book__form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
@@ -267,10 +269,12 @@
 .rt-book__panel { background: var(--pcard); border: 1px solid var(--pborder); box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
 .rt-book__from { color: #fff; }
 .rt-book__from em { color: var(--ptext3); }
+.rt-book__shortstay { color: var(--am-light); background: rgba(214,204,106,0.1); border-color: rgba(214,204,106,0.3); }
 .rt-book__hint { color: var(--ptext2); }
 .rt-book__quote { border: 1px solid var(--pborder); }
 .rt-book__line { color: var(--ptext2); }
 .rt-book__line--disc { color: var(--am-light); }
+.rt-book__line--recargo { color: #e8b25a; }
 .rt-book__total { border-top: 1px solid var(--pborder); color: #fff; }
 .rt-book__form input, .rt-book__form textarea { background: var(--pbg2); border: 1px solid var(--pborder2); color: #fff; }
 .rt-book__form input::placeholder, .rt-book__form textarea::placeholder { color: var(--ptext3); }

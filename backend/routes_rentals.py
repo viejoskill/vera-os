@@ -139,6 +139,10 @@ def _overlap(a_in: str, a_out: str, b_in: str, b_out: str) -> bool:
     return a_in < b_out and b_in < a_out
 
 
+RECARGO_ESTADIA_CORTA_PCT = 5.0
+RECARGO_ESTADIA_CORTA_NOCHES = 7  # menos de esta cantidad de noches → recargo
+
+
 def _quote(prop: dict, check_in: str, check_out: str) -> dict:
     n = _nights(check_in, check_out)
     precio = float(prop.get("precioNoche") or 0)
@@ -150,10 +154,11 @@ def _quote(prop: dict, check_in: str, check_out: str) -> dict:
         disc = float(prop["descQuincena"])
     elif n >= int(prop.get("descSemanaMin") or 6) and prop.get("descSemana"):
         disc = float(prop["descSemana"])
-    total = round(base * (1 - disc / 100))
+    recargo = RECARGO_ESTADIA_CORTA_PCT if n < RECARGO_ESTADIA_CORTA_NOCHES else 0.0
+    total = round(base * (1 - disc / 100) * (1 + recargo / 100))
     return {
         "noches": n, "precioNoche": precio, "base": round(base),
-        "descuentoPct": disc, "total": total, "moneda": prop.get("moneda", "ARS"),
+        "descuentoPct": disc, "recargoPct": recargo, "total": total, "moneda": prop.get("moneda", "ARS"),
     }
 
 
@@ -815,6 +820,21 @@ async def update_limpieza(rid: str, body: LimpiezaBody):
     if not r:
         raise HTTPException(404, "Reserva no encontrada")
     await _res().update_one({"_id": rid}, {"$set": {"limpiezaOverride": body.limpieza, "updatedAt": _now()}})
+    return _res_out(await _res().find_one({"_id": rid}))
+
+
+class MontoBody(BaseModel):
+    monto: float
+
+
+@router.patch("/reservations/{rid}/monto")
+async def update_monto(rid: str, body: MontoBody):
+    """Corrige a mano el importe total de la reserva (p.ej. para ajustar el recargo del 5%
+    por estadía menor a 7 noches que llega calculado automáticamente en la pre-reserva)."""
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    await _res().update_one({"_id": rid}, {"$set": {"montoEstimado": round(body.monto), "updatedAt": _now()}})
     return _res_out(await _res().find_one({"_id": rid}))
 
 

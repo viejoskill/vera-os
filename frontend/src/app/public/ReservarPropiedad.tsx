@@ -7,7 +7,7 @@ import { InstagramReel } from './InstagramReel';
 import { PropertyMap } from './PropertyMap';
 import '@app/screens/rentals/rentals.css';
 
-interface Quote { noches: number; base: number; descuentoPct: number; total: number; moneda: string; }
+interface Quote { noches: number; base: number; descuentoPct: number; recargoPct: number; total: number; moneda: string; }
 
 export const ReservarPropiedad = () => {
   const { slug } = useParams();
@@ -127,10 +127,14 @@ export const ReservarPropiedad = () => {
 
         <aside className="rt-book__panel">
           <p className="rt-book__from">{fmtMoney(p.precioNoche, p.moneda)} <em>/ noche</em></p>
+          <p className="rt-book__shortstay" data-testid="rt-shortstay-notice">
+            <AlertCircle size={14} /> Estadías menores a 7 noches tienen un incremento del 5%.
+          </p>
           {quote ? (
             <div className="rt-book__quote" data-testid="rt-quote">
               <div className="rt-book__line"><span>{fmtMoney(p.precioNoche, p.moneda)} × {quote.noches} noches</span><span>{fmtMoney(quote.base, quote.moneda)}</span></div>
-              {quote.descuentoPct > 0 && <div className="rt-book__line rt-book__line--disc"><span>Descuento por estadía ({quote.descuentoPct}%)</span><span>-{fmtMoney(quote.base - quote.total, quote.moneda)}</span></div>}
+              {quote.descuentoPct > 0 && <div className="rt-book__line rt-book__line--disc"><span>Descuento por estadía ({quote.descuentoPct}%)</span><span>-{fmtMoney(quote.base * quote.descuentoPct / 100, quote.moneda)}</span></div>}
+              {quote.recargoPct > 0 && <div className="rt-book__line rt-book__line--recargo" data-testid="rt-quote-recargo"><span>Incremento estadía corta ({quote.recargoPct}%)</span><span>+{fmtMoney(quote.total - quote.base * (1 - quote.descuentoPct / 100), quote.moneda)}</span></div>}
               <div className="rt-book__total"><span>Total estimado</span><strong data-testid="rt-total">{fmtMoney(quote.total, quote.moneda)}</strong></div>
               <p className="rt-book__note" data-testid="rt-book-note-cargos">Este valor no incluye el depósito en garantía ni el cargo de limpieza, que se abonan al ingreso.</p>
             </div>

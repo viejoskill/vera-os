@@ -15,6 +15,7 @@ export const EditarHuesped = ({ reserva, onDone, onClose }: {
   });
   const [deposito, setDeposito] = useState(reserva.depositoOverride != null ? String(reserva.depositoOverride) : '');
   const [limpieza, setLimpieza] = useState(reserva.limpiezaOverride != null ? String(reserva.limpiezaOverride) : '');
+  const [monto, setMonto] = useState(String(reserva.montoEstimado ?? ''));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -25,7 +26,8 @@ export const EditarHuesped = ({ reserva, onDone, onClose }: {
     try {
       await api.updateHuesped(reserva.id, { ...form, huespedes: Number(form.huespedes) || 1 });
       await api.updateDeposito(reserva.id, deposito === '' ? null : Number(deposito));
-      const actualizada = await api.updateLimpieza(reserva.id, limpieza === '' ? null : Number(limpieza));
+      await api.updateLimpieza(reserva.id, limpieza === '' ? null : Number(limpieza));
+      const actualizada = await api.updateMonto(reserva.id, Number(monto) || 0);
       onDone(actualizada);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar');
@@ -63,6 +65,9 @@ export const EditarHuesped = ({ reserva, onDone, onClose }: {
           <input type="number" min={1} value={form.huespedes} onChange={(e) => set('huespedes', e.target.value)} data-testid={`rt-edit-huesped-huespedes-${reserva.id}`} /></label>
         <label className="rt-field"><span>Comentario</span>
           <textarea rows={2} value={form.comentario} onChange={(e) => set('comentario', e.target.value)} data-testid={`rt-edit-huesped-comentario-${reserva.id}`} /></label>
+        <label className="rt-field"><span>Importe total de la reserva — ej. para ajustar el incremento del 5% por estadía menor a 7 noches</span>
+          <input type="number" placeholder="Importe total" value={monto}
+            onChange={(e) => setMonto(e.target.value)} data-testid={`rt-edit-monto-${reserva.id}`} /></label>
         <label className="rt-field"><span>Depósito de garantía — dejalo vacío para usar el de la propiedad</span>
           <input type="number" placeholder="Monto del depósito para ESTA reserva" value={deposito}
             onChange={(e) => setDeposito(e.target.value)} data-testid={`rt-edit-deposito-${reserva.id}`} /></label>
