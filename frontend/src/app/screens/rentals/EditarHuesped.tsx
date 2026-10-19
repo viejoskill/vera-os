@@ -22,12 +22,16 @@ export const EditarHuesped = ({ reserva, onDone, onClose }: {
   const set = (k: keyof typeof form, v: string | number) => setForm((f) => ({ ...f, [k]: v }));
 
   const guardar = async () => {
+    const montoNum = Number(monto);
+    if (!monto || !(montoNum > 0)) { setError('El importe total tiene que ser mayor a 0.'); return; }
     setSaving(true); setError('');
     try {
       await api.updateHuesped(reserva.id, { ...form, huespedes: Number(form.huespedes) || 1 });
       await api.updateDeposito(reserva.id, deposito === '' ? null : Number(deposito));
-      await api.updateLimpieza(reserva.id, limpieza === '' ? null : Number(limpieza));
-      const actualizada = await api.updateMonto(reserva.id, Number(monto) || 0);
+      let actualizada = await api.updateLimpieza(reserva.id, limpieza === '' ? null : Number(limpieza));
+      if (montoNum !== reserva.montoEstimado) {
+        actualizada = await api.updateMonto(reserva.id, montoNum);
+      }
       onDone(actualizada);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar');

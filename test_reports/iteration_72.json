@@ -1,0 +1,35 @@
+{
+  "summary": "Tested the 5% short-stay surcharge (stays under 7 nights) and the manual total-amount edit for rentals, end to end. Backend pytest: 8/8 passed. Quote for 1, 3 and 6 nights adds +5%; quote for 7 and 10 nights has no surcharge. A pre-reservation is saved with montoEstimado=78750 for 3 nights at $25,000/night. PATCH /monto persists the new value, and a later PATCH /huesped does not overwrite it. PATCH /monto returns 404 for an unknown id and 422 for a bad body. UI (Playwright, real clicks): the rt-shortstay-notice is always visible and readable (yellow #E8E07A on a translucent yellow chip over a dark panel). Selecting 2-5 Nov 2026 (3 nights) shows rt-quote-recargo '+$ 3.750' and rt-total '$ 78.750'. Selecting 2-9 Nov (7 nights) shows no surcharge line and '$ 175.000'. Submitting the public pre-reservation (3 nights, 16-19 Nov) through the conditions modal worked, and the backend stored 78750. In the internal panel (logged in as qa_varela) the 'Editar datos' modal pre-fills rt-edit-monto with 78750. Changing it to 75000, along with name, locality, guests, deposit 40000 and cleaning 12000, and saving closed the modal. The row showed $ 75.000 right away and after reloading the page. Reopening the modal showed all edited values kept. Stale-screenshot problem: NOT reproduced; screenshots updated correctly after calendar clicks. Test reservation cancelled and deleted (404 confirmed).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "PATCH /api/rentals/reservations/{rid}/monto", "issue": "No validation on MontoBody: negative or zero values are accepted (add Field(ge=0) or gt=0)."},
+      {"endpoint": "PATCH /api/rentals/reservations/{rid}/monto", "issue": "Editing the amount after a reservation is confirmed does not recalculate the commission already generated or the 30% deposit (seña) payment link, which were based on the old montoEstimado. This may be intended, but it is worth noting for confirmed reservations."},
+      {"endpoint": "POST /api/rentals/reservations/manual and POST /api/rentals/reservations", "issue": "_quote() now also adds the 5% to internal/manual bookings when no amount is given. This is a side effect beyond the public pre-reservation; check that it is wanted."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "EditarHuesped", "issue": "guardar() sends Number(monto) || 0, so clearing the amount field and saving sets the reservation total to $0 with no warning. It should block an empty or 0 value, or skip the call.", "selector": "[data-testid^='rt-edit-monto-']", "priority": "MEDIUM"},
+      {"component": "EditarHuesped", "issue": "updateMonto is always called, even when the amount did not change. Harmless now, but it adds an extra request and resets updatedAt.", "selector": "[data-testid^='rt-edit-huesped-save-']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_rentals_shortstay_monto.py", "/app/test_reports/pytest/rentals_shortstay.xml"],
+  "action_items": [
+    "EditarHuesped: stop an empty or 0 amount from overwriting montoEstimado with 0",
+    "Optional: add ge=0 validation to MontoBody",
+    "Optional: decide whether editing the amount on a confirmed reservation should update the commission and the seña link"
+  ],
+  "critical_code_review_comments": [
+    "The surcharge line in the price breakdown is calculated as total - base*(1-disc) on the frontend; it works, but the backend could return a recargoMonto field so both sides use the same number.",
+    "The rentals routes still have no auth dependency on internal endpoints such as PATCH /monto and DELETE (this was already the case before this change)."
+  ],
+  "updated_files": ["/app/backend/tests/test_rentals_shortstay_monto.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "Created 2 test pre-reservations (a pytest one and the UI one 201be333..., 16-19 Nov 2026). Both were deleted.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Test property slug casa-de-prueba-costa-del-este-borrar-d79b0a ($25,000/night). Calendar uses rt-day-YYYY-MM-DD and rt-cal-next. Internal login qa_varela@vera.test / VeraQA!2026ml works; go to /veraos/alquileres, then rt-tab-res, then rt-filter-prereserva. Cleanup: PATCH /reservations/{id} {estado: cancelada}, then DELETE."
+}

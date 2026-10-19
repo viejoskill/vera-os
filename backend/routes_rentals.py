@@ -20,7 +20,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Upload
 from fastapi.responses import Response
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReturnDocument
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 import config as appconfig
 from property_export import ExportEntry, build_zip
@@ -824,7 +824,7 @@ async def update_limpieza(rid: str, body: LimpiezaBody):
 
 
 class MontoBody(BaseModel):
-    monto: float
+    monto: float = Field(gt=0)
 
 
 @router.patch("/reservations/{rid}/monto")
