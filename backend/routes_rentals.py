@@ -272,10 +272,12 @@ def _res_out(r: dict, codigo: str | None = None) -> dict:
 
 async def _add_historial(rid: str, usuario: str | None, cambios: list[tuple[str, object, object]]):
     """Registra en la reserva quién cambió qué y cuándo (campo, valor anterior, valor nuevo).
-    Solo agrega entradas para los campos que realmente cambiaron."""
+    Solo agrega entradas para los campos que realmente cambiaron (None y '' se tratan como
+    el mismo valor "vacío", para no generar ruido del tipo "Domicilio: — → —")."""
+    norm = lambda v: None if v in (None, "") else v  # noqa: E731
     entries = [
         {"fecha": _now(), "usuario": usuario or "Sin identificar", "campo": campo, "anterior": anterior, "nuevo": nuevo}
-        for campo, anterior, nuevo in cambios if anterior != nuevo
+        for campo, anterior, nuevo in cambios if norm(anterior) != norm(nuevo)
     ]
     if entries:
         await _res().update_one({"_id": rid}, {"$push": {"historial": {"$each": entries}}})

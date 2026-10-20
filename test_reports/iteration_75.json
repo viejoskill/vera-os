@@ -1,0 +1,34 @@
+{
+  "summary": "Tested 'Siempre fresco' and 'Historial de cambios' on the EditarHuesped modal, plus a full regression of iteration_73/74, on both AlquileresScreen and RentalWorkspace (A161). Requested items: 3 of 4 pass fully; the history item works but logs spurious entries. (1) SIEMPRE FRESCO PASS. The loading text 'Cargando datos actuales de la reserva…' shows (seen with a delayed GET). After PATCH /monto=142000 while the list was cached, the list row still showed the stale $130.000 but the modal Importe was 142000. The iteration_73 LOW issue is now fixed: a stale draft is discarded WITHOUT a page reload (no notice, fresh monto 88000, draft key removed). (2) HISTORIAL PASS functionally. The toggle shows/hides the panel, the label has a count '(n)', the most recent entry comes first, and a new reservation shows 'Todavía no se editó nada en esta reserva.' PATCH without actorEmail shows 'Sin identificar'. (3) Edit Nombre+Importe and Guardar, then reopen: shows qa_varela@vera.test entries for 'Nombre y apellido' (old → new) and 'Importe total' (old → new) with a recent timestamp. BUG: every first save from the UI also logs fake entries 'Domicilio: — → —' and 'Localidad: — → —'. (4) Regression PASS: draft autosave + restore notice, Cancelar clears the draft, empty/0 importe shows the error with 0 PATCH calls, all 11 fields persist, and both screens work. No page errors.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "PATCH /api/rentals/reservations/{rid}/huesped", "issue": "Spurious historial entries. POST /reservations never stores huesped.domicilio/localidad (missing key = None). The frontend form always sends '' for empty fields, so _add_historial sees None != '' and logs 'Domicilio: — → —' and 'Localidad: — → —' on the first save of every reservation. The same thing happens for any field stored as None (e.g. telefono/email/comentario when null). This is noise in the audit log for the user. Reproduced in pytest test_huesped_full_form_like_frontend and in the UI. Fix: normalize before comparing in update_huesped/_add_historial, e.g. treat None and '' as equal: `norm = lambda v: None if v in (None, '') else v` and skip when norm(anterior) == norm(nuevo)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "EditarHuesped modal - Historial panel", "issues": ["At 1920x1080 the panel opens at the bottom of the already-scrolling modal box, so only about 1 entry is visible and you have to scroll inside a scroll (panel max-height 220px inside a scrollable modal). Consider scrolling the panel into view on open, or putting the history above the form or in a collapsible section with more height."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_rentals_historial.py", "/app/test_reports/pytest/pytest_iter75.xml"],
+  "action_items": [
+    "Normalize None vs '' (and missing keys) in PATCH /huesped history diffing so no 'X: — → —' entries are logged",
+    "Optional: if getReservation hangs, the modal stays on 'Cargando…' forever with no close button (the backdrop click still closes it). Consider adding the X button to the loading state."
+  ],
+  "critical_code_review_comments": [
+    "routes_rentals.py update_huesped: the history diff compares raw stored vs incoming values with no normalization (None vs '', int vs str for huespedes from older data). This causes noisy entries.",
+    "routes_rentals.py is 1600+ lines and should be split (e.g. a reservations module).",
+    "The 4 PATCH calls in guardar() are sequential and not atomic. A partial failure leaves a partial save and partial history; this is acceptable for an MVP.",
+    "actorEmail is client-supplied and not verified against the JWT, so the history user field can be spoofed (the API is open, as already noted in the backlog)."
+  ],
+  "updated_files": ["/app/backend/tests/test_rentals_historial.py"],
+  "success_rate": {"backend": "87.5% (7/8 pytest; 1 fail = spurious historial entries)", "frontend": "95% (all flows pass; only the spurious entries show up in the UI)"},
+  "seed_data_creation": "Created TEST reservations on A161: 95c2fd0bc78b4d5081570ba825fdab55 (2027-04-05→09) and b26c5674d6b24fcbaf0a009d4947a67c (2027-05-05→08). Both deleted (204, then GET 404). The pytest fixture creates and deletes its own reservation on 2027-03-10→13.",
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (works)",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Login: login-email/login-password + Enter. AlquileresScreen: /veraos/alquileres → rt-tab-res → rt-filter-prereserva → rt-edit-huesped-{rid}. Workspace: /veraos/alquileres/{propertyId} → rt-wstab-reservas → rt-wsedit-huesped-{rid}. History: rt-edit-historial-toggle-{rid} / rt-edit-historial-{rid}. After the backend fix, rerun pytest tests/test_rentals_historial.py::test_huesped_full_form_like_frontend; it should pass. Dates in 2027 on A161 are free."
+}

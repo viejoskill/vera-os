@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { UserCog, X, Save, History } from 'lucide-react';
 import { Button } from '@vera/ui';
 import { useAuth } from '@app/auth/AuthProvider';
@@ -57,6 +57,10 @@ export const EditarHuesped = ({ reserva, onDone, onClose }: {
     return (
       <div className="rt-modal" data-testid={`rt-edit-huesped-modal-${reserva.id}`} onClick={onClose}>
         <div className="rt-modal__box" onClick={(e) => e.stopPropagation()}>
+          <div className="rt-modal__head">
+            <h3><UserCog size={18} /> Editar datos de la reserva</h3>
+            <button type="button" onClick={onClose} data-testid={`rt-edit-huesped-close-${reserva.id}`}><X size={18} /></button>
+          </div>
           <p className="rt-book__hint" data-testid={`rt-edit-huesped-loading-${reserva.id}`}>Cargando datos actuales de la reserva…</p>
         </div>
       </div>
@@ -87,7 +91,12 @@ const EditarHuespedForm = ({ reserva, onDone, onClose }: {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [showHistorial, setShowHistorial] = useState(false);
+  const historialToggleRef = useRef<HTMLButtonElement>(null);
   const historial = [...(reserva.historial || [])].reverse(); // más reciente primero
+
+  useEffect(() => {
+    if (showHistorial) historialToggleRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [showHistorial]);
 
   // Borrador: solo se guarda si lo tipeado difiere de los datos originales (evita ruido y borradores
   // viejos pisando datos nuevos); si vuelve a coincidir con el original, se borra.
@@ -163,7 +172,7 @@ const EditarHuespedForm = ({ reserva, onDone, onClose }: {
 
         {error && <p className="rt-book__error" data-testid={`rt-edit-huesped-error-${reserva.id}`}>{error}</p>}
 
-        <button type="button" className="rt-edit__historial-toggle"
+        <button type="button" className="rt-edit__historial-toggle" ref={historialToggleRef}
           onClick={() => setShowHistorial((s) => !s)} data-testid={`rt-edit-historial-toggle-${reserva.id}`}>
           <History size={13} /> Historial de cambios {historial.length > 0 ? `(${historial.length})` : ''}
         </button>

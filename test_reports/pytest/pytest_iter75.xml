@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="8" time="5.448" timestamp="2026-10-20T15:11:38.348376+00:00" hostname="agent-env-ef221ec9-76dd-49d9-ba45-0ac9089b8139"><testcase classname="tests.test_rentals_historial" name="test_new_reservation_historial_empty" time="0.512" /><testcase classname="tests.test_rentals_historial" name="test_monto_historial" time="0.327" /><testcase classname="tests.test_rentals_historial" name="test_monto_unchanged_no_entry" time="0.242" /><testcase classname="tests.test_rentals_historial" name="test_no_actor" time="0.288" /><testcase classname="tests.test_rentals_historial" name="test_deposito_limpieza" time="2.274" /><testcase classname="tests.test_rentals_historial" name="test_huesped_only_nombre_change" time="0.245" /><testcase classname="tests.test_rentals_historial" name="test_huesped_full_form_like_frontend" time="1.009"><failure message="AssertionError: Spurious entries logged: [{'fecha': '2026-10-20T15:11:42.987711+00:00', 'usuario': 'qa_varela@vera.test', 'campo': 'Nombre y apellido', 'anterior': 'TEST_Hist', 'nuevo': 'TEST_Hist Cambiado'}, {'fecha': '2026-10-20T15:11:42.987721+00:00', 'usuario': 'qa_varela@vera.test', 'campo': 'Domicilio', 'anterior': None, 'nuevo': ''}, {'fecha': '2026-10-20T15:11:42.987723+00:00', 'usuario': 'qa_varela@vera.test', 'campo': 'Localidad', 'anterior': None, 'nuevo': ''}]&#10;assert ['Nombre y ap..., 'Localidad'] == ['Nombre y apellido']&#10;  &#10;  Left contains 2 more items, first extra item: 'Domicilio'&#10;  &#10;  Full diff:&#10;    [&#10;        'Nombre y apellido',&#10;  +     'Domicilio',&#10;  +     'Localidad',&#10;    ]">tests/test_rentals_historial.py:98: in test_huesped_full_form_like_frontend
+    assert campos == ["Nombre y apellido"], f"Spurious entries logged: {h}"
+E   AssertionError: Spurious entries logged: [{'fecha': '2026-10-20T15:11:42.987711+00:00', 'usuario': 'qa_varela@vera.test', 'campo': 'Nombre y apellido', 'anterior': 'TEST_Hist', 'nuevo': 'TEST_Hist Cambiado'}, {'fecha': '2026-10-20T15:11:42.987721+00:00', 'usuario': 'qa_varela@vera.test', 'campo': 'Domicilio', 'anterior': None, 'nuevo': ''}, {'fecha': '2026-10-20T15:11:42.987723+00:00', 'usuario': 'qa_varela@vera.test', 'campo': 'Localidad', 'anterior': None, 'nuevo': ''}]
+E   assert ['Nombre y ap..., 'Localidad'] == ['Nombre y apellido']
+E     
+E     Left contains 2 more items, first extra item: 'Domicilio'
+E     
+E     Full diff:
+E       [
+E           'Nombre y apellido',
+E     +     'Domicilio',
+E     +     'Localidad',
+E       ]</failure></testcase><testcase classname="tests.test_rentals_historial" name="test_404" time="0.151" /></testsuite></testsuites>
