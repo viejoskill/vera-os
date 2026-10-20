@@ -1,0 +1,24 @@
+{
+  "summary": "Retest of the EditarHuesped draft autosave fixes from iteration_73, plus the backend DELETE cascade. All 7 requested items PASS. (1) No draft notice on the first typed character when no draft existed. A draft is written on the first change and removed again when the value goes back to the original. (2) Opening and closing without edits, via the X button or a backdrop click, writes no localStorage draft. (3) Edit Nombre+Importe, close with X, reopen: the notice shows and the typed values (TEST_DraftEdited / 95000) are restored. (4) While the draft was saved, PATCH /monto set 88000; after a page reload, reopening discards the old draft automatically: no notice, Importe=88000, nombre is the original, and the localStorage key is removed. (5) Cancelar (rt-edit-huesped-cancel-{id}) closes the modal and clears the draft; reopening shows no notice and no old values. (6) Regression: saving all 11 fields persists correctly from both RentalWorkspace (rt-wsedit-huesped) and AlquileresScreen (rt-edit-huesped, 'Esperando seña' filter). Clearing depósito sends null. The importe=0 validation still works. (7) DELETE reservation also removes its commission movimiento (checked with pytest and curl). No console or runtime errors when using the modal.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Stale draft detection without reload", "issue": "If the monto changes elsewhere (PATCH /monto) while the tab stays open and the parent list is NOT refetched, reopening 'Editar datos' still restores the old draft (notice shown, 95000). This happens because the reserva prop the modal receives is still stale (montoEstimado=90000), so it matches the draft baseline. Stale detection only works once the reserva data is fresh (page reload or list refetch). The review note said 'no hace falta recargar', but in practice this case only works after a reload/refetch. LOW priority: optionally refetch GET /reservations/{id} when the modal opens, before comparing with the baseline.", "affected_selectors": ["rt-edit-draft-restored-{id}"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_rentals_delete_cascade.py", "/app/backend/tests/test_rentals_shortstay_monto.py", "/app/test_reports/pytest/pytest_iter74.xml"],
+  "action_items": ["(Optional, LOW) In EditarHuesped, fetch the latest reserva on mount, or have parents refetch before opening, so a draft saved before an external change in the same tab is detected as stale even without a reload."],
+  "critical_code_review_comments": [
+    "The X button and the backdrop call onClose (draft kept) while Cancelar calls cancelar (draft cleared). This matches the requested semantics, but users may not expect X and Cancelar to behave differently. Consider a short hint in the UI.",
+    "The baseline comparison uses JSON.stringify, so key order matters. It works now because originalsOf always builds keys in the same order. Note that a field typed as number (huespedes) is stored as a string after editing; this does not affect the comparison."
+  ],
+  "updated_files": ["/app/backend/tests/test_rentals_delete_cascade.py"],
+  "success_rate": {"backend": "100% (10/10 pytest)", "frontend": "100% (7/7 requested scenarios)"},
+  "seed_data_creation": "Created test reservation 09d6ff4325914b509c61678e834bd770 (A161, 2026-11-23→26) and deleted it at the end; its commission movimiento was removed as well. The pytest cascade test creates and deletes its own reservation on the same dates.",
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Overlay .rt-modal covers only the main area (not the sidebar). Click backdrop at x>=400 to close. Global list: rt-tab-res → rt-filter-esperando for manual confirmed reservations without seña. Draft key: vera_rt_edit_draft_{rid}. Nov 23-26 2026 is free on A161."
+}
