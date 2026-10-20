@@ -3,32 +3,66 @@ import { UserPlus, X } from 'lucide-react';
 import { Button, Input } from '@vera/ui';
 import { api, fmtMoney, nightsBetween, type RentalProperty } from './api';
 
-/** Alta manual de una reserva ya confirmada (dueño reservó / huésped en el mostrador). */
+interface ManualDraft {
+  nombre: string; telefono: string; email: string; dni: string; domicilio: string; localidad: string;
+  huespedes: string; comentario: string; checkIn: string; checkOut: string; montoTotal: string;
+  totalTocado: boolean; senaTenedor: string; senaMonto: string; senaMetodo: string; senaPagada: boolean;
+}
+const draftKey = (pid: string) => `vera_rt_manual_draft_${pid}`;
+const readDraft = (pid: string): ManualDraft | null => {
+  try { return JSON.parse(localStorage.getItem(draftKey(pid)) || 'null'); } catch { return null; }
+};
+const clearDraft = (pid: string) => { try { localStorage.removeItem(draftKey(pid)); } catch { /* noop */ } };
+const emptyDraft = (initialCheckIn?: string, initialCheckOut?: string): ManualDraft => ({
+  nombre: '', telefono: '', email: '', dni: '', domicilio: '', localidad: '',
+  huespedes: '2', comentario: '', checkIn: initialCheckIn || '', checkOut: initialCheckOut || '',
+  montoTotal: '', totalTocado: false, senaTenedor: 'nosotros', senaMonto: '', senaMetodo: 'efectivo', senaPagada: true,
+});
+
+/** Alta manual de una reserva ya confirmada (dueño reservó / huésped en el mostrador).
+ * Autoguarda un borrador en localStorage mientras se completa (por propiedad): si cambiás de
+ * pestaña/ventana o navegás a otra pantalla antes de guardar, al volver a abrir "Reserva manual"
+ * para ESTA propiedad se recupera todo lo que venías tipeando. */
 export const ReservaManual = ({ property, onClose, onCreated, initialCheckIn, initialCheckOut }: {
   property: RentalProperty; onClose: () => void; onCreated: () => void;
   initialCheckIn?: string; initialCheckOut?: string;
 }) => {
   const mon = property.moneda || 'ARS';
-  const [nombre, setNombre] = useState('');
-  const [telefono, setTelefono] = useState('');
-  const [email, setEmail] = useState('');
-  const [dni, setDni] = useState('');
-  const [domicilio, setDomicilio] = useState('');
-  const [localidad, setLocalidad] = useState('');
-  const [huespedes, setHuespedes] = useState('2');
-  const [comentario, setComentario] = useState('');
-  const [checkIn, setCheckIn] = useState(initialCheckIn || '');
-  const [checkOut, setCheckOut] = useState(initialCheckOut || '');
-  const [montoTotal, setMontoTotal] = useState('');
-  const [totalTocado, setTotalTocado] = useState(false);
-  const [senaTenedor, setSenaTenedor] = useState('nosotros');
-  const [senaMonto, setSenaMonto] = useState('');
-  const [senaMetodo, setSenaMetodo] = useState('efectivo');
-  const [senaPagada, setSenaPagada] = useState(true);
+  const base = emptyDraft(initialCheckIn, initialCheckOut);
+  const [restored] = useState(() => readDraft(property.id) !== null);
+  const d = readDraft(property.id) ?? base;
+  const [nombre, setNombre] = useState(d.nombre);
+  const [telefono, setTelefono] = useState(d.telefono);
+  const [email, setEmail] = useState(d.email);
+  const [dni, setDni] = useState(d.dni);
+  const [domicilio, setDomicilio] = useState(d.domicilio);
+  const [localidad, setLocalidad] = useState(d.localidad);
+  const [huespedes, setHuespedes] = useState(d.huespedes);
+  const [comentario, setComentario] = useState(d.comentario);
+  const [checkIn, setCheckIn] = useState(d.checkIn);
+  const [checkOut, setCheckOut] = useState(d.checkOut);
+  const [montoTotal, setMontoTotal] = useState(d.montoTotal);
+  const [totalTocado, setTotalTocado] = useState(d.totalTocado);
+  const [senaTenedor, setSenaTenedor] = useState(d.senaTenedor);
+  const [senaMonto, setSenaMonto] = useState(d.senaMonto);
+  const [senaMetodo, setSenaMetodo] = useState(d.senaMetodo);
+  const [senaPagada, setSenaPagada] = useState(d.senaPagada);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
   const noches = checkIn && checkOut ? nightsBetween(checkIn, checkOut) : 0;
+
+  // Borrador: se guarda en cada cambio salvo que todo siga igual a un formulario vacío
+  // (evita escribir ruido apenas se abre el modal sin tocar nada).
+  useEffect(() => {
+    const current: ManualDraft = {
+      nombre, telefono, email, dni, domicilio, localidad, huespedes, comentario,
+      checkIn, checkOut, montoTotal, totalTocado, senaTenedor, senaMonto, senaMetodo, senaPagada,
+    };
+    if (JSON.stringify(current) === JSON.stringify(base)) { clearDraft(property.id); return; }
+    try { localStorage.setItem(draftKey(property.id), JSON.stringify(current)); } catch { /* noop */ }
+  }, [property.id, nombre, telefono, email, dni, domicilio, localidad, huespedes, comentario, // eslint-disable-line react-hooks/exhaustive-deps
+    checkIn, checkOut, montoTotal, totalTocado, senaTenedor, senaMonto, senaMetodo, senaPagada]);
 
   // Sugerir el total automáticamente desde la tarifa de la propiedad (si el usuario no lo tocó).
   useEffect(() => {
@@ -44,6 +78,8 @@ export const ReservaManual = ({ property, onClose, onCreated, initialCheckIn, in
   const sena = senaTenedor === 'ninguno' ? 0 : Number(senaMonto) || 0;
   const saldo = Math.max(0, total - sena);
 
+  const cancelar = () => { clearDraft(property.id); onClose(); };
+
   const guardar = async () => {
     if (!nombre.trim()) { setErr('Cargá el nombre del huésped.'); return; }
     if (!checkIn || !checkOut || noches < 1) { setErr('Revisá las fechas de ingreso y egreso.'); return; }
@@ -57,6 +93,7 @@ export const ReservaManual = ({ property, onClose, onCreated, initialCheckIn, in
         senaMonto: sena, senaTenedor, senaMetodo, senaPagada,
         origen: 'Manual',
       });
+      clearDraft(property.id);
       onCreated();
     } catch (e) { setErr((e as Error).message); setSaving(false); }
   };
@@ -71,6 +108,7 @@ export const ReservaManual = ({ property, onClose, onCreated, initialCheckIn, in
         <p className="rt-modal__sub">
           Para reservas que hiciste vos, que trajo el dueño, o un huésped que llega en el momento. Queda <strong>confirmada</strong> directamente.
         </p>
+        {restored && <p className="rt-modal__draftnotice" data-testid="rt-manual-draft-restored">Recuperamos lo que estabas completando antes de cambiar de pantalla.</p>}
 
         <h4 className="rt-manual__sec">Huésped</h4>
         <div className="rt-row2">
@@ -137,7 +175,7 @@ export const ReservaManual = ({ property, onClose, onCreated, initialCheckIn, in
 
         {err && <p className="rt__flash" style={{ color: '#e07575' }}>{err}</p>}
         <div className="rt-modal__foot">
-          <Button variant="ghost" size="md" onClick={onClose}>Cancelar</Button>
+          <Button variant="ghost" size="md" onClick={cancelar} data-testid="rt-manual-cancel">Cancelar</Button>
           <Button variant="primary" size="md" onClick={guardar} disabled={saving} data-testid="rt-manual-save">{saving ? 'Creando…' : 'Crear reserva'}</Button>
         </div>
       </div>
