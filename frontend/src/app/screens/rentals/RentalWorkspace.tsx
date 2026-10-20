@@ -7,6 +7,7 @@ import { RentalCalendar } from './RentalCalendar';
 import { CobrarSena } from './CobrarSena';
 import { ConfirmarReserva } from './ConfirmarReserva';
 import { RechazarReserva } from './RechazarReserva';
+import { EditarHuesped } from './EditarHuesped';
 import { WhatsappReserva } from './WhatsappReserva';
 import { Comprobantes } from './Comprobantes';
 import { CobrarSaldo } from './CobrarSaldo';
@@ -55,6 +56,7 @@ export const RentalWorkspace = () => {
   const [condText, setCondText] = useState('');
   const [confirming, setConfirming] = useState<Reservation | null>(null);
   const [rejecting, setRejecting] = useState<Reservation | null>(null);
+  const [editingHuesped, setEditingHuesped] = useState<Reservation | null>(null);
   const [showManual, setShowManual] = useState(false);
   const [manualDates, setManualDates] = useState<{ ci: string; co: string } | null>(null);
   const [wsTab, setWsTab] = useState('datos');
@@ -496,6 +498,7 @@ export const RentalWorkspace = () => {
                           {r.huesped.telefono && <WhatsappReserva reserva={r} />}
                           <DocsReserva reserva={r} />
                           <Comprobantes reserva={r} onUpdated={() => pid && loadRes(pid)} />
+                          <button type="button" className="rt-mini" onClick={() => setEditingHuesped(r)} data-testid={`rt-wsedit-huesped-${r.id}`}><Pencil size={13} /> Editar datos</button>
                           {r.estado === 'confirmada' && (
                             <button type="button" className="rt-mini" onClick={() => finalizarReserva(r.id)} data-testid={`rt-wsfinalizar-${r.id}`}>Finalizar</button>
                           )}
@@ -587,6 +590,10 @@ export const RentalWorkspace = () => {
       {rejecting && (
         <RechazarReserva reserva={rejecting} onClose={() => setRejecting(null)}
           onDone={async () => { setRejecting(null); if (pid) await loadRes(pid); }} />
+      )}
+      {editingHuesped && (
+        <EditarHuesped reserva={editingHuesped} onClose={() => setEditingHuesped(null)}
+          onDone={async () => { setEditingHuesped(null); if (pid) await loadRes(pid); }} />
       )}
       {showManual && pid && (
         <ReservaManual

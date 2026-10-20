@@ -83,6 +83,7 @@
 .rt-modal__head h3 { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; }
 .rt-modal__head button { background: none; border: none; color: var(--vera-color-text-secondary); cursor: pointer; }
 .rt-modal__sub { color: var(--vera-color-text-secondary); font-size: .86rem; margin-bottom: 14px; }
+.rt-modal__draftnotice { color: var(--vera-color-primary); font-size: .8rem; margin: -8px 0 14px; }
 .rt-modal__search { display: flex; gap: 8px; margin-bottom: 14px; }
 .rt-modal__search input { flex: 1; background: var(--vera-color-surface); border: 1px solid var(--vera-color-border); color: var(--vera-color-text); padding: 9px 12px; border-radius: var(--vera-radius-md, 10px); font: inherit; }
 .rt-modal__list { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }

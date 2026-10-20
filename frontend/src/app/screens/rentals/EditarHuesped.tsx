@@ -1,23 +1,43 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { UserCog, X, Save } from 'lucide-react';
 import { Button } from '@vera/ui';
 import { api, type Reservation } from './api';
 
-/** Modal para completar/corregir a mano los datos del huésped (frecuente en pre-reservas incompletas). */
+interface Draft {
+  form: { nombre: string; telefono: string; email: string; dni: string; domicilio: string; localidad: string; huespedes: number; comentario: string };
+  deposito: string; limpieza: string; monto: string;
+}
+
+const draftKey = (rid: string) => `vera_rt_edit_draft_${rid}`;
+const readDraft = (rid: string): Draft | null => {
+  try { return JSON.parse(localStorage.getItem(draftKey(rid)) || 'null'); } catch { return null; }
+};
+const clearDraft = (rid: string) => { try { localStorage.removeItem(draftKey(rid)); } catch { /* noop */ } };
+
+/** Modal para completar/corregir a mano los datos del huésped (frecuente en pre-reservas incompletas).
+ * Autoguarda un borrador en localStorage mientras se edita: si cambiás de pestaña/ventana o la app se
+ * recarga antes de guardar, al volver a abrir esta reserva el formulario recupera lo que venías escribiendo. */
 export const EditarHuesped = ({ reserva, onDone, onClose }: {
   reserva: Reservation; onDone: (r: Reservation) => void; onClose: () => void;
 }) => {
   const h = reserva.huesped || {};
-  const [form, setForm] = useState({
+  const draft = readDraft(reserva.id);
+  const [form, setForm] = useState(draft?.form ?? {
     nombre: h.nombre || '', telefono: h.telefono || '', email: h.email || '', dni: h.dni || '',
     domicilio: h.domicilio || '', localidad: h.localidad || '',
     huespedes: h.huespedes || 1, comentario: h.comentario || '',
   });
-  const [deposito, setDeposito] = useState(reserva.depositoOverride != null ? String(reserva.depositoOverride) : '');
-  const [limpieza, setLimpieza] = useState(reserva.limpiezaOverride != null ? String(reserva.limpiezaOverride) : '');
-  const [monto, setMonto] = useState(String(reserva.montoEstimado ?? ''));
+  const [deposito, setDeposito] = useState(draft?.deposito ?? (reserva.depositoOverride != null ? String(reserva.depositoOverride) : ''));
+  const [limpieza, setLimpieza] = useState(draft?.limpieza ?? (reserva.limpiezaOverride != null ? String(reserva.limpiezaOverride) : ''));
+  const [monto, setMonto] = useState(draft?.monto ?? String(reserva.montoEstimado ?? ''));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  // Borrador: se guarda en cada cambio, así nada se pierde si se cambia de ventana sin guardar.
+  useEffect(() => {
+    const d: Draft = { form, deposito, limpieza, monto };
+    try { localStorage.setItem(draftKey(reserva.id), JSON.stringify(d)); } catch { /* noop */ }
+  }, [reserva.id, form, deposito, limpieza, monto]);
 
   const set = (k: keyof typeof form, v: string | number) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -32,6 +52,7 @@ export const EditarHuesped = ({ reserva, onDone, onClose }: {
       if (montoNum !== reserva.montoEstimado) {
         actualizada = await api.updateMonto(reserva.id, montoNum);
       }
+      clearDraft(reserva.id);
       onDone(actualizada);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar');
@@ -46,6 +67,7 @@ export const EditarHuesped = ({ reserva, onDone, onClose }: {
           <button type="button" onClick={onClose} data-testid={`rt-edit-huesped-close-${reserva.id}`}><X size={18} /></button>
         </div>
         <p className="rt-modal__sub">{reserva.propertyTitulo} · {reserva.checkIn} → {reserva.checkOut}</p>
+        {draft && <p className="rt-modal__draftnotice" data-testid={`rt-edit-draft-restored-${reserva.id}`}>Recuperamos lo que estabas editando antes de cambiar de ventana.</p>}
 
         <div className="rt-row2">
           <label className="rt-field"><span>Nombre y apellido</span>
