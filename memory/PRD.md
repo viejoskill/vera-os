@@ -1472,6 +1472,16 @@ Alquileres: aviso destacado de reservas por vencer + semáforo interno por reser
 - **Conclusión: no es un bug de código, es que producción no tenía desplegados los últimos cambios** (permisos por sección, fix de "Editar datos" en RentalWorkspace, autoguardado, recargo 5%, importe siempre fresco + historial). Un deploy anterior se había iniciado pero nunca se confirmó su finalización, y se siguieron acumulando cambios sin volver a desplegar.
 - Se disparó un nuevo deploy (job_id f3fcd698-8cdc-4ee1-971d-82eacec98c7e) para llevar todo lo pendiente a producción. **Acción pendiente para el usuario:** una vez confirmado el deploy, pedirle a `inmovarelacde@gmail.com` que cierre sesión y vuelva a entrar (para que se refetchee su `approval` con las secciones correctas).
 
+## Fix real: permisos nunca se habían seteado en PRODUCCIÓN (2026-08)
+- Después del deploy, "Editar datos" ya funcionaba pero Liquidaciones seguía sin verse para `inmovarelacde@gmail.com`. El deployer-agent (debug) encontró la causa real: **las llamadas curl anteriores para configurar `sections` solo habían tocado la base de datos de PREVIEW**, nunca la de producción (son bases separadas). En prod, ese usuario tenía `sections:null` (sin restricción propia → caía al default Alquileres+Studio, que tampoco incluye Liquidaciones). No era caché ni bug de código.
+- Fix: se llamó directo a `https://real-estate-os-10.emergent.host/api/auth/team/set-sections` para setear `sections:["liquidaciones"]` en la base de PRODUCCIÓN. Verificado con `GET .../api/auth/team`. Una recarga simple alcanza (el approval se refetchea en cada carga, no hace falta cerrar sesión).
+- **Lección para el futuro:** cualquier cambio de datos (permisos, seeds, backfills) hecho vía curl durante el desarrollo SOLO afecta preview. Si el usuario ya tiene la app en producción, ese mismo cambio hay que repetirlo contra la URL de producción (o pedirle al dueño que lo haga desde la pantalla Equipo del sitio publicado).
+
+## Autoguardado en "Reserva manual" (alta nueva) (2026-08)
+- Pedido del usuario: "las reservas no quedan guardadas al cambiar de pantalla" → aclarado: se refiere al formulario de alta de una reserva manual nueva (ReservaManual.tsx), no a la edición de una existente.
+- Mismo patrón de borrador en localStorage que en `EditarHuesped.tsx`, ahora keyeado por propiedad (`vera_rt_manual_draft_{propertyId}`, porque todavía no existe un id de reserva). Se descarta al crear con éxito o en "Cancelar".
+- Testing agent encontró 2 bugs HIGH en la iteración inicial (iteration_77) y ya corregidos y re-testeados al 100% (iteration_78): (1) el monto auto-sugerido por la cotización no debe contar como "cambio real" para decidir si hay borrador; (2) si se abre el modal desde "Reservar estas fechas" con fechas nuevas del calendario, esas fechas ganan sobre las de un borrador viejo (se conservan los datos del huésped).
+
 ## Ajuste flujo (2026-08): seña bloqueada hasta confirmar
 Para que no se pueda saltear la confirmación, `CobrarSena` (botones "Cobrar seña" y "Marcar pagada") ahora solo se renderiza cuando `estado === 'confirmada'` (antes también en `prereserva`). En Pre-reserva solo se ve Confirmar / Rechazar / WhatsApp / Comprobantes. Aplicado en AlquileresScreen y RentalWorkspace. Verificado por screenshot (Sofia PreviewTest en pre-reserva sin botones de seña; confirmadas los conservan).
 

@@ -1,0 +1,18 @@
+{
+  "summary": "Frontend retest of the 2 HIGH draft-autosave bugs from iteration_77 in ReservaManual.tsx (property A161, user qa_varela). Both are FIXED. BUG 1: picked 2026-12-01→03 in the calendar, clicked 'Reservar estas fechas' and changed nothing. The total filled in by itself (52500). Closing with X wrote nothing to localStorage. Reopening with 'Reserva manual' showed a clean form (dates, total and name empty) and no rt-manual-draft-restored notice. BUG 2: saved a draft (name TEST_Retest Draft, 12-01→12-03), closed with X, then picked 12-10→12-12 in the calendar and clicked 'Reservar estas fechas'. The modal shows the NEW dates 2026-12-10 / 2026-12-12, keeps the name and shows the notice, and the draft in storage now holds the new dates. Regression: the restore notice appears after closing with X; Cancelar removes the key and the next open is clean; the 3 validation messages are correct (nombre, then fechas, then monto); typing the first character saves the draft without showing the notice; Crear reserva works (POST 201, the modal closes, the draft is removed and the next open is clean).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Minor, design choice: after Bug 2's date override, montoTotal is reset to '' and the quote fills it again. Because totalTocado=false, an amount the user had typed in the old draft is dropped on purpose. That is reasonable because the dates changed.",
+    "Minor: when the calendar dates override a draft, the notice still says 'Recuperamos lo que estabas completando…' even though the dates are new. This is acceptable because the guest data really was restored."
+  ],
+  "updated_files": ["/app/test_reports/iteration_78.json"],
+  "success_rate": {"backend": "N/A", "frontend": "100% (2/2 bug retests + regression of draft restore/cancel/validations/create)"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (login at /veraos/login)",
+  "seed_data_creation": "Created reservation 9d358ae0be5249bca6c4bc03293c621f (TEST_Retest Create, A161, 2027-04-10→12). Cleaned up: PATCH cancelada 200, DELETE 204, GET 404. Cleared the localStorage key vera_rt_manual_draft_6744cf8a907f4a239a7504101c66a2df.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Login is at /veraos/login (the root / is the public site). Workspace: /veraos/alquileres/{pid}, then rt-wstab-reservas. Calendar day selector: rt-day-YYYY-MM-DD; the app date is 2026-10-20, so Oct–Dec 2026 is visible. Validation errors show in '[data-testid=rt-manual-modal] .rt__flash'. Rentals API: /api/rentals/reservations/{id}."
+}
