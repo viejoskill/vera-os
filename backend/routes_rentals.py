@@ -841,6 +841,7 @@ async def update_monto(rid: str, body: MontoBody):
 @router.delete("/reservations/{rid}", status_code=204)
 async def delete_reservation(rid: str):
     await _res().delete_one({"_id": rid})
+    await _movs().delete_many({"reservaId": rid})
 
 
 @router.get("/properties/{pid}/calendar")

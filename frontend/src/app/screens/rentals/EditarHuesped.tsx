@@ -3,43 +3,68 @@ import { UserCog, X, Save } from 'lucide-react';
 import { Button } from '@vera/ui';
 import { api, type Reservation } from './api';
 
-interface Draft {
+type EditValues = {
   form: { nombre: string; telefono: string; email: string; dni: string; domicilio: string; localidad: string; huespedes: number; comentario: string };
   deposito: string; limpieza: string; monto: string;
-}
+};
+interface Draft { baseline: EditValues; edited: EditValues; }
 
 const draftKey = (rid: string) => `vera_rt_edit_draft_${rid}`;
 const readDraft = (rid: string): Draft | null => {
   try { return JSON.parse(localStorage.getItem(draftKey(rid)) || 'null'); } catch { return null; }
 };
 const clearDraft = (rid: string) => { try { localStorage.removeItem(draftKey(rid)); } catch { /* noop */ } };
+const sameValues = (a: EditValues, b: EditValues) => JSON.stringify(a) === JSON.stringify(b);
+
+const originalsOf = (reserva: Reservation): EditValues => {
+  const h = reserva.huesped || {};
+  return {
+    form: {
+      nombre: h.nombre || '', telefono: h.telefono || '', email: h.email || '', dni: h.dni || '',
+      domicilio: h.domicilio || '', localidad: h.localidad || '',
+      huespedes: h.huespedes || 1, comentario: h.comentario || '',
+    },
+    deposito: reserva.depositoOverride != null ? String(reserva.depositoOverride) : '',
+    limpieza: reserva.limpiezaOverride != null ? String(reserva.limpiezaOverride) : '',
+    monto: String(reserva.montoEstimado ?? ''),
+  };
+};
 
 /** Modal para completar/corregir a mano los datos del huésped (frecuente en pre-reservas incompletas).
- * Autoguarda un borrador en localStorage mientras se edita: si cambiás de pestaña/ventana o la app se
- * recarga antes de guardar, al volver a abrir esta reserva el formulario recupera lo que venías escribiendo. */
+ * Autoguarda un borrador en localStorage SOLO mientras hay cambios reales sin guardar (si cambiás de
+ * pestaña/ventana o la app se recarga, al volver se recupera). El borrador se descarta si la reserva
+ * cambió por otro lado mientras tanto, para no pisar datos más nuevos con uno viejo. */
 export const EditarHuesped = ({ reserva, onDone, onClose }: {
   reserva: Reservation; onDone: (r: Reservation) => void; onClose: () => void;
 }) => {
-  const h = reserva.huesped || {};
-  const draft = readDraft(reserva.id);
-  const [form, setForm] = useState(draft?.form ?? {
-    nombre: h.nombre || '', telefono: h.telefono || '', email: h.email || '', dni: h.dni || '',
-    domicilio: h.domicilio || '', localidad: h.localidad || '',
-    huespedes: h.huespedes || 1, comentario: h.comentario || '',
+  const [originals] = useState(() => originalsOf(reserva));
+  // Se calcula UNA sola vez al montar: si hay un borrador y su base coincide con los datos actuales
+  // de la reserva (no cambió por otro lado mientras tanto), se restaura; si no, se descarta.
+  const [restored] = useState(() => {
+    const d = readDraft(reserva.id);
+    if (d && sameValues(d.baseline, originals)) return d.edited;
+    if (d) clearDraft(reserva.id); // borrador viejo/ya no aplica
+    return null;
   });
-  const [deposito, setDeposito] = useState(draft?.deposito ?? (reserva.depositoOverride != null ? String(reserva.depositoOverride) : ''));
-  const [limpieza, setLimpieza] = useState(draft?.limpieza ?? (reserva.limpiezaOverride != null ? String(reserva.limpiezaOverride) : ''));
-  const [monto, setMonto] = useState(draft?.monto ?? String(reserva.montoEstimado ?? ''));
+  const initial = restored ?? originals;
+  const [form, setForm] = useState(initial.form);
+  const [deposito, setDeposito] = useState(initial.deposito);
+  const [limpieza, setLimpieza] = useState(initial.limpieza);
+  const [monto, setMonto] = useState(initial.monto);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  // Borrador: se guarda en cada cambio, así nada se pierde si se cambia de ventana sin guardar.
+  // Borrador: solo se guarda si lo tipeado difiere de los datos originales (evita ruido y borradores
+  // viejos pisando datos nuevos); si vuelve a coincidir con el original, se borra.
   useEffect(() => {
-    const d: Draft = { form, deposito, limpieza, monto };
-    try { localStorage.setItem(draftKey(reserva.id), JSON.stringify(d)); } catch { /* noop */ }
-  }, [reserva.id, form, deposito, limpieza, monto]);
+    const current: EditValues = { form, deposito, limpieza, monto };
+    if (sameValues(current, originals)) { clearDraft(reserva.id); return; }
+    try { localStorage.setItem(draftKey(reserva.id), JSON.stringify({ baseline: originals, edited: current })); } catch { /* noop */ }
+  }, [reserva.id, originals, form, deposito, limpieza, monto]);
 
   const set = (k: keyof typeof form, v: string | number) => setForm((f) => ({ ...f, [k]: v }));
+
+  const cancelar = () => { clearDraft(reserva.id); onClose(); };
 
   const guardar = async () => {
     const montoNum = Number(monto);
@@ -67,7 +92,7 @@ export const EditarHuesped = ({ reserva, onDone, onClose }: {
           <button type="button" onClick={onClose} data-testid={`rt-edit-huesped-close-${reserva.id}`}><X size={18} /></button>
         </div>
         <p className="rt-modal__sub">{reserva.propertyTitulo} · {reserva.checkIn} → {reserva.checkOut}</p>
-        {draft && <p className="rt-modal__draftnotice" data-testid={`rt-edit-draft-restored-${reserva.id}`}>Recuperamos lo que estabas editando antes de cambiar de ventana.</p>}
+        {restored && <p className="rt-modal__draftnotice" data-testid={`rt-edit-draft-restored-${reserva.id}`}>Recuperamos lo que estabas editando antes de cambiar de ventana.</p>}
 
         <div className="rt-row2">
           <label className="rt-field"><span>Nombre y apellido</span>
@@ -104,7 +129,7 @@ export const EditarHuesped = ({ reserva, onDone, onClose }: {
         {error && <p className="rt-book__error" data-testid={`rt-edit-huesped-error-${reserva.id}`}>{error}</p>}
 
         <div className="rt-modal__foot">
-          <Button variant="ghost" size="md" onClick={onClose}>Cancelar</Button>
+          <Button variant="ghost" size="md" onClick={cancelar} data-testid={`rt-edit-huesped-cancel-${reserva.id}`}>Cancelar</Button>
           <Button variant="primary" size="md" onClick={guardar} disabled={saving} data-testid={`rt-edit-huesped-save-${reserva.id}`}>
             <Save size={16} /> {saving ? 'Guardando…' : 'Guardar datos'}
           </Button>
@@ -115,3 +140,4 @@ export const EditarHuesped = ({ reserva, onDone, onClose }: {
 };
 
 export default EditarHuesped;
+

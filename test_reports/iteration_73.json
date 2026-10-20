@@ -1,0 +1,40 @@
+{
+  "summary": "Frontend E2E (real clicks, Playwright, qa_varela) of Edit Reservation modal in RentalWorkspace (A161, tab Reservas) + AlquileresScreen global list + localStorage draft autosave. Created TEST manual reservation a2b70f04... (2026-11-10→14, 180000) via API, tested, then deleted. Core features WORK: 'Editar datos' button (rt-wsedit-huesped-{id}) present in workspace; all 11 fields (nombre, tel, email, dni, domicilio, localidad, huespedes, comentario, monto, deposito, limpieza) persist after save and reload (row rt-res__monto shows $ 195.000); global list edit saves monto 205000 + nombre; draft restored after closing with X and after full page reload, with notice text correct; draft removed from localStorage after successful save and notice gone on reopen; empty/0 monto shows rt-edit-huesped-error and fires NO PATCH; backend PATCH /monto 0 → 422 still. BUT the draft logic has 2 real bugs (see below): the draft is written on mount (not only on user edits) and the notice is computed on every render.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "DELETE /api/rentals/reservations/{rid}", "issue": "Only deletes the reservation doc; the auto-generated 'comision' movement in rental_movimientos (reservaId) is left orphaned. I manually removed the orphan for my test reservation."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "EditarHuesped.tsx (draft notice)", "issue": "Notice 'Recuperamos lo que estabas editando antes de cambiar de ventana.' appears on the FIRST keystroke of a fresh edit session (no prior draft). Cause: `const draft = readDraft(reserva.id)` runs on every render (line 24) and the useEffect (line 37-40) has already written localStorage on mount, so any re-render sees a draft. Fix: compute once on mount, e.g. `const [restored] = useState(() => readDraft(reserva.id))` and use `restored` for initial state + notice.", "selector": "[data-testid='rt-edit-draft-restored-{id}']", "priority": "HIGH"},
+      {"component": "EditarHuesped.tsx (stale draft overrides real data)", "issue": "Simply opening the modal and closing it WITHOUT editing writes a draft (useEffect fires on mount with original values). Later, if the reservation changes elsewhere (reproduced: monto PATCHed to 222000 after open/close), reopening shows the STALE draft (205000) + 'Recuperamos' notice; clicking Guardar would silently REVERT the monto/data. Same for confirm/seña/other screens updating the reservation. Fix: only persist when values differ from the reservation's originals (or set a 'dirty' flag on user onChange), and/or store a snapshot of the original values/updatedAt and discard the draft if the reservation changed; remove draft when values equal originals.", "selector": "[data-testid='rt-edit-monto-{id}']", "priority": "HIGH"},
+      {"component": "EditarHuesped.tsx (discard)", "issue": "No way to discard a draft: 'Cancelar' and X keep it forever (localStorage never expires). Consider: Cancelar = discard draft (X/backdrop/tab switch keep it), or add a 'Descartar cambios' link next to the notice.", "selector": "Cancelar button (no data-testid)", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "EditarHuesped modal", "issues": ["'Cancelar' button lacks data-testid", "Modal closes on backdrop click - fine with draft, but combined with stale-draft bug it amplifies the problem"]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "EditarHuesped.tsx: read draft once on mount (useState lazy init) so the 'Recuperamos...' notice only shows when a draft actually existed BEFORE opening",
+    "EditarHuesped.tsx: do not write a draft unless the user changed something (dirty flag / diff vs originals); clear it when values return to originals; invalidate draft if reservation data changed since draft was taken (store base snapshot)",
+    "EditarHuesped.tsx: decide discard semantics (Cancelar or 'Descartar' link clears draft); add data-testid to Cancelar",
+    "Optional backend: DELETE /reservations/{rid} should also delete rental_movimientos with that reservaId"
+  ],
+  "critical_code_review_comments": [
+    "readDraft (JSON.parse of localStorage) runs on every render of EditarHuesped - cheap but it is also the root cause of the false notice",
+    "RentalWorkspace integration is correct: onDone reloads loadRes(pid); same modal shared with AlquileresScreen; draft key is per-reservation so it is shared between both screens (good)",
+    "guardar() calls 3-4 sequential PATCHes; if a later one fails, earlier ones are already persisted but draft is kept - acceptable, but error message should indicate partial save"
+  ],
+  "updated_files": ["/app/test_reports/iteration_73.json"],
+  "success_rate": {"backend": "N/A (only re-checked PATCH /monto: 200 for >0, 422 for 0)", "frontend": "~80% - all requested flows pass; draft notice/stale-draft logic buggy"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (worked)",
+  "seed_data_creation": "Created TEST manual reservation a2b70f04e874405680ff19c8487a5bf4 on property 6744cf8a907f4a239a7504101c66a2df (A161) and DELETED it (204, GET→404); orphan comision movement removed manually. A Person 'TEST_WS Edit' (tel 1155550000) may have been auto-registered as inquilino in Supabase Personas by _register_inquilino - not removed.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "A161 workspace: /veraos/alquileres/6744cf8a907f4a239a7504101c66a2df, tab rt-wstab-reservas. In global list, manual confirmed reservations without seña are under sub-tab 'Esperando seña' (not 'Confirmadas'). Create test reservation via POST /api/rentals/reservations/manual with future free dates (Nov 2026 was free). To retest: (1) clear localStorage key, open modal, type 1 char → notice must NOT show; (2) open+close without edits, PATCH monto via API, reopen → must show new backend value without notice.",
+  "rca of the issue": "Draft autosave useEffect has no dirty check so it persists on mount; notice uses a per-render readDraft() instead of the value read at mount. Repro: localStorage.removeItem('vera_rt_edit_draft_{id}') → click Editar datos → type in Nombre → notice appears. Stale: open/close modal → change monto elsewhere → reopen → old monto shown."
+}
