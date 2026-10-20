@@ -1,0 +1,28 @@
+{
+  "summary": "Re-tested the user's bug report ONLY on PREVIEW (frontend). I could NOT reproduce either bug. BUG 1: qa_varela set to sections:['liquidaciones'] logs in and lands on /veraos/liquidaciones. The sidebar shows ONLY 'Liquidaciones'. The screen loads with data (property A161, 4 reservations), and clicking a reservation opens the full liquidación detail (Alquiler / Comisión / Gastos / Neto, PDF, movements). Typing /veraos/hoy, /propiedades, /alquileres or /equipo in the URL bar sends you back to /veraos/liquidaciones. No page errors. BUG 2: qa_temp (sections:null, password QaPilot!2026xz works) sees Alquileres + Studio. The global list (Reservas tab) shows 'Editar datos' (rt-edit-huesped-{id}) on every row: Pre-reservas 1/1, Finalizadas 6/6. Confirmadas has 0 reservations, so there was nothing to check there. In the A161 workspace, the Reservas tab shows rt-wsedit-huesped-{id} on all 7 rows. In both places the modal opens with the fields pre-filled (nombre, tel, email, DNI, huéspedes, importe, depósito, limpieza, historial). No console errors and no 4xx/5xx responses. Conclusion: the code works on preview, so the most likely cause is that production is outdated (needs a redeploy).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Liquidaciones detail", "issues": ["The 'Ajustar movimientos' date field uses the browser's native date picker (mm/dd/yyyy format) instead of a shadcn calendar. Minor."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Redeploy to PRODUCTION and confirm the deploy finished. Preview already behaves correctly for both reported issues.",
+    "After deploying, have the real user inmovarelacde@gmail.com (sections:['liquidaciones'] in app_access) log out and log back in, so the approval is fetched again.",
+    "Optional: in the first run, 5 transient 403 'Failed to load resource' console errors appeared while logging in as the Liquidaciones-restricted user and forcing navigation to restricted URLs. They did not reproduce in the next run, which tracked responses. Likely data fetches from restricted screens before the redirect. Harmless, but worth a look."
+  ],
+  "critical_code_review_comments": [
+    "AppLayout: the redirect useEffect uses the employeeSectionIds/EMPLOYEE_PATHS values without listing them as dependencies (eslint rule disabled). It works because the effect re-runs on pathname/isEmployee changes, but if an admin changes sections while the user's session is open, the user won't be redirected until they navigate again."
+  ],
+  "updated_files": ["/app/test_reports/iteration_76.json"],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "seed_data_creation": "None. qa_varela@vera.test was REVERTED to sections:null via POST /api/auth/team/set-sections (verified with GET /api/auth/team: qa_varela sections=None). inmovarelacde@gmail.com is unchanged with ['liquidaciones'].",
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (now default access again); qa_temp@vera.test / QaPilot!2026xz (sections:null, works).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Section permissions and Editar datos were confirmed working on preview in iteration 76. If the user still reports the problem, test production after the deploy.",
+  "rca of the issue": "Not reproducible on preview with the exact same config as the real user. Root cause is most likely an outdated production deploy, not the code."
+}
