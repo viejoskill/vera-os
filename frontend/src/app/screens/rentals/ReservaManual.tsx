@@ -29,37 +29,48 @@ export const ReservaManual = ({ property, onClose, onCreated, initialCheckIn, in
 }) => {
   const mon = property.moneda || 'ARS';
   const base = emptyDraft(initialCheckIn, initialCheckOut);
-  const [restored] = useState(() => readDraft(property.id) !== null);
-  const d = readDraft(property.id) ?? base;
-  const [nombre, setNombre] = useState(d.nombre);
-  const [telefono, setTelefono] = useState(d.telefono);
-  const [email, setEmail] = useState(d.email);
-  const [dni, setDni] = useState(d.dni);
-  const [domicilio, setDomicilio] = useState(d.domicilio);
-  const [localidad, setLocalidad] = useState(d.localidad);
-  const [huespedes, setHuespedes] = useState(d.huespedes);
-  const [comentario, setComentario] = useState(d.comentario);
-  const [checkIn, setCheckIn] = useState(d.checkIn);
-  const [checkOut, setCheckOut] = useState(d.checkOut);
-  const [montoTotal, setMontoTotal] = useState(d.montoTotal);
-  const [totalTocado, setTotalTocado] = useState(d.totalTocado);
-  const [senaTenedor, setSenaTenedor] = useState(d.senaTenedor);
-  const [senaMonto, setSenaMonto] = useState(d.senaMonto);
-  const [senaMetodo, setSenaMetodo] = useState(d.senaMetodo);
-  const [senaPagada, setSenaPagada] = useState(d.senaPagada);
+  // Se calcula UNA sola vez al montar: si hay un borrador guardado, se usa — PERO si se vino de
+  // "Reservar estas fechas" con fechas distintas a las del borrador, esas fechas recién elegidas
+  // ganan (se conservan los datos del huésped, se resetea el monto para que se vuelva a sugerir).
+  const [{ initial, restored }] = useState(() => {
+    const draft = readDraft(property.id);
+    if (!draft) return { initial: base, restored: false };
+    if (initialCheckIn && (draft.checkIn !== initialCheckIn || draft.checkOut !== (initialCheckOut || ''))) {
+      return { initial: { ...draft, checkIn: initialCheckIn, checkOut: initialCheckOut || '', montoTotal: '', totalTocado: false }, restored: true };
+    }
+    return { initial: draft, restored: true };
+  });
+  const [nombre, setNombre] = useState(initial.nombre);
+  const [telefono, setTelefono] = useState(initial.telefono);
+  const [email, setEmail] = useState(initial.email);
+  const [dni, setDni] = useState(initial.dni);
+  const [domicilio, setDomicilio] = useState(initial.domicilio);
+  const [localidad, setLocalidad] = useState(initial.localidad);
+  const [huespedes, setHuespedes] = useState(initial.huespedes);
+  const [comentario, setComentario] = useState(initial.comentario);
+  const [checkIn, setCheckIn] = useState(initial.checkIn);
+  const [checkOut, setCheckOut] = useState(initial.checkOut);
+  const [montoTotal, setMontoTotal] = useState(initial.montoTotal);
+  const [totalTocado, setTotalTocado] = useState(initial.totalTocado);
+  const [senaTenedor, setSenaTenedor] = useState(initial.senaTenedor);
+  const [senaMonto, setSenaMonto] = useState(initial.senaMonto);
+  const [senaMetodo, setSenaMetodo] = useState(initial.senaMetodo);
+  const [senaPagada, setSenaPagada] = useState(initial.senaPagada);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
   const noches = checkIn && checkOut ? nightsBetween(checkIn, checkOut) : 0;
 
-  // Borrador: se guarda en cada cambio salvo que todo siga igual a un formulario vacío
-  // (evita escribir ruido apenas se abre el modal sin tocar nada).
+  // Borrador: se guarda en cada cambio salvo que todo siga igual a un formulario vacío. El monto
+  // sugerido automáticamente (ver efecto de abajo) NO cuenta como cambio real mientras el usuario
+  // no lo haya tocado a mano, para no guardar un borrador fantasma con solo fechas del calendario.
   useEffect(() => {
     const current: ManualDraft = {
       nombre, telefono, email, dni, domicilio, localidad, huespedes, comentario,
       checkIn, checkOut, montoTotal, totalTocado, senaTenedor, senaMonto, senaMetodo, senaPagada,
     };
-    if (JSON.stringify(current) === JSON.stringify(base)) { clearDraft(property.id); return; }
+    const comparable = { ...current, montoTotal: totalTocado ? montoTotal : '' };
+    if (JSON.stringify(comparable) === JSON.stringify(base)) { clearDraft(property.id); return; }
     try { localStorage.setItem(draftKey(property.id), JSON.stringify(current)); } catch { /* noop */ }
   }, [property.id, nombre, telefono, email, dni, domicilio, localidad, huespedes, comentario, // eslint-disable-line react-hooks/exhaustive-deps
     checkIn, checkOut, montoTotal, totalTocado, senaTenedor, senaMonto, senaMetodo, senaPagada]);

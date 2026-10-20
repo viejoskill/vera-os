@@ -1,0 +1,29 @@
+{
+  "summary": "Frontend-only test of the localStorage draft autosave in ReservaManual.tsx (property A161, user qa_varela). All 6 requested scenarios PASS when the modal is opened with the 'Reserva manual' button (rt-manual-open). 1) Fill fields, close with X, reopen: every value comes back (nombre/tel/email/fechas/total/seña) and the notice rt-manual-draft-restored shows. 2) Leave the screen (goto /propiedades, which redirects to /alquileres for this user, and also the sidebar link to Studio) then come back: the draft is restored. 3) Open on a clean form and close without typing: nothing is written to localStorage and no notice appears. Typing the first character saves the draft but shows no notice, so the false positive from iteration_73 does not come back. 4) Cancelar removes the key, and reopening shows a clean form with no notice. 5) Crear reserva works: reservation a195331c... was created as 'confirmada' 2027-03-10→13, the modal closed, the draft was removed and reopening shows a clean form. 6) Regression: the total is suggested from the dates (78750 for 3 nights), seña/saldo are calculated (300000/90000/210000), and the 3 validation messages are correct. I found 2 NEW BUGS on the OTHER way to open the same modal: select dates in the calendar, then 'Reservar estas fechas' (rt-reservar-fechas), which passes initialCheckIn/initialCheckOut.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ReservaManual (opened from calendar 'Reservar estas fechas')", "issue": "Draft saved when the user changed nothing (false positive). Steps: select 2026-12-01→03 in the calendar, click 'Reservar estas fechas', change nothing, close with X. The quote effect fills montoTotal automatically (52500), so the form no longer matches `base` (whose montoTotal is ''). The draft gets written. Reopening 'Reserva manual' then shows 'Recuperamos lo que estabas completando…' with dates and an amount the user never typed. This is the same class of bug fixed in iteration_73/74.", "selector": "[data-testid='rt-manual-draft-restored']", "priority": "HIGH"},
+      {"component": "ReservaManual (opened from calendar 'Reservar estas fechas')", "issue": "An old draft overrides the dates just selected in the calendar. Steps: with a draft for 12-01→12-03 saved, select 12-10→12-12 in the calendar and click 'Reservar estas fechas'. The modal shows check-in 2026-12-01 / check-out 2026-12-03, because readDraft(property.id) ?? base ignores initialCheckIn/initialCheckOut. The user could book the wrong dates.", "selector": "[data-testid='rt-manual-checkin']", "priority": "HIGH"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "ReservaManual.tsx autosave useEffect: leave montoTotal out of the comparison (or treat it as unchanged) while totalTocado === false. Otherwise the automatic quote counts as a user change. Possible fix: compare {...current, montoTotal: totalTocado ? montoTotal : ''} against base.",
+    "ReservaManual.tsx initial state: when initialCheckIn/initialCheckOut are given and differ from the draft's dates, the calendar dates must win. Options: drop the draft and start from base, or keep the guest fields and overwrite checkIn/checkOut while resetting montoTotal/totalTocado. Then calculate `restored` the same way."
+  ],
+  "critical_code_review_comments": [
+    "readDraft() runs on every render (line 33: const d = readDraft(...) ?? base), not just once at mount. It is harmless because useState only uses it at init, but it does a JSON.parse on every render. Wrap it in a lazy useState/useRef.",
+    "Clicking the backdrop (onClick={onClose}) keeps the draft, the same as the X. That is consistent with the intended design. Note that only 'Cancelar' discards it."
+  ],
+  "updated_files": ["/app/test_reports/iteration_77.json"],
+  "success_rate": {"backend": "N/A", "frontend": "6/6 requested scenarios pass; 2 new bugs on the calendar entry point (rt-reservar-fechas)"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created test reservation a195331cba0b4c6abd94d129597f0fbf (TEST_Draft Save, A161, 2027-03-10→13), then cancelled it (PATCH 200) and deleted it (DELETE 204; GET returns 404). The localStorage key vera_rt_manual_draft_{pid} was cleared at the end.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The app runs with date 2026-10-20. Calendar day selector: rt-day-YYYY-MM-DD. Workspace URL: /veraos/alquileres/6744cf8a907f4a239a7504101c66a2df, then tab rt-wstab-reservas. For this user /veraos/propiedades redirects to /alquileres. Retest the 2 calendar-path bugs: open via rt-reservar-fechas without touching anything, close, reopen and expect no notice; then with a draft present, select different dates and expect the modal to show the new dates.",
+  "rca of the issue": "Bug 1: `base` = emptyDraft(initialCheckIn, initialCheckOut) has montoTotal ''. When initial dates are passed, the quote useEffect immediately sets montoTotal to the quoted price, so current !== base and the draft is written without any user input. With the plain 'Reserva manual' button this does not happen because there are no dates and so no quote runs. Bug 2: line 33 `readDraft(property.id) ?? base` always prefers the draft and ignores the initialCheckIn/initialCheckOut props."
+}
