@@ -348,6 +348,17 @@
 .rt-pay__ic:hover { opacity: .7; }
 .rt-modal__box--sm { max-width: 440px; }
 .rt-modal__foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.rt-edit__historial-toggle {
+  background: none; border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-sm);
+  padding: 5px 10px; font-size: .78rem; color: var(--vera-color-text-secondary); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; margin: 4px 0 8px;
+}
+.rt-edit__historial-toggle:hover { border-color: var(--vera-color-primary); color: var(--vera-color-primary); }
+.rt-edit__historial { border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-md); padding: 10px 12px; margin-bottom: 10px; max-height: 220px; overflow-y: auto; }
+.rt-edit__historial-row { display: flex; flex-direction: column; gap: 2px; padding: 7px 0; border-bottom: 1px dashed var(--vera-color-border); }
+.rt-edit__historial-row:last-child { border-bottom: none; }
+.rt-edit__historial-fecha { font-size: .72rem; color: var(--vera-color-text-secondary); }
+.rt-edit__historial-texto { font-size: .82rem; color: var(--vera-color-text-primary, inherit); }
 
 /* Calendario: ocupado por reserva (rojo) vs pendiente de aprobación (amarillo) vs bloqueo manual (gris) */
 .rt-cal__cell--reserva { background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(210,70,70,.55) 4px, rgba(210,70,70,.55) 6px); color: color-mix(in srgb, #e07575 70%, transparent); cursor: not-allowed; text-decoration: line-through; }

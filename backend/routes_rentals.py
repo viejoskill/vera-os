@@ -266,7 +266,19 @@ def _res_out(r: dict, codigo: str | None = None) -> dict:
         "nroReserva": r.get("nroReserva"), "nroContrato": r.get("nroContrato"),
         "depositoOverride": r.get("depositoOverride"),
         "limpiezaOverride": r.get("limpiezaOverride"),
+        "historial": r.get("historial") or [],
     }
+
+
+async def _add_historial(rid: str, usuario: str | None, cambios: list[tuple[str, object, object]]):
+    """Registra en la reserva quién cambió qué y cuándo (campo, valor anterior, valor nuevo).
+    Solo agrega entradas para los campos que realmente cambiaron."""
+    entries = [
+        {"fecha": _now(), "usuario": usuario or "Sin identificar", "campo": campo, "anterior": anterior, "nuevo": nuevo}
+        for campo, anterior, nuevo in cambios if anterior != nuevo
+    ]
+    if entries:
+        await _res().update_one({"_id": rid}, {"$push": {"historial": {"$each": entries}}})
 
 
 # ------------------------------- Modelos --------------------------------- #
@@ -372,6 +384,7 @@ class HuespedBody(BaseModel):
     localidad: str | None = None
     huespedes: int | None = None
     comentario: str | None = None
+    actorEmail: str | None = None
 
 
 class PaymentLinkBody(BaseModel):
@@ -780,6 +793,13 @@ async def update_status(rid: str, body: StatusBody):
     return _res_out(await _res().find_one({"_id": rid}))
 
 
+HUESPED_LABELS = {
+    "nombre": "Nombre y apellido", "telefono": "Teléfono", "email": "Email", "dni": "DNI",
+    "domicilio": "Domicilio", "localidad": "Localidad", "huespedes": "Cantidad de huéspedes",
+    "comentario": "Comentario",
+}
+
+
 @router.patch("/reservations/{rid}/huesped")
 async def update_huesped(rid: str, body: HuespedBody):
     """Edita manualmente los datos del huésped (frecuente en pre-reservas incompletas)."""
@@ -787,14 +807,19 @@ async def update_huesped(rid: str, body: HuespedBody):
     if not r:
         raise HTTPException(404, "Reserva no encontrada")
     huesped = dict(r.get("huesped") or {})
-    for k, v in body.model_dump(exclude_unset=True).items():
+    cambios = []
+    for k, v in body.model_dump(exclude_unset=True, exclude={"actorEmail"}).items():
+        if k in HUESPED_LABELS:
+            cambios.append((HUESPED_LABELS[k], huesped.get(k), v))
         huesped[k] = v
     await _res().update_one({"_id": rid}, {"$set": {"huesped": huesped, "updatedAt": _now()}})
+    await _add_historial(rid, body.actorEmail, cambios)
     return _res_out(await _res().find_one({"_id": rid}))
 
 
 class DepositoBody(BaseModel):
     deposito: float | None = None  # None = volver a usar el depósito de la propiedad
+    actorEmail: str | None = None
 
 
 @router.patch("/reservations/{rid}/deposito")
@@ -805,11 +830,13 @@ async def update_deposito(rid: str, body: DepositoBody):
     if not r:
         raise HTTPException(404, "Reserva no encontrada")
     await _res().update_one({"_id": rid}, {"$set": {"depositoOverride": body.deposito, "updatedAt": _now()}})
+    await _add_historial(rid, body.actorEmail, [("Depósito de garantía", r.get("depositoOverride"), body.deposito)])
     return _res_out(await _res().find_one({"_id": rid}))
 
 
 class LimpiezaBody(BaseModel):
     limpieza: float | None = None  # None = volver a usar el cargo de limpieza de la propiedad
+    actorEmail: str | None = None
 
 
 @router.patch("/reservations/{rid}/limpieza")
@@ -820,11 +847,13 @@ async def update_limpieza(rid: str, body: LimpiezaBody):
     if not r:
         raise HTTPException(404, "Reserva no encontrada")
     await _res().update_one({"_id": rid}, {"$set": {"limpiezaOverride": body.limpieza, "updatedAt": _now()}})
+    await _add_historial(rid, body.actorEmail, [("Cargo de limpieza", r.get("limpiezaOverride"), body.limpieza)])
     return _res_out(await _res().find_one({"_id": rid}))
 
 
 class MontoBody(BaseModel):
     monto: float = Field(gt=0)
+    actorEmail: str | None = None
 
 
 @router.patch("/reservations/{rid}/monto")
@@ -834,7 +863,9 @@ async def update_monto(rid: str, body: MontoBody):
     r = await _res().find_one({"_id": rid})
     if not r:
         raise HTTPException(404, "Reserva no encontrada")
-    await _res().update_one({"_id": rid}, {"$set": {"montoEstimado": round(body.monto), "updatedAt": _now()}})
+    nuevo = round(body.monto)
+    await _res().update_one({"_id": rid}, {"$set": {"montoEstimado": nuevo, "updatedAt": _now()}})
+    await _add_historial(rid, body.actorEmail, [("Importe total", r.get("montoEstimado"), nuevo)])
     return _res_out(await _res().find_one({"_id": rid}))
 
 

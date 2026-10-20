@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { UserCog, X, Save } from 'lucide-react';
+import { UserCog, X, Save, History } from 'lucide-react';
 import { Button } from '@vera/ui';
+import { useAuth } from '@app/auth/AuthProvider';
 import { api, type Reservation } from './api';
 
 type EditValues = {
@@ -30,16 +31,48 @@ const originalsOf = (reserva: Reservation): EditValues => {
   };
 };
 
+const fmtFecha = (iso: string) => {
+  try { return new Date(iso).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }); } catch { return iso; }
+};
+const fmtValor = (v: unknown) => (v === null || v === undefined || v === '' ? '—' : String(v));
+
 /** Modal para completar/corregir a mano los datos del huésped (frecuente en pre-reservas incompletas).
- * Autoguarda un borrador en localStorage SOLO mientras hay cambios reales sin guardar (si cambiás de
- * pestaña/ventana o la app se recarga, al volver se recupera). El borrador se descarta si la reserva
- * cambió por otro lado mientras tanto, para no pisar datos más nuevos con uno viejo. */
+ * Al abrir, trae siempre la versión MÁS FRESCA de la reserva desde el backend (no confía en la
+ * prop, que puede venir de una lista cacheada). Autoguarda un borrador en localStorage SOLO
+ * mientras hay cambios reales sin guardar; se descarta si la reserva cambió por otro lado
+ * mientras tanto o al guardar con éxito. Muestra el historial de quién cambió qué y cuándo. */
 export const EditarHuesped = ({ reserva, onDone, onClose }: {
   reserva: Reservation; onDone: (r: Reservation) => void; onClose: () => void;
 }) => {
+  const [fresh, setFresh] = useState<Reservation | null>(null);
+  useEffect(() => {
+    let active = true;
+    api.getReservation(reserva.id)
+      .then((r) => { if (active) setFresh(r); })
+      .catch(() => { if (active) setFresh(reserva); }); // si falla el fetch, seguimos con lo que ya teníamos
+    return () => { active = false; };
+  }, [reserva.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!fresh) {
+    return (
+      <div className="rt-modal" data-testid={`rt-edit-huesped-modal-${reserva.id}`} onClick={onClose}>
+        <div className="rt-modal__box" onClick={(e) => e.stopPropagation()}>
+          <p className="rt-book__hint" data-testid={`rt-edit-huesped-loading-${reserva.id}`}>Cargando datos actuales de la reserva…</p>
+        </div>
+      </div>
+    );
+  }
+  return <EditarHuespedForm reserva={fresh} onDone={onDone} onClose={onClose} />;
+};
+
+const EditarHuespedForm = ({ reserva, onDone, onClose }: {
+  reserva: Reservation; onDone: (r: Reservation) => void; onClose: () => void;
+}) => {
+  const { session } = useAuth();
+  const actorEmail = session?.user?.email;
   const [originals] = useState(() => originalsOf(reserva));
-  // Se calcula UNA sola vez al montar: si hay un borrador y su base coincide con los datos actuales
-  // de la reserva (no cambió por otro lado mientras tanto), se restaura; si no, se descarta.
+  // Se calcula UNA sola vez al montar (ya con datos frescos del backend): si hay un borrador y su
+  // base coincide con los datos actuales de la reserva, se restaura; si no, se descarta.
   const [restored] = useState(() => {
     const d = readDraft(reserva.id);
     if (d && sameValues(d.baseline, originals)) return d.edited;
@@ -53,6 +86,8 @@ export const EditarHuesped = ({ reserva, onDone, onClose }: {
   const [monto, setMonto] = useState(initial.monto);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showHistorial, setShowHistorial] = useState(false);
+  const historial = [...(reserva.historial || [])].reverse(); // más reciente primero
 
   // Borrador: solo se guarda si lo tipeado difiere de los datos originales (evita ruido y borradores
   // viejos pisando datos nuevos); si vuelve a coincidir con el original, se borra.
@@ -71,11 +106,11 @@ export const EditarHuesped = ({ reserva, onDone, onClose }: {
     if (!monto || !(montoNum > 0)) { setError('El importe total tiene que ser mayor a 0.'); return; }
     setSaving(true); setError('');
     try {
-      await api.updateHuesped(reserva.id, { ...form, huespedes: Number(form.huespedes) || 1 });
-      await api.updateDeposito(reserva.id, deposito === '' ? null : Number(deposito));
-      let actualizada = await api.updateLimpieza(reserva.id, limpieza === '' ? null : Number(limpieza));
+      await api.updateHuesped(reserva.id, { ...form, huespedes: Number(form.huespedes) || 1 }, actorEmail);
+      await api.updateDeposito(reserva.id, deposito === '' ? null : Number(deposito), actorEmail);
+      let actualizada = await api.updateLimpieza(reserva.id, limpieza === '' ? null : Number(limpieza), actorEmail);
       if (montoNum !== reserva.montoEstimado) {
-        actualizada = await api.updateMonto(reserva.id, montoNum);
+        actualizada = await api.updateMonto(reserva.id, montoNum, actorEmail);
       }
       clearDraft(reserva.id);
       onDone(actualizada);
@@ -127,6 +162,25 @@ export const EditarHuesped = ({ reserva, onDone, onClose }: {
             onChange={(e) => setLimpieza(e.target.value)} data-testid={`rt-edit-limpieza-${reserva.id}`} /></label>
 
         {error && <p className="rt-book__error" data-testid={`rt-edit-huesped-error-${reserva.id}`}>{error}</p>}
+
+        <button type="button" className="rt-edit__historial-toggle"
+          onClick={() => setShowHistorial((s) => !s)} data-testid={`rt-edit-historial-toggle-${reserva.id}`}>
+          <History size={13} /> Historial de cambios {historial.length > 0 ? `(${historial.length})` : ''}
+        </button>
+        {showHistorial && (
+          <div className="rt-edit__historial" data-testid={`rt-edit-historial-${reserva.id}`}>
+            {historial.length === 0 ? (
+              <p className="rt-book__hint">Todavía no se editó nada en esta reserva.</p>
+            ) : historial.map((h, i) => (
+              <div key={i} className="rt-edit__historial-row">
+                <span className="rt-edit__historial-fecha">{fmtFecha(h.fecha)}</span>
+                <span className="rt-edit__historial-texto">
+                  <strong>{h.usuario}</strong> cambió <strong>{h.campo}</strong>: {fmtValor(h.anterior)} → {fmtValor(h.nuevo)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="rt-modal__foot">
           <Button variant="ghost" size="md" onClick={cancelar} data-testid={`rt-edit-huesped-cancel-${reserva.id}`}>Cancelar</Button>
