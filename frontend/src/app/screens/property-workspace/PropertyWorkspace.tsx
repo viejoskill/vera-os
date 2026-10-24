@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { env } from '@vera/config';
-import { ArrowLeft, Building2, AlertTriangle, Save } from 'lucide-react';
+import { ArrowLeft, Building2, AlertTriangle, Save, ArrowRightLeft } from 'lucide-react';
 import { Button, Panel, Progress, Toast } from '@vera/ui';
 import {
   assistantService,
@@ -110,6 +110,7 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [saving, setSaving] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const [liveStatus, setLiveStatus] = useState<LiveStatus>('idle');
   const [wsTab, setWsTab] = useState('datos');
 
@@ -326,6 +327,24 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
     else navigate('/propiedades');
   };
 
+  const duplicateToAlquileres = async () => {
+    if (!propertyId) return;
+    if (!window.confirm('¿Duplicar esta propiedad en Alquileres temporarios? Se va a crear una ficha nueva en Alquileres con estos datos y fotos, sin modificar esta propiedad de Ventas.')) return;
+    setDuplicating(true);
+    try {
+      const res = await fetch(`${env.backendUrl}/api/rentals/import/${propertyId}`, { method: 'POST' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Error ${res.status}`);
+      }
+      const nuevo = await res.json();
+      navigate(`/alquileres/${nuevo.id}`);
+    } catch (error) {
+      showToast({ message: (error as Error).message || 'No pudimos duplicar la propiedad.', tone: 'default' });
+      setDuplicating(false);
+    }
+  };
+
   // Estado de la propiedad — acción rápida de un clic desde el encabezado.
   const currentStatus: LifecycleStatus = detail
     ? detail.archived
@@ -446,6 +465,17 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
                 onClick={handleSaveDraft}
               >
                 <Save size={15} /> Guardar borrador
+              </Button>
+            )}
+            {!isNew && detail && (
+              <Button
+                variant="secondary"
+                size="md"
+                data-testid="workspace-duplicate-alquiler"
+                disabled={duplicating}
+                onClick={duplicateToAlquileres}
+              >
+                <ArrowRightLeft size={15} /> {duplicating ? 'Duplicando…' : 'Duplicar a Alquileres'}
               </Button>
             )}
             <Button variant="primary" size="md" data-testid="workspace-save" disabled={saving} onClick={handleSave}>

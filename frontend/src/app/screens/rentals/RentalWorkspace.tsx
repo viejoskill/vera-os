@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Trash2, Upload, Star, CalendarX2, ExternalLink, UserPlus, ChevronLeft, ChevronRight, Pencil, Check, X, Download, Archive } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Upload, Star, CalendarX2, ExternalLink, UserPlus, ChevronLeft, ChevronRight, Pencil, Check, X, Download, Archive, ArrowRightLeft } from 'lucide-react';
 import { Button, Input } from '@vera/ui';
 import { api, fmtMoney, fmtDate, nightsBetween, displayEstado, TIPO_MOV, type RentalProperty, type Reservation, type RentalImage, type Movimiento, type Occupied } from './api';
 import { RentalCalendar } from './RentalCalendar';
@@ -63,6 +63,7 @@ export const RentalWorkspace = () => {
   const [sel, setSel] = useState<{ checkIn: string | null; checkOut: string | null }>({ checkIn: null, checkOut: null });
   const [flash, setFlash] = useState('');
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const set = (k: keyof RentalProperty, v: unknown) => setF((s) => ({ ...s, [k]: v }));
 
@@ -210,6 +211,19 @@ export const RentalWorkspace = () => {
     await api.deleteProperty(pid); nav('/alquileres');
   };
 
+  const exportToVentas = async () => {
+    if (!pid) return;
+    const msg = f.exportadaAVentas
+      ? '¿Duplicar de nuevo esta propiedad en Ventas? Se creará otra ficha nueva (distinta a la que ya existe).'
+      : '¿Duplicar esta propiedad en Ventas? Se va a crear una ficha nueva en Ventas con estos datos y fotos, como borrador, sin modificar esta propiedad de Alquileres.';
+    if (!window.confirm(msg)) return;
+    setExporting(true);
+    try {
+      const sale = await api.exportToVentas(pid);
+      nav(`/propiedades/${sale.id}`);
+    } catch (e) { setFlash((e as Error).message); setTimeout(() => setFlash(''), 3500); setExporting(false); }
+  };
+
   return (
     <div className="vera-screen rt" data-testid="rental-workspace">
       <div className="rt__back">
@@ -221,10 +235,20 @@ export const RentalWorkspace = () => {
         <h2 className="rt__title">{isNew ? 'Nueva propiedad' : <>{f.codigo && <span className="rt-ws__code">{f.codigo}</span>}{f.titulo}</>}</h2>
         <div className="rt__head-actions">
           {!isNew && <Button variant="ghost" size="sm" onClick={removeProp} data-testid="rt-delete-prop"><Trash2 size={14} /> Eliminar</Button>}
+          {pid && (
+            <Button variant="secondary" size="md" onClick={exportToVentas} disabled={exporting} data-testid="rt-export-ventas">
+              <ArrowRightLeft size={16} /> {exporting ? 'Duplicando…' : 'Duplicar a Ventas'}
+            </Button>
+          )}
           <Button variant="primary" size="md" onClick={save} disabled={saving} data-testid="rt-save-prop"><Save size={16} /> {saving ? 'Guardando…' : 'Guardar'}</Button>
         </div>
       </header>
       {flash && <p className="rt__flash" data-testid="rt-flash">{flash}</p>}
+      {pid && f.exportadaAVentas && (
+        <div className="rt-notice" data-testid="rt-exported-notice">
+          🔁 Esta propiedad ya fue duplicada en <strong>Ventas</strong>. <a href={`/veraos/propiedades/${f.exportadaAVentas}`} target="_blank" rel="noreferrer">Ver ficha en Ventas</a>
+        </div>
+      )}
       {pid && !f.activa && (
         <div className="rt-notice" data-testid="rt-hidden-notice">
           🔒 Esta propiedad está <strong>oculta</strong> y no aparece en la web pública. Para publicarla, cargá el <strong>precio por noche</strong> y activá <strong>“Publicada en la web”</strong> (más abajo), luego <strong>Guardá</strong>.

@@ -203,6 +203,7 @@ def _prop_out(p: dict, public: bool = False) -> dict:
             "numeroLlave": p.get("numeroLlave"),
             "propietario": p.get("propietario") or {},
             "publications": p.get("publications") or {},
+            "exportadaAVentas": p.get("exportadaAVentas"),
         })
     return out
 
@@ -1520,6 +1521,66 @@ async def import_from_sale(sale_id: str):
             continue
     await _props().insert_one(doc)
     return _prop_out(doc)
+
+
+@router.post("/properties/{pid}/export-to-ventas", status_code=201)
+async def export_to_ventas(pid: str):
+    """Duplica una propiedad de Alquileres hacia el CRM de Ventas (p.ej. el dueño decide
+    venderla). Copia los datos básicos y las fotos; la propiedad nueva queda como borrador
+    (status 'draft', sin precio) para que se termine de cargar antes de publicarla."""
+    from routes_properties import _gen_ventas_code
+
+    if not appconfig.supabase_configured():
+        raise HTTPException(503, "CRM de ventas no configurado.")
+    p = await _get_prop(pid)
+    data = {
+        "title": p.get("titulo") or "Propiedad duplicada",
+        "operation": "venta",
+        "type": p.get("tipo") or "casa",
+        "status": "draft",
+        "price": 0,
+        "currency": "USD",
+        "address": p.get("direccion") or "",
+        "city": p.get("localidad") or "Costa del Este",
+        "bedrooms": int(p.get("dormitorios") or 0),
+        "bathrooms": int(p.get("banos") or 0),
+        "description": p.get("descripcion") or "",
+        "amenities": p.get("amenities") or [],
+    }
+    if p.get("latitude") is not None and p.get("longitude") is not None:
+        data["latitude"] = p["latitude"]
+        data["longitude"] = p["longitude"]
+    data["codigo"] = await _gen_ventas_code()
+    workspace_id = appconfig.DEFAULT_WORKSPACE_ID
+    new_prop = await property_repository.create(data, workspace_id=workspace_id)
+    if not new_prop:
+        raise HTTPException(500, "No se pudo crear la propiedad en Ventas")
+    sale_id = new_prop["id"]
+
+    imgs = sorted(p.get("imagenes") or [], key=lambda i: i.get("position", 0))
+    for idx, img in enumerate(imgs[:15]):
+        try:
+            content = await get_storage().download(img["bucket"], img["object_path"])
+            object_path, stored_name = get_storage().build_object_path(
+                workspace_id, sale_id, "images", f"foto-{idx + 1}{Path(img.get('object_path') or '').suffix or '.jpg'}"
+            )
+            await get_storage().upload(
+                appconfig.BUCKET_IMAGES, object_path, content, img.get("contentType") or "image/jpeg"
+            )
+            await property_repository.add_image({
+                "property_id": sale_id, "workspace_id": workspace_id,
+                "bucket": appconfig.BUCKET_IMAGES, "object_path": object_path,
+                "original_name": stored_name, "stored_name": stored_name,
+                "mime_type": img.get("contentType") or "image/jpeg", "size_bytes": len(content),
+                "position": idx, "is_cover": img.get("isCover", idx == 0),
+            })
+        except Exception:
+            continue
+    await property_repository.touch(sale_id)
+    await _props().update_one({"_id": pid}, {"$set": {"exportadaAVentas": sale_id}})
+    final_prop = await property_repository.get(sale_id)
+    from serializers import property_to_detail
+    return await property_to_detail(final_prop)
 
 
 # ================================ PÚBLICO =============================== #

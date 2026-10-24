@@ -19,6 +19,7 @@ export interface RentalProperty {
   reelUrl?: string;
   latitude?: number | null; longitude?: number | null;
   ocupados?: Occupied[]; descuentos?: { semana: number; quincena: number; mes: number };
+  exportadaAVentas?: string | null;
 }
 export interface RentalSettings { condicionesGenerales: string[]; avisoValidez: string; whatsappAgencia?: string; }
 export interface Movimiento {
@@ -85,6 +86,8 @@ export const api = {
     fetch(`${RENTALS_API}/sale-properties${query ? `?query=${encodeURIComponent(query)}` : ''}`).then(json),
   importSale: (saleId: string): Promise<RentalProperty> =>
     fetch(`${RENTALS_API}/import/${saleId}`, { method: 'POST' }).then(json),
+  exportToVentas: (id: string): Promise<{ id: string; code?: string }> =>
+    fetch(`${RENTALS_API}/properties/${id}/export-to-ventas`, { method: 'POST' }).then(json),
   uploadImage: (id: string, file: File): Promise<RentalImage> => {
     const fd = new FormData(); fd.append('file', file);
     return fetch(`${RENTALS_API}/properties/${id}/images`, { method: 'POST', body: fd }).then(json);
