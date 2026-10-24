@@ -246,7 +246,8 @@ export const RentalWorkspace = () => {
       {flash && <p className="rt__flash" data-testid="rt-flash">{flash}</p>}
       {pid && f.exportadaAVentas && (
         <div className="rt-notice" data-testid="rt-exported-notice">
-          🔁 Esta propiedad ya fue duplicada en <strong>Ventas</strong>. <a href={`/veraos/propiedades/${f.exportadaAVentas}`} target="_blank" rel="noreferrer">Ver ficha en Ventas</a>
+          🔁 Esta propiedad ya fue duplicada en <strong>Ventas</strong>.{' '}
+          <button type="button" className="rt-notice__link" onClick={() => nav(`/propiedades/${f.exportadaAVentas}`)}>Ver ficha en Ventas</button>
         </div>
       )}
       {pid && !f.activa && (

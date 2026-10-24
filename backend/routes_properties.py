@@ -379,3 +379,9 @@ async def delete_property(property_id: str):
         except Exception:
             pass
     await property_repository.delete(property_id)
+    # Si esta ficha de Ventas había sido creada como duplicado de una propiedad de Alquileres,
+    # limpiamos la referencia para que el aviso "Ya fue duplicada en Ventas" no apunte a un 404.
+    from routes_rentals import _db as _rentals_db
+    await _rentals_db()["rental_properties"].update_many(
+        {"exportadaAVentas": property_id}, {"$unset": {"exportadaAVentas": ""}}
+    )

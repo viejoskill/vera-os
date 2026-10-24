@@ -1,0 +1,40 @@
+{
+  "summary": "Probé la duplicación en las dos direcciones entre Alquileres y Ventas, tanto en el backend como en el frontend. Backend: 4/4 tests de pytest pasaron (export-to-ventas, import/{sale_id} y los casos 404). Frontend: Dirección 1 OK. El botón rt-export-ventas abre el confirm(), creó V226, navegó a /veraos/propiedades/{id} y la ficha nueva tenía el título y el tipo correctos y estaba en draft. Al volver a A161 aparece el banner rt-exported-notice con el link correcto. Dirección 2b OK: workspace-duplicate-alquiler en V754 creó A714 con título, dirección, localidad, dormitorios (3), baños (2), descripción y capacidad 6, y dejó la ficha oculta. Dirección 2a OK: el modal 'Importar de ventas' con el botón rt-import-{id} creó una ficha y navegó a ella. Si se cancela el confirm() no se crea nada, en ninguna de las dos direcciones. Regresión: las 5 pestañas de RentalWorkspace y el botón Guardar funcionan, y PropertyWorkspace (pestañas, Publicaciones, Guardar) también, sin errores JS. Limpieza: borré todas las fichas creadas en la prueba. Quedan 33 fichas en Ventas y solo A161 en Alquileres. A161 está intacta y V754 se restauró a draft. Revertí los permisos (sections) de qa_varela a null.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "DELETE /api/properties/{id}", "issue": "Al borrar en Ventas una ficha que vino de Alquileres, el campo exportadaAVentas de la propiedad de alquiler sigue apuntando al id borrado. El banner rt-exported-notice sigue apareciendo y su link 'Ver ficha en Ventas' da 404. Lo comprobé: A161 tenía exportadaAVentas=ab34ed7a..., que ya devolvía 404 antes del test."},
+      {"endpoint": "POST /api/rentals/properties/{pid}/export-to-ventas y POST /api/rentals/import/{sale_id}", "issue": "Ninguno de los dos endpoints evita duplicados: con varios clicks o reintentos se crean varias fichas. En el frontend el confirm() avisa, pero el backend no controla nada. En Ventas no se guarda ninguna marca 'importadaEnAlquileres', así que PropertyWorkspace no muestra ningún aviso de que la propiedad ya se duplicó (no es simétrico con el otro sentido)."},
+      {"endpoint": "POST /api/rentals/import/{sale_id}", "issue": "No copia amenities, tipo, latitude ni longitude de la ficha de Ventas (amenities queda en []). El export en el otro sentido sí copia amenities y coordenadas."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Duplicar con cambios sin guardar", "issue": "Los dos botones de duplicar (rt-export-ventas y workspace-duplicate-alquiler) copian lo que está guardado en la base de datos, no lo que hay en el formulario. Los cambios sin guardar no se copian y el usuario no recibe ningún aviso. Sugerencia: guardar antes de duplicar, o avisar en el confirm().", "affected_selectors": ["[data-testid='rt-export-ventas']", "[data-testid='workspace-duplicate-alquiler']"]}
+    ],
+    "design_issues": [
+      {"screen": "RentalWorkspace, banner rt-exported-notice", "issues": ["El link 'Ver ficha en Ventas' tiene el estilo por defecto del navegador (azul subrayado) sobre el fondo oscuro/amarillo del banner. Tiene poco contraste y no sigue el estilo del resto de la app.", "El link usa target=_blank y una ruta /veraos/... fija, cuando podría navegar dentro de la app."]},
+      {"screen": "AlquileresScreen, modal Importar", "issues": ["El botón 'Buscar' no tiene data-testid. Escribir en rt-import-search no filtra nada hasta apretar Enter o Buscar (es el comportamiento que ya existía)."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_duplicate_rentals_ventas.py", "/app/test_reports/pytest/pytest_duplicate.xml"],
+  "action_items": [
+    "Limpiar exportadaAVentas en la propiedad de alquiler cuando se borra la ficha de Ventas correspondiente (o validar en el GET que la ficha exista antes de mostrar el banner).",
+    "Que el link del banner rt-exported-notice tenga el estilo de la app y no el azul por defecto.",
+    "Opcional: guardar o avisar si hay cambios sin guardar antes de duplicar.",
+    "Opcional: en import_from_sale copiar también amenities, tipo y coordenadas, y guardar en la ficha de Ventas una marca de 'ya duplicada en Alquileres' para mostrar un aviso."
+  ],
+  "critical_code_review_comments": [
+    "PropertyWorkspace.duplicateToAlquileres usa fetch directamente en vez del cliente api.importSale que ya existe (está duplicado).",
+    "_gen_ventas_code lista todas las propiedades y elige un código al azar sin restricción de unicidad en la base de datos. Si dos exports se hacen al mismo tiempo, podrían recibir el mismo código.",
+    "En los dos endpoints, si falla la copia de una foto se descarta en silencio (except: continue) y el usuario no se entera."
+  ],
+  "updated_files": ["/app/backend/tests/test_duplicate_rentals_ventas.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "No quedan datos creados por el test. Borré V226 y otra ficha de Ventas generada por pytest, A714 y la ficha importada desde el modal, más la ficha de alquiler creada por pytest. V754 volvió a draft (el click en Guardar del test de regresión la había pasado a active). A161 conserva exportadaAVentas apuntando a V226, que ya está borrada, así que el link del banner da 404 (es el issue de backend minor).",
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml. Las sections ya se revirtieron a null.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "La duplicación funciona en las dos direcciones. Ojo: el botón 'Guardar' de PropertyWorkspace pasa la ficha de draft a active, así que para no cambiar el estado hay que usar 'Guardar borrador'. Las pestañas de PropertyWorkspace no son role=button: usar get_by_text. Para el regression test se puede correr test_duplicate_rentals_ventas.py, que limpia sus propios datos."
+}

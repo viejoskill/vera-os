@@ -13,6 +13,7 @@ import {
   propertyService,
   workspaceService,
 } from '@vera/services';
+import { api as rentalsApi } from '@app/screens/rentals/api';
 import type { Property, PropertyDetail } from '@vera/types';
 import { useVeraStudio } from '@app/hooks/useVeraStudio';
 import { useDocuments } from '@app/hooks/useDocuments';
@@ -332,12 +333,7 @@ const WorkspaceEditor = ({ detail }: { detail: PropertyDetail | null }) => {
     if (!window.confirm('¿Duplicar esta propiedad en Alquileres temporarios? Se va a crear una ficha nueva en Alquileres con estos datos y fotos, sin modificar esta propiedad de Ventas.')) return;
     setDuplicating(true);
     try {
-      const res = await fetch(`${env.backendUrl}/api/rentals/import/${propertyId}`, { method: 'POST' });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `Error ${res.status}`);
-      }
-      const nuevo = await res.json();
+      const nuevo = await rentalsApi.importSale(propertyId);
       navigate(`/alquileres/${nuevo.id}`);
     } catch (error) {
       showToast({ message: (error as Error).message || 'No pudimos duplicar la propiedad.', tone: 'default' });

@@ -1493,16 +1493,20 @@ async def import_from_sale(sale_id: str):
     doc = {
         "_id": pid, "slug": _slugify(sp.get("title") or "propiedad"),
         "titulo": sp.get("title") or "Propiedad importada",
+        "tipo": sp.get("type") if sp.get("type") in ("casa", "departamento", "ph") else "casa",
         "direccion": sp.get("address") or "",
         "localidad": sp.get("city") or sp.get("neighborhood") or "Costa del Este",
         "descripcion": sp.get("description") or "",
         "capacidad": max(2, bedrooms * 2) if bedrooms else 2,
         "dormitorios": bedrooms, "banos": int(sp.get("bathrooms") or 0),
-        "amenities": [], "moneda": "ARS", "precioNoche": 0,
+        "amenities": sp.get("amenities") or [], "moneda": "ARS", "precioNoche": 0,
         "descSemana": 0, "descQuincena": 0, "descMes": 0,
         "descSemanaMin": 6, "descQuincenaMin": 12, "descMesMin": 25, "activa": False,
         "propietario": {}, "imagenes": [], "importadaDe": sale_id, "createdAt": _now(),
     }
+    if sp.get("latitude") is not None and sp.get("longitude") is not None:
+        doc["latitude"] = sp["latitude"]
+        doc["longitude"] = sp["longitude"]
     doc["codigo"] = await _next_code()
     imgs = sorted(sp.get("property_images") or [], key=lambda i: i.get("position", 0))
     for idx, im in enumerate(imgs[:15]):
