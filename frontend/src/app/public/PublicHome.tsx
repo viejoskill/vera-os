@@ -83,7 +83,7 @@ const BUSINESS_JSONLD = {
 
 interface Listing {
   id: string; code: string; title: string; type: string; operation: string;
-  price: number; currency: string; city: string; neighborhood: string;
+  price: number; currency: string; address: string; city: string; neighborhood: string;
   coverImage: string; bedrooms: number; bathrooms: number; areaM2: number;
   lotAreaM2: number; rooms: number; status: string; radar: boolean; whatsappUrl: string; publicUrl: string;
   autoStamp?: boolean; hasVideo?: boolean; latitude?: number | null; longitude?: number | null;
@@ -156,7 +156,7 @@ const PropCard = ({ p }: { p: Listing }) => {
       <div className="vh-card__body">
         <span className="vh-card__price">{money(p.price, p.currency)}</span>
         <h3 className="vh-card__title">{p.title}</h3>
-        <span className="vh-card__loc"><MapPin size={13} /> {[p.neighborhood, p.city].filter(Boolean).join(', ')}</span>
+        <span className="vh-card__loc"><MapPin size={13} /> {[p.address, p.neighborhood, p.city].filter(Boolean).join(', ')}</span>
         <div className="vh-card__specs">
           {p.bedrooms > 0 && <span><BedDouble size={14} /> {p.bedrooms}</span>}
           {p.bathrooms > 0 && <span><Bath size={14} /> {p.bathrooms}</span>}

@@ -15,7 +15,7 @@ from serializers import property_to_detail, property_to_response
 router = APIRouter(prefix="/public", tags=["public"])
 
 _SUMMARY_KEYS = {
-    "id", "code", "title", "type", "operation", "price", "currency", "city",
+    "id", "code", "title", "type", "operation", "price", "currency", "address", "city",
     "neighborhood", "coverImage", "bedrooms", "bathrooms", "areaM2", "lotAreaM2", "rooms", "status", "radar",
     "autoStamp", "latitude", "longitude",
 }
