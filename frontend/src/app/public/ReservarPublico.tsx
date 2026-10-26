@@ -16,7 +16,7 @@ export const ReservarPublico = () => {
     const cover = p.imagenes.find((i) => i.isCover) || p.imagenes[0];
     return {
       id: p.slug, title: p.titulo, operation: 'alquiler', price: p.precioNoche, currency: p.moneda,
-      city: p.localidad || '', neighborhood: p.direccion || '', coverImage: cover?.url || '',
+      address: p.direccion || '', city: p.localidad || '', neighborhood: '', coverImage: cover?.url || '',
       latitude: p.latitude, longitude: p.longitude,
     };
   }), [props]);
@@ -69,7 +69,7 @@ export const ReservarPublico = () => {
                 <div className="rt-pub__cbody">
                   {p.codigo && <span className="rt-pub__code">{p.codigo}</span>}
                   <h3>{p.titulo}</h3>
-                  <p className="rt-pub__addr"><MapPin size={13} /> {p.localidad}</p>
+                  <p className="rt-pub__addr"><MapPin size={13} /> {p.direccion ? `${p.direccion} · ` : ''}{p.localidad}</p>
                   <div className="rt-pub__specs"><span><Users size={14} /> {p.capacidad}</span><span><BedDouble size={14} /> {p.dormitorios}</span><span><Bath size={14} /> {p.banos}</span></div>
                   <p className="rt-pub__price">{fmtMoney(p.precioNoche, p.moneda)} <em>/ noche</em></p>
                 </div>
