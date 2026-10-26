@@ -6,6 +6,7 @@ import { env } from '@vera/config';
 import { openWhatsAppInquiry } from './whatsappInquiry';
 import { usePageMeta, SITE_URL } from './usePageMeta';
 import { LandingConfig, LANDING_LIST, LANDINGS } from './landingConfigs';
+import { formatLocation } from './formatLocation';
 
 interface Listing {
   id: string; code: string; title: string; type: string; operation: string;
@@ -125,7 +126,7 @@ export const ZonaLanding = ({ config }: { config: LandingConfig }) => {
                 <div className="vera-pub-card__body">
                   <span className="vera-pub-card__price">{money(p.price, p.currency)}</span>
                   <h3 className="vera-pub-card__title">{p.title}</h3>
-                  <span className="vera-pub-card__loc"><MapPin size={13} /> {[p.address, p.neighborhood, p.city].filter(Boolean).join(', ')}</span>
+                  <span className="vera-pub-card__loc"><MapPin size={13} /> {formatLocation(p.address, p.neighborhood, p.city)}</span>
                   <div className="vera-pub-card__specs">
                     {p.bedrooms > 0 && <span><BedDouble size={14} /> {p.bedrooms}</span>}
                     {p.bathrooms > 0 && <span><Bath size={14} /> {p.bathrooms}</span>}

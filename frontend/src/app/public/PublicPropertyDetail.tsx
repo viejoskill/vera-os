@@ -7,6 +7,7 @@ import { logInquiry } from './whatsappInquiry';
 import { usePageMeta, SITE_URL } from './usePageMeta';
 import { InstagramReel } from './InstagramReel';
 import { PropertyMap } from './PropertyMap';
+import { formatLocation } from './formatLocation';
 
 interface Img { id: string; url: string; }
 interface Detail {
@@ -172,7 +173,7 @@ export const PublicPropertyDetail = () => {
                 latitude={data.latitude}
                 longitude={data.longitude}
                 operation={data.operation}
-                address={[data.address, data.neighborhood, data.city].filter(Boolean).join(', ')}
+                address={formatLocation(data.address, data.neighborhood, data.city)}
               />
             )}
             {data.videoUrl && (
@@ -188,7 +189,7 @@ export const PublicPropertyDetail = () => {
           <span className="vera-pub-card__op">{data.operation}</span>
           <span className="vera-pub-detail__price">{money(data.price, data.currency)}</span>
           <h1 className="vera-pub-detail__title">{data.title}</h1>
-          <span className="vera-pub-card__loc"><MapPin size={14} /> {[data.address, data.neighborhood, data.city].filter(Boolean).join(', ')}</span>
+          <span className="vera-pub-card__loc"><MapPin size={14} /> {formatLocation(data.address, data.neighborhood, data.city)}</span>
           <div className="vera-pub-detail__specs">
             {specs.map((s, i) => {
               const Icon = s.icon;

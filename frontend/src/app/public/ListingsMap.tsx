@@ -4,6 +4,7 @@ import { APIProvider, Map, Marker, InfoWindow } from '@vis.gl/react-google-maps'
 import { MapPin } from 'lucide-react';
 import { env } from '@vera/config';
 import { DARK_MAP_STYLE, mapPinIcon } from './googleMapTheme';
+import { formatLocation } from './formatLocation';
 
 interface MapListing {
   id: string;
@@ -11,7 +12,7 @@ interface MapListing {
   operation: string;
   price: number;
   currency: string;
-  address: string;
+  address?: string;
   city: string;
   neighborhood: string;
   coverImage: string;
@@ -70,7 +71,7 @@ const MapaInner = ({ listings, getHref }: { listings: MapListing[]; getHref: (id
             <div className="vera-map-popup__body">
               <span className="vera-map-popup__price">{money(active.price, active.currency)}</span>
               <h3 className="vera-map-popup__title">{active.title}</h3>
-              <span className="vera-map-popup__loc">{[active.address, active.neighborhood, active.city].filter(Boolean).join(', ')}</span>
+              <span className="vera-map-popup__loc">{formatLocation(active.address, active.neighborhood, active.city)}</span>
               <Link to={getHref(active.id)} className="vera-map-popup__cta" data-testid={`map-popup-cta-${active.id}`}>
                 Ver propiedad
               </Link>

@@ -11,6 +11,7 @@ import { openWhatsAppInquiry } from './whatsappInquiry';
 import { usePageMeta, SITE_URL } from './usePageMeta';
 import { REVIEWS, GOOGLE_RATING, GOOGLE_TOTAL, GOOGLE_REVIEW_URL } from './reviews';
 import { ListingsMap } from './ListingsMap';
+import { formatLocation } from './formatLocation';
 import heroJpg from '../../assets/home/home-hero-16x9.jpg';
 import heroWebp from '../../assets/home/home-hero-16x9.webp';
 import rentalsJpg from '../../assets/home/home-rentals-16x9.jpg';
@@ -156,7 +157,7 @@ const PropCard = ({ p }: { p: Listing }) => {
       <div className="vh-card__body">
         <span className="vh-card__price">{money(p.price, p.currency)}</span>
         <h3 className="vh-card__title">{p.title}</h3>
-        <span className="vh-card__loc"><MapPin size={13} /> {[p.address, p.neighborhood, p.city].filter(Boolean).join(', ')}</span>
+        <span className="vh-card__loc"><MapPin size={13} /> {formatLocation(p.address, p.neighborhood, p.city)}</span>
         <div className="vh-card__specs">
           {p.bedrooms > 0 && <span><BedDouble size={14} /> {p.bedrooms}</span>}
           {p.bathrooms > 0 && <span><Bath size={14} /> {p.bathrooms}</span>}

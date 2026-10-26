@@ -1,0 +1,30 @@
+{
+  "summary": "Frontend-only test of the public address display (/web, map popup, /web/{id}, /, /venta/costa-del-este, /venta/casas-costa-del-este). ROOT CAUSE of what E1 saw: the webpack dev server's file watcher never picked up E1's edits (files changed 15:05-15:06, dev server started 15:03; the served /static/js/bundle.js still had [p.neighborhood, p.city]; touching the files didn't trigger a rebuild either). /web itself was NOT stuck loading: with Playwright it loaded 31 cards fine but showed only the neighborhood. After `supervisorctl restart frontend`, a real TS error showed up: ReservarPublico.tsx:60 passes listings without `address` to ListingsMap (MapListing.address was required) -> TS2322. This would break the dev overlay and `yarn build`. Fixed by making `address?: string` in MapListing. After that tsc --noEmit passes and the dev server reports 'No issues found'. All requested screens now show the address.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ListingsMap / ReservarPublico", "issue": "TS2322: ReservarPublico.tsx:60 mapListings lack 'address' but MapListing required it. Fixed by testing agent (address?: string).", "selector": "n/a", "priority": "HIGH (fixed)"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/web and /venta/costa-del-este cards", "issues": ["Data quality: some properties (e.g. V228) store the full Google formatted address in 'address' ('Av. Interbalnearia Interna 568, Costa del Este, Provincia de Buenos Aires, Argentina'), so the card shows 'Costa del Este' twice plus province/country. Consider trimming the address at its first comma, or dropping neighborhood/city when the address already contains them."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Optional: dedupe the location string when address already contains the neighborhood/city or a full formatted address (V228 and similar).",
+    "Heads up: hot reload in this environment didn't detect file edits. After editing frontend files, check the served bundle or restart the frontend before verifying visually."
+  ],
+  "critical_code_review_comments": [
+    "PublicListing.tsx useQuery ignores isError: a failed fetch shows 'No hay propiedades que coincidan' instead of an error state.",
+    "Same [address, neighborhood, city] join is copy-pasted in 4 files. Extract a formatLocation() helper to avoid this kind of drift (ReservarPublico was missed).",
+    "Console: hydration warning '<span> cannot be a child of <option>' in the filter-precio select. Comes from the visual-edit dynamic span wrapping the {p.toLocaleString()} expression. Dev-only, harmless."
+  ],
+  "updated_files": ["/app/frontend/src/app/public/ListingsMap.tsx"],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100% (after frontend restart + TS fix)"},
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "/web loads 31 listings. V229 (f7517272-ff95-4b74-9382-bc1906578efa) card shows 'Los Arrayanes 1268, Costa del Este'. Home shows 37 address cards (vh-card__loc), /venta/costa-del-este 31, /venta/casas-costa-del-este 16, and none of them show only the neighborhood. The map popup (.vera-map-popup__loc) shows the address, e.g. 'Los Alelies 517, Costa del Este'. The detail page /web/{id} shows the address. The dev-server file watcher looked unreliable, so verify with curl localhost:3000/static/js/bundle.js | grep <new code>.",
+  "rca of the issue": "E1 saw old output (no address) because the dev bundle was stale: the watcher didn't detect the edits. The 'stuck at 0 propiedades / Cargando' screenshot is most likely a screenshot_tool artifact taken before the /api/public/listings fetch resolved, since Playwright loaded the cards fine every time. Restarting the frontend exposed the TS2322 error in ReservarPublico (missing address) from the required MapListing.address. Mitigation: make address optional (done) and restart the frontend."
+}
