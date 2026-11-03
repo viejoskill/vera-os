@@ -1,0 +1,52 @@
+{
+  "summary": "Tested the new Estadísticas feature end to end: backend (POST /api/analytics/track, GET /api/analytics/summary) and UI (an admin sees the section, a non-admin does not, cards, chart, period buttons, top-pages and top-properties lists, real anonymous tracking on the public pages, gclid ad attribution that carries over for the whole session). Also checked that the public pages still work. Everything works. The only notable issue is that the preview double-counts visits because of React.StrictMode in the dev server. A few minor label and validation issues are listed below.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/analytics/track", "issue": "No validation of length or values. path, visitorId, section, propertyId and propertyCode accept strings of any size, and section accepts anything (not just ventas/alquileres). There is no rate limit, so anyone can inflate the counts or bloat the page_views collection. Suggestion: use Literal['ventas','alquileres'] for section, add max_length on the fields, and add a simple per-IP throttle."},
+      {"endpoint": "GET /api/analytics/summary", "issue": "Admin access is checked only through the actorEmail query param, with no JWT check. Anyone who knows the admin email can read the stats. This is the same pattern as /auth/team and is already in the backlog. Not new, but worth noting."},
+      {"endpoint": "GET /api/analytics/summary", "issue": "visitsByDay groups by the UTC date (substr of createdAt). Visits made in Argentina between 21:00 and 23:59 are counted on the next day."},
+      {"endpoint": "page_views", "issue": "There are no indexes on createdAt or visitorId. count_documents, distinct and the aggregations scan the whole collection, and the collection grows with every page load. Add an index on createdAt and consider a TTL index."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "analytics.ts / public pages", "issue": "In the preview, every page that tracks with useEffect(..., []) sends TWO POSTs to /api/analytics/track (/, /web, /tasar, /venta/costa-del-este, /alquileres). The property page (which depends on data.id) sends only one. Root cause: <React.StrictMode> in src/index.tsx combined with the dev server (craco start), which runs effects twice. In a production build StrictMode does not run effects twice, so production counts should be correct, but any visit counted in the preview is doubled. Suggested fix: a module-level dedupe in trackPageView (skip if the same path was tracked less than about 1.5s ago).", "selector": "n/a", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Estadísticas - Páginas más visitadas", "issues": [
+        "Different property paths (/web/{id1} and /web/{id2}) all show the same label 'Ficha de propiedad en venta', so the list has identical rows that can't be told apart. Show the property code or id next to the label.",
+        "Paths from the alquileres.* subdomain ('/reservar/slug', and '/' for the rentals home) are not handled by pageLabel. '/reservar/...' shows as a raw path. The rentals '/' is labeled 'Inicio' and, because topPages groups only by path, it is merged with the sales-site home. Group by path+section and label '/reservar/' as 'Ficha de alquiler'."
+      ]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_analytics.py", "/app/test_reports/pytest/pytest_analytics.xml"],
+  "action_items": [
+    "PENDING CLEANUP (not done by the testing agent, because my rules forbid deleting data by prefix or changing the role of accounts listed in test_credentials.md): 1) Delete the 36 demo docs in page_views with visitorId starting with 'test-seed-visitor-' (still present). 2) Revert qa_varela@vera.test to non-admin with POST /api/auth/team/revoke and then /api/auth/team/approve (actorEmail=varelavendecde@gmail.com). As of now qa_varela still has isAdmin=true.",
+    "Add a dedupe guard in trackPageView to avoid double counting in dev/StrictMode (optional, because production is not affected).",
+    "Improve pageLabel and topPages: show the property code for property pages, handle '/reservar/' (subdomain), and group by section.",
+    "Harden /api/analytics/track: Literal for section, max_length on the fields, rate limit. Add indexes on page_views.createdAt and visitorId."
+  ],
+  "critical_code_review_comments": [
+    "routes_analytics.py opens its own AsyncIOMotorClient instead of reusing a shared client. That works, but it adds one more connection pool.",
+    "Access control is correct at both layers. AppLayout filters the nav by approval.isAdmin, and non-admins get redirected to their allowed sections when they open /veraos/estadisticas directly. The backend returns 403 for non-admins, and TeamScreen leaves 'estadisticas' out of SECTION_OPTIONS.",
+    "The tracking is truly best-effort (fetch().catch plus try/catch, keepalive). No page errors were seen on the public pages."
+  ],
+  "updated_files": ["/app/backend/tests/test_analytics.py"],
+  "success_rate": {"backend": "100% (9/9 pytest)", "frontend": "100% of the requested flows (only minor label and double-count issues)"},
+  "test_results_detail": {
+    "admin_nav": "qa_varela (admin) sees nav-estadisticas as the last item, and /veraos/estadisticas loads estadisticas-screen.",
+    "non_admin": "qa_temp@vera.test (approved, not admin) sees only nav-alquileres and nav-studio. Going straight to /veraos/estadisticas redirects to /veraos/alquileres. Equipo > sections for qa_temp has no estadisticas option. The API returns 403 for qa_temp.",
+    "cards_presets": "With the 36 demo docs plus 18 of my own tracks, visits showed 54 for 7, 30 and 90 days, which is correct because page_views only holds data from the last 7 days. The preset 7 total, based on the earlier curl, was 36 with only the seed data. WhatsApp changes with the period (0/4/42). The active button class switches correctly.",
+    "chart_lists": "est-chart renders a recharts svg. est-top-pages and est-top-properties list data (V229=7, V778=2).",
+    "real_tracking": "As an anonymous visitor, /, /web, /web/{id}, /tasar, /venta/costa-del-este and /alquileres each fired POST /api/analytics/track with the correct section, and the property page sent propertyId and code V778. The summary went up as expected.",
+    "gclid": "/web?gclid=test123 set sessionStorage vera_from_ad=1. That visit and the following /tasar sent fromAd=true, and visitsFromAds went up.",
+    "regression": "The public Home, /web (31 properties), the property page (address 'Las Madreselvas 588, Costa del Este' visible, map, WhatsApp button), the zone landing page and /alquileres all load normally."
+  },
+  "not_tested": "/alquileres/reservar/{slug}: there are no active public rental properties (GET /api/rentals/public/properties returns [], and A161 is hidden). Mobile layout of Estadísticas was not checked.",
+  "seed_data_creation": "No permanent data. My TEST_vis_* tracks from pytest and the 18 page_views from my browser visitor (visitorId mw17e56n-bylxdfw4) were deleted by exact visitorId. The 36 'test-seed-visitor-*' demo docs from the main agent remain.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Analytics regression: pytest /app/backend/tests/test_analytics.py (cleans up its own data). qa_temp@vera.test / QaPilot!2026xz is an approved non-admin, useful for checking that the menu hides Estadísticas. qa_varela@vera.test is still admin until the main agent reverts it."
+}

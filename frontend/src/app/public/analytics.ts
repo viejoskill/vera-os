@@ -3,6 +3,11 @@ import { env } from '@vera/config';
 const VISITOR_KEY = 'vera_visitor_id';
 const AD_SESSION_KEY = 'vera_from_ad';
 
+// Evita doble conteo cuando algo (p.ej. React.StrictMode en desarrollo) dispara el
+// mismo efecto dos veces seguidas para la misma ruta.
+let lastTrackedPath = '';
+let lastTrackedAt = 0;
+
 /** Id anónimo persistido en este navegador, solo para contar visitantes únicos
  * (no identifica a la persona, no se cruza con ningún dato personal). */
 const getVisitorId = (): string => {
@@ -29,12 +34,17 @@ export const trackPageView = (
   section: 'ventas' | 'alquileres',
   extra?: { propertyId?: string; propertyCode?: string },
 ) => {
+  const path = window.location.pathname;
+  const now = Date.now();
+  if (path === lastTrackedPath && now - lastTrackedAt < 1500) return;
+  lastTrackedPath = path;
+  lastTrackedAt = now;
   try {
     fetch(`${env.backendUrl}/api/analytics/track`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        path: window.location.pathname,
+        path,
         visitorId: getVisitorId(),
         section,
         propertyId: extra?.propertyId || null,

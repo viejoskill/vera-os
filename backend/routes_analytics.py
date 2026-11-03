@@ -5,11 +5,12 @@ liviano por carga de página pública (anónima, sin cookies de terceros). El re
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from typing import Literal
 from uuid import uuid4
 
 from fastapi import APIRouter
 from motor.motor_asyncio import AsyncIOMotorClient
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 import config
 from routes_auth import _require_admin
@@ -17,6 +18,11 @@ from routes_auth import _require_admin
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
 _client: AsyncIOMotorClient | None = None
+_indexed = False
+
+# Las visitas se agrupan por día en horario de Argentina (no UTC), para que una
+# visita de la noche no quede contada en el día siguiente.
+_TZ = "America/Argentina/Buenos_Aires"
 
 
 def _db():
@@ -26,23 +32,34 @@ def _db():
     return _client[config.DB_NAME]
 
 
+async def _ensure_indexes() -> None:
+    global _indexed
+    if _indexed:
+        return
+    col = _db()["page_views"]
+    await col.create_index("createdAt", name="by_time")
+    await col.create_index("visitorId", name="by_visitor")
+    _indexed = True
+
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
 class TrackBody(BaseModel):
-    path: str
-    visitorId: str
-    section: str
-    propertyId: str | None = None
-    propertyCode: str | None = None
+    path: str = Field(max_length=300)
+    visitorId: str = Field(max_length=100)
+    section: Literal["ventas", "alquileres"]
+    propertyId: str | None = Field(default=None, max_length=100)
+    propertyCode: str | None = Field(default=None, max_length=30)
     fromAd: bool = False
-    referrer: str | None = None
+    referrer: str | None = Field(default=None, max_length=300)
 
 
 @router.post("/track")
 async def track(body: TrackBody):
     """Registro best-effort de una vista de página pública. No requiere auth."""
+    await _ensure_indexes()
     doc = {
         "_id": uuid4().hex,
         "path": body.path,
@@ -51,7 +68,7 @@ async def track(body: TrackBody):
         "propertyId": body.propertyId,
         "propertyCode": body.propertyCode,
         "fromAd": body.fromAd,
-        "referrer": (body.referrer or "")[:300],
+        "referrer": body.referrer or "",
         "createdAt": _now_iso(),
     }
     await _db()["page_views"].insert_one(doc)
@@ -61,6 +78,7 @@ async def track(body: TrackBody):
 @router.get("/summary")
 async def summary(actorEmail: str, days: int = 30):
     await _require_admin(actorEmail)
+    await _ensure_indexes()
     days = max(1, min(days, 365))
     since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     col = _db()["page_views"]
@@ -74,16 +92,22 @@ async def summary(actorEmail: str, days: int = 30):
         {"date": d["_id"], "count": d["count"]}
         async for d in col.aggregate([
             {"$match": q},
-            {"$group": {"_id": {"$substrCP": ["$createdAt", 0, 10]}, "count": {"$sum": 1}}},
+            {"$group": {
+                "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": {"$toDate": "$createdAt"}, "timezone": _TZ}},
+                "count": {"$sum": 1},
+            }},
             {"$sort": {"_id": 1}},
         ])
     ]
 
     top_pages = [
-        {"path": d["_id"], "count": d["count"]}
+        {"path": d["_id"]["path"], "section": d["_id"]["section"], "code": d["_id"]["code"], "count": d["count"]}
         async for d in col.aggregate([
             {"$match": q},
-            {"$group": {"_id": "$path", "count": {"$sum": 1}}},
+            {"$group": {
+                "_id": {"path": "$path", "section": "$section", "code": "$propertyCode"},
+                "count": {"$sum": 1},
+            }},
             {"$sort": {"count": -1}},
             {"$limit": 10},
         ])

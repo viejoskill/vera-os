@@ -13,7 +13,7 @@ interface Summary {
   visitsFromAds: number;
   whatsappConsultas: number;
   visitsByDay: { date: string; count: number }[];
-  topPages: { path: string; count: number }[];
+  topPages: { path: string; section: string; code: string | null; count: number }[];
   topProperties: { propertyId: string; code: string; section: string; count: number }[];
 }
 
@@ -28,13 +28,13 @@ const fmtDay = (iso: string) => {
   return `${d}/${m}`;
 };
 
-const pageLabel = (path: string) => {
-  if (path === '/' || path === '/inicio') return 'Inicio';
+const pageLabel = (page: { path: string; section: string; code: string | null }) => {
+  const { path, section, code } = page;
+  if (code) return `Ficha de ${section === 'alquileres' ? 'alquiler' : 'venta'} (${code})`;
+  if (path === '/' || path === '/inicio') return `Inicio (${section === 'alquileres' ? 'Alquileres' : 'Ventas'})`;
   if (path === '/web') return 'Cartera de ventas';
   if (path === '/alquileres' || path === '/alquileres/') return 'Alquileres (listado)';
   if (path === '/tasar') return 'Tasación online';
-  if (path.startsWith('/web/')) return 'Ficha de propiedad en venta';
-  if (path.startsWith('/alquileres/reservar/')) return 'Ficha de alquiler';
   if (path.startsWith('/venta/')) return 'Landing de zona';
   return path;
 };
@@ -140,8 +140,8 @@ export const EstadisticasScreen = () => {
               {data.topPages.length > 0 ? (
                 <ul className="est__list">
                   {data.topPages.map((p) => (
-                    <li key={p.path} data-testid={`est-page-${p.path}`}>
-                      <span className="est__list-label">{pageLabel(p.path)}</span>
+                    <li key={`${p.path}-${p.section}-${p.code || ''}`} data-testid={`est-page-${p.code || p.path}`}>
+                      <span className="est__list-label">{pageLabel(p)}</span>
                       <span className="est__list-count">{p.count}</span>
                     </li>
                   ))}
