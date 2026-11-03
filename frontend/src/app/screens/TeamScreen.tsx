@@ -12,7 +12,7 @@ interface Member {
   sections: string[] | null;
 }
 
-const SECTION_OPTIONS = navRoutes.filter((r) => r.enabled !== false && r.id !== 'equipo');
+const SECTION_OPTIONS = navRoutes.filter((r) => r.enabled !== false && r.id !== 'equipo' && r.id !== 'estadisticas');
 const DEFAULT_EMPLOYEE_SECTIONS = ['alquileres', 'studio'];
 
 export const TeamScreen = () => {

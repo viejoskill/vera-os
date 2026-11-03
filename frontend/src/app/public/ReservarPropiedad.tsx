@@ -5,6 +5,7 @@ import { api, fmtMoney, fmtDate, nightsBetween, type RentalProperty, type Rental
 import { RentalCalendar } from '@app/screens/rentals/RentalCalendar';
 import { InstagramReel } from './InstagramReel';
 import { PropertyMap } from './PropertyMap';
+import { trackPageView } from './analytics';
 import '@app/screens/rentals/rentals.css';
 
 interface Quote { noches: number; base: number; descuentoPct: number; recargoPct: number; total: number; moneda: string; }
@@ -28,6 +29,9 @@ export const ReservarPropiedad = () => {
 
   useEffect(() => { if (slug) api.publicProperty(slug).then(setP).catch(() => setNotFound(true)); }, [slug]);
   useEffect(() => { api.getSettings().then(setSettings).catch(() => {}); }, []);
+  useEffect(() => {
+    if (p) trackPageView('alquileres', { propertyId: p.id, propertyCode: p.codigo });
+  }, [p]);
 
   useEffect(() => {
     if (!slug || !sel.checkIn || !sel.checkOut) { setQuote(null); return; }

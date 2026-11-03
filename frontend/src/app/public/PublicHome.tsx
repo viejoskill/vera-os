@@ -12,6 +12,7 @@ import { usePageMeta, SITE_URL } from './usePageMeta';
 import { REVIEWS, GOOGLE_RATING, GOOGLE_TOTAL, GOOGLE_REVIEW_URL } from './reviews';
 import { ListingsMap } from './ListingsMap';
 import { formatLocation } from './formatLocation';
+import { trackPageView } from './analytics';
 import heroJpg from '../../assets/home/home-hero-16x9.jpg';
 import heroWebp from '../../assets/home/home-hero-16x9.webp';
 import rentalsJpg from '../../assets/home/home-rentals-16x9.jpg';
@@ -218,6 +219,8 @@ export const PublicHome = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => { trackPageView('ventas'); }, []);
 
   const tipos = useMemo(() => Array.from(new Set(data.map((p) => p.type).filter(Boolean))).sort(), [data]);
   const zonas = useMemo(() => {

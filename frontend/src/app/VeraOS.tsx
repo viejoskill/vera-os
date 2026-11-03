@@ -24,6 +24,7 @@ import { RentalBotTraining } from '@app/screens/rentals/RentalBotTraining';
 import { RentalWorkspace } from '@app/screens/rentals/RentalWorkspace';
 import { LiquidacionesScreen } from '@app/screens/rentals/LiquidacionesScreen';
 import { ContabilidadScreen } from '@app/screens/ContabilidadScreen';
+import { EstadisticasScreen } from '@app/screens/EstadisticasScreen';
 import { PublicListing } from '@app/public/PublicListing';
 import { TasarPublico } from '@app/public/TasarPublico';
 import { ReservarPublico } from '@app/public/ReservarPublico';
@@ -78,6 +79,7 @@ const OsRoutes = () => (
           <Route path="alquileres/:id" element={<RentalWorkspace />} />
           <Route path="liquidaciones" element={<LiquidacionesScreen />} />
           <Route path="contabilidad" element={<ContabilidadScreen />} />
+          <Route path="estadisticas" element={<EstadisticasScreen />} />
           <Route path="*" element={<Navigate to="/hoy" replace />} />
         </Route>
       </Route>

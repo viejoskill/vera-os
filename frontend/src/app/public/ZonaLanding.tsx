@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { BedDouble, Bath, Maximize, MapPin, MessageCircle, ArrowLeft, ArrowRight, Play } from 'lucide-react';
@@ -7,6 +7,7 @@ import { openWhatsAppInquiry } from './whatsappInquiry';
 import { usePageMeta, SITE_URL } from './usePageMeta';
 import { LandingConfig, LANDING_LIST, LANDINGS } from './landingConfigs';
 import { formatLocation } from './formatLocation';
+import { trackPageView } from './analytics';
 
 interface Listing {
   id: string; code: string; title: string; type: string; operation: string;
@@ -43,6 +44,8 @@ export const ZonaLanding = ({ config }: { config: LandingConfig }) => {
     () => data.filter((p) => (config.type ? p.type === config.type && isCDE(p.city) : true)),
     [data, config.type],
   );
+
+  useEffect(() => { trackPageView('ventas'); }, []);
 
   const canonical = `${SITE_URL}${config.slug}`;
   const breadcrumb = config.isHub

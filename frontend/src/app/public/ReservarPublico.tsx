@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Users, BedDouble, Bath, Palmtree, MapPin, Play, List, Map as MapIcon } from 'lucide-react';
 import { api, fmtMoney, type RentalProperty } from '@app/screens/rentals/api';
 import { ListingsMap } from './ListingsMap';
+import { trackPageView } from './analytics';
 import '@app/screens/rentals/rentals.css';
 
 export const ReservarPublico = () => {
@@ -11,6 +12,7 @@ export const ReservarPublico = () => {
   const [vista, setVista] = useState<'lista' | 'mapa'>('lista');
 
   useEffect(() => { api.publicList().then((p) => { setProps(p); setLoading(false); }).catch(() => setLoading(false)); }, []);
+  useEffect(() => { trackPageView('alquileres'); }, []);
 
   const mapListings = useMemo(() => props.map((p) => {
     const cover = p.imagenes.find((i) => i.isCover) || p.imagenes[0];

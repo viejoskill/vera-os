@@ -33,6 +33,7 @@ import routes_auth
 import routes_tasacion
 import routes_tasacion_online
 import routes_rentals
+import routes_analytics
 import rentals_bot
 import whatsapp_webhook
 import whatsapp_connect
@@ -76,6 +77,7 @@ api_router.include_router(routes_auth.router)
 api_router.include_router(routes_tasacion.router)
 api_router.include_router(routes_tasacion_online.router)
 api_router.include_router(routes_rentals.router)
+api_router.include_router(routes_analytics.router)
 api_router.include_router(rentals_bot.router)
 api_router.include_router(whatsapp_webhook.router)
 api_router.include_router(whatsapp_connect.router)

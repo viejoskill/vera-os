@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { BedDouble, Bath, Maximize, MapPin, MessageCircle, Play, List, Map as MapIcon } from 'lucide-react';
@@ -7,6 +7,7 @@ import { openWhatsAppInquiry } from './whatsappInquiry';
 import { usePageMeta, SITE_URL } from './usePageMeta';
 import { ListingsMap } from './ListingsMap';
 import { formatLocation } from './formatLocation';
+import { trackPageView } from './analytics';
 
 interface Listing {
   id: string;
@@ -62,6 +63,7 @@ export const PublicListing = () => {
   const [zona, setZona] = useState('');
   const [precioMax, setPrecioMax] = useState('');
   const [ambientes, setAmbientes] = useState('');
+  useEffect(() => { trackPageView('ventas'); }, []);
   const [vista, setVista] = useState<'lista' | 'mapa'>('lista');
 
   const tipos = useMemo(() => Array.from(new Set(data.map((p) => p.type).filter(Boolean))).sort(), [data]);

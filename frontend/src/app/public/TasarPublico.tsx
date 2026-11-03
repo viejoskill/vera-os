@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Sparkles, TrendingUp, ShieldCheck, Loader2 } from 'lucide-react';
 import { env } from '@vera/config';
 import { usePageMeta, SITE_URL } from './usePageMeta';
 import { MapaZonas, ZONAS_TASADOR } from './MapaZonas';
+import { trackPageView } from './analytics';
 
 const API = `${env.backendUrl}/api/public/tasacion`;
 
@@ -81,6 +82,8 @@ export const TasarPublico = () => {
     description: 'Tasá tu propiedad en Costa del Este o Mar del Tuyú en minutos, sin costo y sin compromiso.',
     canonical: `${SITE_URL}/tasar`,
   });
+
+  useEffect(() => { trackPageView('ventas'); }, []);
 
   const esCasa = f.tipo === 'casa' || f.tipo === 'duplex';
   const esDepto = f.tipo === 'depto';

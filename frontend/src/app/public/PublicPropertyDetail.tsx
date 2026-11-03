@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, BedDouble, Bath, Maximize, MapPin, Ruler, Compass, MessageCircle, Share2, Check } from 'lucide-react';
@@ -8,6 +8,7 @@ import { usePageMeta, SITE_URL } from './usePageMeta';
 import { InstagramReel } from './InstagramReel';
 import { PropertyMap } from './PropertyMap';
 import { formatLocation } from './formatLocation';
+import { trackPageView } from './analytics';
 
 interface Img { id: string; url: string; }
 interface Detail {
@@ -41,6 +42,10 @@ export const PublicPropertyDetail = () => {
   });
   const [active, setActive] = useState(0);
   const [shared, setShared] = useState(false);
+
+  useEffect(() => {
+    if (data?.id) trackPageView('ventas', { propertyId: data.id, propertyCode: data.code });
+  }, [data?.id, data?.code]);
 
   // Link de compartir con vista previa por propiedad (foto + título reales). Pega el
   // endpoint server-side /share que WhatsApp/redes SÍ leen (los crawlers no ejecutan JS).
