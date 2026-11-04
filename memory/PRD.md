@@ -1,5 +1,16 @@
 # VERA OS — Product Requirements & Architecture
 
+## Fix (2026-11-04): Tasaciones — semicubiertos no se cotizaban
+- Bug reportado: la sumatoria de tasación no cerraba (ej. Duplex 70m² cubiertos + 20m² semicubiertos + 190m² terreno). El campo "semicubiertos" ya existía en el formulario de `TasacionesScreen.tsx` pero `tasar()` en `backend/tasacion.py` lo ignoraba por completo: no sumaba su valor de construcción, y no lo restaba del "lote libre" al cotizar el terreno (usaba `lote - cubiertos` en vez de `lote - cubiertos - semicubiertos`).
+- Fix: `tasar()` ahora valoriza los m² semicubiertos al 50% del precio/m² cubierto configurado, y descuenta cubiertos+semicubiertos del lote libre. Aplica tanto al tasador manual como al público (ambos usan la misma función). JPG entregable ahora muestra 3 tarjetas de desglose (Construcción / Semicubierto / Lote) cuando hay semicubiertos, 2 cuando no (sin regresión).
+- También: `EstimarBody` (tasador público online, `routes_tasacion_online.py`) no aceptaba `semicubiertos` — se agregó el campo. `_persist_manual` no guardaba `semicubiertos` en el historial de tasaciones manuales — se agregó.
+- Tests: `backend/tests/test_tasacion_semicubiertos.py` (nuevo) + manuales + equipamiento = 25/25 passed. Testing agent validó backend y UI E2E (iteration_84.json).
+- Backlog (no bloqueante):
+  - El widget público simplificado `TasarPublico.tsx` no tiene campo semicubiertos en su formulario (intencionalmente simple); el backend ya lo soporta si se agrega.
+  - Posible doble conteo conceptual entre checkbox "Galería" (`add_galeria_semi`) y el campo semicubiertos — mismo concepto, dos mecanismos. Evaluar si conviene deprecar uno.
+  - El admin debe calibrar el precio de lote de las zonas que siguen en 0 en Tasador → Config (solo `av2` tiene valor real cargado: 205 USD/m²).
+
+
 ## Original problem statement
 VERA OS: a modern, modular, AI-first **Real Estate Operating System** (not a CRM).
 UX bar: as simple as Notion, as fast as Linear, as clean as Arc. Strict architecture

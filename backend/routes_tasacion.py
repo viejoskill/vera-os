@@ -135,7 +135,7 @@ async def _persist_manual(body: "JpgBody", r: dict) -> None:
         return
     key_src = "|".join(str(v) for v in (
         body.propietario, body.direccion, body.telefono, body.tipo, body.zona, body.lote, body.cubiertos,
-        getattr(body, "equipamiento", None),
+        getattr(body, "semicubiertos", None), getattr(body, "equipamiento", None),
     ))
     await tasacion.save_manual({
         "_id": str(uuid.uuid5(uuid.NAMESPACE_URL, key_src)),
@@ -145,6 +145,7 @@ async def _persist_manual(body: "JpgBody", r: dict) -> None:
         "tipo": body.tipo, "zona": body.zona,
         "zonaNombre": r["zonaNombre"], "tipoNombre": r["tipoNombre"],
         "lote": body.lote, "cubiertos": body.cubiertos,
+        "semicubiertos": getattr(body, "semicubiertos", None),
         "dormitorios": getattr(body, "dormitorios", None), "banos": getattr(body, "banos", None),
         "equipamiento": getattr(body, "equipamiento", None),
         "cierreMin": r["cierreMin"], "cierreMax": r["cierreMax"],

@@ -1,0 +1,32 @@
+{
+  "summary": "Tested the semicubiertos fix in tasar() for both backend and UI. Backend: 24 of 25 pytest tests pass (the new test_tasacion_semicubiertos.py plus the existing manuales and equipamiento suites). The reported case (Duplex, av2, 70 cub, 20 semi, 190 lote, económica/bueno/hasta10) returns exactly what was expected: pm2Constr=850, valorSemicub=8500, valorLote=20500 (100 m² × 205), 3 breakdown lines, precioBase=88500, pub 84.500–92.500, cierre 70.500–76.500. Regression is OK: with semicubiertos=0 or missing, the result has 2 breakdown lines and precioBase=84100 (old formula). Lote libre is clamped to 0 when cub+semi > lote. Other calidades and multipliers are correct. Lote and depto ignore semicubiertos. The JPG renders 3 cards when semicubiertos is set (CONSTRUCCIÓN / SEMICUBIERTO / VALOR LOTE) and 2 cards without it (CONSTRUCCIÓN COTIZADA / VALOR DEL LOTE). Checked visually: no text is cut off or overflows. UI E2E as qa_varela: Tasaciones → Duplex/av2/190/70/20 → Calcular sends semicubiertos:20 and shows USD 70.500 – USD 76.500. Generar JPG downloads tasacion-TEST_UI_Owner.jpg with the 3 cards and shows the success flash. Public tasador: /public/tasacion/simular and /estimar return 200 with semicubiertos (no 500). However, EstimarBody does not declare semicubiertos, so the public flow silently ignores it.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/public/tasacion/estimar and /simular", "issue": "EstimarBody (routes_tasacion_online.py) has no 'semicubiertos' field. Pydantic drops it, so the public estimate is the same with or without semicubiertos (estMax 87000 in both cases). TasarPublico.tsx does not send it either. No 500, but the 50% semicubierto rule never applies to the public tasador."},
+      {"endpoint": "_persist_manual (routes_tasacion.py)", "issue": "The saved manual record does not store 'semicubiertos', and the dedupe key_src does not include it. Two tasaciones of the same property that differ only in semicubiertos overwrite each other, and the history loses that input."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_tasacion_semicubiertos.py", "/app/test_reports/pytest/pytest_results_iter84.xml"],
+  "action_items": [
+    "Optional: add 'semicubiertos: float | None = None' to EstimarBody, and add a semicubierto input to TasarPublico.tsx if the public tasador should apply the 50% rule.",
+    "Optional: store semicubiertos in _persist_manual and add it to key_src.",
+    "Tell the user the result: 70×850=59.500 + 20×425=8.500 + lote libre 100×205=20.500 = 88.500 base. The user's expected '16530' equals 190×87 and does not match the current av2 config (205/m²). Confirm with the user which lote value or price they expect."
+  ],
+  "critical_code_review_comments": [
+    "Possible double counting: the 'Galería' checkbox (add_galeria_semi multiplier) is still applied on top of the m² semicubiertos now being valued at 50%. A user who enters semicubiertos AND ticks Galería pays twice for the same galería. Consider a tooltip or disabling one when the other is used.",
+    "The JPG semicubierto card shows round(pm2Constr/2) per m², which matches the backend (pconstr*0.5). Fine for integer prices, but a .5 rounding difference is possible with odd config prices.",
+    "test_tasacion_manuales.py and others use a hardcoded default BASE_URL in os.environ.get. Per the guidelines there should be no default."
+  ],
+  "updated_files": ["/app/backend/tests/test_tasacion_semicubiertos.py"],
+  "success_rate": {"backend": "96% (24/25; the only failure is the public-estimar semicub gap)", "frontend": "100%"},
+  "seed_data_creation": "Manual tasaciones with TEST_ direcciones were created by pytest (TEST_semi_<hex>) and by the UI (TEST_UI_semi_iter84). All were deleted by id afterwards. No leads were created (public estimar was called without phone/email).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Login with qa_varela@vera.test / VeraQA!2026ml at /veraos/login (it lands on /veraos/tasaciones). qa_temp@vera.test has no access to Tasaciones and is redirected to /alquileres. Run pytest without overriding pytest.ini (xdist is preconfigured). test_public_estimar_applies_semicub fails on purpose until EstimarBody accepts semicubiertos."
+}

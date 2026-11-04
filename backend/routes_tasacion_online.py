@@ -23,6 +23,7 @@ class EstimarBody(BaseModel):
     tipo: str = "casa"
     zona: str = "playa"
     cubiertos: float | None = None
+    semicubiertos: float | None = None
     lote: float | None = None
     calidad: str | None = None
     estado: str | None = None
