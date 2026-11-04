@@ -1,0 +1,30 @@
+{
+  "summary": "Tested the follow-up fix to how the lot is valued in tasar(): casa/duplex now price the lot as TOTAL land area × zone price, with no subtraction. Backend: the 3 regression files pass (24 passed, 1 skipped). The new file test_tasacion_lote_total.py passes 6/6. The user's case (Casa, Centro, 70 cubiertos, 20 semicubiertos, 200 lote) returns valorLote=17400, valorSemicub=8500, pm2Constr=850 and precioBase=85400. Its breakdown has the line 'lote (200m² × 87.0)'=17400. Duplex av2 with 190 m² of land gives valorLote=38950 and a breakdown total of 106950. A lot smaller than the built area (lote 100, built 150+50) is no longer floored to 0 (8700). The pure 'lote' type is unchanged (200×87=17400). Depto has no valorLote. The JPG endpoint returns a valid JPEG whose VALOR LOTE card reads 'Superficie total del terreno' and USD 17.400. UI E2E as qa_varela: Tasaciones, Casa/Centro/70/20/200/económica/bueno/hasta10, Calcular. The /calcular response gave 85400/17400/8500. The panel shows the Precio Varela range USD 68.000–74.000 and the portals reference range USD 81.500–89.000. The panel does not show valorLote itself, so the 17.400 figure was checked in the API response and the JPG. Generar JPG downloaded tasacion-varela.jpg, which was checked visually: the lot card shows USD 17.400 and the new subtitle.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "JPG report - VALOR LOTE card", "issues": ["Subtitle 'Superficie total del terreno' runs almost to the card's right edge (~4px padding). It fits, but it is tighter than the other cards. Consider a shorter label (e.g. 'Terreno total') or a smaller font."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_tasacion_lote_total.py",
+    "/app/backend/tests/test_tasacion_semicubiertos.py",
+    "/app/backend/tests/test_tasacion_manuales.py",
+    "/app/backend/tests/test_tasacion_equipamiento.py",
+    "/app/test_reports/pytest/pytest_iter85.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "tasacion.py casa/duplex branch: vlote = lote * plote is correct. If the lot price for the chosen zone is 0 (zones not yet calibrated), the lot silently adds USD 0. Consider a UI or JPG warning when plote == 0 and lote > 0.",
+    "Test files read REACT_APP_BACKEND_URL from the process env, which is not exported in the shell. Run them with: export REACT_APP_BACKEND_URL=$(grep REACT_APP_BACKEND_URL /app/frontend/.env | cut -d= -f2)"
+  ],
+  "updated_files": ["/app/backend/tests/test_tasacion_lote_total.py"],
+  "success_rate": {"backend": "100% (30 passed, 1 skipped)", "frontend": "100%"},
+  "seed_data_creation": "None. Calcular and the JPG endpoint do not persist data. Guardar lead was not clicked.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Lot value = total land area × precio_lote_{zona}. Configured lot prices: centro=87, av2=205; other zones are 0. Construction is priced by quality (económica 850); semicubiertos are priced at 50% of that. The JPG endpoint returns JSON with a base64 image. Before running pytest, export REACT_APP_BACKEND_URL. Login: qa_varela@vera.test at /veraos/login.",
+  "rca of the issue": "The old formula was max(0, lote - cub - semicub) × plote ('lote libre'): 200-70-20=110 × 87 = 9570, which is what the user saw. The fix uses lote × plote = 17400. Verified fixed."
+}

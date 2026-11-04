@@ -5,10 +5,15 @@
 - Fix: `tasar()` ahora valoriza los m² semicubiertos al 50% del precio/m² cubierto configurado, y descuenta cubiertos+semicubiertos del lote libre. Aplica tanto al tasador manual como al público (ambos usan la misma función). JPG entregable ahora muestra 3 tarjetas de desglose (Construcción / Semicubierto / Lote) cuando hay semicubiertos, 2 cuando no (sin regresión).
 - También: `EstimarBody` (tasador público online, `routes_tasacion_online.py`) no aceptaba `semicubiertos` — se agregó el campo. `_persist_manual` no guardaba `semicubiertos` en el historial de tasaciones manuales — se agregó.
 - Tests: `backend/tests/test_tasacion_semicubiertos.py` (nuevo) + manuales + equipamiento = 25/25 passed. Testing agent validó backend y UI E2E (iteration_84.json).
-- Backlog (no bloqueante):
-  - El widget público simplificado `TasarPublico.tsx` no tiene campo semicubiertos en su formulario (intencionalmente simple); el backend ya lo soporta si se agrega.
-  - Posible doble conteo conceptual entre checkbox "Galería" (`add_galeria_semi`) y el campo semicubiertos — mismo concepto, dos mecanismos. Evaluar si conviene deprecar uno.
-  - El admin debe calibrar el precio de lote de las zonas que siguen en 0 en Tasador → Config (solo `av2` tiene valor real cargado: 205 USD/m²).
+
+## Fix de seguimiento (2026-11-04): Valor del lote debía usar superficie TOTAL, no "lote libre"
+- El usuario reportó que el valor del lote seguía mal: zona Centro (precio_lote_centro=87 USD/m²) × 200m² de terreno debía dar USD 17.400, pero el sistema daba USD 9.570.
+- Causa raíz: el fix anterior de semicubiertos mantuvo el concepto heredado de "lote libre" = `terreno - cubiertos - semicubiertos`, multiplicado por el precio de zona. Esto NO es el método estándar de tasación (costo de reposición = terreno TOTAL + valor de construcción); además era inconsistente con el tipo "lote" puro, que siempre cotizó la superficie total sin restar nada.
+- Fix: en `backend/tasacion.py`, la rama casa/duplex ahora usa `vlote = lote * plote` (superficie total), igual que el tipo "lote". El breakdown pasó de "lote libre (Xm² × Y)" a "lote (Xm² × Y)". El JPG actualizó el subtítulo de la tarjeta a "Superficie total de terreno".
+- Se actualizaron los tests existentes (`test_tasacion_semicubiertos.py`) con los nuevos valores esperados y se sumó `test_tasacion_lote_total.py` (creado por testing agent). 30/30 passed. Testing agent validó 100% backend/frontend (iteration_85.json), incluyendo ajuste cosmético de padding en la tarjeta del JPG.
+- Nota para el usuario: solo las zonas `centro` (87 USD/m²) y `av2` (205 USD/m²) tienen precio de lote calibrado; el resto de las ~18 zonas sigue en $0 hasta que se carguen desde Tasador → Config.
+
+# VERA OS — PRD
 
 
 ## Original problem statement
