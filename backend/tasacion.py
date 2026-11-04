@@ -145,6 +145,8 @@ def tasar(inp: dict, cfg: dict) -> dict:
     zsuf = ZONA_SUFIJO.get(inp.get("zona", "playa"), "playa")
     breakdown: list[dict] = []
     base = 0.0
+    pm2_constr = 0.0
+    valor_lote = 0.0
 
     if tipo == "depto":
         m2 = float(inp.get("cubiertos") or 0)
@@ -176,6 +178,7 @@ def tasar(inp: dict, cfg: dict) -> dict:
             m2libre = max(0.0, lote - cub)
             vlote = m2libre * plote
             base = vconstr + vlote
+            pm2_constr, valor_lote = pconstr, vlote
             breakdown.append({"paso": f"construcción ({cub}m² × {pconstr})", "valor": vconstr})
             breakdown.append({"paso": f"lote libre ({m2libre:.0f}m² × {plote})", "valor": vlote})
             amap = {"estrenar": "mult_ant_estrenar", "hasta10": "mult_ant_hasta10",
@@ -225,4 +228,6 @@ def tasar(inp: dict, cfg: dict) -> dict:
         "zonaNombre": NOMBRE_ZONA.get(inp.get("zona"), inp.get("zona")),
         "tipoNombre": NOMBRE_TIPO.get(tipo, tipo),
         "breakdown": breakdown,
+        "pm2Constr": round(pm2_constr),
+        "valorLote": round(valor_lote),
     }

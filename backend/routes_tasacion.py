@@ -288,7 +288,7 @@ async def jpg(body: JpgBody):
     r = tasacion.tasar(body.model_dump(), cfg)
     await _persist_manual(body, r)
 
-    W, H, MX = 1080, 1620, 72
+    W, H, MX = 1080, 1950, 72
     RX = W - MX
     img = Image.new("RGB", (W, H), CREAM)
     d = ImageDraw.Draw(img)
@@ -413,6 +413,36 @@ async def jpg(body: JpgBody):
         sy += 156
     else:
         sy += 10
+
+    # ---------------- De dónde sale el número (transparencia para el cliente) ----------------
+    show_constr = tipo not in ("depto", "lote") and r.get("pm2Constr", 0) > 0
+    show_lote = tipo not in ("depto", "lote") and r.get("valorLote", 0) > 0
+    if show_constr or show_lote:
+        d.line([(MX, sy), (RX, sy)], fill=HAIR, width=2)
+        sy += 28
+        _left(d, MX, sy, "DE DÓNDE SALE ESTE NÚMERO", _font(22, True), INK)
+        sy += 44
+        ocy = sy
+        och = 196
+        ogap = 30
+        n_cards = (1 if show_constr else 0) + (1 if show_lote else 0)
+        ocw = (RX - MX - ogap) if n_cards == 1 else (RX - MX - ogap) / 2
+        ox = MX
+
+        def _ocard(x: float, icon, title: str, subtitle: str, valtxt: str) -> None:
+            d.rounded_rectangle([(x, ocy), (x + ocw, ocy + och)], radius=18, fill=CARD_REF)
+            d.ellipse([(x + 30, ocy + 30), (x + 86, ocy + 86)], fill=(236, 234, 226))
+            icon(d, x + 44, ocy + 44, 28, INK_SOFT, 5)
+            _left(d, x + 104, ocy + 34, title, _font(20, True), INK)
+            _left(d, x + 104, ocy + 64, subtitle, _font(17), INK_SOFT)
+            _left(d, x + 30, ocy + 122, valtxt, _fit(d, valtxt, ocw - 60, 34, True), INK)
+
+        if show_constr:
+            _ocard(ox, _ic_home, "CONSTRUCCIÓN COTIZADA", f"{_i(body.cubiertos)} m² construidos", f"{_usd(r['pm2Constr'])} / m²")
+            ox += ocw + ogap
+        if show_lote:
+            _ocard(ox, _ic_land, "VALOR DEL LOTE", "Terreno libre según zona", _usd(r["valorLote"]))
+        sy = ocy + och + 46
 
     # ---------------- Nota ----------------
     ntext = ("Esta valuación fue calculada mediante VERA OS utilizando operaciones comparables, "
