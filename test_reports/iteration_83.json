@@ -1,0 +1,21 @@
+{
+  "summary": "Frontend-only runtime regression after the @types/react / @types/react-dom resolutions fix (19.0.0). Checked yarn.lock: one @types/react entry ('@types/react@*', '@types/react@19.0.0' -> 19.0.0). Tested on the preview URL with qa_varela@vera.test: login worked (non-admin lands on /veraos/tasaciones). Tasador manual: set Tipo to Casa and picked a zona with the select. The 'Elegir en el mapa' modal is portaled into BODY and sits over the sidebar (elementFromPoint(100,500) returns the modal). Clicking the av2 zone on the map updates the select to av2 and the label to 'Zona seleccionada: Av. 2'. The X and 'Listo' buttons both close the modal and the zona stays set. Equipamiento has 4 options: Sin equipamiento, +5%, +7,5%, +10%. The calculation (Casa, av2, lote=300, cubiertos=100, estandar/bueno/hasta10, +10%) gave USD 136.500 – USD 148.500 (coef 83%). Generar JPG downloaded tasacion-varela.jpg and showed the success flash. /veraos/alquileres and /web (31 properties) loaded without a blank screen. No pageerrors and no React/ReactDOM runtime errors on any screen visited.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/veraos/tasaciones (scrolled)", "issues": ["Minor, existed before this fix: after scrolling down, the sidebar background ends about 450px from the top and the page background shows below it. Probably a sidebar height/sticky CSS issue."]}
+    ]
+  },
+  "console_notes": ["/web: one dev-only hydration warning '<span> cannot be a child of <option>' at PublicListing.tsx:140. The <span data-ve-dynamic x-excluded> is injected by the preview visual-edit tooling around the {p.toLocaleString()} expression; it is not in the source code. It is unrelated to the @types fix and does not happen in a production build."],
+  "test_report_links": [],
+  "action_items": ["None blocking. The dependency fix is safe to deploy. Optional: fix the sidebar height on long scrolled pages."],
+  "critical_code_review_comments": ["The resolutions in package.json correctly collapse @types/react to a single version. createPortal usage in TasacionesScreen.tsx is correct (rendered conditionally, target document.body)."],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100%"},
+  "seed_data_creation": "None. Propietario and Dirección were left empty, so /calcular and /jpg did not save anything to tasaciones_manuales and there was nothing to clean up.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Login at /veraos/login. Tasaciones testids: tas-tipo, tas-zona, tas-zona-mapa-btn/modal/close/listo, mapa-zona-{key}, mapa-zona-seleccionada, tas-equipamiento (values '', '5', '7.5', '10'), tas-calcular, tas-varela-range, tas-jpg. /calcular and /jpg only save a manual record when propietario or direccion is set."
+}
