@@ -1,18 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calculator, Download, UserPlus, Sparkles, Share2, Check, Inbox, MessageCircle, MapPin, RefreshCw, FileSignature } from 'lucide-react';
+import { Calculator, Download, UserPlus, Sparkles, Share2, Check, Inbox, MessageCircle, MapPin, RefreshCw, FileSignature, Map as MapIcon, X } from 'lucide-react';
 import { Input, Button } from '@vera/ui';
 import { env } from '@vera/config';
 import { propertyService } from '@vera/services';
 import type { PropertyType } from '@vera/types';
 import { useAuthUser } from '@app/auth/useAuthUser';
 import { TasadorConfig } from '@app/screens/TasadorConfig';
-import { ZONAS_TASADOR } from '@app/public/MapaZonas';
+import { ZONAS_TASADOR, MapaZonas } from '@app/public/MapaZonas';
 
 const API = `${env.backendUrl}/api/tasacion`;
 
 const ZONAS = ZONAS_TASADOR;
 const TIPOS = [['casa', 'Casa'], ['duplex', 'Duplex'], ['lote', 'Lote / Terreno'], ['depto', 'Departamento']];
+const EQUIPAMIENTO = [['', 'Sin equipamiento'], ['5', 'Equipada · +5%'], ['7.5', 'Equipada · +7,5%'], ['10', 'Equipada · +10%']];
 
 interface Result {
   pubMin: number; pubMax: number; cierreMin: number; cierreMax: number;
@@ -67,12 +68,14 @@ export const TasacionesScreen = () => {
     ambientes: '2', vista: 'frente', antDepto: 'reciente',
     gas: false, cloacas: false, pileta: false, quincho: false, deck: false,
     estacCub: false, estacDesc: false, galeria: false, cercaniaMar: false,
+    equipamiento: '',
     propietario: '', direccion: '', telefono: '', email: '',
   });
   const [result, setResult] = useState<Result | null>(null);
   const [loading, setLoading] = useState(false);
   const [flash, setFlash] = useState('');
   const [copied, setCopied] = useState(false);
+  const [showMapaZona, setShowMapaZona] = useState(false);
   const [leads, setLeads] = useState<OnlineLead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
   const loadLeads = () => {
@@ -370,7 +373,17 @@ export const TasacionesScreen = () => {
           <h3 className="tas__section">Datos de la propiedad</h3>
           <div className="tas__row2">
             <Sel label="Tipo" value={f.tipo} onChange={(v) => set('tipo', v)} options={TIPOS} testid="tas-tipo" />
-            <Sel label="Zona" value={f.zona} onChange={(v) => set('zona', v)} options={ZONAS} testid="tas-zona" />
+            <div className="tas-field tas-field--zona">
+              <span>Zona</span>
+              <div className="tas__zona-row">
+                <select value={f.zona} onChange={(e) => set('zona', e.target.value)} data-testid="tas-zona">
+                  {ZONAS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+                <button type="button" className="tas__zona-map-btn" onClick={() => setShowMapaZona(true)} data-testid="tas-zona-mapa-btn">
+                  <MapIcon size={14} /> Elegir en el mapa
+                </button>
+              </div>
+            </div>
           </div>
           <div className="tas__row2">
             {!esDepto && <label className="tas-field"><span>Superficie lote (m²)</span>
@@ -425,6 +438,9 @@ export const TasacionesScreen = () => {
                 <Chk label="Estac. descubierto" checked={f.estacDesc} onChange={(v) => set('estacDesc', v)} testid="tas-estacdesc" />
                 <Chk label="Galería" checked={f.galeria} onChange={(v) => set('galeria', v)} testid="tas-galeria" />
               </div>
+              <div className="tas__row2">
+                <Sel label="Equipamiento" value={f.equipamiento} onChange={(v) => set('equipamiento', v)} options={EQUIPAMIENTO} testid="tas-equipamiento" />
+              </div>
             </>
           )}
 
@@ -470,6 +486,25 @@ export const TasacionesScreen = () => {
           {flash && <p className="tas__flash" data-testid="tas-flash">{flash}</p>}
         </aside>
       </div>
+      {showMapaZona && (
+        <div className="vera-modal" role="dialog" aria-modal="true" data-testid="tas-zona-mapa-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="vera-modal__backdrop" onClick={() => setShowMapaZona(false)} />
+          <div className="vera-modal__panel" style={{ maxWidth: 560 }}>
+            <div className="vera-modal__head">
+              <h3 className="vera-modal__title"><MapIcon size={17} /> Elegí la zona en el mapa</h3>
+              <button type="button" className="vera-modal__close" aria-label="Cerrar" data-testid="tas-zona-mapa-close" onClick={() => setShowMapaZona(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="vera-modal__body">
+              <MapaZonas value={f.zona} onChange={(v) => set('zona', v)} />
+              <Button variant="primary" size="md" onClick={() => setShowMapaZona(false)} data-testid="tas-zona-mapa-listo">
+                <Check size={15} /> Listo
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

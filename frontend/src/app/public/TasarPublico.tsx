@@ -9,6 +9,7 @@ const API = `${env.backendUrl}/api/public/tasacion`;
 
 const ZONAS = ZONAS_TASADOR;
 const TIPOS = [['casa', 'Casa'], ['duplex', 'Duplex'], ['lote', 'Lote / Terreno'], ['depto', 'Departamento']];
+const EQUIPAMIENTO = [['', 'Sin equipamiento'], ['5', 'Equipada · +5%'], ['7.5', 'Equipada · +7,5%'], ['10', 'Equipada · +10%']];
 
 interface SemaforoTier {
   nivel: 'verde' | 'amarillo' | 'rojo';
@@ -70,6 +71,7 @@ export const TasarPublico = () => {
     ambientes: '2', vista: 'frente', antDepto: 'reciente',
     gas: false, cloacas: false, pileta: false, quincho: false, deck: false,
     estacCub: false, estacDesc: false, galeria: false, cercaniaMar: false,
+    equipamiento: '',
     nombre: '', telefono: '', email: '',
   });
   const [result, setResult] = useState<Estimate | null>(null);
@@ -250,6 +252,7 @@ export const TasarPublico = () => {
                   <Chk label="Deck" checked={f.deck} onChange={(v) => set('deck', v)} testid="tasp-deck" />
                   <Chk label="Cochera cubierta" checked={f.estacCub} onChange={(v) => set('estacCub', v)} testid="tasp-estaccub" />
                 </div>
+                <Sel label="Equipamiento" value={f.equipamiento} onChange={(v) => set('equipamiento', v)} options={EQUIPAMIENTO} testid="tasp-equipamiento" />
               </>
             )}
 

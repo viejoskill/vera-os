@@ -69,6 +69,10 @@ NOMBRE_ZONA = {
 }
 NOMBRE_TIPO = {"casa": "Casa", "duplex": "Duplex", "lote": "Lote / Terreno", "depto": "Departamento"}
 
+# Equipamiento (muebles, electrodomésticos, decoración lista para alquilar/mudarse):
+# % fijo sobre el valor de tasación, elegido por el usuario (no se calibra en config).
+EQUIPAMIENTO_PCT = {"": 0.0, "5": 0.05, "7.5": 0.075, "10": 0.10}
+
 
 def _col():
     global _client
@@ -197,6 +201,13 @@ def tasar(inp: dict, cfg: dict) -> dict:
     # Cercanía al mar (≤200m): aplica a cualquier tipo, es un atributo de ubicación.
     if inp.get("cercaniaMar"):
         base *= v("mult_cercania_mar", 1.10)
+
+    # Equipamiento (muebles, electrodomésticos, decoración): % fijo elegido por el
+    # usuario, no aplica a lotes (no hay nada que equipar en un terreno).
+    equip_pct = EQUIPAMIENTO_PCT.get(str(inp.get("equipamiento") or ""), 0.0)
+    if equip_pct and tipo != "lote":
+        base *= (1 + equip_pct)
+        breakdown.append({"paso": f"Equipamiento (+{equip_pct * 100:g}%)", "valor": base})
 
     apertura = v("rango_apertura", 0.04)
     cmin = v("coef_varela_min", 0.83)

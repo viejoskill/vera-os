@@ -56,6 +56,7 @@ class CalcularBody(BaseModel):
     estacDesc: bool = False
     galeria: bool = False
     cercaniaMar: bool = False
+    equipamiento: str | None = None
 
 
 class JpgBody(CalcularBody):

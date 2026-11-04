@@ -5131,6 +5131,17 @@ p {
   color: var(--vera-color-text); border-radius: var(--vera-radius-md); padding: 10px 12px; font: inherit; outline: none;
 }
 .tas-field select:focus, .tas-field input:focus { border-color: var(--vera-color-primary); }
+.tas-field--zona { gap: 6px; }
+.tas__zona-row { display: flex; gap: 8px; align-items: stretch; }
+.tas__zona-row select { flex: 1; min-width: 0; }
+.tas__zona-map-btn {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  background: var(--vera-color-surface); border: 1px solid var(--vera-color-primary);
+  color: var(--vera-color-primary); border-radius: var(--vera-radius-md); padding: 0 12px;
+  font: inherit; font-size: var(--vera-font-size-xs); font-weight: 600; cursor: pointer;
+  transition: background-color 160ms ease;
+}
+.tas__zona-map-btn:hover { background: rgba(214, 170, 40, .12); }
 .tas__chks { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }
 .tas-chk { display: inline-flex; align-items: center; gap: 8px; font-size: var(--vera-font-size-sm); cursor: pointer; padding: 8px 10px; border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-md); }
 .tas-chk input { accent-color: var(--vera-color-primary); }
