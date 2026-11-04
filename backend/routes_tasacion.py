@@ -452,7 +452,7 @@ async def jpg(body: JpgBody):
             _ocard(ox, _ic_ware, semi_title, f"{semi} m² al 50% del cubierto", f"{_usd(round(r['pm2Constr'] / 2))} / m²")
             ox += ocw + ogap
         if show_lote:
-            _ocard(ox, _ic_land, lote_title, "Terreno libre según zona", _usd(r["valorLote"]))
+            _ocard(ox, _ic_land, lote_title, "Superficie total del terreno", _usd(r["valorLote"]))
         sy = ocy + och + 46
 
     # ---------------- Nota ----------------

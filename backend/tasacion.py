@@ -182,16 +182,15 @@ def tasar(inp: dict, cfg: dict) -> dict:
             vconstr_cub = cub * pconstr
             vconstr_semi = semicub * pconstr_semi
             vconstr = vconstr_cub + vconstr_semi
-            # El lote "libre" (el que se cotiza aparte, a precio de terreno) es el
-            # terreno total MENOS toda la superficie techada, sea cubierta o semicubierta.
-            m2libre = max(0.0, lote - cub - semicub)
-            vlote = m2libre * plote
+            # El lote se cotiza por su superficie TOTAL (método de costo de reposición:
+            # terreno completo + construcción), igual que el tipo "lote" puro arriba.
+            vlote = lote * plote
             base = vconstr + vlote
             pm2_constr, valor_lote, valor_semicub = pconstr, vlote, vconstr_semi
             breakdown.append({"paso": f"construcción cubierta ({cub:.0f}m² × {pconstr})", "valor": vconstr_cub})
             if semicub:
                 breakdown.append({"paso": f"construcción semicubierta ({semicub:.0f}m² × {pconstr_semi:g}, 50%)", "valor": vconstr_semi})
-            breakdown.append({"paso": f"lote libre ({m2libre:.0f}m² × {plote})", "valor": vlote})
+            breakdown.append({"paso": f"lote ({lote:.0f}m² × {plote})", "valor": vlote})
             amap = {"estrenar": "mult_ant_estrenar", "hasta10": "mult_ant_hasta10",
                     "diez25": "mult_ant_10a25", "mas25": "mult_ant_mas25"}
             base *= v(amap.get(inp.get("antiguedad"), "mult_ant_hasta10"), 1)

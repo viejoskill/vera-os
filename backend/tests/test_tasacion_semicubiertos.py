@@ -1,4 +1,5 @@
-# Tasaciones: semicubiertos al 50% del m² cubierto + lote libre = terreno - cub - semicub (iteration 84)
+# Tasaciones: semicubiertos al 50% del m² cubierto + lote cotizado por superficie TOTAL
+# del terreno (método de costo de reposición: terreno completo + construcción) (iteration 84/85)
 import base64
 import io
 import os
@@ -38,17 +39,18 @@ def test_calcular_duplex_with_semicubiertos(s):
     d = r.json()
     assert d["pm2Constr"] == 850
     assert d["valorSemicub"] == 8500
-    assert d["valorLote"] == 20500
+    assert d["valorLote"] == 190 * 205
     st = _steps(d)
     assert st.get("construcción cubierta (70m² × 850.0)") == 59500
     assert st.get("construcción semicubierta (20m² × 425, 50%)") == 8500
-    assert st.get("lote libre (100m² × 205.0)") == 20500
-    assert d["precioBase"] == 88500
-    assert d["pubMin"] == 84500 and d["pubMax"] == 92500
-    assert d["cierreMin"] == 70500 and d["cierreMax"] == 76500
+    assert st.get("lote (190m² × 205.0)") == 38950
+    assert d["precioBase"] == 106950
+    assert d["pubMin"] == 102500 and d["pubMax"] == 111500
+    assert d["cierreMin"] == 85000 and d["cierreMax"] == 92500
 
 
-# Regression: without semicubiertos identical to old formula
+# Regression: without semicubiertos, el lote sigue siendo la superficie total (sin cambios
+# de semicubiertos) pero sin el 50% extra de construcción.
 @pytest.mark.parametrize("semi", [0, None])
 def test_calcular_without_semicubiertos_regression(s, semi):
     b = dict(BODY)
@@ -59,15 +61,17 @@ def test_calcular_without_semicubiertos_regression(s, semi):
     d = s.post(f"{API}/calcular", json=b).json()
     assert d["valorSemicub"] == 0
     assert len(d["breakdown"]) == 2
-    assert d["valorLote"] == 120 * 205
-    assert d["precioBase"] == 70 * 850 + 120 * 205  # 84100
+    assert d["valorLote"] == 190 * 205
+    assert d["precioBase"] == 70 * 850 + 190 * 205  # 98450
 
 
-def test_semicub_exceeding_lote_clamps_lote_libre(s):
+def test_lote_valuation_uses_full_surface_not_libre(s):
+    """El lote se cotiza por su superficie TOTAL, no 'terreno - construido': aunque la
+    construcción cubra más superficie, el valor del lote no cambia."""
     b = dict(BODY, cubiertos=150, semicubiertos=60, lote=190)
     d = s.post(f"{API}/calcular", json=b).json()
-    assert d["valorLote"] == 0
-    assert d["precioBase"] == 150 * 850 + 60 * 425
+    assert d["valorLote"] == 190 * 205
+    assert d["precioBase"] == 150 * 850 + 60 * 425 + 190 * 205
 
 
 def test_semicub_other_calidad_and_multipliers(s):
@@ -75,7 +79,7 @@ def test_semicub_other_calidad_and_multipliers(s):
     d = s.post(f"{API}/calcular", json=b).json()
     assert d["pm2Constr"] == 1150
     assert d["valorSemicub"] == 20 * 575
-    expected = (70 * 1150 + 20 * 575 + 100 * 205) * 1.12 * 1.12
+    expected = (70 * 1150 + 20 * 575 + 190 * 205) * 1.12 * 1.12
     assert abs(d["precioBase"] - expected) <= 1
 
 
