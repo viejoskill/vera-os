@@ -416,6 +416,7 @@ async def jpg(body: JpgBody):
 
     # ---------------- De dónde sale el número (transparencia para el cliente) ----------------
     show_constr = tipo not in ("depto", "lote") and r.get("pm2Constr", 0) > 0
+    show_semicub = tipo not in ("depto", "lote") and r.get("valorSemicub", 0) > 0 and semi > 0
     show_lote = tipo not in ("depto", "lote") and r.get("valorLote", 0) > 0
     if show_constr or show_lote:
         d.line([(MX, sy), (RX, sy)], fill=HAIR, width=2)
@@ -424,24 +425,33 @@ async def jpg(body: JpgBody):
         sy += 44
         ocy = sy
         och = 196
-        ogap = 30
-        n_cards = (1 if show_constr else 0) + (1 if show_lote else 0)
-        ocw = (RX - MX - ogap) if n_cards == 1 else (RX - MX - ogap) / 2
+        ogap = 24
+        cards = [c for c in (show_constr, show_semicub, show_lote) if c]
+        n_cards = len(cards)
+        ocw = (RX - MX - ogap * (n_cards - 1)) / n_cards
         ox = MX
+
+        titlew = ocw - 104 - 20
 
         def _ocard(x: float, icon, title: str, subtitle: str, valtxt: str) -> None:
             d.rounded_rectangle([(x, ocy), (x + ocw, ocy + och)], radius=18, fill=CARD_REF)
             d.ellipse([(x + 30, ocy + 30), (x + 86, ocy + 86)], fill=(236, 234, 226))
             icon(d, x + 44, ocy + 44, 28, INK_SOFT, 5)
-            _left(d, x + 104, ocy + 34, title, _font(20, True), INK)
-            _left(d, x + 104, ocy + 64, subtitle, _font(17), INK_SOFT)
-            _left(d, x + 30, ocy + 122, valtxt, _fit(d, valtxt, ocw - 60, 34, True), INK)
+            _left(d, x + 104, ocy + 34, title, _fit(d, title, titlew, 19, True), INK)
+            _left(d, x + 104, ocy + 64, subtitle, _fit(d, subtitle, titlew, 16, False), INK_SOFT)
+            _left(d, x + 30, ocy + 122, valtxt, _fit(d, valtxt, ocw - 60, 32, True), INK)
 
+        constr_title = "CONSTRUCCIÓN" if n_cards == 3 else "CONSTRUCCIÓN COTIZADA"
+        semi_title = "SEMICUBIERTO" if n_cards == 3 else "SEMICUBIERTO (50%)"
+        lote_title = "VALOR LOTE" if n_cards == 3 else "VALOR DEL LOTE"
         if show_constr:
-            _ocard(ox, _ic_home, "CONSTRUCCIÓN COTIZADA", f"{_i(body.cubiertos)} m² construidos", f"{_usd(r['pm2Constr'])} / m²")
+            _ocard(ox, _ic_home, constr_title, f"{_i(body.cubiertos)} m² construidos", f"{_usd(r['pm2Constr'])} / m²")
+            ox += ocw + ogap
+        if show_semicub:
+            _ocard(ox, _ic_ware, semi_title, f"{semi} m² al 50% del cubierto", f"{_usd(round(r['pm2Constr'] / 2))} / m²")
             ox += ocw + ogap
         if show_lote:
-            _ocard(ox, _ic_land, "VALOR DEL LOTE", "Terreno libre según zona", _usd(r["valorLote"]))
+            _ocard(ox, _ic_land, lote_title, "Terreno libre según zona", _usd(r["valorLote"]))
         sy = ocy + och + 46
 
     # ---------------- Nota ----------------

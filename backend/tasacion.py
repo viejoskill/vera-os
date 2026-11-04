@@ -147,6 +147,7 @@ def tasar(inp: dict, cfg: dict) -> dict:
     base = 0.0
     pm2_constr = 0.0
     valor_lote = 0.0
+    valor_semicub = 0.0
 
     if tipo == "depto":
         m2 = float(inp.get("cubiertos") or 0)
@@ -165,6 +166,7 @@ def tasar(inp: dict, cfg: dict) -> dict:
             base *= (1 + extra)
     else:
         cub = float(inp.get("cubiertos") or 0)
+        semicub = float(inp.get("semicubiertos") or 0)
         lote = float(inp.get("lote") or 0)
         if tipo == "lote":
             pm2 = v(f"precio_lote_{zsuf}")
@@ -174,12 +176,21 @@ def tasar(inp: dict, cfg: dict) -> dict:
             calidad = inp.get("calidad") or "estandar"
             pconstr = v(f"precio_constr_{calidad}")
             plote = v(f"precio_lote_{zsuf}")
-            vconstr = cub * pconstr
-            m2libre = max(0.0, lote - cub)
+            # Los m² semicubiertos (galerías, porches techados) se cotizan al 50% del
+            # valor del cubierto: están techados pero no son superficie habitable plena.
+            pconstr_semi = pconstr * 0.5
+            vconstr_cub = cub * pconstr
+            vconstr_semi = semicub * pconstr_semi
+            vconstr = vconstr_cub + vconstr_semi
+            # El lote "libre" (el que se cotiza aparte, a precio de terreno) es el
+            # terreno total MENOS toda la superficie techada, sea cubierta o semicubierta.
+            m2libre = max(0.0, lote - cub - semicub)
             vlote = m2libre * plote
             base = vconstr + vlote
-            pm2_constr, valor_lote = pconstr, vlote
-            breakdown.append({"paso": f"construcción ({cub}m² × {pconstr})", "valor": vconstr})
+            pm2_constr, valor_lote, valor_semicub = pconstr, vlote, vconstr_semi
+            breakdown.append({"paso": f"construcción cubierta ({cub:.0f}m² × {pconstr})", "valor": vconstr_cub})
+            if semicub:
+                breakdown.append({"paso": f"construcción semicubierta ({semicub:.0f}m² × {pconstr_semi:g}, 50%)", "valor": vconstr_semi})
             breakdown.append({"paso": f"lote libre ({m2libre:.0f}m² × {plote})", "valor": vlote})
             amap = {"estrenar": "mult_ant_estrenar", "hasta10": "mult_ant_hasta10",
                     "diez25": "mult_ant_10a25", "mas25": "mult_ant_mas25"}
@@ -230,4 +241,5 @@ def tasar(inp: dict, cfg: dict) -> dict:
         "breakdown": breakdown,
         "pm2Constr": round(pm2_constr),
         "valorLote": round(valor_lote),
+        "valorSemicub": round(valor_semicub),
     }
