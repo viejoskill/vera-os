@@ -252,7 +252,9 @@ export const TasarPublico = () => {
                   <Chk label="Deck" checked={f.deck} onChange={(v) => set('deck', v)} testid="tasp-deck" />
                   <Chk label="Cochera cubierta" checked={f.estacCub} onChange={(v) => set('estacCub', v)} testid="tasp-estaccub" />
                 </div>
-                <Sel label="Equipamiento" value={f.equipamiento} onChange={(v) => set('equipamiento', v)} options={EQUIPAMIENTO} testid="tasp-equipamiento" />
+                <div style={{ marginTop: 14 }}>
+                  <Sel label="Equipamiento" value={f.equipamiento} onChange={(v) => set('equipamiento', v)} options={EQUIPAMIENTO} testid="tasp-equipamiento" />
+                </div>
               </>
             )}
 

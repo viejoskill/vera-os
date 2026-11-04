@@ -5142,6 +5142,9 @@ p {
   transition: background-color 160ms ease;
 }
 .tas__zona-map-btn:hover { background: rgba(214, 170, 40, .12); }
+.tas__zona-modal-panel { max-width: 560px; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; }
+.tas__zona-modal-body { overflow-y: auto; flex: 1; min-height: 0; }
+.tas__zona-modal-foot { padding: 12px var(--vera-space-lg) var(--vera-space-lg); border-top: 1px solid var(--vera-color-border); display: flex; justify-content: flex-end; }
 .tas__chks { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }
 .tas-chk { display: inline-flex; align-items: center; gap: 8px; font-size: var(--vera-font-size-sm); cursor: pointer; padding: 8px 10px; border: 1px solid var(--vera-color-border); border-radius: var(--vera-radius-md); }
 .tas-chk input { accent-color: var(--vera-color-primary); }

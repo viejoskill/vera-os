@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Calculator, Download, UserPlus, Sparkles, Share2, Check, Inbox, MessageCircle, MapPin, RefreshCw, FileSignature, Map as MapIcon, X } from 'lucide-react';
 import { Input, Button } from '@vera/ui';
@@ -486,24 +487,27 @@ export const TasacionesScreen = () => {
           {flash && <p className="tas__flash" data-testid="tas-flash">{flash}</p>}
         </aside>
       </div>
-      {showMapaZona && (
-        <div className="vera-modal" role="dialog" aria-modal="true" data-testid="tas-zona-mapa-modal" onClick={(e) => e.stopPropagation()}>
+      {showMapaZona && createPortal(
+        <div className="vera-modal" role="dialog" aria-modal="true" data-testid="tas-zona-mapa-modal">
           <div className="vera-modal__backdrop" onClick={() => setShowMapaZona(false)} />
-          <div className="vera-modal__panel" style={{ maxWidth: 560 }}>
+          <div className="vera-modal__panel tas__zona-modal-panel">
             <div className="vera-modal__head">
               <h3 className="vera-modal__title"><MapIcon size={17} /> Elegí la zona en el mapa</h3>
               <button type="button" className="vera-modal__close" aria-label="Cerrar" data-testid="tas-zona-mapa-close" onClick={() => setShowMapaZona(false)}>
                 <X size={18} />
               </button>
             </div>
-            <div className="vera-modal__body">
+            <div className="vera-modal__body tas__zona-modal-body">
               <MapaZonas value={f.zona} onChange={(v) => set('zona', v)} />
+            </div>
+            <div className="tas__zona-modal-foot">
               <Button variant="primary" size="md" onClick={() => setShowMapaZona(false)} data-testid="tas-zona-mapa-listo">
                 <Check size={15} /> Listo
               </Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

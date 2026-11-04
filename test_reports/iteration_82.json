@@ -1,0 +1,37 @@
+{
+  "summary": "Tested Tasaciones Equipamiento % (5/7.5/10) and the zone map picker in the manual tasador, plus the public /tasar page. Backend: 11/12 pytest pass. Manual tasador UI: everything requested works. Map modal: 22 zones, map and list stay in sync both ways, Listo and X both close it. Equipamiento select has 4 options and is hidden for Lote. On Casa/av2/100m2/300m2/estandar/bueno/hasta10 the closing value was 124000-135000 with no equipamiento, 130500-141500 at +5%, 133500-145000 at +7.5% and 136500-148500 at +10% (+10.0%). JPG download, save with owner/address and the manual list all work. Public /tasar shows tasp-equipamiento with the 4 options and no JS errors. One real gap: the public estimator ignores equipamiento in zones that are not calibrated, which is 21 of 22 zones today.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/public/tasacion/estimar", "issue": "Equipamiento (and all amenities/multipliers) has no effect when the zone is uncalibrated (precio_lote_{zona}=0). Only av2=205 is calibrated, so 21 of 22 zones use the method='mercadolibre' branch in tasacion_online.estimar: base = market medianPm2 * area, and the tasar() result is thrown away. Repro: casa/centro/100/300 gives estMax=146500 both with and without equipamiento='10'. A public user picks 'Equipada +10%' and the estimate does not change. Fix: in the ML branch, apply (1+EQUIPAMIENTO_PCT) to base when tipo != lote (and possibly cercaniaMar)."},
+      {"endpoint": "POST /api/tasacion/calcular & /jpg (_persist_manual)", "issue": "equipamiento is not saved in the manual record. Also, the uuid5 dedupe key leaves out equipamiento, so re-running the same property with a different % overwrites the earlier record. This is probably acceptable; just make sure it is intended."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Tasaciones zone map modal", "issue": "The sidebar and topbar sit above the modal backdrop: document.elementFromPoint(30,540) returns .vera-sidebar, and both stay undimmed and clickable. Clicking the sidebar area does not close the modal. Raise the .vera-modal z-index above the sidebar/topbar, or render the modal in a portal.", "selector": "[data-testid='tas-zona-mapa-modal']", "priority": "LOW"},
+      {"component": "Tasaciones zone map modal", "issue": "At 1920x1080 the panel (scrollHeight 1062 vs clientHeight 970) needs scrolling to reach the 'Listo' button, because the map image plus the avenue pills fill the panel. Consider a smaller map max-height or a sticky footer for Listo.", "selector": "[data-testid='tas-zona-mapa-listo']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/tasar public form", "issues": ["The 'Equipamiento' label sits right under the last checkbox row (Quincho/Deck/Cochera) with no top margin; add a gap like the manual form's tas__row2."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_tasacion_equipamiento.py", "/app/backend/tests/test_tasacion_manuales.py", "/app/test_reports/pytest/pytest_iter82.xml"],
+  "action_items": [
+    "Apply equipamiento in tasacion_online.estimar when the method is 'mercadolibre' (uncalibrated zones), otherwise the new public select does nothing in 21 of 22 zones",
+    "(Low) Give the zone map modal a z-index above the sidebar/topbar, and keep 'Listo' visible without scrolling at 1080p",
+    "(Low) Add spacing above the Equipamiento select in the public /tasar form"
+  ],
+  "critical_code_review_comments": [
+    "tasacion.tasar: equipamiento is applied correctly after cercaniaMar and skipped for lote; unknown values fall back to 0% safely.",
+    "When the user switches tipo to lote, f.equipamiento keeps its previous value and is still sent; the backend ignores it, so this is harmless.",
+    "TasacionesScreen.tsx guardarLead/generarJpg do not handle fetch errors (no try/catch); this was already the case before."
+  ],
+  "updated_files": ["/app/backend/tests/test_tasacion_equipamiento.py"],
+  "success_rate": {"backend": "92% (11/12)", "frontend": "100% of requested flows"},
+  "seed_data_creation": "One manual tasacion (TEST_QA Equip82, id 22008867-30cb-576a-8d0a-d5c9dba8514c) was created by the UI and deleted afterwards. The pytest manual tests clean up after themselves. The public form was not submitted, so no lead was created. 'Guardar lead' was not clicked, so no person was created.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Login at /veraos/login (/login goes to the public site). qa_varela@vera.test has the 'tasaciones' section. Only zone av2 is calibrated (precio_lote_av2=205); use av2 for manual calc value checks. Run pytest tests/test_tasacion_equipamiento.py; test_public_estimar_equipamiento_uncalibrated_zone fails until the ML-branch fix lands. Public estimar route: /api/public/tasacion/estimar."
+}

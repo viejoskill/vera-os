@@ -63,6 +63,9 @@ async def estimar(inp: dict) -> dict:
     elif market.get("available") and area > 0:
         pm2_zona = market["medianPm2"]
         base = pm2_zona * area
+        equip_pct = tasacion.EQUIPAMIENTO_PCT.get(str(inp.get("equipamiento") or ""), 0.0)
+        if equip_pct and tipo != "lote":
+            base *= (1 + equip_pct)
         method = "mercadolibre"
         market_available = True
     else:
