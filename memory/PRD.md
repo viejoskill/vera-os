@@ -15,6 +15,17 @@
 
 # VERA OS — PRD
 
+## Fix (2026-11-04): Alquileres — contrato y edición de fechas de reserva
+- Contrato (cláusula CUARTA, `backend/rentals_pdf.py`): se removió la frase condicional final "si no se encontrara en perfecto estado" del párrafo de limpieza. Ahora el cargo de limpieza es incondicional: "...abonando además la suma de $X por la limpieza."
+- Nueva funcionalidad: antes NO existía forma de editar checkIn/checkOut de una reserva ya creada. Se agregó `PATCH /api/rentals/reservations/{rid}/fechas` (recalcula noches, valida checkOut>checkIn, valida que no choque con otra reserva/bloqueo de la misma propiedad excluyéndose a sí misma, registra historial). `_occupied()`/`_assert_free()` ahora aceptan `exclude_id` opcional. UI: el modal "Editar datos de la reserva" (`EditarHuesped.tsx`) ahora tiene campos de check-in/check-out editables.
+- Fix adicional (hallado por testing agent): fecha malformada causaba 500 en vez de 400 — se agregó manejo de `ValueError` en `_nights()`, beneficia también a creación de reservas/bloqueos (mismo helper compartido).
+- Tests: `backend/tests/test_rentals_fechas_contrato.py` (nuevo) + historial + geocoding = 20/20 passed. Testing agent validó 95%→100% backend y 100% frontend (iteration_86.json).
+- Nota: `test_rentals.py`, `test_rentals_shortstay_monto.py`, `test_rentals_prereserva_calendar.py`, `test_duplicate_rentals_ventas.py` tienen fallas preexistentes NO relacionadas con este fix (confirmado con git stash) — fixtures/datos legacy rotos, pendiente de limpieza futura si se requiere.
+- Backlog (no bloqueante, bajo impacto):
+  - El guardado del modal de edición no es atómico (si falla un PATCH a mitad de camino, algunos campos quedan guardados y otros no).
+  - Cambiar fechas no recalcula `montoEstimado` automáticamente (el usuario puede ajustarlo a mano en el mismo modal).
+  - No hay restricción para reprogramar reservas canceladas/finalizadas.
+
 
 ## Original problem statement
 VERA OS: a modern, modular, AI-first **Real Estate Operating System** (not a CRM).

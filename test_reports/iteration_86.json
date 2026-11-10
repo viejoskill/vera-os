@@ -1,0 +1,35 @@
+{
+  "summary": "Alquileres: (1) Contrato cláusula CUARTA - verified via pypdf text extraction that PDF contains 'por la limpieza.' and the phrase 'si no se encontrara en perfecto estado' is gone. (2) New PATCH /api/rentals/reservations/{rid}/fechas: free move (noches recalculated, persisted, calendar updated, historial Check-in/Check-out with actor), self-overlap allowed, same dates no new historial, clash with other reservation -> 409 and nothing changed, clash with block -> 409, adjacent dates allowed, checkOut<=checkIn -> 400, unknown rid -> 404. UI (qa_varela login -> /veraos/alquileres/A161 -> tab Reservas -> Editar datos): date fields prefilled, clash shows 'Esas fechas ya no están disponibles.' inline and modal stays open, invalid range blocked client-side, free range saves and list row shows new dates + 5 noches; editing nombre/monto/deposito/limpieza without touching dates does NOT call /fechas and works as before, historial shows all 6 entries. Regression test_rentals_historial.py + test_rentals_geocoding.py pass. 19/20 backend tests pass; only failure is a malformed date returning 500.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "PATCH /api/rentals/reservations/{rid}/fechas", "issue": "Malformed date (e.g. checkIn='foo') returns 500 because date.fromisoformat raises ValueError in _nights(). The same thing happens in POST /reservations and /blocks. Should return 400/422. The UI uses type=date inputs, so the risk is low."},
+      {"endpoint": "PATCH /api/rentals/reservations/{rid}/fechas", "issue": "montoEstimado is not recalculated when the number of nights changes (3->5 noches kept $78.750). It may be intentional because the user can edit Importe total in the same modal, but consider a hint or auto-quote."},
+      {"endpoint": "PATCH /api/rentals/reservations/{rid}/fechas", "issue": "There is no check on estado: cancelled or finalized reservations and blocks can also be rescheduled. Consider restricting this."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "EditarHuesped guardar()", "issue": "Saving is not atomic: if updateFechas succeeds and a later call (huesped/deposito/limpieza/monto) fails, the dates stay changed while an error is shown. Minor.", "affected_selectors": ["rt-edit-huesped-save-{id}"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_rentals_fechas_contrato.py", "/app/test_reports/pytest/iteration_86.xml"],
+  "action_items": [
+    "Optional: catch ValueError in _nights/_assert_free and return 400 for malformed dates",
+    "Optional: decide whether changing dates should recalculate montoEstimado or show a hint",
+    "Optional: block rescheduling of cancelada/finalizada reservations"
+  ],
+  "critical_code_review_comments": [
+    "routes_rentals.py update_fechas: no date format validation (str fields), leads to 500",
+    "update_fechas does not check estado; it allows moving canceled reservations into occupied ranges (canceled ones are not in OCUPA, but after the move they still don't occupy, so this is harmless but odd)",
+    "EditarHuesped.tsx: sequential non-atomic saves (pre-existing pattern)"
+  ],
+  "updated_files": ["/app/backend/tests/test_rentals_fechas_contrato.py"],
+  "success_rate": {"backend": "95% (19/20)", "frontend": "100%"},
+  "seed_data_creation": "Created TEST_ reservations/blocks on A161 (2028 dates); all deleted by id afterwards. Contract generation assigned a nroContrato counter value to a TEST reservation (side effect of _assign_numero).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Login qa_varela@vera.test / VeraQA!2026ml at /veraos/login. Rental workspace: /veraos/alquileres/6744cf8a907f4a239a7504101c66a2df (A161 test property); click the 'Reservas' tab to see the reservation list (rt-wsres-{id}, rt-wsedit-huesped-{id}). Run the tests without -p no:xdist (pytest.ini uses xdist)."
+}

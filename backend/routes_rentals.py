@@ -130,8 +130,11 @@ def _slugify(text: str) -> str:
 
 
 def _nights(check_in: str, check_out: str) -> int:
-    d1 = date.fromisoformat(check_in)
-    d2 = date.fromisoformat(check_out)
+    try:
+        d1 = date.fromisoformat(check_in)
+        d2 = date.fromisoformat(check_out)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(400, "Fecha inválida, usá el formato AAAA-MM-DD.") from exc
     return (d2 - d1).days
 
 
