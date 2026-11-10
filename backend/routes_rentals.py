@@ -425,16 +425,20 @@ async def _get_prop(pid: str) -> dict:
     return p
 
 
-async def _occupied(property_id: str) -> list[dict]:
-    """Rangos ocupados (reservas activas + bloqueos)."""
-    cur = _res().find({"propertyId": property_id, "estado": {"$in": list(OCUPA)}})
+async def _occupied(property_id: str, exclude_id: str | None = None) -> list[dict]:
+    """Rangos ocupados (reservas activas + bloqueos). `exclude_id` se usa al reprogramar una
+    reserva existente, para no chocar contra sus propias fechas viejas."""
+    query: dict = {"propertyId": property_id, "estado": {"$in": list(OCUPA)}}
+    if exclude_id:
+        query["_id"] = {"$ne": exclude_id}
+    cur = _res().find(query)
     return [{"checkIn": r["checkIn"], "checkOut": r["checkOut"], "estado": r["estado"]} async for r in cur]
 
 
-async def _assert_free(property_id: str, check_in: str, check_out: str) -> None:
+async def _assert_free(property_id: str, check_in: str, check_out: str, exclude_id: str | None = None) -> None:
     if _nights(check_in, check_out) < 1:
         raise HTTPException(400, "El check-out debe ser posterior al check-in.")
-    for o in await _occupied(property_id):
+    for o in await _occupied(property_id, exclude_id):
         if _overlap(check_in, check_out, o["checkIn"], o["checkOut"]):
             raise HTTPException(409, "Esas fechas ya no están disponibles.")
 
@@ -870,6 +874,33 @@ async def update_monto(rid: str, body: MontoBody):
     await _res().update_one({"_id": rid}, {"$set": {"montoEstimado": nuevo, "updatedAt": _now()}})
     await _add_historial(rid, body.actorEmail, [("Importe total", r.get("montoEstimado"), nuevo)])
     return _res_out(await _res().find_one({"_id": rid}))
+
+class FechasBody(BaseModel):
+    checkIn: str
+    checkOut: str
+    actorEmail: str | None = None
+
+
+@router.patch("/reservations/{rid}/fechas")
+async def update_fechas(rid: str, body: FechasBody):
+    """Reprograma las fechas de una reserva existente (ej. el huésped pide cambiar de
+    estadía). Valida que las nuevas fechas no choquen con OTRA reserva/bloqueo de la misma
+    propiedad (se excluye a sí misma del chequeo de superposición)."""
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    await _assert_free(r["propertyId"], body.checkIn, body.checkOut, exclude_id=rid)
+    nuevas_noches = _nights(body.checkIn, body.checkOut)
+    await _res().update_one({"_id": rid}, {"$set": {
+        "checkIn": body.checkIn, "checkOut": body.checkOut, "noches": nuevas_noches, "updatedAt": _now(),
+    }})
+    await _add_historial(rid, body.actorEmail, [
+        ("Check-in", r.get("checkIn"), body.checkIn),
+        ("Check-out", r.get("checkOut"), body.checkOut),
+    ])
+    return _res_out(await _res().find_one({"_id": rid}))
+
+
 
 
 @router.delete("/reservations/{rid}", status_code=204)

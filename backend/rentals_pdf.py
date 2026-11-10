@@ -547,7 +547,7 @@ def build_contrato_pdf(data: dict) -> bytes:
         ("CUARTA", f"EL LOCADOR entrega la propiedad en perfecto estado de uso y conservación, con todos sus ambientes limpios. "
                    f"EL LOCATARIO se obliga a devolverla en el mismo estado, salvo el desgaste natural del buen uso. Al finalizar, "
                    f"se realizará una revisión de la propiedad y del mobiliario; lo faltante o deteriorado deberá reponerse o abonarse "
-                   f"a precio de plaza, abonando además la suma de {_fmt(limpieza, mon)} por la limpieza si no se encontrara en perfecto estado. "
+                   f"a precio de plaza, abonando además la suma de {_fmt(limpieza, mon)} por la limpieza. "
                    f"En garantía del fiel cumplimiento, EL LOCATARIO deposita en la Oficina interviniente la suma de {_fmt(deposito, mon)}, "
                    "importe que será devuelto al finalizar el contrato una vez abonadas las facturas pendientes (si las hubiere). "
                    "El depósito se devuelve en la misma moneda e importe entregados al ingreso."),

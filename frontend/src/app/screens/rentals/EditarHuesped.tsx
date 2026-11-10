@@ -6,7 +6,7 @@ import { api, type Reservation } from './api';
 
 type EditValues = {
   form: { nombre: string; telefono: string; email: string; dni: string; domicilio: string; localidad: string; huespedes: number; comentario: string };
-  deposito: string; limpieza: string; monto: string;
+  deposito: string; limpieza: string; monto: string; checkIn: string; checkOut: string;
 };
 interface Draft { baseline: EditValues; edited: EditValues; }
 
@@ -28,6 +28,7 @@ const originalsOf = (reserva: Reservation): EditValues => {
     deposito: reserva.depositoOverride != null ? String(reserva.depositoOverride) : '',
     limpieza: reserva.limpiezaOverride != null ? String(reserva.limpiezaOverride) : '',
     monto: String(reserva.montoEstimado ?? ''),
+    checkIn: reserva.checkIn, checkOut: reserva.checkOut,
   };
 };
 
@@ -88,6 +89,8 @@ const EditarHuespedForm = ({ reserva, onDone, onClose }: {
   const [deposito, setDeposito] = useState(initial.deposito);
   const [limpieza, setLimpieza] = useState(initial.limpieza);
   const [monto, setMonto] = useState(initial.monto);
+  const [checkIn, setCheckIn] = useState(initial.checkIn);
+  const [checkOut, setCheckOut] = useState(initial.checkOut);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [showHistorial, setShowHistorial] = useState(false);
@@ -101,10 +104,10 @@ const EditarHuespedForm = ({ reserva, onDone, onClose }: {
   // Borrador: solo se guarda si lo tipeado difiere de los datos originales (evita ruido y borradores
   // viejos pisando datos nuevos); si vuelve a coincidir con el original, se borra.
   useEffect(() => {
-    const current: EditValues = { form, deposito, limpieza, monto };
+    const current: EditValues = { form, deposito, limpieza, monto, checkIn, checkOut };
     if (sameValues(current, originals)) { clearDraft(reserva.id); return; }
     try { localStorage.setItem(draftKey(reserva.id), JSON.stringify({ baseline: originals, edited: current })); } catch { /* noop */ }
-  }, [reserva.id, originals, form, deposito, limpieza, monto]);
+  }, [reserva.id, originals, form, deposito, limpieza, monto, checkIn, checkOut]);
 
   const set = (k: keyof typeof form, v: string | number) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -113,11 +116,17 @@ const EditarHuespedForm = ({ reserva, onDone, onClose }: {
   const guardar = async () => {
     const montoNum = Number(monto);
     if (!monto || !(montoNum > 0)) { setError('El importe total tiene que ser mayor a 0.'); return; }
+    if (!checkIn || !checkOut) { setError('Completá las dos fechas de la estadía.'); return; }
+    if (checkOut <= checkIn) { setError('El check-out tiene que ser posterior al check-in.'); return; }
     setSaving(true); setError('');
     try {
+      let actualizada = reserva;
+      if (checkIn !== reserva.checkIn || checkOut !== reserva.checkOut) {
+        actualizada = await api.updateFechas(reserva.id, checkIn, checkOut, actorEmail);
+      }
       await api.updateHuesped(reserva.id, { ...form, huespedes: Number(form.huespedes) || 1 }, actorEmail);
       await api.updateDeposito(reserva.id, deposito === '' ? null : Number(deposito), actorEmail);
-      let actualizada = await api.updateLimpieza(reserva.id, limpieza === '' ? null : Number(limpieza), actorEmail);
+      actualizada = await api.updateLimpieza(reserva.id, limpieza === '' ? null : Number(limpieza), actorEmail);
       if (montoNum !== reserva.montoEstimado) {
         actualizada = await api.updateMonto(reserva.id, montoNum, actorEmail);
       }
@@ -138,6 +147,12 @@ const EditarHuespedForm = ({ reserva, onDone, onClose }: {
         <p className="rt-modal__sub">{reserva.propertyTitulo} · {reserva.checkIn} → {reserva.checkOut}</p>
         {restored && <p className="rt-modal__draftnotice" data-testid={`rt-edit-draft-restored-${reserva.id}`}>Recuperamos lo que estabas editando antes de cambiar de ventana.</p>}
 
+        <div className="rt-row2">
+          <label className="rt-field"><span>Check-in</span>
+            <input type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} data-testid={`rt-edit-checkin-${reserva.id}`} /></label>
+          <label className="rt-field"><span>Check-out</span>
+            <input type="date" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} data-testid={`rt-edit-checkout-${reserva.id}`} /></label>
+        </div>
         <div className="rt-row2">
           <label className="rt-field"><span>Nombre y apellido</span>
             <input value={form.nombre} onChange={(e) => set('nombre', e.target.value)} data-testid={`rt-edit-huesped-nombre-${reserva.id}`} /></label>

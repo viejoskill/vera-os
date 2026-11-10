@@ -117,6 +117,8 @@ export const api = {
     fetch(`${RENTALS_API}/reservations/${rid}/limpieza`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limpieza, actorEmail }) }).then(json),
   updateMonto: (rid: string, monto: number, actorEmail?: string): Promise<Reservation> =>
     fetch(`${RENTALS_API}/reservations/${rid}/monto`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ monto, actorEmail }) }).then(json),
+  updateFechas: (rid: string, checkIn: string, checkOut: string, actorEmail?: string): Promise<Reservation> =>
+    fetch(`${RENTALS_API}/reservations/${rid}/fechas`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ checkIn, checkOut, actorEmail }) }).then(json),
   deleteReservation: (rid: string) => fetch(`${RENTALS_API}/reservations/${rid}`, { method: 'DELETE' }).then(json),
   listMovimientos: (pid: string): Promise<Movimiento[]> => fetch(`${RENTALS_API}/properties/${pid}/movimientos`).then(json),
   createMovimiento: (body: Record<string, unknown>): Promise<Movimiento> =>
