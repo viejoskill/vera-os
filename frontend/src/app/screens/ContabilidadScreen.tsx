@@ -181,9 +181,11 @@ export const ContabilidadScreen = () => {
     try {
       const r = await fetch(`${API}/comisiones/backfill`, { method: 'POST' });
       const d = await r.json();
-      setBackfillMsg(d.generadas > 0
-        ? `Se generaron ${d.generadas} comisión${d.generadas > 1 ? 'es' : ''} de alquiler.`
-        : 'No había comisiones pendientes de generar (revisá que el % ya esté guardado en la propiedad).');
+      const partes: string[] = [];
+      if (d.generadas > 0) partes.push(`se generaron ${d.generadas} comisión${d.generadas > 1 ? 'es' : ''} de alquiler`);
+      if (d.huerfanasEliminadas > 0) partes.push(`se limpiaron ${d.huerfanasEliminadas} comisión${d.huerfanasEliminadas > 1 ? 'es' : ''} de reservas ya borradas`);
+      if (d.fechasCorregidas > 0) partes.push(`se corrigió la fecha de ${d.fechasCorregidas} comisión${d.fechasCorregidas > 1 ? 'es' : ''} (ahora cuentan al confirmarse, no al check-in)`);
+      setBackfillMsg(partes.length ? `Listo: ${partes.join(', ')}.` : 'No había nada para corregir (comisiones y reservas ya están al día).');
       await load();
     } catch {
       setBackfillMsg('No se pudo recalcular. Probá de nuevo.');

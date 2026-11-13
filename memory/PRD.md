@@ -15,6 +15,16 @@
 
 # VERA OS — PRD
 
+## Fix (2026-11-07): Contabilidad — comisiones "huérfanas" de reservas borradas
+- El usuario reportó en PRODUCCIÓN: "tengo 18 reservas confirmadas con seña paga pero en Contabilidad solo veo 9", y pidió borrar una comisión de prueba a nombre de "Cata Varela".
+- RCA (vía deployer, datos reales de producción): de las 18, 9 tienen check-in en 2026 y 9 en 2027 (temporada ene-feb) — el panel de Contabilidad sólo mostraba el año 2026 por defecto, por eso la mitad no aparecía (el usuario debe ampliar el rango de fechas para verlas; esto quedó pendiente de decisión del usuario, ver Backlog).
+- Bug real encontrado: 2 comisiones quedaron "huérfanas" en `rental_movimientos` (reservaId apuntando a una reserva ya borrada, de antes de que existiera el borrado en cascada) — una de ellas era justo la "Cata Varela" ($86.400, checkIn 2026-09-21) que inflaba el conteo de 9. El borrado en cascada al eliminar una reserva YA estaba en el código (`delete_reservation` en `routes_rentals.py`), así que no se repitió hacia adelante, pero las 2 viejas quedaron sueltas.
+- Fix: se extendió `POST /api/contabilidad/comisiones/backfill` (botón "Recalcular comisiones de alquiler" ya existente en Contabilidad) para que también detecte y borre comisiones huérfanas (reservaId sin reserva asociada), sin tocar comisiones de reservas que sí existen. Es la única vía para corregir datos de producción (no se puede escribir en la DB de producción directamente) — el usuario debe clickear ese botón una vez que este fix esté desplegado.
+- De paso, esto también genera automáticamente la comisión faltante de "Daniela Ramos" (prop A024, $75.000) que el RCA detectó sin comisión pese a que la propiedad ya tiene comisión mínima configurada (la lógica de backfill ya cubre ese caso).
+- Tests: `backend/tests/test_contabilidad_comisiones_huerfanas.py` (nuevo) = 3/3 passed.
+- Backlog / pendiente de decisión del usuario:
+  - Si prefiere que la comisión se contabilice al momento de CONFIRMAR la reserva (seña paga) en vez de al check-in de la estadía — pregunta hecha, respuesta pendiente. Si se confirma, hay que cambiar el campo `fecha` en la generación automática de comisión (`routes_rentals.py` líneas ~705 y ~786, y `routes_contabilidad.py` backfill línea ~470) de `r.get("checkIn")` a la fecha de confirmación, y decidir si se migran también las 18 comisiones ya existentes (usando su `createdAt` como proxy de fecha de confirmación).
+
 ## Fix (2026-11-04): Alquileres — contrato y edición de fechas de reserva
 - Contrato (cláusula CUARTA, `backend/rentals_pdf.py`): se removió la frase condicional final "si no se encontrara en perfecto estado" del párrafo de limpieza. Ahora el cargo de limpieza es incondicional: "...abonando además la suma de $X por la limpieza."
 - Nueva funcionalidad: antes NO existía forma de editar checkIn/checkOut de una reserva ya creada. Se agregó `PATCH /api/rentals/reservations/{rid}/fechas` (recalcula noches, valida checkOut>checkIn, valida que no choque con otra reserva/bloqueo de la misma propiedad excluyéndose a sí misma, registra historial). `_occupied()`/`_assert_free()` ahora aceptan `exclude_id` opcional. UI: el modal "Editar datos de la reserva" (`EditarHuesped.tsx`) ahora tiene campos de check-in/check-out editables.

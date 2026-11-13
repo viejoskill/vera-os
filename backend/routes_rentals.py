@@ -99,6 +99,12 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _today() -> str:
+    """Fecha de HOY (YYYY-MM-DD), usada como fecha contable de la comisión: se cuenta al
+    confirmar la reserva (seña pagada), no al check-in futuro de la estadía."""
+    return date.today().isoformat()
+
+
 async def _next_code() -> str:
     """Código aleatorio y único para Alquileres: A100–A1000 (letra A + número, sin guion)."""
     used: set[int] = set()
@@ -702,7 +708,7 @@ async def _gen_comision(rid: str, r: dict) -> None:
     if com > 0:
         await _movs().insert_one({
             "_id": uuid4().hex, "propertyId": r["propertyId"], "reservaId": rid,
-            "fecha": r.get("checkIn"), "tipo": "comision", "monto": com, "comisionPct": pct,
+            "fecha": _today(), "tipo": "comision", "monto": com, "comisionPct": pct,
             "descripcion": f"Comisión {pct}% · {r.get('huesped', {}).get('nombre', '')}".strip(),
             "createdAt": _now(),
         })
@@ -783,7 +789,7 @@ async def update_status(rid: str, body: StatusBody):
             if com > 0:
                 await _movs().insert_one({
                     "_id": uuid4().hex, "propertyId": r["propertyId"], "reservaId": rid,
-                    "fecha": r.get("checkIn"), "tipo": "comision", "monto": com,
+                    "fecha": _today(), "tipo": "comision", "monto": com,
                     "descripcion": f"Comisión {pct}% · {r.get('huesped', {}).get('nombre', '')}".strip(),
                     "createdAt": _now(),
                 })

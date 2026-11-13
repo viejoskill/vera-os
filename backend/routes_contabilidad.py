@@ -116,6 +116,10 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _today() -> str:
+    return datetime.now(timezone.utc).date().isoformat()
+
+
 def _norm_moneda(m: str | None) -> str:
     return "USD" if (m or "").upper() == "USD" else "ARS"
 
@@ -437,7 +441,29 @@ async def _reservas_moneda_map(reserva_ids: set[str]) -> dict[str, str]:
 async def backfill_comisiones_alquiler():
     """Genera (retroactivo, idempotente) las comisiones de alquiler de reservas ya
     confirmadas cuya propiedad no tenía % de comisión configurado al momento de
-    confirmarse, y luego sí se configuró. No duplica (salta si ya existe el movimiento)."""
+    confirmarse, y luego sí se configuró. No duplica (salta si ya existe el movimiento).
+    También limpia comisiones "huérfanas": movimientos de tipo comisión cuya reserva
+    original ya no existe (quedaron de reservas borradas antes de que el borrado en
+    cascada estuviera implementado). Y, para comisiones generadas ANTES de este cambio
+    (cuando se contabilizaban en la fecha de check-in de la estadía en vez de la fecha en
+    que se confirmó la reserva), corrige su `fecha` a la de creación real del movimiento
+    (`createdAt`), que es cuando efectivamente se confirmó/cobró la seña."""
+    eliminadas_huerfanas = 0
+    reserva_ids = {mv["reservaId"] async for mv in _movs().find({"tipo": "comision"}, {"reservaId": 1}) if mv.get("reservaId")}
+    if reserva_ids:
+        existentes = {r["_id"] async for r in _res().find({"_id": {"$in": list(reserva_ids)}}, {"_id": 1})}
+        huerfanos = reserva_ids - existentes
+        if huerfanos:
+            res_del = await _movs().delete_many({"tipo": "comision", "reservaId": {"$in": list(huerfanos)}})
+            eliminadas_huerfanas = res_del.deleted_count
+
+    fechas_corregidas = 0
+    async for mv in _movs().find({"tipo": "comision"}, {"fecha": 1, "createdAt": 1}):
+        fecha_real = (mv.get("createdAt") or "")[:10]
+        if fecha_real and mv.get("fecha") != fecha_real:
+            await _movs().update_one({"_id": mv["_id"]}, {"$set": {"fecha": fecha_real}})
+            fechas_corregidas += 1
+
     generadas = 0
     montos: dict[str, float] = {}
     async for p in _rprops().find({}):
@@ -455,13 +481,16 @@ async def backfill_comisiones_alquiler():
             moneda = _norm_moneda(r.get("moneda"))
             await _movs().insert_one({
                 "_id": uuid4().hex, "propertyId": p["_id"], "reservaId": r["_id"],
-                "fecha": r.get("checkIn"), "tipo": "comision", "monto": com, "comisionPct": pct,
+                "fecha": _today(), "tipo": "comision", "monto": com, "comisionPct": pct,
                 "descripcion": f"Comisión {pct}% · {(r.get('huesped') or {}).get('nombre', '')}".strip(),
                 "createdAt": _now(),
             })
             generadas += 1
             montos[moneda] = montos.get(moneda, 0) + com
-    return {"generadas": generadas, "montos": {k: round(v) for k, v in montos.items()}}
+    return {
+        "generadas": generadas, "montos": {k: round(v) for k, v in montos.items()},
+        "huerfanasEliminadas": eliminadas_huerfanas, "fechasCorregidas": fechas_corregidas,
+    }
 
 
 @router.get("/resumen")
