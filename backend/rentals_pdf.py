@@ -26,6 +26,13 @@ TIPO_LABEL = {
     "comision": "Comisión",
 }
 
+METODO_LABEL = {
+    "transferencia": "Transferencia",
+    "efectivo": "Efectivo",
+    "cheque": "Cheque",
+    "otro": "Otro",
+}
+
 
 def _fmt(n, moneda="ARS") -> str:
     s = f"{round(float(n or 0)):,}".replace(",", ".")
@@ -152,6 +159,21 @@ def build_liquidacion_pdf(data: dict) -> bytes:
     story.append(Paragraph(
         f"Gastos a cargo de la agencia en el período: {_fmt(data.get('gastosNuestros'), mon)} "
         "(no se descuentan al propietario).", st["small"]))
+
+    # Pago de la liquidación al propietario (solo aplica a la liquidación de UNA reserva específica)
+    if "reserva" in data:
+        pago_prop = data.get("pagoPropietario") or {}
+        story.append(Spacer(1, 0.3 * cm))
+        story.append(Paragraph("Pago al propietario", st["sec"]))
+        if pago_prop.get("estado") == "pagado":
+            metodo_label = METODO_LABEL.get(pago_prop.get("metodo"), pago_prop.get("metodo") or "—")
+            story.append(Paragraph(
+                f"Pagado el <b>{_fd(pago_prop.get('fecha'))}</b> · {metodo_label} · {_fmt(pago_prop.get('monto'), mon)}",
+                st["body"]))
+            if pago_prop.get("notas"):
+                story.append(Paragraph(pago_prop["notas"], st["small"]))
+        else:
+            story.append(Paragraph("Pendiente de registrar.", st["small"]))
 
     # Firma inmobiliaria
     story.append(Spacer(1, 1.6 * cm))

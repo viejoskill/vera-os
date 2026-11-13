@@ -369,6 +369,7 @@ def _res_out(r: dict, codigo: str | None = None) -> dict:
         "depositoOverride": r.get("depositoOverride"),
         "limpiezaOverride": r.get("limpiezaOverride"),
         "historial": r.get("historial") or [],
+        "pagoPropietario": r.get("pagoPropietario"),
     }
 
 
@@ -1215,6 +1216,7 @@ async def _liquidacion_reserva(rid: str) -> dict:
     return {
         "reserva": {"id": r["_id"], "checkIn": r.get("checkIn"), "checkOut": r.get("checkOut"), "noches": r.get("noches")},
         "huesped": h, "pago": r.get("pago") or {},
+        "pagoPropietario": r.get("pagoPropietario") or {},
         "propiedad": {"id": prop["_id"], "codigo": prop.get("codigo"), "titulo": prop.get("titulo"), "moneda": mon},
         "propietario": prop.get("propietario") or {},
         "periodo": {"desde": r.get("checkIn"), "hasta": r.get("checkOut")},
@@ -1540,6 +1542,60 @@ async def recibo_saldo(rid: str, sid: str, dl: int = 0):
         content=pdf, media_type="application/pdf",
         headers={"Content-Disposition": f'{disp}; filename="Recibo-saldo-{cod}-{nombre}.pdf"'},
     )
+
+
+@router.post("/reservations/{rid}/liquidacion/marcar-pagada")
+async def marcar_liquidacion_pagada(
+    rid: str,
+    monto: float = Form(...),
+    metodo: str = Form("transferencia"),
+    fecha: str | None = Form(None),
+    notas: str | None = Form(None),
+    file: UploadFile | None = File(None),
+):
+    """Registra el pago de la liquidación al propietario (transferencia/efectivo/cheque/otro),
+    con fecha y comprobante opcional. Esto es lo que contesta '¿dónde consta que le pagué al
+    dueño?' — antes la app solo calculaba el neto a liquidar, pero no dejaba rastro del pago."""
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    if not monto or float(monto) <= 0:
+        raise HTTPException(400, "El monto liquidado debe ser mayor a cero.")
+    comp = None
+    if file is not None and appconfig.supabase_configured():
+        ext = Path(file.filename or "comp.jpg").suffix.lower() or ".jpg"
+        obj = f"rentals/{r.get('propertyId')}/liquidaciones/{uuid4().hex}{ext}"
+        content = await file.read()
+        await get_storage().upload(appconfig.BUCKET_IMAGES, obj, content, file.content_type or "image/jpeg")
+        comp = {"bucket": appconfig.BUCKET_IMAGES, "object_path": obj, "contentType": file.content_type or "image/jpeg",
+                "nombre": file.filename or "comprobante liquidación"}
+    pago_prop = {
+        "estado": "pagado", "monto": round(float(monto)), "metodo": metodo,
+        "fecha": fecha or date.today().isoformat(), "notas": notas or None,
+        "comprobante": comp, "pagadoEl": _now(),
+    }
+    await _res().update_one({"_id": rid}, {"$set": {"pagoPropietario": pago_prop}})
+    return _res_out(await _res().find_one({"_id": rid}))
+
+
+@router.post("/reservations/{rid}/liquidacion/revertir")
+async def revertir_liquidacion_pago(rid: str):
+    """Deshace el registro de pago al propietario (por error de carga)."""
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    await _res().update_one({"_id": rid}, {"$unset": {"pagoPropietario": ""}})
+    return _res_out(await _res().find_one({"_id": rid}))
+
+
+@router.get("/reservations/{rid}/liquidacion/comprobante")
+async def liquidacion_comprobante(rid: str):
+    r = await _res().find_one({"_id": rid})
+    comp = ((r or {}).get("pagoPropietario") or {}).get("comprobante")
+    if not comp:
+        raise HTTPException(404, "Sin comprobante")
+    data = await get_storage().download(comp["bucket"], comp["object_path"])
+    return Response(content=data, media_type=comp.get("contentType", "image/jpeg"))
 
 
 async def _next_numero(tipo: str) -> int:

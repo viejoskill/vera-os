@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Calculator, Download, ArrowLeft, Plus, Trash2, Users, CheckCircle2 } from 'lucide-react';
+import { Calculator, Download, ArrowLeft, Plus, Trash2, Users, CheckCircle2, Undo2, Paperclip } from 'lucide-react';
 import { Button } from '@vera/ui';
-import { api, fmtMoney, fmtDate, TIPO_MOV, type RentalProperty, type Reservation, type LiquidacionReserva } from './api';
+import { api, fmtMoney, fmtDate, TIPO_MOV, METODO_PAGO, type RentalProperty, type Reservation, type LiquidacionReserva } from './api';
 import './rentals.css';
 
 const HOY = new Date().toISOString().slice(0, 10);
@@ -13,10 +13,19 @@ export const LiquidacionesScreen = () => {
   const [sel, setSel] = useState<string | null>(null);
   const [liq, setLiq] = useState<LiquidacionReserva | null>(null);
   const [nm, setNm] = useState({ fecha: HOY, tipo: 'gasto_prop', monto: '', descripcion: '' });
+  const [pagoForm, setPagoForm] = useState({ fecha: HOY, metodo: 'transferencia', monto: '', notas: '' });
+  const [pagoFile, setPagoFile] = useState<File | null>(null);
+  const [guardandoPago, setGuardandoPago] = useState(false);
   const [err, setErr] = useState('');
 
   useEffect(() => { api.listProperties().then((p) => { setProps(p); if (p[0]) setPid(p[0].id); }); }, []);
   useEffect(() => { if (pid) { setSel(null); setLiq(null); api.liquidables(pid).then(setReservas).catch(() => setReservas([])); } }, [pid]);
+  useEffect(() => {
+    if (liq && liq.pagoPropietario?.estado !== 'pagado') {
+      setPagoForm({ fecha: HOY, metodo: 'transferencia', monto: String(liq.netoPropietario), notas: '' });
+      setPagoFile(null);
+    }
+  }, [liq?.reserva.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const abrir = async (rid: string) => {
     setSel(rid); setErr('');
@@ -31,6 +40,23 @@ export const LiquidacionesScreen = () => {
     await recargar();
   };
   const delMov = async (mid: string) => { await api.deleteMovimiento(mid); await recargar(); };
+
+  const marcarPago = async () => {
+    if (!sel || !pagoForm.monto || Number(pagoForm.monto) <= 0) { setErr('Ingresá un monto válido para registrar el pago.'); return; }
+    setGuardandoPago(true); setErr('');
+    try {
+      await api.marcarLiquidacionPagada(sel, Number(pagoForm.monto), pagoForm.metodo, pagoForm.fecha || HOY, pagoForm.notas, pagoFile);
+      await recargar();
+      const r = await api.liquidables(pid); setReservas(r);
+    } catch (e) { setErr((e as Error).message); }
+    setGuardandoPago(false);
+  };
+  const revertirPago = async () => {
+    if (!sel) return;
+    await api.revertirLiquidacionPago(sel);
+    await recargar();
+    const r = await api.liquidables(pid); setReservas(r);
+  };
 
   const mon = liq?.propiedad.moneda || 'ARS';
 
@@ -61,6 +87,11 @@ export const LiquidacionesScreen = () => {
               </div>
               <div className="rt-liq__resmeta">
                 <span className="rt-b rt-b--ok"><CheckCircle2 size={13} /> Seña {fmtMoney(r.pago?.monto || 0, 'ARS')}</span>
+                {r.pagoPropietario?.estado === 'pagado' ? (
+                  <span className="rt-b rt-b--ok" data-testid={`rt-liq-badge-pagada-${r.id}`}><CheckCircle2 size={13} /> Liquidada {fmtDate(r.pagoPropietario.fecha)}</span>
+                ) : (
+                  <span className="rt-b rt-b--muted" data-testid={`rt-liq-badge-pendiente-${r.id}`}>Sin liquidar</span>
+                )}
                 <strong>{fmtMoney(r.montoEstimado, r.moneda)}</strong>
               </div>
             </button>
@@ -88,6 +119,44 @@ export const LiquidacionesScreen = () => {
             <div className="rt-liq__cell rt-liq__cell--net"><span>Neto a liquidar</span><strong data-testid="rt-liq-neto">{fmtMoney(liq.netoPropietario, mon)}</strong></div>
           </div>
           <p className="rt-hint">Gastos a cargo de la agencia: {fmtMoney(liq.gastosNuestros, mon)} (no se descuentan al propietario).</p>
+
+          <h4 className="rt-ws__sec">Pago al propietario</h4>
+          {liq.pagoPropietario?.estado === 'pagado' ? (
+            <div className="rt-liq__pagook" data-testid="rt-liq-pago-ok">
+              <CheckCircle2 size={18} />
+              <div className="rt-liq__pagook-info">
+                <strong>Pagado el {fmtDate(liq.pagoPropietario.fecha)}</strong>
+                <span>{METODO_PAGO[liq.pagoPropietario.metodo || ''] || liq.pagoPropietario.metodo} · {fmtMoney(liq.pagoPropietario.monto || 0, mon)}</span>
+                {liq.pagoPropietario.notas && <p className="rt-hint">{liq.pagoPropietario.notas}</p>}
+              </div>
+              <div className="rt-liq__pagook-acc">
+                {liq.pagoPropietario.comprobante && (
+                  <button type="button" className="rt-mini" onClick={() => window.open(api.liquidacionComprobanteUrl(liq.reserva.id), '_blank')} data-testid="rt-liq-pago-ver-comprobante">
+                    <Paperclip size={13} /> Ver comprobante
+                  </button>
+                )}
+                <button type="button" className="rt-mini" onClick={revertirPago} data-testid="rt-liq-pago-revertir">
+                  <Undo2 size={13} /> Deshacer
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="rt-liq__pagoform" data-testid="rt-liq-pago-form">
+              <input type="date" value={pagoForm.fecha} onChange={(e) => setPagoForm({ ...pagoForm, fecha: e.target.value })} data-testid="rt-liqpago-fecha" />
+              <select value={pagoForm.metodo} onChange={(e) => setPagoForm({ ...pagoForm, metodo: e.target.value })} data-testid="rt-liqpago-metodo">
+                {Object.entries(METODO_PAGO).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+              <input type="number" placeholder="Monto pagado" value={pagoForm.monto} onChange={(e) => setPagoForm({ ...pagoForm, monto: e.target.value })} data-testid="rt-liqpago-monto" />
+              <input type="text" placeholder="Notas (opcional)" value={pagoForm.notas} onChange={(e) => setPagoForm({ ...pagoForm, notas: e.target.value })} data-testid="rt-liqpago-notas" />
+              <label className="rt-mini rt-mini--file">
+                <Paperclip size={13} /> {pagoFile ? pagoFile.name.slice(0, 18) : 'Comprobante'}
+                <input type="file" accept="image/*,.pdf" onChange={(e) => setPagoFile(e.target.files?.[0] || null)} data-testid="rt-liqpago-file" />
+              </label>
+              <button type="button" className="rt-mini rt-mini--ok" onClick={marcarPago} disabled={guardandoPago} data-testid="rt-liqpago-save">
+                <CheckCircle2 size={14} /> {guardandoPago ? 'Guardando…' : 'Marcar como pagada'}
+              </button>
+            </div>
+          )}
 
           <h4 className="rt-ws__sec">Ajustar movimientos de esta reserva</h4>
           <div className="rt-mov__add" data-testid="rt-liq-movadd">

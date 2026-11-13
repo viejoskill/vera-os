@@ -33,14 +33,22 @@ export interface Liquidacion {
   ingresos: number; comision: number; gastosPropietario: number; gastosNuestros: number;
   netoPropietario: number; movimientos: Movimiento[];
 }
+export interface PagoPropietario {
+  estado?: string; monto?: number; metodo?: string; fecha?: string; notas?: string | null;
+  pagadoEl?: string | null; comprobante?: { bucket: string; object_path: string } | null;
+}
 export interface LiquidacionReserva extends Liquidacion {
   reserva: { id: string; checkIn: string; checkOut: string; noches: number };
   huesped: { nombre?: string; telefono?: string; dni?: string };
   pago: Pago;
+  pagoPropietario?: PagoPropietario;
   alquiler: number;
 }
 export const TIPO_MOV: Record<string, string> = {
   ingreso: 'Seña / Ingreso', gasto_prop: 'Gasto propietario', gasto_nuestro: 'Gasto agencia', comision: 'Comisión',
+};
+export const METODO_PAGO: Record<string, string> = {
+  transferencia: 'Transferencia', efectivo: 'Efectivo', cheque: 'Cheque', otro: 'Otro',
 };
 export interface SaleProperty {
   id: string; titulo: string; direccion: string; localidad: string;
@@ -70,6 +78,7 @@ export interface Reservation {
   depositoOverride?: number | null; limpiezaOverride?: number | null;
   huesped: { nombre?: string; telefono?: string; email?: string; dni?: string; domicilio?: string; localidad?: string; huespedes?: number; comentario?: string };
   historial?: HistorialEntry[];
+  pagoPropietario?: PagoPropietario;
 }
 
 const json = async (r: Response) => {
@@ -171,6 +180,18 @@ export const api = {
   },
   deleteSaldo: (rid: string, sid: string) => fetch(`${RENTALS_API}/reservations/${rid}/saldos/${sid}`, { method: 'DELETE' }).then(json),
   reciboSaldoUrl: (rid: string, sid: string): string => `${RENTALS_API}/reservations/${rid}/saldos/${sid}/recibo`,
+  marcarLiquidacionPagada: (rid: string, monto: number, metodo: string, fecha: string, notas?: string, file?: File | null): Promise<Reservation> => {
+    const fd = new FormData();
+    fd.append('monto', String(monto || 0));
+    fd.append('metodo', metodo);
+    fd.append('fecha', fecha);
+    if (notas) fd.append('notas', notas);
+    if (file) fd.append('file', file);
+    return fetch(`${RENTALS_API}/reservations/${rid}/liquidacion/marcar-pagada`, { method: 'POST', body: fd }).then(json);
+  },
+  revertirLiquidacionPago: (rid: string): Promise<Reservation> =>
+    fetch(`${RENTALS_API}/reservations/${rid}/liquidacion/revertir`, { method: 'POST' }).then(json),
+  liquidacionComprobanteUrl: (rid: string): string => `${RENTALS_API}/reservations/${rid}/liquidacion/comprobante`,
   documentoReservaUrl: (rid: string): string => `${RENTALS_API}/reservations/${rid}/documento/reserva`,
   documentoContratoUrl: (rid: string): string => `${RENTALS_API}/reservations/${rid}/documento/contrato`,
   createManualReservation: (body: Record<string, unknown>): Promise<Reservation> =>
