@@ -1204,8 +1204,11 @@ async def liquidaciones_pendientes(dias: int = Query(7, ge=1)):
         prop = await _props().find_one({"_id": r.get("propertyId")})
         pagado_el = (r.get("pago") or {}).get("pagadoEl") or ""
         try:
-            dias_sin = (ahora - datetime.fromisoformat(pagado_el)).days
-        except ValueError:
+            fecha_pago = datetime.fromisoformat(pagado_el)
+            if fecha_pago.tzinfo is None:
+                fecha_pago = fecha_pago.replace(tzinfo=timezone.utc)
+            dias_sin = (ahora - fecha_pago).days
+        except (ValueError, TypeError):
             dias_sin = dias
         out.append({
             "reservaId": r["_id"], "propertyId": r.get("propertyId"),

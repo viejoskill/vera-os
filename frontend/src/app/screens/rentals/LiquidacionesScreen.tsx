@@ -38,8 +38,7 @@ export const LiquidacionesScreen = () => {
     try { setLiq(await api.liquidacionReserva(rid)); } catch (e) { setErr((e as Error).message); }
   };
   const abrirDesdeRecordatorio = async (propertyId: string, rid: string) => {
-    skipPidReset.current = true;
-    setPid(propertyId);
+    if (propertyId !== pid) { skipPidReset.current = true; setPid(propertyId); }
     await abrir(rid);
   };
   const recargar = async () => { if (sel) setLiq(await api.liquidacionReserva(sel)); };
@@ -78,6 +77,7 @@ export const LiquidacionesScreen = () => {
   };
 
   const mon = liq?.propiedad.moneda || 'ARS';
+  const propMoneda = props.find((p) => p.id === pid)?.moneda || 'ARS';
   const reservasFiltradas = reservas.filter((r) => (tab === 'historial' ? r.pagoPropietario?.estado === 'pagado' : r.pagoPropietario?.estado !== 'pagado'));
   const totalHistorial = reservasFiltradas.reduce((acc, r) => acc + (r.pagoPropietario?.monto || 0), 0);
 
@@ -127,7 +127,7 @@ export const LiquidacionesScreen = () => {
           </div>
           {tab === 'historial' && reservasFiltradas.length > 0 && (
             <p className="rt-hint" data-testid="rt-liq-historial-total">
-              Total liquidado: <strong>{fmtMoney(totalHistorial, 'ARS')}</strong> en {reservasFiltradas.length} pago{reservasFiltradas.length === 1 ? '' : 's'}.
+              Total liquidado: <strong>{fmtMoney(totalHistorial, propMoneda)}</strong> en {reservasFiltradas.length} pago{reservasFiltradas.length === 1 ? '' : 's'}.
             </p>
           )}
           <div className="rt-liq__list" data-testid="rt-liq-reservas">

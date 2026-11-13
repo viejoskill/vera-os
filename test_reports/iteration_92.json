@@ -1,0 +1,36 @@
+{
+  "summary": "Tested Liquidaciones Historial tabs and the 'sin liquidar' reminder (backend + UI with qa_varela). Backend: the 17 existing tests pass, plus 3 of 5 new extra tests. The endpoint returns 500 when pago.pagadoEl is a naive or date-only ISO string. UI: banner, chips, Pendientes/Historial tabs, 'Total liquidado', empty-state text, banner live-update on pay and undo, form reset after Deshacer, opening another property's reservation from a chip, and the PDF download all work. Found 1 UI state bug: clicking a chip for the property that is already selected leaves the skipPidReset flag set, so the stale reservation detail stays on screen after switching property.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/rentals/liquidaciones/pendientes", "issue": "Returns 500 (TypeError: can't subtract offset-naive and offset-aware datetimes) when a reservation's pago.pagadoEl has no timezone (e.g. '2026-01-02T10:00:00' or '2026-01-02'). The try/except only catches ValueError. All current writers use _now() (tz-aware), so this is robustness only: one bad or imported record would break the whole banner. Fix: parse, and if tzinfo is None, use .replace(tzinfo=timezone.utc); catch (ValueError, TypeError). Also note that the $lte comparison is a string comparison, so mixed formats ('Z' vs '+00:00', date-only) compare inconsistently."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "LiquidacionesScreen abrirDesdeRecordatorio", "issue": "If you click a reminder chip whose propertyId equals the currently selected pid, setPid(same) does not re-run the [pid] effect, so skipPidReset.current stays true. When you then change the property in the selector, the reset is skipped: the previous property's reservation detail (A304) stays open while the selector shows A161. Adding a movement in that state would send propertyId=A161 with reservaId from A304. Reproduced in preview. Fix: in abrirDesdeRecordatorio, only set skipPidReset.current = true when propertyId !== pid (or reset it after abrir finishes).", "selector": "[data-testid^=rt-liq-recordatorio-item-] then [data-testid=rt-liq-prop]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Liquidaciones Historial", "issues": ["The 'Total liquidado' sum always uses 'ARS' and mixes currencies when reservations are in USD", "After Deshacer and 'Volver', the Historial tab stays selected (acceptable, just noting)"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_rentals_liquidaciones_pendientes.py", "/app/backend/tests/test_rentals_liq_recordatorio_extra.py", "/app/test_reports/pytest/pytest_iter92.xml"],
+  "action_items": [
+    "Fix the skipPidReset stale flag when a chip of the currently selected property is clicked (LiquidacionesScreen.tsx lines 40-44)",
+    "Make /liquidaciones/pendientes tolerant of naive or date-only pagadoEl (treat as UTC, catch TypeError)",
+    "Optional: use the property currency for the Historial total instead of hardcoded 'ARS'"
+  ],
+  "critical_code_review_comments": [
+    "liquidaciones_pendientes does an N+1 find_one per reservation for the property. Fine for now; for large portfolios, batch with $in.",
+    "The banner shows up to 6 chips with no 'ver más' hint when N > 6",
+    "abrirDesdeRecordatorio: if abrir() fails, the error appears, but the pid effect already fired; that's OK"
+  ],
+  "updated_files": ["/app/backend/tests/test_rentals_liq_recordatorio_extra.py"],
+  "success_rate": {"backend": "90% (20/22 incl. 2 robustness edge cases failing)", "frontend": "92% (all requested flows pass; 1 edge-case state bug)"},
+  "seed_data_creation": "Temporary TEST_i92_otra_prop (A304) plus 1 reservation (pagadoEl set 24 days back) created to test chips across properties. Marked paid, then reverted, then deleted. Verified there are no TEST_ properties left and all 4 A161 reservations are still unliquidated.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Login at /veraos/liquidaciones (not /login, which shows the public site). Only one real property exists (A161), so to test chips across properties you must create a temporary property. Use the helpers _mk_prop/_mk_res/_set_pagado_el in test_rentals_liquidaciones_pendientes.py. Server clock is about Nov 2026. test_rentals_liq_recordatorio_extra.py has 2 intentionally failing parametrized cases (naive / date-only pagadoEl) until the backend fix lands. Run pytest with REACT_APP_BACKEND_URL exported.",
+  "rca of the issue": "UI bug: skipPidReset is a one-shot ref that is only consumed inside the [pid] effect. React skips that effect when the pid doesn't change, so the flag leaks to the next real property change. Backend: datetime.fromisoformat returns a naive datetime for strings without an offset, and subtracting it from the aware 'ahora' raises TypeError, which the except ValueError doesn't catch."
+}
