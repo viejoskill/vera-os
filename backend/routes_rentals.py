@@ -1018,7 +1018,10 @@ async def ocupacion_general(desde: str, hasta: str):
     """% de ocupación combinado de toda la cartera de alquileres, mes a mes (con
     comparación contra el año anterior), más el detalle de cada propiedad."""
     meses = _meses_rango(desde, hasta)
-    totales = {mes: {"ocupadas": 0, "disponibles": 0, "ocupadasAnt": 0, "disponiblesAnt": 0} for mes in meses}
+    totales = {mes: {
+        "ocupadas": 0, "disponibles": 0,
+        "ocupadasCmp": 0, "disponiblesCmp": 0, "ocupadasAnt": 0, "disponiblesAnt": 0,
+    } for mes in meses}
     propiedades = []
     async for p in _props().find({}):
         rangos = await _occupied(p["_id"])
@@ -1027,7 +1030,11 @@ async def ocupacion_general(desde: str, hasta: str):
             t = totales[row["mes"]]
             t["ocupadas"] += row["ocupadas"]
             t["disponibles"] += row["disponibles"]
+            # Solo sumamos al "comparable" cuando la propiedad ya existía el año anterior,
+            # para no mezclar el numerador de toda la cartera con el denominador de un subconjunto.
             if row["disponiblesAnterior"] is not None:
+                t["ocupadasCmp"] += row["ocupadas"]
+                t["disponiblesCmp"] += row["disponibles"]
                 t["ocupadasAnt"] += row["ocupadasAnterior"]
                 t["disponiblesAnt"] += row["disponiblesAnterior"]
         propiedades.append({
@@ -1039,7 +1046,8 @@ async def ocupacion_general(desde: str, hasta: str):
         t = totales[mes]
         pct = round((t["ocupadas"] / t["disponibles"]) * 100, 1) if t["disponibles"] > 0 else 0.0
         pct_ant = round((t["ocupadasAnt"] / t["disponiblesAnt"]) * 100, 1) if t["disponiblesAnt"] > 0 else None
-        variacion = round(pct - pct_ant, 1) if pct_ant is not None else None
+        pct_cmp = round((t["ocupadasCmp"] / t["disponiblesCmp"]) * 100, 1) if t["disponiblesCmp"] > 0 else None
+        variacion = round(pct_cmp - pct_ant, 1) if (pct_cmp is not None and pct_ant is not None) else None
         general.append({
             "mes": mes, "ocupadas": t["ocupadas"], "disponibles": t["disponibles"], "pct": pct,
             "pctAnterior": pct_ant, "variacion": variacion,

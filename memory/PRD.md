@@ -1,5 +1,13 @@
 # VERA OS — Product Requirements & Architecture
 
+## Feature de seguimiento (2026-11-13): Alquileres — comparación de ocupación vs. mismo mes del año anterior
+- El usuario pidió, sobre la feature de ocupación mensual recién lanzada: "Mostrá junto a cada mes la variación de ocupación respecto al mismo mes del año pasado".
+- Backend: `_mes_anterior()` + `_ocupacion_con_comparativa()` en `routes_rentals.py`. Cada mes de `.../properties/{pid}/ocupacion` y `.../ocupacion` (general) ahora trae `pctAnterior` y `variacion` (pct - pctAnterior). Si la propiedad no existía todavía en ese mes del año anterior (antes de su `createdAt`), ambos son `null` (no `0`) para no mostrar una variación engañosa en propiedades nuevas.
+- Panel general: la variación es **like-for-like** — el numerador/denominador del año actual que se compara contra el año anterior solo incluye las propiedades que SÍ son comparables ese mes (no mezcla el total de toda la cartera contra un subconjunto). `pct` del gráfico sigue siendo el total real de la cartera.
+- Frontend: nuevo componente compartido `VariacionRow.tsx` — fila "VS. {año-1}:" debajo del gráfico de barras, un ítem por mes con flecha verde (subió), flecha roja/naranja (bajó), "0.0pts" (igual) o "s/d" (sin datos para comparar). Integrado en `OcupacionGeneral.tsx` y `OcupacionPropiedad.tsx`.
+- Tests: `test_rentals_ocupacion_comparativa.py` (3) + `test_rentals_ocupacion_comparativa_iter90.py` (7, testing agent, edge cases: negativo, cero, bloqueo año anterior, límite de `createdAt`, cruce dic/ene, agregación general like-for-like) = 10/10. Testing agent (iteration_90.json) encontró 1 issue de lógica (mezcla de conjuntos en el agregado general) — corregido y re-validado con el caso exacto que pidió (`variacion == -10.0` en escenario aislado vieja/nueva).
+- Nota: en el preview, la única propiedad real (A161) fue creada en 2026, así que la fila de comparación muestra "s/d" en todos los meses — es el comportamiento esperado (no hay datos reales de 2025).
+
 ## Feature (2026-11-13): Alquileres — % de ocupación por mes (por propiedad + cartera completa)
 - El usuario pidió agregar % de ocupación por mes; al preguntarle dónde mostrarlo, eligió "las dos cosas" (resumen general + detalle por propiedad).
 - Backend: `GET /api/rentals/properties/{pid}/ocupacion?desde&hasta` (por propiedad) y `GET /api/rentals/ocupacion?desde&hasta` (cartera completa + detalle por propiedad). Definición: ocupadas = noches con reserva confirmada/encurso/finalizada (las pre-reservas no cuentan, no están garantizadas); disponibles = días del mes menos noches bloqueadas (un bloqueo no es "oportunidad perdida" de alquilar). Valida formato `YYYY-MM`, devuelve 400 si es inválido.

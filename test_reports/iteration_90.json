@@ -1,0 +1,34 @@
+{
+  "summary": "Iter90: Alquileres occupation vs previous year. Backend: 22/22 existing ocupacion tests pass (comparativa + iter89 + base), and 7/7 new edge-case tests pass (negative, zero, previous-year block shrinking the denominator, createdAt boundary month, Dec/Jan year crossing, 400 validation, general aggregation excluding properties with null). UI verified with a TEST_ property whose createdAt was set back: in the property panel MAR shows a green up arrow +32.2pts, MAY a red down arrow 51.6pts, JUL '0.0pts' with no icon; A161 shows 's/d' in all 12 months (expected). The general panel shows the 'VS. 2025:' row, the year selector updates it to 'VS. 2024', and the detail table, average and chart still work. The mobile layout (390px) wraps cleanly. One logic issue in the general aggregation: the current pct uses the whole portfolio, but pctAnterior uses only properties that can be compared, so the general variacion is misleading.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/rentals/ocupacion (general.variacion)", "issue": "variacion = pct (ALL properties, including new ones with null comparison) - pctAnterior (only comparable properties). The two sides use different property sets. Reproduced: an old property went 20%->10% (-10pts) and a new property had 20 nights; general showed pct=25.6, pctAnterior=20.0, variacion=+5.6 (green) when the like-for-like change was -10. Live preview: general JAN shows +11.3pts and JUL -8.0pts even though the only comparable property had 0.0 in both months (the difference comes from A161, created in 2026). Fix: also add up ocupadas/disponibles for the current period only over rows where disponiblesAnterior is not null (e.g. t['ocupadasCmp'], t['disponiblesCmp']), and compute variacion = pctCmp - pct_ant. Keep 'pct' as the full-portfolio value for the chart."},
+      {"endpoint": "_ocupacion_con_comparativa", "issue": "createdAt is compared only by month (mes_prev < createdAt[:7]). A property created mid-month (e.g. 2025-11-20) is compared against that partial month using a full-month denominator, which shows an artificially low pctAnterior. Edge case, low priority."},
+      {"endpoint": "GET /api/rentals/ocupacion (pre-existing, iter89)", "issue": "A property's disponibles is counted even for months before its createdAt, which dilutes the portfolio pct for past years (e.g. 2025 counts A161 as 0% even though it did not exist yet). Low priority."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Ocupación de la cartera (desktop)", "issues": ["Bars were not visible in a screenshot taken right after load (mount animation); they rendered on the next load. Not a bug."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_rentals_ocupacion_comparativa_iter90.py", "/app/backend/tests/test_rentals_ocupacion_comparativa.py", "/app/test_reports/pytest/pytest_iter90.xml"],
+  "action_items": [
+    "In ocupacion_general, compute general variacion like-for-like: add up the current ocupadas/disponibles only for property-months where the previous-year comparison is not null, and subtract pctAnterior from that value (keep pct for the chart). Optionally return pctComparable.",
+    "Optional: treat the createdAt month itself as 's/d' (or use day precision) so a partial first month is not used as a comparison baseline."
+  ],
+  "critical_code_review_comments": [
+    "routes_rentals.py ocupacion_general: mismatched numerator/denominator sets between pct and pctAnterior (see backend minor #1).",
+    "_ocupacion_con_comparativa calls _ocupacion_propiedad twice with the same rangos. Fine, it is O(meses*rangos).",
+    "VariacionRow: 'pts' plus arrow colors (#4bbf6b / #e07a5f) are readable on the dark background. The s/d state uses opacity .55, which is low contrast but acceptable for a 'no data' state."
+  ],
+  "updated_files": ["/app/backend/tests/test_rentals_ocupacion_comparativa_iter90.py"],
+  "success_rate": {"backend": "100% (29/29 tests; 1 logic issue found by inspection/repro)", "frontend": "100%"},
+  "seed_data_creation": "Temporary TEST_ocup90_* properties (with createdAt aged via Mongo) and their reservations were created and deleted by id; checked that none remain. A161 was not modified.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && REACT_APP_BACKEND_URL=... pytest tests/test_rentals_ocupacion_comparativa.py tests/test_rentals_ocupacion_comparativa_iter90.py -n0. Server date in preview is 2026-11-13. If general variacion is fixed to like-for-like, update test_general_agrega_y_excluye_nuevas to expect general variacion == -10.0 (in an isolated scenario) and check that the live general JAN no longer shows +11.3. UI: /veraos/alquileres (rt-ocupacion-general > rt-ocup-variacion-row), /veraos/alquileres/{pid} > rt-wstab-reservas > rt-ocupacion-propiedad."
+}
