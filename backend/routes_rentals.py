@@ -709,7 +709,7 @@ async def _gen_comision(rid: str, r: dict) -> None:
     if com > 0:
         await _movs().insert_one({
             "_id": uuid4().hex, "propertyId": r["propertyId"], "reservaId": rid,
-            "fecha": _today(), "tipo": "comision", "monto": com, "comisionPct": pct,
+            "fecha": _today(), "tipo": "comision", "monto": com, "comisionPct": pct, "auto": True,
             "descripcion": f"Comisión {pct}% · {r.get('huesped', {}).get('nombre', '')}".strip(),
             "createdAt": _now(),
         })

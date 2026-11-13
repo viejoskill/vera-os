@@ -1,0 +1,28 @@
+{
+  "summary": "Re-test of the 4 iteration_87 findings plus the update_status refactor. All 4 fixes are verified working. FIX1: the backfill no longer overwrites manual commissions, with or without a reservaId (as long as fecha != checkIn). FIX2: DELETE property now also deletes all its rental_movimientos, both the commission and a manual gasto_prop. FIX3: cont-mantenimiento and cont-recalcular-comisiones are always visible to the admin, including when the resumen response is mocked to 0 comisionesFaltantes. FIX4: no 'comisiónes' anywhere in the UI or source, and the header reads correctly as 'Te falta cargar 1 comisión' and 'Te falta cargar 8 comisiones'. Refactor: prereserva -> confirmada still creates exactly 1 commission (monto 3200 = 8% of 40000) and it now has comisionPct=8.0 stored in the DB. Backend: 14/15 tests passed across the new retest file and the existing 9-test file. The only failure is a LOW residual edge case, by design (see minor).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/contabilidad/comisiones/backfill", "issue": "Residual edge case: a commission created by hand through POST /api/rentals/movimientos WITH reservaId set AND fecha equal to that reserva's checkIn still gets its fecha rewritten to createdAt (reproduced: 2028-03-01 -> 2026-11-13). This happens because the heuristic cannot tell manual from auto-generated commissions. Suggested fix: mark auto-generated commissions (e.g. auto:true in _gen_comision) or mark the migration as done, and only migrate auto ones. Low likelihood, LOW priority."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Contabilidad", "issues": ["The Desde/Hasta and movement date fields use the browser's native date picker, not the shadcn calendar (minor, pre-existing)"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_contabilidad_iter88_retest.py", "/app/backend/tests/test_contabilidad_comision_fecha_confirmacion.py", "/app/test_reports/pytest/pytest_iter88.xml"],
+  "action_items": ["Optional (LOW): add an 'auto' flag to the commissions _gen_comision creates and limit the backfill fecha migration to those, to close the reservaId + fecha==checkIn edge case"],
+  "critical_code_review_comments": [
+    "routes_contabilidad.py backfill: the fecha migration does one find_one per commission (N+1). Fine at current volume; could batch it with a single $in query like the orphan cleanup does.",
+    "delete_property now deletes ALL movements of the property (manual ingresos and gastos too, not only commissions). Confirm this is the intended business behaviour; it was verified working."
+  ],
+  "updated_files": ["/app/backend/tests/test_contabilidad_iter88_retest.py"],
+  "success_rate": {"backend": "93% (14/15; the 1 failure is the documented LOW edge case)", "frontend": "100%"},
+  "seed_data_creation": "Created TEST_i88_* rental properties, reservations and movements; all deleted through the API (verified 0 TEST_ properties left). qa_varela app_access was set to isAdmin=True temporarily and restored to isAdmin=False, sections=['alquileres','studio','tasaciones','liquidaciones'].",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && pytest tests/test_contabilidad_iter88_retest.py tests/test_contabilidad_comision_fecha_confirmacion.py -n 0. test_backfill_manual_commission_with_reserva_fecha_eq_checkin is expected to fail until an 'auto' flag is added. The UI is under /veraos (login at /veraos/login, page at /veraos/contabilidad). Valid TIPOS_MOV: ingreso, gasto_prop, gasto_nuestro, comision. Server date in preview is 2026-11-13."
+}

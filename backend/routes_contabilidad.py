@@ -488,7 +488,7 @@ async def backfill_comisiones_alquiler():
             moneda = _norm_moneda(r.get("moneda"))
             await _movs().insert_one({
                 "_id": uuid4().hex, "propertyId": p["_id"], "reservaId": r["_id"],
-                "fecha": _today(), "tipo": "comision", "monto": com, "comisionPct": pct,
+                "fecha": _today(), "tipo": "comision", "monto": com, "comisionPct": pct, "auto": True,
                 "descripcion": f"Comisión {pct}% · {(r.get('huesped') or {}).get('nombre', '')}".strip(),
                 "createdAt": _now(),
             })
