@@ -21,6 +21,7 @@
 
 .rt__loading, .rt-hint { color: var(--vera-color-text-secondary); font-size: .88rem; }
 .rt-hint { margin: 6px 0 4px; }
+.rt-hint--error { color: #e07a5f; }
 .rt-preview { margin: 10px 0 4px; padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); }
 .rt-preview__titulo { font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; color: var(--vera-color-text-secondary); margin: 0 0 6px; }
 .rt-preview__row { font-size: .8rem; color: var(--vera-color-text-secondary); margin: 3px 0; }

@@ -166,8 +166,13 @@ def _month_bounds(mes: str) -> tuple[str, str]:
     return inicio.isoformat(), fin.isoformat()
 
 
+_MES_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
+
+
 def _meses_rango(desde: str, hasta: str) -> list[str]:
     """Lista de 'YYYY-MM' entre desde y hasta (inclusive), tope de 60 meses."""
+    if not _MES_RE.match(desde or "") or not _MES_RE.match(hasta or ""):
+        raise HTTPException(400, "Formato de mes inválido, usá AAAA-MM.")
     anio, mesn = (int(x) for x in desde.split("-")[:2])
     anio2, mesn2 = (int(x) for x in hasta.split("-")[:2])
     out = []

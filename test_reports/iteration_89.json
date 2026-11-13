@@ -1,0 +1,38 @@
+{
+  "summary": "Iteration 89 - Alquileres % ocupación mensual (por propiedad + cartera). Backend: 16/16 functional tests PASS (main agent's 5 + 11 new edge cases: case a 10 conf+5 bloq on 30-day month -> 25 disp/40.0%, empty month, month-crossing reservation and month-crossing block split, leap Feb 2028=29, 12-month ordering, cancelada not counted, encurso/finalizada counted, fully blocked month -> disp 0/pct 0 without div-by-zero, unknown pid 404, missing params 422, general == sum of per-property rows, fixture A161 identical in both endpoints). 3 FAIL: malformed desde/hasta ('abc', '2026-13', '2026-00') return 500 instead of 400. UI (qa_temp@vera.test, desktop): the 'Ocupación de la cartera' panel renders on the Propiedades tab with year 2026, Promedio 7.6%, 12 bars, prev/next year working (2025/2027 -> 0%), and the detail toggle shows the A161 row [22.6,0,16.1,16.7,19.4,0,0,16.1,0,0,0,0], which matches the API. The per-property 'Ocupación por mes' panel under the property's Reservas tab shows Promedio 2026 7.6%, 12 bars, a working tooltip and year nav. Both panels are CONSISTENT. No page errors. Search and calendar still render. The change in routes_rentals.py only adds code (git diff checked).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/rentals/properties/{pid}/ocupacion and GET /api/rentals/ocupacion", "issue": "Malformed desde/hasta (e.g. 'abc', '2026-13', '2026-00') causes an unhandled ValueError in _meses_rango/_month_bounds and returns 500. These should return 400 (validate with a regex like ^\\d{4}-(0[1-9]|1[0-2])$ or try/except -> HTTPException(400))."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Both ocupación charts", "issues": [
+        "Bars under 30% use #6b6b6b on a near-black card, so low occupancy months (most real months, ~16-22%) are barely visible. Use a brighter neutral or the accent color.",
+        "The recharts tooltip shows the raw key 'pct : 22.6%'. Set a name on <Bar> (name='Ocupación'). It could also show ocupadas/disponibles noches; OcupacionPropiedad already passes these in chartData but does not use them.",
+        "On API failure both panels silently show 'Promedio 0%' with an empty chart and no error message."
+      ]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_rentals_ocupacion.py", "/app/backend/tests/test_rentals_ocupacion_iter89.py", "/app/test_reports/pytest/pytest_iter89.xml"],
+  "action_items": [
+    "Return 400 (not 500) for malformed desde/hasta in both ocupación endpoints.",
+    "Optional/business: 'Promedio {año}' is a simple mean of the 12 monthly pcts. Months with disponibles=0 (fully blocked) and future months count as 0% and pull the average down, which contradicts the rule that blocked days should not penalize. Consider a weighted average (sum ocupadas / sum disponibles) or excluding months with disponibles=0.",
+    "Optional: improve contrast of low-% bars and rename the tooltip label 'pct'."
+  ],
+  "critical_code_review_comments": [
+    "_meses_rango/_month_bounds do not validate input, which causes the 500s above.",
+    "GET /ocupacion makes one _occupied() query per property (N+1). This is fine for the current portfolio (1 property) but should become a single $in query if the portfolio grows.",
+    "OcupacionGeneral.tsx and OcupacionPropiedad.tsx duplicate the chart block, MESES_LABEL and colorPct (~25 lines). Extract a shared <OcupacionChart/>.",
+    "Pre-existing stale regression tests unrelated to this change: test_rentals.py (discount brackets changed; public prereserva now requires accepting conditions -> 400), test_rentals_prereserva_calendar.py (same acceptance requirement), test_rentals_shortstay_monto.py (hardcoded property no longer exists -> 404). These need updating; they are not caused by iteration 89."
+  ],
+  "updated_files": ["/app/backend/tests/test_rentals_ocupacion_iter89.py"],
+  "success_rate": {"backend": "84% (16/19; the 3 failures are only malformed input)", "frontend": "100%"},
+  "seed_data_creation": "None persistent. TEST_ocup_iter89 properties and their reservations/blocks are created per test and deleted by id in fixture teardown. Fixture A161 was untouched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && pytest tests/test_rentals_ocupacion.py tests/test_rentals_ocupacion_iter89.py -n 0. test_malformed_params_not_500 fails until input validation is added. UI: /veraos/login -> /veraos/alquileres (panel rt-ocupacion-general) and /veraos/alquileres/6744cf8a907f4a239a7504101c66a2df -> rt-wstab-reservas (panel rt-ocupacion-propiedad). Expected 2026 average for A161 is 7.6%. Server date in preview is 2026-11-13. test_contabilidad_iter88_retest is 15/16; the 1 failure is the known expected one."
+}

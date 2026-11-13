@@ -1,5 +1,13 @@
 # VERA OS — Product Requirements & Architecture
 
+## Feature (2026-11-13): Alquileres — % de ocupación por mes (por propiedad + cartera completa)
+- El usuario pidió agregar % de ocupación por mes; al preguntarle dónde mostrarlo, eligió "las dos cosas" (resumen general + detalle por propiedad).
+- Backend: `GET /api/rentals/properties/{pid}/ocupacion?desde&hasta` (por propiedad) y `GET /api/rentals/ocupacion?desde&hasta` (cartera completa + detalle por propiedad). Definición: ocupadas = noches con reserva confirmada/encurso/finalizada (las pre-reservas no cuentan, no están garantizadas); disponibles = días del mes menos noches bloqueadas (un bloqueo no es "oportunidad perdida" de alquilar). Valida formato `YYYY-MM`, devuelve 400 si es inválido.
+- Frontend: `OcupacionGeneral.tsx` (panel en Alquileres → tab Propiedades, siempre visible, con selector de año, gráfico de barras y tabla desplegable de detalle por propiedad) y `OcupacionPropiedad.tsx` (panel en la ficha de cada propiedad, tab Reservas, debajo del calendario). Ambos reutilizan `OcupacionChart.tsx` (barras recharts compartidas, tooltip con detalle de noches, colores por umbral: verde ≥60%, ámbar ≥30%, gris claro <30%). El promedio anual se calcula ponderado por noches disponibles (no promedio simple de %), para que un mes totalmente bloqueado no distorsione el número.
+- Tests: `backend/tests/test_rentals_ocupacion.py` (5) + `test_rentals_ocupacion_iter89.py` (testing agent, validación de formato) = 19/19. Testing agent: 100% frontend, backend corregido tras hallazgo de validación de fechas inválidas (400 en vez de 500).
+- Backlog (no bloqueante): N+1 queries al recorrer todas las propiedades en `/ocupacion` general (aceptable a esta escala de cartera).
+
+
 ## Fix (2026-11-04): Tasaciones — semicubiertos no se cotizaban
 - Bug reportado: la sumatoria de tasación no cerraba (ej. Duplex 70m² cubiertos + 20m² semicubiertos + 190m² terreno). El campo "semicubiertos" ya existía en el formulario de `TasacionesScreen.tsx` pero `tasar()` en `backend/tasacion.py` lo ignoraba por completo: no sumaba su valor de construcción, y no lo restaba del "lote libre" al cotizar el terreno (usaba `lote - cubiertos` en vez de `lote - cubiertos - semicubiertos`).
 - Fix: `tasar()` ahora valoriza los m² semicubiertos al 50% del precio/m² cubierto configurado, y descuenta cubiertos+semicubiertos del lote libre. Aplica tanto al tasador manual como al público (ambos usan la misma función). JPG entregable ahora muestra 3 tarjetas de desglose (Construcción / Semicubierto / Lote) cuando hay semicubiertos, 2 cuando no (sin regresión).

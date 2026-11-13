@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="19" time="25.374" timestamp="2026-11-13T00:51:24.522131+00:00" hostname="agent-env-ef221ec9-76dd-49d9-ba45-0ac9089b8139"><testcase classname="tests.test_rentals_ocupacion_iter89" name="test_case_a" time="2.094" /><testcase classname="tests.test_rentals_ocupacion_iter89" name="test_block_crossing_month" time="0.832" /><testcase classname="tests.test_rentals_ocupacion_iter89" name="test_leap_feb" time="0.584" /><testcase classname="tests.test_rentals_ocupacion_iter89" name="test_year_range" time="0.638" /><testcase classname="tests.test_rentals_ocupacion_iter89" name="test_cancelled_not_counted" time="1.580" /><testcase classname="tests.test_rentals_ocupacion_iter89" name="test_other_states_count[encurso]" time="2.418" /><testcase classname="tests.test_rentals_ocupacion_iter89" name="test_other_states_count[finalizada]" time="3.495" /><testcase classname="tests.test_rentals_ocupacion_iter89" name="test_fully_blocked" time="0.882" /><testcase classname="tests.test_rentals_ocupacion_iter89" name="test_unknown_property_404" time="0.145" /><testcase classname="tests.test_rentals_ocupacion_iter89" name="test_missing_params_422" time="0.578" /><testcase classname="tests.test_rentals_ocupacion_iter89" name="test_malformed_params_not_500[abc-2026-01]" time="2.149"><failure message="AssertionError: abc/2026-01 -&gt; 500&#10;assert 500 &lt; 500&#10; +  where 500 = &lt;Response [500]&gt;.status_code">prop = 'dad111491dbc4091bed7a13cc08fcfb2', desde = 'abc', hasta = '2026-01'
+
+    @pytest.mark.parametrize("desde,hasta", [("abc", "2026-01"), ("2026-13", "2026-13"), ("2026-00", "2026-01")])
+    def test_malformed_params_not_500(prop, desde, hasta):
+        r = requests.get(f"{API}/properties/{prop}/ocupacion", params={"desde": desde, "hasta": hasta})
+&gt;       assert r.status_code &lt; 500, f"{desde}/{hasta} -&gt; {r.status_code}"
+E       AssertionError: abc/2026-01 -&gt; 500
+E       assert 500 &lt; 500
+E        +  where 500 = &lt;Response [500]&gt;.status_code
+
+tests/test_rentals_ocupacion_iter89.py:107: AssertionError</failure></testcase><testcase classname="tests.test_rentals_ocupacion_iter89" name="test_malformed_params_not_500[2026-13-2026-13]" time="1.878"><failure message="AssertionError: 2026-13/2026-13 -&gt; 500&#10;assert 500 &lt; 500&#10; +  where 500 = &lt;Response [500]&gt;.status_code">prop = 'd5f83e26d27046d591715ce83fe89447', desde = '2026-13', hasta = '2026-13'
+
+    @pytest.mark.parametrize("desde,hasta", [("abc", "2026-01"), ("2026-13", "2026-13"), ("2026-00", "2026-01")])
+    def test_malformed_params_not_500(prop, desde, hasta):
+        r = requests.get(f"{API}/properties/{prop}/ocupacion", params={"desde": desde, "hasta": hasta})
+&gt;       assert r.status_code &lt; 500, f"{desde}/{hasta} -&gt; {r.status_code}"
+E       AssertionError: 2026-13/2026-13 -&gt; 500
+E       assert 500 &lt; 500
+E        +  where 500 = &lt;Response [500]&gt;.status_code
+
+tests/test_rentals_ocupacion_iter89.py:107: AssertionError</failure></testcase><testcase classname="tests.test_rentals_ocupacion_iter89" name="test_malformed_params_not_500[2026-00-2026-01]" time="0.884"><failure message="AssertionError: 2026-00/2026-01 -&gt; 500&#10;assert 500 &lt; 500&#10; +  where 500 = &lt;Response [500]&gt;.status_code">prop = 'e04eac6dfa0043eea8e6ae8a053d1fa5', desde = '2026-00', hasta = '2026-01'
+
+    @pytest.mark.parametrize("desde,hasta", [("abc", "2026-01"), ("2026-13", "2026-13"), ("2026-00", "2026-01")])
+    def test_malformed_params_not_500(prop, desde, hasta):
+        r = requests.get(f"{API}/properties/{prop}/ocupacion", params={"desde": desde, "hasta": hasta})
+&gt;       assert r.status_code &lt; 500, f"{desde}/{hasta} -&gt; {r.status_code}"
+E       AssertionError: 2026-00/2026-01 -&gt; 500
+E       assert 500 &lt; 500
+E        +  where 500 = &lt;Response [500]&gt;.status_code
+
+tests/test_rentals_ocupacion_iter89.py:107: AssertionError</failure></testcase><testcase classname="tests.test_rentals_ocupacion_iter89" name="test_general_consistency" time="0.285" /><testcase classname="tests.test_rentals_ocupacion" name="test_ocupacion_propiedad_con_reserva_y_bloqueo" time="1.666" /><testcase classname="tests.test_rentals_ocupacion" name="test_ocupacion_sin_nada_da_cero" time="0.569" /><testcase classname="tests.test_rentals_ocupacion" name="test_prereserva_no_cuenta_como_ocupada" time="1.520" /><testcase classname="tests.test_rentals_ocupacion" name="test_meses_multiples_en_rango" time="1.012" /><testcase classname="tests.test_rentals_ocupacion" name="test_ocupacion_general_agrega_la_propiedad_de_test" time="2.048" /></testsuite></testsuites>

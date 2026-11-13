@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, CalendarRange } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
 import { api, type OcupacionGeneral as OcupacionGeneralData } from './api';
+import { MESES_LABEL, OcupacionChart } from './OcupacionChart';
 
-const MESES_LABEL = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-const colorPct = (pct: number) => (pct >= 60 ? '#4bbf6b' : pct >= 30 ? '#d6aa28' : '#6b6b6b');
 const cellClass = (pct: number) => (pct >= 60 ? 'ok' : pct >= 30 ? 'mid' : 'low');
 
 /** Ocupación mensual combinada de TODA la cartera de alquileres, con detalle por propiedad. */
@@ -12,25 +10,29 @@ export const OcupacionGeneral = () => {
   const [anio, setAnio] = useState(() => new Date().getFullYear());
   const [data, setData] = useState<OcupacionGeneralData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
+    setLoading(true); setError('');
     api.ocupacionGeneral(`${anio}-01`, `${anio}-12`)
       .then((d) => { if (alive) setData(d); })
-      .catch(() => { if (alive) setData(null); })
+      .catch(() => { if (alive) { setData(null); setError('No se pudo cargar la ocupación.'); } })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, [anio]);
 
   const chartData = useMemo(() => (data?.general || []).map((m) => ({
-    label: MESES_LABEL[Number(m.mes.split('-')[1]) - 1], pct: m.pct,
+    label: MESES_LABEL[Number(m.mes.split('-')[1]) - 1], pct: m.pct, ocupadas: m.ocupadas, disponibles: m.disponibles,
   })), [data]);
 
-  const promedio = data?.general.length
-    ? Math.round((data.general.reduce((s, m) => s + m.pct, 0) / data.general.length) * 10) / 10
-    : 0;
+  // Promedio ponderado por noches disponibles (ver nota en OcupacionPropiedad.tsx).
+  const promedio = useMemo(() => {
+    const t = (data?.general || []).reduce((acc, m) => ({ ocupadas: acc.ocupadas + m.ocupadas, disponibles: acc.disponibles + m.disponibles }), { ocupadas: 0, disponibles: 0 });
+    return t.disponibles > 0 ? Math.round((t.ocupadas / t.disponibles) * 1000) / 10 : 0;
+  }, [data]);
+
   const propsConDatos = (data?.propiedades || []).filter((p) => p.meses.some((m) => m.disponibles > 0));
 
   return (
@@ -46,22 +48,12 @@ export const OcupacionGeneral = () => {
           <button type="button" onClick={() => setAnio((a) => a + 1)} data-testid="rt-ocupgen-next-year"><ChevronRight size={14} /></button>
         </div>
       </div>
-      {loading ? <p className="rt-hint">Calculando…</p> : (
+      {loading ? <p className="rt-hint">Calculando…</p> : error ? (
+        <p className="rt-hint rt-hint--error" data-testid="rt-ocupgen-error">{error}</p>
+      ) : (
         <>
           <p className="rt-ocup__avg" data-testid="rt-ocupgen-promedio">Promedio {anio}: <strong>{promedio}%</strong></p>
-          <div className="rt-ocup__chart">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 6, right: 8, left: -22, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.06)" vertical={false} />
-                <XAxis dataKey="label" tick={{ fill: '#9a968c', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 100]} tick={{ fill: '#9a968c', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                <Tooltip formatter={(value?: number) => `${value ?? 0}%`} contentStyle={{ background: '#1b1b1e', border: '1px solid rgba(255,255,255,.12)', borderRadius: 10, color: '#eee' }} />
-                <Bar dataKey="pct" radius={[4, 4, 0, 0]}>
-                  {chartData.map((d, i) => <Cell key={i} fill={colorPct(d.pct)} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <OcupacionChart data={chartData} />
           {propsConDatos.length > 0 && (
             <>
               <button type="button" className="rt-ocupgen__toggle" onClick={() => setExpanded((e) => !e)} data-testid="rt-ocupgen-toggle-detalle">

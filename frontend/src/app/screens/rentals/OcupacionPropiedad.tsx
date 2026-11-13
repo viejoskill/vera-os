@@ -1,23 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
 import { api, type OcupacionMes } from './api';
-
-const MESES_LABEL = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-const colorPct = (pct: number) => (pct >= 60 ? '#4bbf6b' : pct >= 30 ? '#d6aa28' : '#6b6b6b');
+import { MESES_LABEL, OcupacionChart } from './OcupacionChart';
 
 /** Ocupación mensual de ESTA propiedad: noches reservadas sobre noches disponibles. */
 export const OcupacionPropiedad = ({ propertyId }: { propertyId: string }) => {
   const [anio, setAnio] = useState(() => new Date().getFullYear());
   const [meses, setMeses] = useState<OcupacionMes[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
+    setLoading(true); setError('');
     api.ocupacionPropiedad(propertyId, `${anio}-01`, `${anio}-12`)
       .then((d) => { if (alive) setMeses(d.meses); })
-      .catch(() => { if (alive) setMeses([]); })
+      .catch(() => { if (alive) { setMeses([]); setError('No se pudo cargar la ocupación.'); } })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, [propertyId, anio]);
@@ -26,7 +24,13 @@ export const OcupacionPropiedad = ({ propertyId }: { propertyId: string }) => {
     label: MESES_LABEL[Number(m.mes.split('-')[1]) - 1], pct: m.pct, ocupadas: m.ocupadas, disponibles: m.disponibles,
   })), [meses]);
 
-  const promedio = meses.length ? Math.round((meses.reduce((s, m) => s + m.pct, 0) / meses.length) * 10) / 10 : 0;
+  // Promedio ponderado por noches disponibles: un mes totalmente bloqueado (disponibles=0)
+  // no debe pesar como "0% de ocupación" y arrastrar el promedio hacia abajo.
+  const { ocupadasTot, disponiblesTot } = useMemo(
+    () => meses.reduce((acc, m) => ({ ocupadasTot: acc.ocupadasTot + m.ocupadas, disponiblesTot: acc.disponiblesTot + m.disponibles }), { ocupadasTot: 0, disponiblesTot: 0 }),
+    [meses],
+  );
+  const promedio = disponiblesTot > 0 ? Math.round((ocupadasTot / disponiblesTot) * 1000) / 10 : 0;
 
   return (
     <section className="rt-ws__full rt-ocup" data-testid="rt-ocupacion-propiedad">
@@ -38,22 +42,12 @@ export const OcupacionPropiedad = ({ propertyId }: { propertyId: string }) => {
           <button type="button" onClick={() => setAnio((a) => a + 1)} data-testid="rt-ocup-next-year"><ChevronRight size={14} /></button>
         </div>
       </div>
-      {loading ? <p className="rt-hint">Calculando…</p> : (
+      {loading ? <p className="rt-hint">Calculando…</p> : error ? (
+        <p className="rt-hint rt-hint--error" data-testid="rt-ocup-error">{error}</p>
+      ) : (
         <>
           <p className="rt-ocup__avg" data-testid="rt-ocup-promedio">Promedio {anio}: <strong>{promedio}%</strong></p>
-          <div className="rt-ocup__chart">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 6, right: 8, left: -22, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.06)" vertical={false} />
-                <XAxis dataKey="label" tick={{ fill: '#9a968c', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 100]} tick={{ fill: '#9a968c', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                <Tooltip formatter={(value?: number) => `${value ?? 0}%`} contentStyle={{ background: '#1b1b1e', border: '1px solid rgba(255,255,255,.12)', borderRadius: 10, color: '#eee' }} />
-                <Bar dataKey="pct" radius={[4, 4, 0, 0]}>
-                  {chartData.map((d, i) => <Cell key={i} fill={colorPct(d.pct)} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <OcupacionChart data={chartData} />
         </>
       )}
     </section>
