@@ -354,6 +354,17 @@
 .rt-liq__pagook-info span { font-size: .85rem; color: var(--vera-color-text-secondary); }
 .rt-liq__pagook-acc { display: flex; gap: 8px; flex-wrap: wrap; }
 
+/* Liquidaciones: recordatorio de reservas con seña cobrada hace >7 días sin liquidar */
+.rt-liq__recordatorio { display: flex; align-items: flex-start; gap: 12px; background: rgba(214,170,40,.1); border: 1px solid rgba(214,170,40,.4); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; color: #e3b93c; }
+.rt-liq__recordatorio-body { flex: 1; }
+.rt-liq__recordatorio-body > strong { color: var(--vera-color-text); font-size: .9rem; font-weight: 600; display: block; }
+.rt-liq__recordatorio-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.rt-liq__recordatorio-list button {
+  background: var(--vera-color-surface); border: 1px solid rgba(214,170,40,.35); color: var(--vera-color-text);
+  padding: 5px 10px; border-radius: 999px; font-size: .78rem; cursor: pointer; transition: border-color .15s, background .15s;
+}
+.rt-liq__recordatorio-list button:hover { border-color: #e3b93c; background: rgba(214,170,40,.12); }
+
 /* Cobro de seña (Mercado Pago) */
 .rt-mini--pay { border-color: rgba(0,158,227,.55); color: #4ab3e6; }
 .rt-mini--doc { border-color: rgba(150,130,220,.55); color: #b3a0e6; }

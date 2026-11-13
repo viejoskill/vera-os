@@ -12,7 +12,7 @@ import random
 import re
 from pathlib import Path
 from urllib.parse import quote
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from uuid import uuid4
 
 import httpx
@@ -1185,6 +1185,36 @@ async def liquidables(pid: str):
     cur = _res().find({"propertyId": pid, "pago.estado": "pagado"})
     out = [_res_out(r) async for r in cur]
     out.sort(key=lambda r: (r.get("pago") or {}).get("pagadoEl") or r.get("checkIn") or "", reverse=True)
+    return out
+
+
+@router.get("/liquidaciones/pendientes")
+async def liquidaciones_pendientes(dias: int = Query(7, ge=1)):
+    """Recordatorio: reservas de TODA la cartera con la seña cobrada hace más de `dias` días
+    que todavía no tienen el pago al propietario registrado. Para no olvidarse de liquidar."""
+    ahora = datetime.now(timezone.utc)
+    limite = (ahora - timedelta(days=dias)).isoformat()
+    cur = _res().find({
+        "pago.estado": "pagado",
+        "pago.pagadoEl": {"$lte": limite},
+        "$or": [{"pagoPropietario": {"$exists": False}}, {"pagoPropietario.estado": {"$ne": "pagado"}}],
+    }).sort("pago.pagadoEl", 1)
+    out = []
+    async for r in cur:
+        prop = await _props().find_one({"_id": r.get("propertyId")})
+        pagado_el = (r.get("pago") or {}).get("pagadoEl") or ""
+        try:
+            dias_sin = (ahora - datetime.fromisoformat(pagado_el)).days
+        except ValueError:
+            dias_sin = dias
+        out.append({
+            "reservaId": r["_id"], "propertyId": r.get("propertyId"),
+            "propertyCodigo": (prop or {}).get("codigo"),
+            "propertyTitulo": (prop or {}).get("titulo") or r.get("propertyTitulo"),
+            "huesped": (r.get("huesped") or {}).get("nombre"),
+            "checkIn": r.get("checkIn"), "checkOut": r.get("checkOut"),
+            "pagadoEl": pagado_el, "diasSinLiquidar": dias_sin,
+        })
     return out
 
 

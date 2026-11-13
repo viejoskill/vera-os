@@ -26,6 +26,10 @@ export interface Movimiento {
   id: string; propertyId: string; fecha: string; tipo: string; monto: number;
   descripcion?: string; reservaId?: string; createdAt?: string; comisionPct?: number;
 }
+export interface LiquidacionPendiente {
+  reservaId: string; propertyId: string; propertyCodigo?: string; propertyTitulo?: string;
+  huesped?: string; checkIn: string; checkOut: string; pagadoEl: string; diasSinLiquidar: number;
+}
 export interface Liquidacion {
   propiedad: { id: string; codigo?: string; titulo: string; moneda: string };
   propietario: { nombre?: string; telefono?: string; email?: string; dni?: string };
@@ -151,6 +155,8 @@ export const api = {
     `${RENTALS_API}/liquidacion/pdf?propertyId=${propertyId}&desde=${desde}&hasta=${hasta}`,
   reciboSenaUrl: (rid: string): string => `${RENTALS_API}/reservations/${rid}/recibo-sena`,
   liquidables: (pid: string): Promise<Reservation[]> => fetch(`${RENTALS_API}/properties/${pid}/liquidables`).then(json),
+  liquidacionesPendientes: (dias = 7): Promise<LiquidacionPendiente[]> =>
+    fetch(`${RENTALS_API}/liquidaciones/pendientes?dias=${dias}`).then(json),
   liquidacionReserva: (rid: string): Promise<LiquidacionReserva> => fetch(`${RENTALS_API}/reservations/${rid}/liquidacion`).then(json),
   liquidacionReservaPdfUrl: (rid: string): string => `${RENTALS_API}/reservations/${rid}/liquidacion/pdf`,
   verifyPayment: (reservaId: string, paymentId?: string): Promise<{ estado: string; propertyTitulo?: string; checkIn?: string; checkOut?: string; huesped?: string; whatsappAgencia?: string }> =>

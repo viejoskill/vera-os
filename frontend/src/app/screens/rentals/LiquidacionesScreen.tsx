@@ -1,23 +1,31 @@
-import { useEffect, useState } from 'react';
-import { Calculator, Download, ArrowLeft, Plus, Trash2, Users, CheckCircle2, Undo2, Paperclip } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Calculator, Download, ArrowLeft, Plus, Trash2, Users, CheckCircle2, Undo2, Paperclip, AlertTriangle } from 'lucide-react';
 import { Button } from '@vera/ui';
-import { api, fmtMoney, fmtDate, hoyAR, TIPO_MOV, METODO_PAGO, type RentalProperty, type Reservation, type LiquidacionReserva } from './api';
+import { api, fmtMoney, fmtDate, hoyAR, TIPO_MOV, METODO_PAGO, type RentalProperty, type Reservation, type LiquidacionReserva, type LiquidacionPendiente } from './api';
 import './rentals.css';
 
 export const LiquidacionesScreen = () => {
   const [props, setProps] = useState<RentalProperty[]>([]);
   const [pid, setPid] = useState('');
   const [reservas, setReservas] = useState<Reservation[]>([]);
+  const [tab, setTab] = useState<'pendientes' | 'historial'>('pendientes');
   const [sel, setSel] = useState<string | null>(null);
   const [liq, setLiq] = useState<LiquidacionReserva | null>(null);
   const [nm, setNm] = useState({ fecha: hoyAR(), tipo: 'gasto_prop', monto: '', descripcion: '' });
   const [pagoForm, setPagoForm] = useState({ fecha: hoyAR(), metodo: 'transferencia', monto: '', notas: '' });
   const [pagoFile, setPagoFile] = useState<File | null>(null);
   const [guardandoPago, setGuardandoPago] = useState(false);
+  const [pendientes, setPendientes] = useState<LiquidacionPendiente[]>([]);
   const [err, setErr] = useState('');
+  const skipPidReset = useRef(false);
 
   useEffect(() => { api.listProperties().then((p) => { setProps(p); if (p[0]) setPid(p[0].id); }); }, []);
-  useEffect(() => { if (pid) { setSel(null); setLiq(null); api.liquidables(pid).then(setReservas).catch(() => setReservas([])); } }, [pid]);
+  useEffect(() => { api.liquidacionesPendientes(7).then(setPendientes).catch(() => setPendientes([])); }, []);
+  useEffect(() => {
+    if (!pid) return;
+    if (skipPidReset.current) { skipPidReset.current = false; } else { setSel(null); setLiq(null); }
+    api.liquidables(pid).then(setReservas).catch(() => setReservas([]));
+  }, [pid]);
   useEffect(() => {
     if (liq && liq.pagoPropietario?.estado !== 'pagado') {
       setPagoForm({ fecha: hoyAR(), metodo: 'transferencia', monto: String(liq.netoPropietario), notas: '' });
@@ -29,7 +37,13 @@ export const LiquidacionesScreen = () => {
     setSel(rid); setErr('');
     try { setLiq(await api.liquidacionReserva(rid)); } catch (e) { setErr((e as Error).message); }
   };
+  const abrirDesdeRecordatorio = async (propertyId: string, rid: string) => {
+    skipPidReset.current = true;
+    setPid(propertyId);
+    await abrir(rid);
+  };
   const recargar = async () => { if (sel) setLiq(await api.liquidacionReserva(sel)); };
+  const recargarPendientes = () => { api.liquidacionesPendientes(7).then(setPendientes).catch(() => setPendientes([])); };
 
   const addMov = async () => {
     if (!sel || !nm.monto) return;
@@ -46,6 +60,7 @@ export const LiquidacionesScreen = () => {
       await api.marcarLiquidacionPagada(sel, Number(pagoForm.monto), pagoForm.metodo, pagoForm.fecha || hoyAR(), pagoForm.notas, pagoFile);
       await recargar();
       const r = await api.liquidables(pid); setReservas(r);
+      recargarPendientes();
     } catch (e) { setErr((e as Error).message); }
     setGuardandoPago(false);
   };
@@ -58,10 +73,13 @@ export const LiquidacionesScreen = () => {
       const r = await api.liquidables(pid); setReservas(r);
       setPagoForm({ fecha: hoyAR(), metodo: 'transferencia', monto: String(liq?.netoPropietario ?? ''), notas: '' });
       setPagoFile(null);
+      recargarPendientes();
     } catch (e) { setErr((e as Error).message); }
   };
 
   const mon = liq?.propiedad.moneda || 'ARS';
+  const reservasFiltradas = reservas.filter((r) => (tab === 'historial' ? r.pagoPropietario?.estado === 'pagado' : r.pagoPropietario?.estado !== 'pagado'));
+  const totalHistorial = reservasFiltradas.reduce((acc, r) => acc + (r.pagoPropietario?.monto || 0), 0);
 
   return (
     <div className="vera-screen rt" data-testid="liquidaciones-screen">
@@ -72,6 +90,28 @@ export const LiquidacionesScreen = () => {
         </div>
       </header>
 
+      {pendientes.length > 0 && (
+        <div className="rt-liq__recordatorio" data-testid="rt-liq-recordatorio">
+          <AlertTriangle size={17} />
+          <div className="rt-liq__recordatorio-body">
+            <strong>{pendientes.length} reserva{pendientes.length === 1 ? '' : 's'} con la seña cobrada hace más de una semana, sin liquidar todavía</strong>
+            <ul className="rt-liq__recordatorio-list">
+              {pendientes.slice(0, 6).map((p) => (
+                <li key={p.reservaId}>
+                  <button
+                    type="button"
+                    onClick={() => abrirDesdeRecordatorio(p.propertyId, p.reservaId)}
+                    data-testid={`rt-liq-recordatorio-item-${p.reservaId}`}
+                  >
+                    {p.propertyCodigo ? `${p.propertyCodigo} · ` : ''}{p.huesped || 'Huésped'} · {p.diasSinLiquidar} días
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
       <div className="rt-liq__filters" data-testid="rt-liq-filters">
         <select value={pid} onChange={(e) => setPid(e.target.value)} data-testid="rt-liq-prop">
           {props.map((p) => <option key={p.id} value={p.id}>{p.codigo ? `${p.codigo} · ` : ''}{p.titulo}</option>)}
@@ -80,26 +120,43 @@ export const LiquidacionesScreen = () => {
       {err && <p className="rt__flash" style={{ color: '#e07575' }}>{err}</p>}
 
       {!liq && (
-        <div className="rt-liq__list" data-testid="rt-liq-reservas">
-          {reservas.length === 0 && <p className="rt__empty">Todavía no hay reservas efectuadas (con seña pagada) en esta propiedad.</p>}
-          {reservas.map((r) => (
-            <button type="button" className="rt-liq__resitem" key={r.id} onClick={() => abrir(r.id)} data-testid={`rt-liq-res-${r.id}`}>
-              <div className="rt-liq__resmain">
-                <strong>{r.huesped.nombre}</strong>
-                <span><Users size={13} /> {r.huesped.huespedes || 1} · {fmtDate(r.checkIn)} → {fmtDate(r.checkOut)} · {r.noches} noches</span>
-              </div>
-              <div className="rt-liq__resmeta">
-                <span className="rt-b rt-b--ok"><CheckCircle2 size={13} /> Seña {fmtMoney(r.pago?.monto || 0, 'ARS')}</span>
-                {r.pagoPropietario?.estado === 'pagado' ? (
-                  <span className="rt-b rt-b--ok" data-testid={`rt-liq-badge-pagada-${r.id}`}><CheckCircle2 size={13} /> Liquidada {fmtDate(r.pagoPropietario.fecha)}</span>
-                ) : (
-                  <span className="rt-b rt-b--muted" data-testid={`rt-liq-badge-pendiente-${r.id}`}>Sin liquidar</span>
-                )}
-                <strong>{fmtMoney(r.montoEstimado, r.moneda)}</strong>
-              </div>
-            </button>
-          ))}
-        </div>
+        <>
+          <div className="rt__tabs" data-testid="rt-liq-tabs">
+            <button type="button" className={tab === 'pendientes' ? 'sel' : ''} onClick={() => setTab('pendientes')} data-testid="rt-liq-tab-pendientes">Pendientes</button>
+            <button type="button" className={tab === 'historial' ? 'sel' : ''} onClick={() => setTab('historial')} data-testid="rt-liq-tab-historial">Historial</button>
+          </div>
+          {tab === 'historial' && reservasFiltradas.length > 0 && (
+            <p className="rt-hint" data-testid="rt-liq-historial-total">
+              Total liquidado: <strong>{fmtMoney(totalHistorial, 'ARS')}</strong> en {reservasFiltradas.length} pago{reservasFiltradas.length === 1 ? '' : 's'}.
+            </p>
+          )}
+          <div className="rt-liq__list" data-testid="rt-liq-reservas">
+            {reservasFiltradas.length === 0 && (
+              <p className="rt__empty">
+                {tab === 'historial'
+                  ? 'Todavía no liquidaste ninguna reserva de esta propiedad.'
+                  : 'No hay reservas pendientes de liquidar en esta propiedad.'}
+              </p>
+            )}
+            {reservasFiltradas.map((r) => (
+              <button type="button" className="rt-liq__resitem" key={r.id} onClick={() => abrir(r.id)} data-testid={`rt-liq-res-${r.id}`}>
+                <div className="rt-liq__resmain">
+                  <strong>{r.huesped.nombre}</strong>
+                  <span><Users size={13} /> {r.huesped.huespedes || 1} · {fmtDate(r.checkIn)} → {fmtDate(r.checkOut)} · {r.noches} noches</span>
+                </div>
+                <div className="rt-liq__resmeta">
+                  <span className="rt-b rt-b--ok"><CheckCircle2 size={13} /> Seña {fmtMoney(r.pago?.monto || 0, 'ARS')}</span>
+                  {r.pagoPropietario?.estado === 'pagado' ? (
+                    <span className="rt-b rt-b--ok" data-testid={`rt-liq-badge-pagada-${r.id}`}><CheckCircle2 size={13} /> Liquidada {fmtDate(r.pagoPropietario.fecha)}</span>
+                  ) : (
+                    <span className="rt-b rt-b--muted" data-testid={`rt-liq-badge-pendiente-${r.id}`}>Sin liquidar</span>
+                  )}
+                  <strong>{fmtMoney(r.montoEstimado, r.moneda)}</strong>
+                </div>
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       {liq && (
