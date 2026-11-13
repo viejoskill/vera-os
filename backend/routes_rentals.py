@@ -1544,6 +1544,16 @@ async def recibo_saldo(rid: str, sid: str, dl: int = 0):
     )
 
 
+METODOS_PAGO_PROPIETARIO = {"transferencia", "efectivo", "cheque", "otro"}
+
+
+def _hoy_ar() -> str:
+    """Fecha de hoy en huso horario Argentina (el server corre en UTC; sin esto, un pago
+    cargado después de las 21:00 locales quedaba fechado al día siguiente)."""
+    from zoneinfo import ZoneInfo
+    return datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")).date().isoformat()
+
+
 @router.post("/reservations/{rid}/liquidacion/marcar-pagada")
 async def marcar_liquidacion_pagada(
     rid: str,
@@ -1561,6 +1571,8 @@ async def marcar_liquidacion_pagada(
         raise HTTPException(404, "Reserva no encontrada")
     if not monto or float(monto) <= 0:
         raise HTTPException(400, "El monto liquidado debe ser mayor a cero.")
+    if metodo not in METODOS_PAGO_PROPIETARIO:
+        raise HTTPException(400, "Método de pago inválido, usá transferencia, efectivo, cheque u otro.")
     comp = None
     if file is not None and appconfig.supabase_configured():
         ext = Path(file.filename or "comp.jpg").suffix.lower() or ".jpg"
@@ -1571,7 +1583,7 @@ async def marcar_liquidacion_pagada(
                 "nombre": file.filename or "comprobante liquidación"}
     pago_prop = {
         "estado": "pagado", "monto": round(float(monto)), "metodo": metodo,
-        "fecha": fecha or date.today().isoformat(), "notas": notas or None,
+        "fecha": fecha or _hoy_ar(), "notas": notas or None,
         "comprobante": comp, "pagadoEl": _now(),
     }
     await _res().update_one({"_id": rid}, {"$set": {"pagoPropietario": pago_prop}})

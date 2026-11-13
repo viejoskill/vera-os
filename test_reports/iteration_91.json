@@ -1,0 +1,38 @@
+{
+  "summary": "Tested the Liquidaciones 'Pago al propietario' feature end-to-end. Backend: 12 of 13 pytest tests pass (the 7 existing ones plus 6 new ones). The new ones check the real PDF text for both states (pending and paid), the default date being today, 400 for monto 0 or negative, 404 for an unknown reservation, uploading a receipt and downloading it back byte-for-byte, notes with & and < characters, and a mark-paid then revert round trip on the A161 fixture. The only failure: an invalid 'metodo' (e.g. 'bitcoin') is accepted with 200. UI (qa_varela): the list badges, the form prefilled with today and the neto, the green confirmation card with fecha/método/monto/notas plus Ver comprobante (opens the file) and Deshacer, the Liquidada badge in the list, re-marking, the adjust-movements regression (neto goes 180.000 -> 179.889 -> 180.000) and Descargar PDF all work. One small UX bug: after Deshacer the form keeps the old values and the old file.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/rentals/reservations/{rid}/liquidacion/marcar-pagada", "issue": "'metodo' is not checked against transferencia|efectivo|cheque|otro, so any string is saved (e.g. 'bitcoin' returns 200). The PDF then prints the raw value."},
+      {"endpoint": "POST /api/rentals/reservations/{rid}/liquidacion/marcar-pagada", "issue": "The default fecha uses date.today() in the server timezone (UTC). For Argentina (UTC-3) a payment recorded after 21:00 local time with no fecha gets tomorrow's date."},
+      {"endpoint": "POST .../liquidacion/marcar-pagada + /revertir", "issue": "Revert ($unset) and re-marking leave the uploaded receipt in Supabase storage with nothing pointing to it. Not urgent."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "LiquidacionesScreen pago form after Deshacer", "issue": "After revert the form keeps the previous monto/metodo/notas (4321/efectivo/'TEST_UI pago') instead of going back to the neto and transferencia. pagoFile is also not cleared, so clicking 'Marcar como pagada' again without choosing a file silently re-uploads the old receipt (confirmed: Ver comprobante showed after re-marking with no new file). Cause: the reset useEffect depends only on liq.reserva.id. Fix: reset pagoForm and pagoFile inside revertirPago.", "selector": "[data-testid=rt-liq-pago-revertir]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Liquidaciones", "issues": ["HOY = new Date().toISOString().slice(0,10) is the UTC date and is computed once when the module loads. After 21:00 in Argentina the date field prefills with tomorrow, and it goes stale if the tab stays open past midnight.", "revertirPago has no try/catch and no loading state (marcarPago does)."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_rentals_pago_propietario.py", "/app/backend/tests/test_rentals_pago_propietario_extra.py", "/app/test_reports/pytest/pytest_pago_prop.xml"],
+  "action_items": [
+    "Check metodo in marcar-pagada against {transferencia, efectivo, cheque, otro} and return 400 otherwise",
+    "In revertirPago, reset pagoForm to {fecha: today, metodo: 'transferencia', monto: neto, notas: ''} and call setPagoFile(null)",
+    "Use the local date (or America/Argentina/Buenos_Aires) for the default fecha in both the frontend HOY and the backend date.today()"
+  ],
+  "critical_code_review_comments": [
+    "The metodo Form field is not validated (no Literal/enum)",
+    "The pagoFile state survives a revert, so a stale file gets re-uploaded",
+    "revertirPago in the frontend has no error handling"
+  ],
+  "updated_files": ["/app/backend/tests/test_rentals_pago_propietario_extra.py"],
+  "success_rate": {"backend": "92% (12/13)", "frontend": "95% (all core flows pass; one low-priority form-reset bug)"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (has access to liquidaciones)",
+  "seed_data_creation": "None left behind. The pytest fixtures create and delete their own TEST_ properties and reservations. The UI test marked A161 reservation 2e38203b48b54991b1dd45233f521f79 as paid, reverted it, and deleted the test movement it added. Checked afterwards: all 4 A161 liquidables have pagoPropietario=None and there are no TEST_ properties.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run pytest from /app/backend (pytest.ini adds xdist). The A161 fixture (6744cf8a907f4a239a7504101c66a2df) has 4 liquidable reservations. The UI route is /veraos/liquidaciones, reached by logging in at /veraos/login. Liquidables return pagoPropietario=null when unpaid; the liquidacion endpoint returns {}."
+}

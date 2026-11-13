@@ -226,6 +226,10 @@ export const fmtDate = (s?: string | null): string => {
   return `${p[2]}/${p[1]}/${p[0]}`;
 };
 
+/** Fecha de hoy en huso horario Argentina, como 'YYYY-MM-DD' (siempre recalculada en el
+ * momento, para no quedar desactualizada si la pestaña sigue abierta pasada la medianoche). */
+export const hoyAR = (): string => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
+
 /** Link wa.me con mensaje pre-escrito (click-to-send desde el WhatsApp del usuario). */
 export const waLink = (telefono: string, mensaje: string): string => {
   const num = (telefono || '').replace(/\D/g, '');

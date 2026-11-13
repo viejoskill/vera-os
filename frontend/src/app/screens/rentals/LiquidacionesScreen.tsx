@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Calculator, Download, ArrowLeft, Plus, Trash2, Users, CheckCircle2, Undo2, Paperclip } from 'lucide-react';
 import { Button } from '@vera/ui';
-import { api, fmtMoney, fmtDate, TIPO_MOV, METODO_PAGO, type RentalProperty, type Reservation, type LiquidacionReserva } from './api';
+import { api, fmtMoney, fmtDate, hoyAR, TIPO_MOV, METODO_PAGO, type RentalProperty, type Reservation, type LiquidacionReserva } from './api';
 import './rentals.css';
-
-const HOY = new Date().toISOString().slice(0, 10);
 
 export const LiquidacionesScreen = () => {
   const [props, setProps] = useState<RentalProperty[]>([]);
@@ -12,8 +10,8 @@ export const LiquidacionesScreen = () => {
   const [reservas, setReservas] = useState<Reservation[]>([]);
   const [sel, setSel] = useState<string | null>(null);
   const [liq, setLiq] = useState<LiquidacionReserva | null>(null);
-  const [nm, setNm] = useState({ fecha: HOY, tipo: 'gasto_prop', monto: '', descripcion: '' });
-  const [pagoForm, setPagoForm] = useState({ fecha: HOY, metodo: 'transferencia', monto: '', notas: '' });
+  const [nm, setNm] = useState({ fecha: hoyAR(), tipo: 'gasto_prop', monto: '', descripcion: '' });
+  const [pagoForm, setPagoForm] = useState({ fecha: hoyAR(), metodo: 'transferencia', monto: '', notas: '' });
   const [pagoFile, setPagoFile] = useState<File | null>(null);
   const [guardandoPago, setGuardandoPago] = useState(false);
   const [err, setErr] = useState('');
@@ -22,7 +20,7 @@ export const LiquidacionesScreen = () => {
   useEffect(() => { if (pid) { setSel(null); setLiq(null); api.liquidables(pid).then(setReservas).catch(() => setReservas([])); } }, [pid]);
   useEffect(() => {
     if (liq && liq.pagoPropietario?.estado !== 'pagado') {
-      setPagoForm({ fecha: HOY, metodo: 'transferencia', monto: String(liq.netoPropietario), notas: '' });
+      setPagoForm({ fecha: hoyAR(), metodo: 'transferencia', monto: String(liq.netoPropietario), notas: '' });
       setPagoFile(null);
     }
   }, [liq?.reserva.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -35,8 +33,8 @@ export const LiquidacionesScreen = () => {
 
   const addMov = async () => {
     if (!sel || !nm.monto) return;
-    await api.createMovimiento({ propertyId: pid, reservaId: sel, fecha: nm.fecha || HOY, tipo: nm.tipo, monto: Number(nm.monto), descripcion: nm.descripcion });
-    setNm({ fecha: HOY, tipo: 'gasto_prop', monto: '', descripcion: '' });
+    await api.createMovimiento({ propertyId: pid, reservaId: sel, fecha: nm.fecha || hoyAR(), tipo: nm.tipo, monto: Number(nm.monto), descripcion: nm.descripcion });
+    setNm({ fecha: hoyAR(), tipo: 'gasto_prop', monto: '', descripcion: '' });
     await recargar();
   };
   const delMov = async (mid: string) => { await api.deleteMovimiento(mid); await recargar(); };
@@ -45,7 +43,7 @@ export const LiquidacionesScreen = () => {
     if (!sel || !pagoForm.monto || Number(pagoForm.monto) <= 0) { setErr('Ingresá un monto válido para registrar el pago.'); return; }
     setGuardandoPago(true); setErr('');
     try {
-      await api.marcarLiquidacionPagada(sel, Number(pagoForm.monto), pagoForm.metodo, pagoForm.fecha || HOY, pagoForm.notas, pagoFile);
+      await api.marcarLiquidacionPagada(sel, Number(pagoForm.monto), pagoForm.metodo, pagoForm.fecha || hoyAR(), pagoForm.notas, pagoFile);
       await recargar();
       const r = await api.liquidables(pid); setReservas(r);
     } catch (e) { setErr((e as Error).message); }
@@ -53,9 +51,14 @@ export const LiquidacionesScreen = () => {
   };
   const revertirPago = async () => {
     if (!sel) return;
-    await api.revertirLiquidacionPago(sel);
-    await recargar();
-    const r = await api.liquidables(pid); setReservas(r);
+    setErr('');
+    try {
+      await api.revertirLiquidacionPago(sel);
+      await recargar();
+      const r = await api.liquidables(pid); setReservas(r);
+      setPagoForm({ fecha: hoyAR(), metodo: 'transferencia', monto: String(liq?.netoPropietario ?? ''), notas: '' });
+      setPagoFile(null);
+    } catch (e) { setErr((e as Error).message); }
   };
 
   const mon = liq?.propiedad.moneda || 'ARS';
