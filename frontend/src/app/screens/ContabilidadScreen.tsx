@@ -181,10 +181,11 @@ export const ContabilidadScreen = () => {
     try {
       const r = await fetch(`${API}/comisiones/backfill`, { method: 'POST' });
       const d = await r.json();
+      const plural = (n: number, singular: string, plural: string) => (n > 1 ? plural : singular);
       const partes: string[] = [];
-      if (d.generadas > 0) partes.push(`se generaron ${d.generadas} comisión${d.generadas > 1 ? 'es' : ''} de alquiler`);
-      if (d.huerfanasEliminadas > 0) partes.push(`se limpiaron ${d.huerfanasEliminadas} comisión${d.huerfanasEliminadas > 1 ? 'es' : ''} de reservas ya borradas`);
-      if (d.fechasCorregidas > 0) partes.push(`se corrigió la fecha de ${d.fechasCorregidas} comisión${d.fechasCorregidas > 1 ? 'es' : ''} (ahora cuentan al confirmarse, no al check-in)`);
+      if (d.generadas > 0) partes.push(`se generaron ${d.generadas} ${plural(d.generadas, 'comisión', 'comisiones')} de alquiler`);
+      if (d.huerfanasEliminadas > 0) partes.push(`se limpiaron ${d.huerfanasEliminadas} ${plural(d.huerfanasEliminadas, 'comisión', 'comisiones')} de reservas ya borradas`);
+      if (d.fechasCorregidas > 0) partes.push(`se corrigió la fecha de ${d.fechasCorregidas} ${plural(d.fechasCorregidas, 'comisión', 'comisiones')} (ahora cuentan al confirmarse, no al check-in)`);
       setBackfillMsg(partes.length ? `Listo: ${partes.join(', ')}.` : 'No había nada para corregir (comisiones y reservas ya están al día).');
       await load();
     } catch {
@@ -245,7 +246,7 @@ export const ContabilidadScreen = () => {
         <div className="cont__pending cont__pending--warn" data-testid="cont-comisiones-faltantes">
           <AlertTriangle size={16} className="cont__pending-dot cont__pending-dot--warn" />
           <div>
-            <strong>Te falta cargar {data.comisionesFaltantes.length} comisión{data.comisionesFaltantes.length > 1 ? 'es' : ''}</strong>
+            <strong>Te falta cargar {data.comisionesFaltantes.length} {data.comisionesFaltantes.length > 1 ? 'comisiones' : 'comisión'}</strong>
             <p>Estas propiedades tienen operaciones (venta o alquiler) sin comisión cargada o sin % configurado — por eso no suman en Contabilidad.</p>
             <ul className="cont__faltantes-list">
               {data.comisionesFaltantes.map((f) => (
@@ -259,18 +260,20 @@ export const ContabilidadScreen = () => {
                 </li>
               ))}
             </ul>
-            {data.comisionesFaltantes.some((f) => f.tipo === 'alquiler') && (
-              <div className="cont__faltantes-actions">
-                <p className="cont__faltantes-hint">Primero configurá el % de comisión en cada propiedad de alquiler (botón de arriba). Después tocá este botón para generar las comisiones de las reservas ya confirmadas:</p>
-                <Button variant="secondary" size="sm" onClick={recalcularComisionesAlquiler} disabled={backfilling} data-testid="cont-recalcular-comisiones">
-                  {backfilling ? 'Recalculando…' : 'Recalcular comisiones de alquiler'}
-                </Button>
-                {backfillMsg && <p className="cont__faltantes-msg" data-testid="cont-recalcular-msg">{backfillMsg}</p>}
-              </div>
-            )}
           </div>
         </div>
       )}
+
+      <div className="cont__faltantes-actions cont__mantenimiento" data-testid="cont-mantenimiento">
+        <p className="cont__faltantes-hint">
+          Generá las comisiones de alquiler que falten, limpiá comisiones de reservas ya borradas
+          y actualizá la fecha de las comisiones viejas a cuando se confirmó cada reserva:
+        </p>
+        <Button variant="secondary" size="sm" onClick={recalcularComisionesAlquiler} disabled={backfilling} data-testid="cont-recalcular-comisiones">
+          {backfilling ? 'Recalculando…' : 'Recalcular comisiones de alquiler'}
+        </Button>
+        {backfillMsg && <p className="cont__faltantes-msg" data-testid="cont-recalcular-msg">{backfillMsg}</p>}
+      </div>
 
       {/* Alta de movimiento */}
       <div className="cont__addcard" data-testid="cont-addcard">

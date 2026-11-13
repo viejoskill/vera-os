@@ -458,9 +458,16 @@ async def backfill_comisiones_alquiler():
             eliminadas_huerfanas = res_del.deleted_count
 
     fechas_corregidas = 0
-    async for mv in _movs().find({"tipo": "comision"}, {"fecha": 1, "createdAt": 1}):
+    async for mv in _movs().find({"tipo": "comision", "reservaId": {"$ne": None}}, {"reservaId": 1, "fecha": 1, "createdAt": 1}):
+        # Solo tocamos comisiones AUTO-generadas que nunca se editaron a mano: tienen
+        # reserva asociada y su `fecha` todavía coincide con el checkIn de esa reserva
+        # (la firma exacta de la lógica vieja). Una comisión cargada a mano (sin
+        # reservaId) o ya corregida/editada por el usuario no se toca nunca.
+        reserva = await _res().find_one({"_id": mv["reservaId"]}, {"checkIn": 1})
+        if not reserva:
+            continue  # huérfana, ya se eliminó arriba
         fecha_real = (mv.get("createdAt") or "")[:10]
-        if fecha_real and mv.get("fecha") != fecha_real:
+        if fecha_real and mv.get("fecha") == reserva.get("checkIn") and mv.get("fecha") != fecha_real:
             await _movs().update_one({"_id": mv["_id"]}, {"$set": {"fecha": fecha_real}})
             fechas_corregidas += 1
 

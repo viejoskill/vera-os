@@ -1,0 +1,43 @@
+{
+  "summary": "Tested the change that dates commissions at confirmation, plus the backfill migration (generadas / huerfanasEliminadas / fechasCorregidas) and idempotency, the resumen, the per-reservation liquidación regression and the Contabilidad UI button. 12 of 14 backend tests pass: 9 new ones and 5 from iteration 86. What works: a manual reservation with checkIn in 2027 gets its commission dated today; prereserva -> confirmada also dates it today; reopening (finalizada -> confirmada) creates no duplicate; comisionMinima is applied; the commission shows in today's resumen and not in the 2027 resumen; backfill generates missing commissions once a % is set, and a second run gives generadas=0; old fecha=checkIn is migrated to createdAt[:10]; orphans are deleted; the second run returns 0/0/0; GET /reservations/{rid}/liquidacion is unchanged (comision 10000, neto 90000). UI was tested by making qa_varela admin temporarily, then reverted: the button message showed the orphan and fecha-corrected results, the resumen refetched, and a second click showed 'No había nada para corregir'. 2 failures and 1 high-priority UX gap were found (see below).",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /api/contabilidad/comisiones/backfill (fecha migration step)", "issue": "The fechasCorregidas loop rewrites the fecha of EVERY tipo=comision movement whose fecha differs from createdAt[:10], on every run. That includes commissions the user enters by hand through POST /api/rentals/movimientos with a chosen fecha (tipo=comision is allowed in TIPOS_MOV). Reproduced: a manual commission with fecha=2025-03-15 was overwritten to 2026-11-13 (its createdAt date). This is a data-integrity bug that silently moves money between periods. Fix: run the migration only on auto-generated commissions that still have the old logic, e.g. filter reservaId != None AND fecha == reserva.checkIn (or mark migrated docs with a flag or a one-time migration key). Also consider stamping auto commissions with origen:'auto'.", "priority": "HIGH"},
+      {"endpoint": "DELETE /api/rentals/properties/{pid}", "issue": "It deletes the property and its reservations (delete_many on reservations) but NOT their rental_movimientos. Every commission of a deleted property becomes an orphan again, which is the same root cause as the 'Cata Varela' $86.400 phantom commission. Reproduced: property with comisionPct=10 + manual reservation -> DELETE property -> the comision with reservaId stays in rental_movimientos. Fix: add await _movs().delete_many({'propertyId': pid}) (or by the reservaIds) in delete_property.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "_today() in routes_rentals.py", "issue": "It uses date.today() in server time (UTC). For a business in Argentina (UTC-3), a reservation confirmed after 21:00 local time gets dated the next day, and could land in the next month at month end. createdAt is also UTC, so the migration is consistent with it, but both are offset from local time. Consider using the America/Argentina/Buenos_Aires timezone."},
+      {"endpoint": "POST /api/contabilidad/comisiones/backfill", "issue": "There is no auth check (the whole API is open, already in the backlog). This is a mutating, money-affecting endpoint that anyone can call."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ContabilidadScreen 'Recalcular comisiones de alquiler'", "issue": "The button (and therefore the orphan cleanup and fecha migration) is only rendered when comisionesFaltantes contains a rental property with 0% and confirmed reservations. Verified: after setting % on the only such property, alquiler faltantes = [] and the button is gone. The hint also says 'first set the %, then press this button', but setting the % hides the button. If no rental property in production is at 0%, the admin cannot run the migration or clean orphans from the UI. Show the button always (e.g. in a 'Mantenimiento' area) or whenever there are rental reservations.", "selector": "[data-testid='cont-recalcular-comisiones']", "priority": "HIGH"},
+      {"component": "ContabilidadScreen plural text", "issue": "The pluralization `comisión${n>1?'es':''}` produces 'comisiónes', which is misspelled; it should be 'comisiones'. It affects the backfill message (all 3 parts) and the existing header 'Te falta cargar 9 comisiónes'.", "selector": "[data-testid='cont-recalcular-msg']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Contabilidad", "issues": ["Desde/Hasta and the 'Cargar ingreso o gasto' date field use the browser's native date picker instead of the shadcn calendar (minor, pre-existing)"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_contabilidad_comision_fecha_confirmacion.py", "/app/backend/tests/test_contabilidad_comisiones_huerfanas.py", "/app/backend/tests/_ui_seed_iter87.py", "/app/test_reports/pytest/iteration_87.xml"],
+  "action_items": [
+    "Restrict the backfill fecha migration so it cannot overwrite manual commission fechas: only touch auto commissions (reservaId set) whose fecha == reserva.checkIn, or use a one-time migration flag",
+    "Cascade-delete rental_movimientos in DELETE /api/rentals/properties/{pid}, otherwise orphan commissions keep appearing",
+    "Make the 'Recalcular comisiones de alquiler' button always available to admin, not only when a 0% rental property exists",
+    "Fix the 'comisiónes' pluralization (use 'comisiones')",
+    "Optional: compute _today() in the Argentina timezone"
+  ],
+  "critical_code_review_comments": [
+    "routes_rentals.py: the commission insert logic is duplicated in _gen_comision() and inline in update_status() (the update_status copy also leaves out comisionPct on the doc). Call _gen_comision(rid, r) from update_status instead.",
+    "routes_contabilidad.py backfill: the fecha migration is not really one-time. It forces fecha=createdAt forever, so idempotency holds only because every commission is pinned to createdAt and the user can never change a commission's fecha.",
+    "routes_contabilidad.py backfill: generadas uses an N+1 find_one per reservation; acceptable at the current scale."
+  ],
+  "updated_files": ["/app/backend/tests/test_contabilidad_comision_fecha_confirmacion.py", "/app/backend/tests/_ui_seed_iter87.py"],
+  "success_rate": {"backend": "86% (12/14)", "frontend": "90% (message + refresh + idempotency OK; button-visibility gap and typo)"},
+  "seed_data_creation": "Created TEST_ properties, reservations and movements plus 1 TEST_ITER87_ORPH orphan; all deleted by id afterwards (verified 0 leftovers). qa_varela app_access was set to isAdmin=True temporarily and then restored to isAdmin=False, sections=['alquileres','studio','tasaciones','liquidaciones'].",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && pytest tests/test_contabilidad_comision_fecha_confirmacion.py tests/test_contabilidad_comisiones_huerfanas.py -n 0. The 2 expected failures (manual comision fecha overwritten; property delete leaves orphan commissions) should pass once fixed. For UI: python tests/_ui_seed_iter87.py seed|cleanup (needs REACT_APP_BACKEND_URL) creates a 0% rental property so the button shows; to reach Contabilidad, set app_access isAdmin=True for qa_varela temporarily and revert. Contabilidad resumen returns the list under 'movimientos' (not 'detalle').",
+  "rca of the issue": "Orphan commissions: delete_reservation cascades movements, but delete_property only deletes the reservations (delete_many) and leaves their movements. So any property deletion recreates the exact orphan problem the user reported. Manual fecha overwrite: the backfill migration compares fecha with createdAt for all commissions and does not tell old auto-generated ones from user-entered ones."
+}

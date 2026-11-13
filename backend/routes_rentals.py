@@ -518,6 +518,7 @@ async def delete_property(pid: str):
             pass
     await _props().delete_one({"_id": pid})
     await _res().delete_many({"propertyId": pid})
+    await _movs().delete_many({"propertyId": pid})
 
 
 @router.post("/properties/{pid}/images", status_code=201)
@@ -779,20 +780,7 @@ async def update_status(rid: str, body: StatusBody):
                 pass
     # Genera la comisión automática (editable luego en la ficha).
     if es_confirmacion_inicial:
-        prop = await _props().find_one({"_id": r.get("propertyId")})
-        exists = await _movs().find_one({"reservaId": rid, "tipo": "comision"})
-        if prop and not exists:
-            pct = float(prop.get("comisionPct") or 0)
-            minima = float(prop.get("comisionMinima") or 0)
-            base = float(r.get("montoEstimado") or 0)
-            com = max(round(base * pct / 100), minima)
-            if com > 0:
-                await _movs().insert_one({
-                    "_id": uuid4().hex, "propertyId": r["propertyId"], "reservaId": rid,
-                    "fecha": _today(), "tipo": "comision", "monto": com,
-                    "descripcion": f"Comisión {pct}% · {r.get('huesped', {}).get('nombre', '')}".strip(),
-                    "createdAt": _now(),
-                })
+        await _gen_comision(rid, r)
     # Al confirmar, genera automáticamente el link de seña (30% del total, solo ARS).
     # Nunca si ya hay seña pagada o link generado.
     if es_confirmacion_inicial and appconfig.mp_configured():
