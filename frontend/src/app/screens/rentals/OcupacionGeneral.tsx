@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, CalendarRange } from 'lucide-react';
 import { api, type OcupacionGeneral as OcupacionGeneralData } from './api';
 import { MESES_LABEL, OcupacionChart } from './OcupacionChart';
+import { VariacionRow } from './VariacionRow';
 
 const cellClass = (pct: number) => (pct >= 60 ? 'ok' : pct >= 30 ? 'mid' : 'low');
 
@@ -54,6 +55,7 @@ export const OcupacionGeneral = () => {
         <>
           <p className="rt-ocup__avg" data-testid="rt-ocupgen-promedio">Promedio {anio}: <strong>{promedio}%</strong></p>
           <OcupacionChart data={chartData} />
+          <VariacionRow anio={anio} items={(data?.general || []).map((m) => ({ label: MESES_LABEL[Number(m.mes.split('-')[1]) - 1], variacion: m.variacion }))} />
           {propsConDatos.length > 0 && (
             <>
               <button type="button" className="rt-ocupgen__toggle" onClick={() => setExpanded((e) => !e)} data-testid="rt-ocupgen-toggle-detalle">

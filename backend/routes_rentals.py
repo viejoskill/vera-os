@@ -210,6 +210,36 @@ async def _ocupacion_propiedad(pid: str, meses: list[str], rangos: list[dict] | 
     return out
 
 
+def _mes_anterior(mes: str) -> str:
+    """'YYYY-MM' -> mismo mes, un año antes."""
+    anio, mesn = (int(x) for x in mes.split("-")[:2])
+    return f"{anio - 1}-{mesn:02d}"
+
+
+async def _ocupacion_con_comparativa(pid: str, meses: list[str], rangos: list[dict] | None = None,
+                                      creado_desde: str | None = None) -> list[dict]:
+    """Serie mensual de ocupación + comparación contra el mismo mes del año anterior.
+    Si la propiedad todavía no existía en ese mes del año pasado (antes de su
+    `createdAt`), la comparación queda en None en vez de mostrar un engañoso "0% -> X%"."""
+    if rangos is None:
+        rangos = await _occupied(pid)
+    meses_prev = [_mes_anterior(m) for m in meses]
+    serie = await _ocupacion_propiedad(pid, meses, rangos)
+    serie_prev = await _ocupacion_propiedad(pid, meses_prev, rangos)
+    out = []
+    for row, row_prev, mes_prev in zip(serie, serie_prev, meses_prev):
+        row = dict(row)
+        if creado_desde and mes_prev < creado_desde[:7]:
+            row["ocupadasAnterior"] = row["disponiblesAnterior"] = row["pctAnterior"] = row["variacion"] = None
+        else:
+            row["ocupadasAnterior"] = row_prev["ocupadas"]
+            row["disponiblesAnterior"] = row_prev["disponibles"]
+            row["pctAnterior"] = row_prev["pct"]
+            row["variacion"] = round(row["pct"] - row_prev["pct"], 1)
+        out.append(row)
+    return out
+
+
 RECARGO_ESTADIA_CORTA_PCT = 5.0
 RECARGO_ESTADIA_CORTA_NOCHES = 7  # menos de esta cantidad de noches → recargo
 
@@ -976,25 +1006,30 @@ async def property_calendar(pid: str):
 
 @router.get("/properties/{pid}/ocupacion")
 async def ocupacion_propiedad(pid: str, desde: str, hasta: str):
-    """% de ocupación mes a mes de ESTA propiedad, entre 'desde' y 'hasta' (YYYY-MM)."""
-    await _get_prop(pid)
+    """% de ocupación mes a mes de ESTA propiedad, entre 'desde' y 'hasta' (YYYY-MM),
+    con comparación contra el mismo mes del año anterior."""
+    prop = await _get_prop(pid)
     meses = _meses_rango(desde, hasta)
-    return {"propertyId": pid, "meses": await _ocupacion_propiedad(pid, meses)}
+    return {"propertyId": pid, "meses": await _ocupacion_con_comparativa(pid, meses, creado_desde=prop.get("createdAt"))}
 
 
 @router.get("/ocupacion")
 async def ocupacion_general(desde: str, hasta: str):
-    """% de ocupación combinado de toda la cartera de alquileres, mes a mes, más el
-    detalle de cada propiedad para el mismo período."""
+    """% de ocupación combinado de toda la cartera de alquileres, mes a mes (con
+    comparación contra el año anterior), más el detalle de cada propiedad."""
     meses = _meses_rango(desde, hasta)
-    totales = {mes: {"ocupadas": 0, "disponibles": 0} for mes in meses}
+    totales = {mes: {"ocupadas": 0, "disponibles": 0, "ocupadasAnt": 0, "disponiblesAnt": 0} for mes in meses}
     propiedades = []
     async for p in _props().find({}):
         rangos = await _occupied(p["_id"])
-        serie = await _ocupacion_propiedad(p["_id"], meses, rangos)
+        serie = await _ocupacion_con_comparativa(p["_id"], meses, rangos, p.get("createdAt"))
         for row in serie:
-            totales[row["mes"]]["ocupadas"] += row["ocupadas"]
-            totales[row["mes"]]["disponibles"] += row["disponibles"]
+            t = totales[row["mes"]]
+            t["ocupadas"] += row["ocupadas"]
+            t["disponibles"] += row["disponibles"]
+            if row["disponiblesAnterior"] is not None:
+                t["ocupadasAnt"] += row["ocupadasAnterior"]
+                t["disponiblesAnt"] += row["disponiblesAnterior"]
         propiedades.append({
             "propertyId": p["_id"], "codigo": p.get("codigo"), "titulo": p.get("titulo"),
             "meses": serie,
@@ -1003,7 +1038,12 @@ async def ocupacion_general(desde: str, hasta: str):
     for mes in meses:
         t = totales[mes]
         pct = round((t["ocupadas"] / t["disponibles"]) * 100, 1) if t["disponibles"] > 0 else 0.0
-        general.append({"mes": mes, "ocupadas": t["ocupadas"], "disponibles": t["disponibles"], "pct": pct})
+        pct_ant = round((t["ocupadasAnt"] / t["disponiblesAnt"]) * 100, 1) if t["disponiblesAnt"] > 0 else None
+        variacion = round(pct - pct_ant, 1) if pct_ant is not None else None
+        general.append({
+            "mes": mes, "ocupadas": t["ocupadas"], "disponibles": t["disponibles"], "pct": pct,
+            "pctAnterior": pct_ant, "variacion": variacion,
+        })
     return {"general": general, "propiedades": propiedades}
 
 

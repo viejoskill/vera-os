@@ -47,7 +47,10 @@ export interface SaleProperty {
   dormitorios: number; banos: number; fotos: number; cover: string;
 }
 export interface Occupied { checkIn: string; checkOut: string; estado?: string; }
-export interface OcupacionMes { mes: string; ocupadas: number; disponibles: number; pct: number; }
+export interface OcupacionMes {
+  mes: string; ocupadas: number; disponibles: number; pct: number;
+  pctAnterior: number | null; variacion: number | null;
+}
 export interface OcupacionPropiedadDetalle { propertyId: string; codigo?: string; titulo: string; meses: OcupacionMes[]; }
 export interface OcupacionGeneral { general: OcupacionMes[]; propiedades: OcupacionPropiedadDetalle[]; }
 export interface Pago {

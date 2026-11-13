@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
 import { api, type OcupacionMes } from './api';
 import { MESES_LABEL, OcupacionChart } from './OcupacionChart';
+import { VariacionRow } from './VariacionRow';
 
 /** Ocupación mensual de ESTA propiedad: noches reservadas sobre noches disponibles. */
 export const OcupacionPropiedad = ({ propertyId }: { propertyId: string }) => {
@@ -48,6 +49,7 @@ export const OcupacionPropiedad = ({ propertyId }: { propertyId: string }) => {
         <>
           <p className="rt-ocup__avg" data-testid="rt-ocup-promedio">Promedio {anio}: <strong>{promedio}%</strong></p>
           <OcupacionChart data={chartData} />
+          <VariacionRow anio={anio} items={meses.map((m) => ({ label: MESES_LABEL[Number(m.mes.split('-')[1]) - 1], variacion: m.variacion }))} />
         </>
       )}
     </section>
