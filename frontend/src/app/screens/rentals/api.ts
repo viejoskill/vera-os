@@ -47,6 +47,9 @@ export interface SaleProperty {
   dormitorios: number; banos: number; fotos: number; cover: string;
 }
 export interface Occupied { checkIn: string; checkOut: string; estado?: string; }
+export interface OcupacionMes { mes: string; ocupadas: number; disponibles: number; pct: number; }
+export interface OcupacionPropiedadDetalle { propertyId: string; codigo?: string; titulo: string; meses: OcupacionMes[]; }
+export interface OcupacionGeneral { general: OcupacionMes[]; propiedades: OcupacionPropiedadDetalle[]; }
 export interface Pago {
   proveedor?: string; monto?: number; moneda?: string; estado?: string; metodo?: string; tenedor?: string;
   preferenceId?: string; initPoint?: string; paymentId?: string; mpStatus?: string;
@@ -82,6 +85,10 @@ export const api = {
   updateProperty: (id: string, body: Partial<RentalProperty>): Promise<RentalProperty> =>
     fetch(`${RENTALS_API}/properties/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(json),
   deleteProperty: (id: string) => fetch(`${RENTALS_API}/properties/${id}`, { method: 'DELETE' }).then(json),
+  ocupacionPropiedad: (id: string, desde: string, hasta: string): Promise<{ propertyId: string; meses: OcupacionMes[] }> =>
+    fetch(`${RENTALS_API}/properties/${id}/ocupacion?desde=${desde}&hasta=${hasta}`).then(json),
+  ocupacionGeneral: (desde: string, hasta: string): Promise<OcupacionGeneral> =>
+    fetch(`${RENTALS_API}/ocupacion?desde=${desde}&hasta=${hasta}`).then(json),
   saleProperties: (query?: string): Promise<SaleProperty[]> =>
     fetch(`${RENTALS_API}/sale-properties${query ? `?query=${encodeURIComponent(query)}` : ''}`).then(json),
   importSale: (saleId: string): Promise<RentalProperty> =>

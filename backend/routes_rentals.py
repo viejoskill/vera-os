@@ -148,6 +148,63 @@ def _overlap(a_in: str, a_out: str, b_in: str, b_out: str) -> bool:
     return a_in < b_out and b_in < a_out
 
 
+def _overlap_nights(a_in: str, a_out: str, b_in: str, b_out: str) -> int:
+    """Noches de superposición entre dos rangos [a_in, a_out) y [b_in, b_out)."""
+    try:
+        lo = max(date.fromisoformat(a_in), date.fromisoformat(b_in))
+        hi = min(date.fromisoformat(a_out), date.fromisoformat(b_out))
+    except (ValueError, TypeError):
+        return 0
+    return max(0, (hi - lo).days)
+
+
+def _month_bounds(mes: str) -> tuple[str, str]:
+    """'YYYY-MM' -> (primer día del mes, primer día del mes siguiente), como ISO strings."""
+    anio, mesn = (int(x) for x in mes.split("-")[:2])
+    inicio = date(anio, mesn, 1)
+    fin = date(anio + 1, 1, 1) if mesn == 12 else date(anio, mesn + 1, 1)
+    return inicio.isoformat(), fin.isoformat()
+
+
+def _meses_rango(desde: str, hasta: str) -> list[str]:
+    """Lista de 'YYYY-MM' entre desde y hasta (inclusive), tope de 60 meses."""
+    anio, mesn = (int(x) for x in desde.split("-")[:2])
+    anio2, mesn2 = (int(x) for x in hasta.split("-")[:2])
+    out = []
+    while (anio, mesn) <= (anio2, mesn2) and len(out) < 60:
+        out.append(f"{anio}-{mesn:02d}")
+        mesn += 1
+        if mesn > 12:
+            mesn = 1
+            anio += 1
+    return out
+
+
+async def _ocupacion_propiedad(pid: str, meses: list[str], rangos: list[dict] | None = None) -> list[dict]:
+    """% de ocupación mensual de una propiedad: noches reservadas (confirmada/en curso/
+    finalizada) sobre noches disponibles (noches del mes menos las bloqueadas). Las
+    pre-reservas no cuentan como ocupadas (no están garantizadas)."""
+    if rangos is None:
+        rangos = await _occupied(pid)
+    out = []
+    for mes in meses:
+        m_in, m_out = _month_bounds(mes)
+        dias_mes = _nights(m_in, m_out)
+        ocupadas = bloqueadas = 0
+        for r in rangos:
+            n = _overlap_nights(r["checkIn"], r["checkOut"], m_in, m_out)
+            if n <= 0:
+                continue
+            if r["estado"] == "bloqueo":
+                bloqueadas += n
+            elif r["estado"] in ("confirmada", "encurso", "finalizada"):
+                ocupadas += n
+        disponibles = max(0, dias_mes - bloqueadas)
+        pct = round((ocupadas / disponibles) * 100, 1) if disponibles > 0 else 0.0
+        out.append({"mes": mes, "ocupadas": ocupadas, "disponibles": disponibles, "pct": pct})
+    return out
+
+
 RECARGO_ESTADIA_CORTA_PCT = 5.0
 RECARGO_ESTADIA_CORTA_NOCHES = 7  # menos de esta cantidad de noches → recargo
 
@@ -910,6 +967,41 @@ async def delete_reservation(rid: str):
 async def property_calendar(pid: str):
     await _get_prop(pid)
     return {"ocupados": await _occupied(pid)}
+
+
+@router.get("/properties/{pid}/ocupacion")
+async def ocupacion_propiedad(pid: str, desde: str, hasta: str):
+    """% de ocupación mes a mes de ESTA propiedad, entre 'desde' y 'hasta' (YYYY-MM)."""
+    await _get_prop(pid)
+    meses = _meses_rango(desde, hasta)
+    return {"propertyId": pid, "meses": await _ocupacion_propiedad(pid, meses)}
+
+
+@router.get("/ocupacion")
+async def ocupacion_general(desde: str, hasta: str):
+    """% de ocupación combinado de toda la cartera de alquileres, mes a mes, más el
+    detalle de cada propiedad para el mismo período."""
+    meses = _meses_rango(desde, hasta)
+    totales = {mes: {"ocupadas": 0, "disponibles": 0} for mes in meses}
+    propiedades = []
+    async for p in _props().find({}):
+        rangos = await _occupied(p["_id"])
+        serie = await _ocupacion_propiedad(p["_id"], meses, rangos)
+        for row in serie:
+            totales[row["mes"]]["ocupadas"] += row["ocupadas"]
+            totales[row["mes"]]["disponibles"] += row["disponibles"]
+        propiedades.append({
+            "propertyId": p["_id"], "codigo": p.get("codigo"), "titulo": p.get("titulo"),
+            "meses": serie,
+        })
+    general = []
+    for mes in meses:
+        t = totales[mes]
+        pct = round((t["ocupadas"] / t["disponibles"]) * 100, 1) if t["disponibles"] > 0 else 0.0
+        general.append({"mes": mes, "ocupadas": t["ocupadas"], "disponibles": t["disponibles"], "pct": pct})
+    return {"general": general, "propiedades": propiedades}
+
+
 
 
 # ------------------------------ Ajustes -------------------------------- #

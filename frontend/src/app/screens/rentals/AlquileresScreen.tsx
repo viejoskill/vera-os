@@ -15,6 +15,7 @@ import { AvisoPendientes } from './AvisoPendientes';
 import { ReservaSemaforo } from './Semaforo';
 import { RentalBotInbox } from './RentalBotInbox';
 import { DigestSummaryCard } from './DigestSummaryCard';
+import { OcupacionGeneral } from './OcupacionGeneral';
 import { AudioWidget } from '@app/workspace/widgets';
 import './rentals.css';
 
@@ -163,6 +164,7 @@ export const AlquileresScreen = () => {
           </div>
         ) : (
           <>
+            <OcupacionGeneral />
             <div className="rt__searchbar">
               <Search size={15} />
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por código (A294), título o dirección…" data-testid="rt-search" />

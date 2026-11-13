@@ -18,6 +18,7 @@ import { AvisoPendientes } from './AvisoPendientes';
 import { MoneyInput } from './MoneyInput';
 import { MlRentalPublish } from './MlRentalPublish';
 import { RentalLocationField } from './RentalLocationField';
+import { OcupacionPropiedad } from './OcupacionPropiedad';
 import './rentals.css';
 
 const triggerBrowserDownload = (url: string) => {
@@ -494,6 +495,8 @@ export const RentalWorkspace = () => {
                 </div>
               )}
             </section>
+
+            {pid && <OcupacionPropiedad propertyId={pid} />}
 
             <section className="rt-ws__full">
               <div className="rt-ws__sechead">
