@@ -1,0 +1,32 @@
+{
+  "summary": "Frontend-only test of the second public-site performance pass: fonts and images moved to src/assets (hashed under /static/media), AVIF+WebP <picture> srcsets for the hero and rentals band, critical CSS inlined in index.html, PostHog deferred to idle or first interaction, gtag deferred to load+3s or first pointer, the hero preload and Clash Display 700 preload injected from PublicHome.tsx, TasarPublico/SignScreen/PublicPropertyDetail split into lazy chunks, and contrast/a11y tweaks. No backend tests were run because the backend was not changed. tsc and webpack are clean. What works: the home page renders correctly on desktop (1920) and mobile (390). The fix from iteration_95 holds: the kicker now uses Manrope with positive letter-spacing and is readable. The hero downloads only once: hero-1600.avif at 1920 DPR1 and at 390 DPR3, and hero-480.avif at 390 DPR1. The preload matches what the <img> picks. All assets return 200 with the right content-type: logo webp, sebastian.webp, rentals avif, Manrope and Clash 700. No requests go to Google Fonts or Fontshare. PostHog and gtag both load after the deferral. The lazy chunks load only on their own routes (/tasar, /firma/:token, /web/:id). The other routes still work: /web lists 31 properties, the /web/:id detail renders, /alquileres, /privacidad, the 404 page, and /veraos redirects to login. qa_varela can log in and the session survives a reload. The mobile burger menu opens and its links scroll the page. One regression found: the hero image and font preload now runs on every route.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Hero/font preload scope (regression vs iteration_95)", "issue": "The preload code runs at module level in PublicHome.tsx, and VeraOS.tsx imports PublicHome eagerly. So every route preloads hero-1600.avif (~141KB) and clash-display-700.woff2 (~14.5KB) with fetchpriority=high. This happens on /web, /web/:id, /tasar, /firma/:token, /privacidad, the 404 page, /alquileres and /veraos (the CRM login and every CRM page). Verified with network capture on all of these routes. The old index.html script limited the preload to '/' and '/inicio'. The effect: wasted bandwidth for CRM users and rentals visitors, worse LCP on /alquileres and /web (the high-priority hero competes with their own LCP images), and Chrome 'preloaded but not used' warnings. Fix: wrap the injection in `if (location.pathname === '/' || location.pathname === '/inicio')`, or move it into an effect in PublicHome.", "affected_selectors": ["link[rel=preload][as=image]", "#preload-clash-700"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "HIGH: Limit the module-level hero image and Clash 700 preload in PublicHome.tsx to pathname '/' or '/inicio'. Today it runs on every route, including /veraos and /alquileres.",
+    "LOW: Add imgLink.type = 'image/avif' to the hero preload. Browsers without AVIF support (older Safari) will then skip it instead of downloading an unused AVIF and then the WebP.",
+    "LOW (optional): High-DPR phones (390px wide at DPR 3) still download hero-1600.avif (141KB). The claim of '~65KB on a phone' only holds at DPR 1. If you want to cap this, use a smaller sizes value or a 1100w ceiling for mobile via a media-specific <source>."
+  ],
+  "critical_code_review_comments": [
+    "PublicHome.tsx: the module-level side effect (document.head.appendChild) runs at import time, not when the page renders. Because the module is eagerly imported in VeraOS.tsx, this leaks into every route. This is the root cause of the regression above.",
+    "PublicHome.tsx: the import statements for the hero and rentals assets are placed after const declarations (lines ~31-48). This is legal but unconventional; put all imports at the top.",
+    "index.html inline critical CSS duplicates the index.css rules by design. Any future edit to .vh-hero or .vh-nav must be made in both places or the two will drift (FOUC or style mismatch).",
+    "gtag: if the user scrolls or uses the keyboard before window.load, gtag waits for load+3s. Only pointer and touch start it early. This is acceptable for conversions.",
+    "Cache-Control in preview is 'no-store' for /static/media (dev server). The claimed one-year cache for hashed assets can only be checked in production after deploy.",
+    "Pre-existing, not from this change: /web logs a dev-only React warning '<span> cannot be a child of <option>'. It is most likely caused by the dev visual-edit instrumentation and not app code."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (not changed, not tested)", "frontend": "95%"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Public home assets now live in src/assets/home and src/assets/fonts (hashed /static/media). The hero preload is injected from PublicHome.tsx, not index.html. To check the preload regression fix: capture requests on /veraos/login and /alquileres; there should be no hero-*.avif and no clash-display-700 request. On / at 1920 DPR1 the expected hero file is hero-1600.avif; at 390 DPR1 it is hero-480.avif. Not deployed to production."
+}

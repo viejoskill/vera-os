@@ -13,27 +13,19 @@ import { REVIEWS, GOOGLE_RATING, GOOGLE_TOTAL, GOOGLE_REVIEW_URL } from './revie
 import { ListingsMap } from './ListingsMap';
 import { formatLocation } from './formatLocation';
 import { trackPageView } from './analytics';
-// Logo, foto y Clash Display 700 (fuente del H1 del hero): importados por JS para que
-// webpack los emita hasheados en /static/media/ (caché de 1 año) y para poder precargar
-// la fuente del H1 con su URL real (más abajo).
+// Logo, foto, fuente del H1 y hero/banda de alquileres: importados por JS para que
+// webpack los emita hasheados en /static/media/ (caché de 1 año) en vez de los 5 min que
+// da el hosting a todo lo que vive directo en /public. Varios anchos en AVIF (mejor
+// compresión, candidato principal) + WebP (fallback), para que un celular baje ~65KB en
+// vez de los 207KB fijos de antes.
 import logoWebp from '../../assets/home/varela-logo-brand.webp';
 import logoPng from '../../assets/home/varela-logo-brand.png';
 import sebastianWebp from '../../assets/home/sebastian.webp';
 import clashDisplay700 from '../../assets/fonts/clash-display-700.woff2';
-
-const WA_VENTAS = '5492246586030';
-const WA_ALQUILERES = '5492257404000';
-const PORTAL_URL = 'http://177.7.35.221/portal';
-const ALQUILERES_URL = '/alquileres';
-const LOGO = logoPng;
-const SEBASTIAN = sebastianWebp;
-
-// Imágenes responsive del hero/banda de alquileres: varios anchos en AVIF (mejor
-// compresión, candidato principal) + WebP (fallback universal), para que un celular baje
-// ~65KB en vez de los 207KB fijos de antes.
 import heroAvif480 from '../../assets/home/hero-480.avif';
 import heroAvif750 from '../../assets/home/hero-750.avif';
 import heroAvif1100 from '../../assets/home/hero-1100.avif';
+import heroAvif1300 from '../../assets/home/hero-1300.avif';
 import heroAvif1600 from '../../assets/home/hero-1600.avif';
 import heroWebp480 from '../../assets/home/hero-480.webp';
 import heroWebp750 from '../../assets/home/hero-750.webp';
@@ -42,23 +34,37 @@ import heroWebp1600 from '../../assets/home/hero-1600.webp';
 import rentalsAvif480 from '../../assets/home/rentals-480.avif';
 import rentalsAvif750 from '../../assets/home/rentals-750.avif';
 import rentalsAvif1100 from '../../assets/home/rentals-1100.avif';
+import rentalsAvif1300 from '../../assets/home/rentals-1300.avif';
 import rentalsAvif1600 from '../../assets/home/rentals-1600.avif';
 import rentalsWebp480 from '../../assets/home/rentals-480.webp';
 import rentalsWebp750 from '../../assets/home/rentals-750.webp';
 import rentalsWebp1264 from '../../assets/home/rentals-1264.webp';
 import rentalsWebp1600 from '../../assets/home/rentals-1600.webp';
 
-const HERO_AVIF_SRCSET = `${heroAvif480} 480w, ${heroAvif750} 750w, ${heroAvif1100} 1100w, ${heroAvif1600} 1600w`;
+const WA_VENTAS = '5492246586030';
+const WA_ALQUILERES = '5492257404000';
+const PORTAL_URL = 'http://177.7.35.221/portal';
+const ALQUILERES_URL = '/alquileres';
+const LOGO = logoPng;
+const SEBASTIAN = sebastianWebp;
+
+const HERO_AVIF_SRCSET = `${heroAvif480} 480w, ${heroAvif750} 750w, ${heroAvif1100} 1100w, ${heroAvif1300} 1300w, ${heroAvif1600} 1600w`;
 const HERO_WEBP_SRCSET = `${heroWebp480} 480w, ${heroWebp750} 750w, ${heroWebp1264} 1264w, ${heroWebp1600} 1600w`;
 const HERO_FALLBACK = heroWebp1264;
-const RENTALS_AVIF_SRCSET = `${rentalsAvif480} 480w, ${rentalsAvif750} 750w, ${rentalsAvif1100} 1100w, ${rentalsAvif1600} 1600w`;
+const RENTALS_AVIF_SRCSET = `${rentalsAvif480} 480w, ${rentalsAvif750} 750w, ${rentalsAvif1100} 1100w, ${rentalsAvif1300} 1300w, ${rentalsAvif1600} 1600w`;
 const RENTALS_WEBP_SRCSET = `${rentalsWebp480} 480w, ${rentalsWebp750} 750w, ${rentalsWebp1264} 1264w, ${rentalsWebp1600} 1600w`;
 const RENTALS_FALLBACK = rentalsWebp1264;
 
-// Precarga, con la URL real hasheada, de la fuente del H1 del hero (la única que pide el
-// enunciado: "solo la fuente del H1 del hero") y del hero mismo — antes de que React monte
-// nada, apenas se evalúa este módulo.
-if (typeof document !== 'undefined' && !document.getElementById('preload-clash-700')) {
+// Precarga, con la URL real hasheada, de la fuente del H1 del hero y del hero mismo —
+// antes de que React monte nada, apenas se evalúa este módulo. OJO: este módulo se
+// importa de forma EAGER desde VeraOS.tsx (PublicHome no está lazy), así que sin este
+// chequeo de pathname esto se ejecutaría también en /veraos, /alquileres, etc. — regresión
+// encontrada por el testing agent en la iteración anterior.
+if (
+  typeof document !== 'undefined' &&
+  (location.pathname === '/' || location.pathname === '/inicio') &&
+  !document.getElementById('preload-clash-700')
+) {
   const fontLink = document.createElement('link');
   fontLink.id = 'preload-clash-700';
   fontLink.rel = 'preload';
@@ -71,6 +77,7 @@ if (typeof document !== 'undefined' && !document.getElementById('preload-clash-7
   const imgLink = document.createElement('link');
   imgLink.rel = 'preload';
   imgLink.as = 'image';
+  imgLink.type = 'image/avif';
   imgLink.setAttribute('imagesrcset', HERO_AVIF_SRCSET);
   imgLink.setAttribute('imagesizes', '100vw');
   imgLink.setAttribute('fetchpriority', 'high');
