@@ -10,6 +10,43 @@
         <link rel="apple-touch-icon" href="%PUBLIC_URL%/varela-favicon.png" />
         <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 
+        <!-- CSS crítico del header + hero del sitio público (inline, cero bytes de red):
+             así el navegador puede pintar correctamente la zona visible ANTES de que
+             termine de bajar main.css (reportado por Lighthouse como ~830ms de bloqueo).
+             Son las mismas reglas que ya existen en index.css — duplicadas a propósito,
+             nada se pierde cuando main.css termina de cargar. Solo aplica en el sitio
+             público (todo bajo .vh-root); /veraos y /alquileres no usan estas clases. -->
+        <style>
+          body{margin:0;background:#0A0A0B;color:#fff;-webkit-font-smoothing:antialiased}
+          .vh-root{--vh-bg:#0A0A0B;--vh-surface:#121214;--vh-border:rgba(255,255,255,.08);--vh-brand:#F6E63A;--vh-brand-hover:#E5D52A;--vh-text:#FFF;--vh-muted:#A1A1AA;background:var(--vh-bg);color:var(--vh-text);font-family:'Manrope',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+          .vh-root *,.vh-root *::before,.vh-root *::after{box-sizing:border-box}
+          .vh-root em{font-style:normal;color:var(--vh-brand)}
+          .vh-h1{font-family:'Clash Display','Manrope',sans-serif;font-weight:700;margin:0;font-size:clamp(2.6rem,6vw,5rem);line-height:1.05;letter-spacing:-.02em}
+          .vh-eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:.72rem;text-transform:uppercase;letter-spacing:.22em;font-weight:700;color:var(--vh-brand)}
+          .vh-btn{display:inline-flex;align-items:center;gap:9px;justify-content:center;border-radius:999px;padding:13px 24px;font-size:.95rem;font-weight:700;cursor:pointer;border:1px solid transparent;text-decoration:none;white-space:nowrap}
+          .vh-btn--brand{background:var(--vh-brand);color:#0A0A0B}
+          .vh-btn--ghost{background:rgba(255,255,255,.05);color:#fff;border-color:var(--vh-border);backdrop-filter:blur(8px)}
+          .vh-nav{position:sticky;top:0;z-index:50;background:rgba(10,10,11,.8);backdrop-filter:blur(18px);border-bottom:1px solid var(--vh-border)}
+          .vh-nav__inner{max-width:1220px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+          .vh-nav__brand img{height:34px;width:auto;display:block}
+          .vh-nav__links{display:flex;align-items:center;gap:26px}
+          .vh-nav__cta{padding:10px 18px;font-size:.9rem}
+          .vh-nav__burger{display:none;background:none;border:none;color:#fff;cursor:pointer}
+          .vh-hero{position:relative;min-height:92vh;display:flex;align-items:center;overflow:hidden}
+          .vh-hero__bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;background-color:#0a0a0b;transform:scale(1.05)}
+          .vh-hero__scrim{position:absolute;inset:0;background:linear-gradient(100deg,rgba(10,10,11,.97) 0%,rgba(10,10,11,.82) 42%,rgba(10,10,11,.35) 100%)}
+          .vh-hero__inner{position:relative;max-width:1220px;margin:0 auto;padding:0 24px;width:100%}
+          .vh-hero__inner>*{animation:vhUp .7s cubic-bezier(.22,1,.36,1) both}
+          .vh-hero .vh-eyebrow{animation-delay:.05s}
+          .vh-hero .vh-h1{margin:18px 0 0;max-width:16ch}
+          .vh-hero__sub{color:#d4d4d8;font-size:clamp(.95rem,1.5vw,1.15rem);margin:20px 0 0;animation-delay:.15s}
+          .vh-hero__cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px;animation-delay:.25s}
+          .vh-hero__kicker{display:block;color:var(--vh-muted);font-family:'Manrope',sans-serif;font-size:.82rem;font-weight:600;letter-spacing:.01em;margin-bottom:6px}
+          @keyframes vhUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+          @media (max-width:860px){.vh-nav__links{position:fixed;inset:62px 0 auto 0;flex-direction:column;align-items:stretch;gap:0;background:rgba(10,10,11,.98);backdrop-filter:blur(18px);border-bottom:1px solid var(--vh-border);padding:12px 24px 22px;transform:translateY(-120%);opacity:0;pointer-events:none}.vh-nav__links.is-open{transform:none;opacity:1;pointer-events:auto}.vh-nav__cta{margin-top:14px}.vh-nav__burger{display:inline-flex}}
+          @media (max-width:768px){.vh-hero__inner>*{animation:vhUpMobile .35s ease-out both}@keyframes vhUpMobile{from{opacity:1;transform:translateY(8px)}to{opacity:1;transform:none}}}
+        </style>
+
         <!-- Open Graph / WhatsApp / Facebook -->
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Varela Inmobiliaria" />
@@ -26,23 +63,12 @@
         <meta name="twitter:title" content="Inmobiliaria en Costa del Este - Varela CDE" />
         <meta name="twitter:description" content="Casas, lotes, PH y departamentos en Costa del Este y Mar del Tuyú." />
         <meta name="twitter:image" content="https://www.varelapropiedadescde.com.ar/og-cover.jpg" />
-        <!-- Fuentes auto-hospedadas (antes: 3 pedidos duplicados a Google Fonts entre
-             index.html, index.css y rentals.css). Variable fonts: un solo archivo por
-             familia cubre todos los pesos usados (DM Sans 300-700, Manrope 400-800). -->
-        <link rel="preload" as="font" type="font/woff2" href="%PUBLIC_URL%/fonts/dm-sans-var.woff2" crossorigin />
-        <link rel="preload" as="font" type="font/woff2" href="%PUBLIC_URL%/fonts/manrope-var.woff2" crossorigin />
-        <link rel="preconnect" href="https://api.fontshare.com" />
-        <link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&display=swap" rel="stylesheet" />
-        <style>
-          @font-face {
-            font-family: 'DM Sans'; font-style: normal; font-weight: 300 700; font-display: swap;
-            src: url('%PUBLIC_URL%/fonts/dm-sans-var.woff2') format('woff2');
-          }
-          @font-face {
-            font-family: 'Manrope'; font-style: normal; font-weight: 400 800; font-display: swap;
-            src: url('%PUBLIC_URL%/fonts/manrope-var.woff2') format('woff2');
-          }
-        </style>
+        <!-- Fuentes (DM Sans, Manrope, Clash Display): auto-hospedadas vía @font-face en
+             index.css (importadas con url() relativo, así quedan hasheadas en /static/media/
+             con caché de 1 año en vez de los 5 min que da el hosting a todo lo que vive
+             directo en /public). El <link rel=preload as=font> de Clash Display (la fuente
+             del H1 del hero) se inyecta desde PublicHome.tsx, que es donde webpack resuelve
+             su URL con hash real. -->
         <!--
         manifest.json provides metadata used when your web app is installed on a
         user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
@@ -73,7 +99,11 @@
       To begin the development, run `npm start` or `yarn start`.
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
+        <!-- PostHog: se difiere hasta que el navegador está ocioso o el usuario interactúa
+             por primera vez (lo que pase primero), para no competir por CPU/ancho de banda
+             durante el primer render. No se pierde nada funcional, solo se corre más tarde. -->
         <script>
+          function __loadPosthog() {
             !(function (t, e) {
                 var o, n, p, r;
                 e.__SV ||
@@ -141,42 +171,55 @@
                 disable_session_recording: true,
                 disable_surveys: true,
             });
-        </script>
-
-        <!-- Precarga del hero (elemento LCP) de la home: el navegador lo descubre apenas
-             parsea el HTML, antes de que baje ningún bundle de JS. Solo en home (no suma
-             peso en el resto del sitio, que comparte este mismo index.html). -->
-        <script>
+          }
           (function () {
-            if (location.pathname !== "/" && location.pathname !== "/inicio") return;
-            var link = document.createElement("link");
-            link.rel = "preload";
-            link.as = "image";
-            // Mismos candidatos/criterio que el <img srcset> real del hero, para que el
-            // navegador precargue EXACTAMENTE el archivo que después va a pedir (si no
-            // coinciden, en pantallas de alta densidad el hero se termina bajando 2 veces).
-            link.imageSrcset = "/hero/hero-mobile.webp 640w, /hero/hero-desktop.webp 1264w";
-            link.imageSizes = "100vw";
-            link.fetchPriority = "high";
-            document.head.appendChild(link);
+            var started = false;
+            function start() { if (started) return; started = true; __loadPosthog(); cleanup(); }
+            function cleanup() {
+              window.removeEventListener("pointerdown", start);
+              window.removeEventListener("keydown", start);
+              window.removeEventListener("touchstart", start);
+              window.removeEventListener("scroll", start);
+            }
+            window.addEventListener("pointerdown", start, { passive: true });
+            window.addEventListener("keydown", start);
+            window.addEventListener("touchstart", start, { passive: true });
+            window.addEventListener("scroll", start, { passive: true });
+            if (window.requestIdleCallback) {
+              requestIdleCallback(start, { timeout: 4000 });
+            } else {
+              setTimeout(start, 3000);
+            }
           })();
         </script>
 
-        <!-- Google tag (gtag.js): se carga recién cuando la página terminó de cargar, para
-             no competir por ancho de banda/CPU con el primer render. El seguimiento de
-             conversiones no se pierde: las conversiones (ej. clicks de WhatsApp) siempre
-             ocurren después de que el usuario ya pudo interactuar con la página. -->
+        <!-- Google tag (gtag.js): se carga recién en window.load + un pequeño margen extra
+             (o antes, si el usuario ya interactuó), para no competir por CPU en el primer
+             render. El seguimiento de conversiones no se pierde: las conversiones (ej.
+             clicks de WhatsApp) siempre ocurren después de que el usuario ya pudo interactuar. -->
         <script>
           window.dataLayer = window.dataLayer || [];
           function gtag() { dataLayer.push(arguments); }
-          window.addEventListener("load", function () {
-            var s = document.createElement("script");
-            s.async = true;
-            s.src = "https://www.googletagmanager.com/gtag/js?id=AW-18554084763";
-            document.head.appendChild(s);
-            gtag("js", new Date());
-            gtag("config", "AW-18554084763");
-          });
+          (function () {
+            var started = false;
+            function startGtag() {
+              if (started) return; started = true;
+              var s = document.createElement("script");
+              s.async = true;
+              s.src = "https://www.googletagmanager.com/gtag/js?id=AW-18554084763";
+              document.head.appendChild(s);
+              gtag("js", new Date());
+              gtag("config", "AW-18554084763");
+              cleanup();
+            }
+            function cleanup() {
+              window.removeEventListener("pointerdown", startGtag);
+              window.removeEventListener("touchstart", startGtag);
+            }
+            window.addEventListener("pointerdown", startGtag, { passive: true });
+            window.addEventListener("touchstart", startGtag, { passive: true });
+            window.addEventListener("load", function () { setTimeout(startGtag, 3000); });
+          })();
         </script>
     </body>
 </html>

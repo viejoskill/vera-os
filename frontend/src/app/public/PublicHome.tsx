@@ -13,19 +13,70 @@ import { REVIEWS, GOOGLE_RATING, GOOGLE_TOTAL, GOOGLE_REVIEW_URL } from './revie
 import { ListingsMap } from './ListingsMap';
 import { formatLocation } from './formatLocation';
 import { trackPageView } from './analytics';
+// Logo, foto y Clash Display 700 (fuente del H1 del hero): importados por JS para que
+// webpack los emita hasheados en /static/media/ (caché de 1 año) y para poder precargar
+// la fuente del H1 con su URL real (más abajo).
+import logoWebp from '../../assets/home/varela-logo-brand.webp';
+import logoPng from '../../assets/home/varela-logo-brand.png';
+import sebastianWebp from '../../assets/home/sebastian.webp';
+import clashDisplay700 from '../../assets/fonts/clash-display-700.woff2';
 
 const WA_VENTAS = '5492246586030';
 const WA_ALQUILERES = '5492257404000';
 const PORTAL_URL = 'http://177.7.35.221/portal';
 const ALQUILERES_URL = '/alquileres';
-const LOGO = '/varela-logo-brand.png';
-const SEBASTIAN = '/sebastian.jpg';
-// Imágenes del hero/alquileres servidas desde /public (no hasheadas por webpack): así el
-// script de precarga de index.html puede apuntarles con una ruta fija y conocida de antemano.
-const HERO_DESKTOP = '/hero/hero-desktop.webp';
-const HERO_MOBILE = '/hero/hero-mobile.webp';
-const RENTALS_DESKTOP = '/hero/rentals-desktop.webp';
-const RENTALS_MOBILE = '/hero/rentals-mobile.webp';
+const LOGO = logoPng;
+const SEBASTIAN = sebastianWebp;
+
+// Imágenes responsive del hero/banda de alquileres: varios anchos en AVIF (mejor
+// compresión, candidato principal) + WebP (fallback universal), para que un celular baje
+// ~65KB en vez de los 207KB fijos de antes.
+import heroAvif480 from '../../assets/home/hero-480.avif';
+import heroAvif750 from '../../assets/home/hero-750.avif';
+import heroAvif1100 from '../../assets/home/hero-1100.avif';
+import heroAvif1600 from '../../assets/home/hero-1600.avif';
+import heroWebp480 from '../../assets/home/hero-480.webp';
+import heroWebp750 from '../../assets/home/hero-750.webp';
+import heroWebp1264 from '../../assets/home/hero-1264.webp';
+import heroWebp1600 from '../../assets/home/hero-1600.webp';
+import rentalsAvif480 from '../../assets/home/rentals-480.avif';
+import rentalsAvif750 from '../../assets/home/rentals-750.avif';
+import rentalsAvif1100 from '../../assets/home/rentals-1100.avif';
+import rentalsAvif1600 from '../../assets/home/rentals-1600.avif';
+import rentalsWebp480 from '../../assets/home/rentals-480.webp';
+import rentalsWebp750 from '../../assets/home/rentals-750.webp';
+import rentalsWebp1264 from '../../assets/home/rentals-1264.webp';
+import rentalsWebp1600 from '../../assets/home/rentals-1600.webp';
+
+const HERO_AVIF_SRCSET = `${heroAvif480} 480w, ${heroAvif750} 750w, ${heroAvif1100} 1100w, ${heroAvif1600} 1600w`;
+const HERO_WEBP_SRCSET = `${heroWebp480} 480w, ${heroWebp750} 750w, ${heroWebp1264} 1264w, ${heroWebp1600} 1600w`;
+const HERO_FALLBACK = heroWebp1264;
+const RENTALS_AVIF_SRCSET = `${rentalsAvif480} 480w, ${rentalsAvif750} 750w, ${rentalsAvif1100} 1100w, ${rentalsAvif1600} 1600w`;
+const RENTALS_WEBP_SRCSET = `${rentalsWebp480} 480w, ${rentalsWebp750} 750w, ${rentalsWebp1264} 1264w, ${rentalsWebp1600} 1600w`;
+const RENTALS_FALLBACK = rentalsWebp1264;
+
+// Precarga, con la URL real hasheada, de la fuente del H1 del hero (la única que pide el
+// enunciado: "solo la fuente del H1 del hero") y del hero mismo — antes de que React monte
+// nada, apenas se evalúa este módulo.
+if (typeof document !== 'undefined' && !document.getElementById('preload-clash-700')) {
+  const fontLink = document.createElement('link');
+  fontLink.id = 'preload-clash-700';
+  fontLink.rel = 'preload';
+  fontLink.as = 'font';
+  fontLink.type = 'font/woff2';
+  fontLink.crossOrigin = 'anonymous';
+  fontLink.href = clashDisplay700;
+  document.head.appendChild(fontLink);
+
+  const imgLink = document.createElement('link');
+  imgLink.rel = 'preload';
+  imgLink.as = 'image';
+  imgLink.setAttribute('imagesrcset', HERO_AVIF_SRCSET);
+  imgLink.setAttribute('imagesizes', '100vw');
+  imgLink.setAttribute('fetchpriority', 'high');
+  document.head.appendChild(imgLink);
+}
+
 
 const wa = (num: string, msg: string) => `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 
@@ -129,7 +180,7 @@ const useInView = <T extends HTMLElement>() => {
 };
 
 const Stars = ({ n }: { n: number }) => (
-  <span className="vh-stars" aria-label={`${n} de 5`}>
+  <span className="vh-stars" role="img" aria-label={`${n} de 5`}>
     {[1, 2, 3, 4, 5].map((i) => (
       <Star key={i} size={15} fill={i <= Math.round(n) ? '#F6E63A' : 'none'} color={i <= Math.round(n) ? '#F6E63A' : '#3f3f46'} />
     ))}
@@ -266,7 +317,10 @@ export const PublicHome = () => {
       <header className="vh-nav" data-testid="home-nav">
         <div className="vh-nav__inner">
           <a href="#top" className="vh-nav__brand" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-            <img src={LOGO} alt="Varela Inmobiliaria" width={173} height={80} />
+            <picture>
+              <source type="image/webp" srcSet={logoWebp} />
+              <img src={LOGO} alt="Varela Inmobiliaria" width={173} height={80} />
+            </picture>
           </a>
           <nav className={`vh-nav__links ${menuOpen ? 'is-open' : ''}`}>
             <button type="button" onClick={() => nav('cartera')} data-testid="nav-propiedades">Propiedades</button>
@@ -285,18 +339,20 @@ export const PublicHome = () => {
 
       {/* HERO */}
       <section className="vh-hero" id="top">
-        <img
-          className="vh-hero__bg"
-          src={HERO_DESKTOP}
-          srcSet={`${HERO_MOBILE} 640w, ${HERO_DESKTOP} 1264w`}
-          sizes="100vw"
-          alt="Costa del Este, Mar del Tuyú"
-          fetchPriority="high"
-          loading="eager"
-          decoding="async"
-          width={1264}
-          height={848}
-        />
+        <picture>
+          <source type="image/avif" srcSet={HERO_AVIF_SRCSET} sizes="100vw" />
+          <source type="image/webp" srcSet={HERO_WEBP_SRCSET} sizes="100vw" />
+          <img
+            className="vh-hero__bg"
+            src={HERO_FALLBACK}
+            alt="Costa del Este, Mar del Tuyú"
+            fetchPriority="high"
+            loading="eager"
+            decoding="async"
+            width={1264}
+            height={848}
+          />
+        </picture>
         <div className="vh-hero__scrim" />
         <div className="vh-hero__inner">
           <span className="vh-eyebrow" data-testid="hero-eyebrow">La inmobiliaria del futuro · Costa del Este</span>
@@ -309,7 +365,7 @@ export const PublicHome = () => {
             <button type="button" className="vh-btn vh-btn--brand" onClick={() => nav('cartera')} data-testid="hero-ver">
               Ver propiedades <ArrowRight size={18} />
             </button>
-            <a className="vh-btn vh-btn--ghost" href={wa(WA_VENTAS, 'Hola Varela Inmobiliaria, quiero consultar')} target="_blank" rel="noreferrer" data-testid="hero-wa">
+            <a className="vh-btn vh-btn--ghost" href={wa(WA_VENTAS, 'Hola Varela Inmobiliaria, quiero consultar')} target="_blank" rel="noreferrer" data-testid="hero-wa" aria-label="Hablar por WhatsApp con Varela Inmobiliaria">
               <MessageCircle size={18} /> Hablar por WhatsApp
             </a>
             <Link className="vh-btn vh-btn--ghost" to="/tasar" data-testid="hero-tasar">Tasar mi propiedad</Link>
@@ -329,17 +385,19 @@ export const PublicHome = () => {
 
       {/* ALQUILERES DE VERANO — acceso destacado al subdominio */}
       <section className="vh-rentals" data-testid="home-rentals">
-        <img
-          className="vh-rentals__bg"
-          src={RENTALS_DESKTOP}
-          srcSet={`${RENTALS_MOBILE} 640w, ${RENTALS_DESKTOP} 1264w`}
-          sizes="100vw"
-          alt="Alquileres temporarios en Costa del Este"
-          loading="lazy"
-          decoding="async"
-          width={1264}
-          height={848}
-        />
+        <picture>
+          <source type="image/avif" srcSet={RENTALS_AVIF_SRCSET} sizes="100vw" />
+          <source type="image/webp" srcSet={RENTALS_WEBP_SRCSET} sizes="100vw" />
+          <img
+            className="vh-rentals__bg"
+            src={RENTALS_FALLBACK}
+            alt="Alquileres temporarios en Costa del Este"
+            loading="lazy"
+            decoding="async"
+            width={1264}
+            height={848}
+          />
+        </picture>
         <div className="vh-rentals__scrim" />
         <div className="vh-rentals__inner">
           <span className="vh-eyebrow"><Umbrella size={13} /> Temporada de verano</span>
@@ -378,7 +436,7 @@ export const PublicHome = () => {
             <p className="vh-body">20 años viviendo y trabajando en Costa del Este. Conozco cada calle, cada zona, cada obra nueva.</p>
             <p className="vh-bio__legal">Martillero Público · Jorge Varela · T°III F°103 N°865</p>
             <div className="vh-bio__cta">
-              <a className="vh-btn vh-btn--brand" href={wa(WA_VENTAS, 'Hola Sebastián, te escribo desde la web')} target="_blank" rel="noreferrer" data-testid="bio-wa">
+              <a className="vh-btn vh-btn--brand" href={wa(WA_VENTAS, 'Hola Sebastián, te escribo desde la web')} target="_blank" rel="noreferrer" data-testid="bio-wa" aria-label="Hablar por WhatsApp con Sebastián">
                 <MessageCircle size={17} /> Hablar por WhatsApp
               </a>
               <button type="button" className="vh-btn vh-btn--ghost" onClick={() => nav('cartera')}>Ver propiedades</button>
@@ -428,7 +486,7 @@ export const PublicHome = () => {
             ].map((f) => (
               <div className="vh-portal__card" key={f.t}>
                 <span className="vh-portal__ic">{f.i}</span>
-                <div><h4>{f.t}</h4><p>{f.d}</p></div>
+                <div><h3>{f.t}</h3><p>{f.d}</p></div>
               </div>
             ))}
           </div>
@@ -568,7 +626,10 @@ export const PublicHome = () => {
       <footer className="vh-footer">
         <div className="vh-footer__inner">
           <div className="vh-footer__brand">
-            <img src={LOGO} alt="Varela Inmobiliaria" width={173} height={80} />
+            <picture>
+              <source type="image/webp" srcSet={logoWebp} />
+              <img src={LOGO} alt="Varela Inmobiliaria" width={173} height={80} />
+            </picture>
             <p>Inmobiliaria en Costa del Este y Mar del Tuyú.</p>
           </div>
           <div className="vh-footer__links">

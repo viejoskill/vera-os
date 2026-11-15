@@ -2,13 +2,10 @@ import { lazy, Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { PublicListing } from '@app/public/PublicListing';
-import { TasarPublico } from '@app/public/TasarPublico';
-import { PublicPropertyDetail } from '@app/public/PublicPropertyDetail';
 import { PublicHome } from '@app/public/PublicHome';
 import { LegacyFichaRedirect } from '@app/public/LegacyFichaRedirect';
 import { ZonaLanding } from '@app/public/ZonaLanding';
 import { LANDINGS } from '@app/public/landingConfigs';
-import { SignScreen } from '@app/public/SignScreen';
 import { PoliticaPrivacidad } from '@app/public/PoliticaPrivacidad';
 import { NotFoundPublic } from '@app/public/NotFoundPublic';
 
@@ -16,6 +13,11 @@ import { NotFoundPublic } from '@app/public/NotFoundPublic';
 // descargan para un visitante del sitio público institucional (ni viceversa).
 const OsRoutes = lazy(() => import('@app/OsRoutes'));
 const RentalsPublicRoutes = lazy(() => import('@app/RentalsPublicRoutes'));
+// Estas 3 no hacen falta para pintar la home: se separan a su propio chunk (menos JS sin
+// usar en el bundle principal, que Lighthouse marcaba con ~65KB sin usar en la home).
+const TasarPublico = lazy(() => import('@app/public/TasarPublico').then((m) => ({ default: m.TasarPublico })));
+const SignScreen = lazy(() => import('@app/public/SignScreen').then((m) => ({ default: m.SignScreen })));
+const PublicPropertyDetail = lazy(() => import('@app/public/PublicPropertyDetail').then((m) => ({ default: m.PublicPropertyDetail })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,21 +27,23 @@ const queryClient = new QueryClient({
 
 /** Sitio público institucional (home, cartera, ficha, tasación, firma). */
 const PublicSiteRoutes = () => (
-  <Routes>
-    <Route path="/" element={<PublicHome />} />
-    <Route path="/inicio" element={<PublicHome />} />
-    <Route path="/web" element={<PublicListing />} />
-    <Route path="/web/:id" element={<PublicPropertyDetail />} />
-    <Route path="/ficha/:slug" element={<LegacyFichaRedirect />} />
-    <Route path="/tasar" element={<TasarPublico />} />
-    <Route path="/venta/costa-del-este" element={<ZonaLanding config={LANDINGS.hub} />} />
-    <Route path="/venta/casas-costa-del-este" element={<ZonaLanding config={LANDINGS.casas} />} />
-    <Route path="/venta/lotes-costa-del-este" element={<ZonaLanding config={LANDINGS.lotes} />} />
-    <Route path="/venta/ph-costa-del-este" element={<ZonaLanding config={LANDINGS.ph} />} />
-    <Route path="/firma/:token" element={<SignScreen />} />
-    <Route path="/privacidad" element={<PoliticaPrivacidad />} />
-    <Route path="*" element={<NotFoundPublic />} />
-  </Routes>
+  <Suspense fallback={null}>
+    <Routes>
+      <Route path="/" element={<PublicHome />} />
+      <Route path="/inicio" element={<PublicHome />} />
+      <Route path="/web" element={<PublicListing />} />
+      <Route path="/web/:id" element={<PublicPropertyDetail />} />
+      <Route path="/ficha/:slug" element={<LegacyFichaRedirect />} />
+      <Route path="/tasar" element={<TasarPublico />} />
+      <Route path="/venta/costa-del-este" element={<ZonaLanding config={LANDINGS.hub} />} />
+      <Route path="/venta/casas-costa-del-este" element={<ZonaLanding config={LANDINGS.casas} />} />
+      <Route path="/venta/lotes-costa-del-este" element={<ZonaLanding config={LANDINGS.lotes} />} />
+      <Route path="/venta/ph-costa-del-este" element={<ZonaLanding config={LANDINGS.ph} />} />
+      <Route path="/firma/:token" element={<SignScreen />} />
+      <Route path="/privacidad" element={<PoliticaPrivacidad />} />
+      <Route path="*" element={<NotFoundPublic />} />
+    </Routes>
+  </Suspense>
 );
 
 /**
