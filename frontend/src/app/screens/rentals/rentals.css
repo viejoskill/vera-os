@@ -1,5 +1,4 @@
-@import url('https://api.fontshare.com/v2/css?f[]=clash-display@600,700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+/* Fuentes (Manrope, DM Sans, Clash Display): ya consolidadas/auto-hospedadas en index.html. */
 
 /* ===================== Alquileres · interno (tema VERA) ===================== */
 .rt__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: var(--vera-space-lg, 20px); flex-wrap: wrap; }

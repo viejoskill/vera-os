@@ -1,5 +1,6 @@
-/* Global styles. Layout + screen composition. All values reference design tokens. */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+/* Global styles. Layout + screen composition. All values reference design tokens.
+   Fuentes (DM Sans, Manrope, Clash Display): auto-hospedadas / consolidadas en index.html
+   (antes 3 pedidos duplicados a Google Fonts entre este archivo, index.html y rentals.css). */
 
 *,
 *::before,
@@ -8362,8 +8363,6 @@ p {
 /* ============================================================
    VARELA — Sitio público (Home institucional)  namespace .vh-
    ============================================================ */
-@import url('https://api.fontshare.com/v2/css?f[]=clash-display@600,700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
 .vh-root {
   --vh-bg: #0A0A0B; --vh-surface: #121214; --vh-surface-2: #1C1C1F;
@@ -8416,7 +8415,7 @@ p {
 
 /* ALQUILERES band */
 .vh-rentals { position: relative; overflow: hidden; }
-.vh-rentals__bg { position: absolute; inset: 0; background-color: #0a0a0b; background-size: cover; background-position: center; }
+.vh-rentals__bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; background-color: #0a0a0b; }
 .vh-rentals__scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,10,11,0.5) 0%, rgba(10,10,11,0.72) 60%, rgba(10,10,11,0.85) 100%); }
 .vh-rentals__inner { position: relative; max-width: 1220px; margin: 0 auto; padding: clamp(56px, 8vw, 96px) 24px; text-align: center; display: flex; flex-direction: column; align-items: center; }
 .vh-rentals__inner .vh-h2 { margin: 14px 0 0; }
@@ -8425,7 +8424,7 @@ p {
 
 /* HERO */
 .vh-hero { position: relative; min-height: 92vh; display: flex; align-items: center; overflow: hidden; }
-.vh-hero__bg { position: absolute; inset: 0; background-color: #0a0a0b; background-size: cover; background-position: center; transform: scale(1.05); }
+.vh-hero__bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; background-color: #0a0a0b; transform: scale(1.05); }
 .vh-hero__scrim { position: absolute; inset: 0; background: linear-gradient(100deg, rgba(10,10,11,0.97) 0%, rgba(10,10,11,0.82) 42%, rgba(10,10,11,0.35) 100%); }
 .vh-hero__inner { position: relative; max-width: 1220px; margin: 0 auto; padding: 0 24px; width: 100%; }
 .vh-hero__inner > * { animation: vhUp 0.7s cubic-bezier(0.22,1,0.36,1) both; }
@@ -8433,7 +8432,14 @@ p {
 .vh-hero .vh-h1 { margin: 18px 0 0; max-width: 16ch; }
 .vh-hero__sub { color: #d4d4d8; font-size: clamp(0.95rem, 1.5vw, 1.15rem); margin: 20px 0 0; animation-delay: 0.15s; }
 .vh-hero__cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; animation-delay: 0.25s; }
+.vh-hero__kicker { display: block; color: var(--vh-muted); font-size: 0.82rem; font-weight: 600; margin-bottom: 6px; }
 @keyframes vhUp { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
+/* En celular el texto tiene que verse desde el primer render (antes quedaba invisible
+   varios segundos si el JS tardaba en cargar, porque la animación arrancaba en opacity:0). */
+@media (max-width: 768px) {
+  .vh-hero__inner > * { animation: vhUpMobile 0.35s ease-out both; }
+  @keyframes vhUpMobile { from { opacity: 1; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+}
 
 /* STATS */
 .vh-stats { border-bottom: 1px solid var(--vh-border); background: var(--vh-surface); }

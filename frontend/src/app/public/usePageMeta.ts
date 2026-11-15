@@ -10,7 +10,21 @@ interface PageMeta {
   ogImage?: string;
   ogType?: string;
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  /** Páginas que no deben indexarse (ej. "no encontrada"): no tienen contenido propio
+   *  que valga la pena rankear, y así no compiten/duplican con la home. */
+  noindex?: boolean;
 }
+
+const setRobots = (noindex: boolean) => {
+  let el = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
+  if (!noindex) { el?.remove(); return; }
+  if (!el) {
+    el = document.createElement('meta');
+    el.setAttribute('name', 'robots');
+    document.head.appendChild(el);
+  }
+  el.setAttribute('content', 'noindex, follow');
+};
 
 const setMetaTag = (attr: 'property' | 'name', key: string, value: string) => {
   let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`);
@@ -43,6 +57,7 @@ export const usePageMeta = ({
   ogImage,
   ogType = 'website',
   jsonLd,
+  noindex = false,
 }: PageMeta) => {
   useEffect(() => {
     document.title = title;
@@ -52,6 +67,7 @@ export const usePageMeta = ({
     setMetaTag('property', 'og:type', ogType);
     setMetaTag('name', 'twitter:title', title);
     setMetaTag('name', 'twitter:description', description);
+    setRobots(noindex);
 
     if (canonical) {
       setCanonical(canonical);
@@ -71,5 +87,5 @@ export const usePageMeta = ({
       }
       script.textContent = JSON.stringify(jsonLd);
     }
-  }, [title, description, canonical, ogImage, ogType, jsonLd]);
+  }, [title, description, canonical, ogImage, ogType, jsonLd, noindex]);
 };

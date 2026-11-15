@@ -13,28 +13,19 @@ import { REVIEWS, GOOGLE_RATING, GOOGLE_TOTAL, GOOGLE_REVIEW_URL } from './revie
 import { ListingsMap } from './ListingsMap';
 import { formatLocation } from './formatLocation';
 import { trackPageView } from './analytics';
-import heroJpg from '../../assets/home/home-hero-16x9.jpg';
-import heroWebp from '../../assets/home/home-hero-16x9.webp';
-import rentalsJpg from '../../assets/home/home-rentals-16x9.jpg';
-import rentalsWebp from '../../assets/home/home-rentals-16x9.webp';
-import logoBrand from '../../assets/home/varela-logo-brand.png';
 
 const WA_VENTAS = '5492246586030';
 const WA_ALQUILERES = '5492257404000';
 const PORTAL_URL = 'http://177.7.35.221/portal';
 const ALQUILERES_URL = '/alquileres';
-const LOGO = logoBrand;
+const LOGO = '/varela-logo-brand.png';
 const SEBASTIAN = '/sebastian.jpg';
-const supportsWebp = () => {
-  try {
-    return document.createElement('canvas').toDataURL('image/webp').indexOf('data:image/webp') === 0;
-  } catch {
-    return false;
-  }
-};
-const WEBP_OK = typeof document !== 'undefined' && supportsWebp();
-const HERO_BG = WEBP_OK ? heroWebp : heroJpg;
-const RENTALS_BG = WEBP_OK ? rentalsWebp : rentalsJpg;
+// Imágenes del hero/alquileres servidas desde /public (no hasheadas por webpack): así el
+// script de precarga de index.html puede apuntarles con una ruta fija y conocida de antemano.
+const HERO_DESKTOP = '/hero/hero-desktop.webp';
+const HERO_MOBILE = '/hero/hero-mobile.webp';
+const RENTALS_DESKTOP = '/hero/rentals-desktop.webp';
+const RENTALS_MOBILE = '/hero/rentals-mobile.webp';
 
 const wa = (num: string, msg: string) => `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 
@@ -266,18 +257,8 @@ export const PublicHome = () => {
     jsonLd: BUSINESS_JSONLD,
   });
 
-  // Precarga del hero (elemento LCP): al ser background-CSS el navegador lo descubre
-  // tarde; con el preload arranca la descarga ya. Solo en la Home (se limpia al salir).
-  useEffect(() => {
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.as = 'image';
-    link.href = HERO_BG;
-    if (WEBP_OK) link.type = 'image/webp';
-    link.setAttribute('fetchpriority', 'high');
-    document.head.appendChild(link);
-    return () => { link.remove(); };
-  }, []);
+  // Precarga del hero: ya la hace un script estático en index.html apenas se parsea el
+  // HTML (antes de que baje cualquier JS), según el viewport (mobile/desktop).
 
   return (
     <div className="vh-root" data-testid="public-home">
@@ -285,7 +266,7 @@ export const PublicHome = () => {
       <header className="vh-nav" data-testid="home-nav">
         <div className="vh-nav__inner">
           <a href="#top" className="vh-nav__brand" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-            <img src={LOGO} alt="Varela Inmobiliaria" width={600} height={277} />
+            <img src={LOGO} alt="Varela Inmobiliaria" width={147} height={68} />
           </a>
           <nav className={`vh-nav__links ${menuOpen ? 'is-open' : ''}`}>
             <button type="button" onClick={() => nav('cartera')} data-testid="nav-propiedades">Propiedades</button>
@@ -304,11 +285,25 @@ export const PublicHome = () => {
 
       {/* HERO */}
       <section className="vh-hero" id="top">
-        <div className="vh-hero__bg" style={{ backgroundImage: `url(${HERO_BG})` }} />
+        <img
+          className="vh-hero__bg"
+          src={HERO_DESKTOP}
+          srcSet={`${HERO_MOBILE} 640w, ${HERO_DESKTOP} 1264w`}
+          sizes="100vw"
+          alt="Costa del Este, Mar del Tuyú"
+          fetchPriority="high"
+          loading="eager"
+          decoding="async"
+          width={1264}
+          height={848}
+        />
         <div className="vh-hero__scrim" />
         <div className="vh-hero__inner">
           <span className="vh-eyebrow" data-testid="hero-eyebrow">La inmobiliaria del futuro · Costa del Este</span>
-          <h1 className="vh-h1">Tecnología real.<br /> Para propietarios <em>reales.</em></h1>
+          <h1 className="vh-h1">
+            <span className="vh-hero__kicker">Inmobiliaria en Costa del Este y Mar del Tuyú</span>
+            Tecnología real.<br /> Para propietarios <em>reales.</em>
+          </h1>
           <p className="vh-hero__sub">Portal del Propietario · IA 24 hs · Tasación gratuita · Radar Inmobiliario</p>
           <div className="vh-hero__cta">
             <button type="button" className="vh-btn vh-btn--brand" onClick={() => nav('cartera')} data-testid="hero-ver">
@@ -334,7 +329,17 @@ export const PublicHome = () => {
 
       {/* ALQUILERES DE VERANO — acceso destacado al subdominio */}
       <section className="vh-rentals" data-testid="home-rentals">
-        <div className="vh-rentals__bg" style={{ backgroundImage: `url(${RENTALS_BG})` }} />
+        <img
+          className="vh-rentals__bg"
+          src={RENTALS_DESKTOP}
+          srcSet={`${RENTALS_MOBILE} 640w, ${RENTALS_DESKTOP} 1264w`}
+          sizes="100vw"
+          alt="Alquileres temporarios en Costa del Este"
+          loading="lazy"
+          decoding="async"
+          width={1264}
+          height={848}
+        />
         <div className="vh-rentals__scrim" />
         <div className="vh-rentals__inner">
           <span className="vh-eyebrow"><Umbrella size={13} /> Temporada de verano</span>
@@ -563,7 +568,7 @@ export const PublicHome = () => {
       <footer className="vh-footer">
         <div className="vh-footer__inner">
           <div className="vh-footer__brand">
-            <img src={LOGO} alt="Varela Inmobiliaria" width={600} height={277} />
+            <img src={LOGO} alt="Varela Inmobiliaria" width={147} height={68} />
             <p>Inmobiliaria en Costa del Este y Mar del Tuyú.</p>
           </div>
           <div className="vh-footer__links">

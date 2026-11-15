@@ -1,15 +1,6 @@
 <!doctype html>
 <html lang="es" translate="no">
     <head>
-        <!-- Google tag (gtag.js) -->
-        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18554084763"></script>
-        <script>
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-
-          gtag('config', 'AW-18554084763');
-        </script>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="google" content="notranslate" />
@@ -35,9 +26,23 @@
         <meta name="twitter:title" content="Inmobiliaria en Costa del Este - Varela CDE" />
         <meta name="twitter:description" content="Casas, lotes, PH y departamentos en Costa del Este y Mar del Tuyú." />
         <meta name="twitter:image" content="https://www.varelapropiedadescde.com.ar/og-cover.jpg" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
+        <!-- Fuentes auto-hospedadas (antes: 3 pedidos duplicados a Google Fonts entre
+             index.html, index.css y rentals.css). Variable fonts: un solo archivo por
+             familia cubre todos los pesos usados (DM Sans 300-700, Manrope 400-800). -->
+        <link rel="preload" as="font" type="font/woff2" href="%PUBLIC_URL%/fonts/dm-sans-var.woff2" crossorigin />
+        <link rel="preload" as="font" type="font/woff2" href="%PUBLIC_URL%/fonts/manrope-var.woff2" crossorigin />
+        <link rel="preconnect" href="https://api.fontshare.com" />
+        <link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&display=swap" rel="stylesheet" />
+        <style>
+          @font-face {
+            font-family: 'DM Sans'; font-style: normal; font-weight: 300 700; font-display: swap;
+            src: url('%PUBLIC_URL%/fonts/dm-sans-var.woff2') format('woff2');
+          }
+          @font-face {
+            font-family: 'Manrope'; font-style: normal; font-weight: 400 800; font-display: swap;
+            src: url('%PUBLIC_URL%/fonts/manrope-var.woff2') format('woff2');
+          }
+        </style>
         <!--
         manifest.json provides metadata used when your web app is installed on a
         user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
@@ -133,11 +138,43 @@
             posthog.init("phc_DbsPb39SRc8z3EiQ6Dhj6ikv4H4rTKcht9d4sZSesceP", {
                 api_host: "https://ap.emergent.sh",
                 person_profiles: "identified_only", // or 'always' to create profiles for anonymous users as well,
-                session_recording: {
-                    recordCrossOriginIframes: true,
-                    capturePerformance: false,
-                },
+                disable_session_recording: true,
+                disable_surveys: true,
             });
+        </script>
+
+        <!-- Precarga del hero (elemento LCP) de la home: el navegador lo descubre apenas
+             parsea el HTML, antes de que baje ningún bundle de JS. Solo en home (no suma
+             peso en el resto del sitio, que comparte este mismo index.html). -->
+        <script>
+          (function () {
+            if (location.pathname !== "/" && location.pathname !== "/inicio") return;
+            var small = window.matchMedia && window.matchMedia("(max-width: 768px)").matches;
+            var link = document.createElement("link");
+            link.rel = "preload";
+            link.as = "image";
+            link.type = "image/webp";
+            link.href = small ? "/hero/hero-mobile.webp" : "/hero/hero-desktop.webp";
+            link.fetchPriority = "high";
+            document.head.appendChild(link);
+          })();
+        </script>
+
+        <!-- Google tag (gtag.js): se carga recién cuando la página terminó de cargar, para
+             no competir por ancho de banda/CPU con el primer render. El seguimiento de
+             conversiones no se pierde: las conversiones (ej. clicks de WhatsApp) siempre
+             ocurren después de que el usuario ya pudo interactuar con la página. -->
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag() { dataLayer.push(arguments); }
+          window.addEventListener("load", function () {
+            var s = document.createElement("script");
+            s.async = true;
+            s.src = "https://www.googletagmanager.com/gtag/js?id=AW-18554084763";
+            document.head.appendChild(s);
+            gtag("js", new Date());
+            gtag("config", "AW-18554084763");
+          });
         </script>
     </body>
 </html>
