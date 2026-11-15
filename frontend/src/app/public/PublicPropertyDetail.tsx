@@ -9,14 +9,16 @@ import { InstagramReel } from './InstagramReel';
 import { PropertyMap } from './PropertyMap';
 import { formatLocation } from './formatLocation';
 import { trackPageView } from './analytics';
+import { buildSrcSet, smallVariant } from './imageVariants';
 
-interface Img { id: string; url: string; }
+interface Img { id: string; url: string; variants?: Record<string, string>; }
 interface Detail {
   id: string; code: string; title: string; type: string; operation: string;
   price: number; currency: string; address: string; city: string; neighborhood: string;
   province: string; description: string; bedrooms: number; bathrooms: number; rooms: number;
   areaM2: number; lotAreaM2: number; orientation: string; condition: string;
-  amenities: string[]; images: Img[]; coverImage: string; status: string; videoUrl?: string;
+  amenities: string[]; images: Img[]; coverImage: string; coverImageVariants?: Record<string, string>;
+  status: string; videoUrl?: string;
   whatsappUrl: string; publicUrl: string; autoStamp?: boolean;
   latitude?: number | null; longitude?: number | null;
 }
@@ -130,8 +132,11 @@ export const PublicPropertyDetail = () => {
     );
   }
 
-  const gallery = data.images.length ? data.images : (data.coverImage ? [{ id: 'c', url: data.coverImage }] : []);
-  const main = gallery[active]?.url || data.coverImage;
+  const gallery = data.images.length
+    ? data.images
+    : (data.coverImage ? [{ id: 'c', url: data.coverImage, variants: data.coverImageVariants }] : []);
+  const mainImg = gallery[active] || { url: data.coverImage, variants: data.coverImageVariants };
+  const main = mainImg.url;
   const specs = [
     data.rooms > 0 && { icon: Maximize, label: `${data.rooms} amb.` },
     data.bedrooms > 0 && { icon: BedDouble, label: `${data.bedrooms} dorm.` },
@@ -152,7 +157,18 @@ export const PublicPropertyDetail = () => {
 
       <div className="vera-pub-detail">
         <div className="vera-pub-detail__gallery">
-          {main ? <img className="vera-pub-detail__main" src={main} alt={data.title} data-testid="public-detail-main-image" /> : <div className="vera-pub-card__noimg" />}
+          {main ? (
+            <img
+              className="vera-pub-detail__main"
+              src={mainImg.url}
+              srcSet={buildSrcSet(mainImg.variants)}
+              sizes="(max-width: 900px) 100vw, 740px"
+              alt={data.title}
+              width={740}
+              height={463}
+              data-testid="public-detail-main-image"
+            />
+          ) : <div className="vera-pub-card__noimg" />}
           {data.autoStamp !== false && data.status === 'sold' && <span className="vera-pub-stamp vera-pub-stamp--sold vera-pub-stamp--lg">VENDIDA</span>}
           {data.autoStamp !== false && data.status === 'reserved' && <span className="vera-pub-stamp vera-pub-stamp--reserved vera-pub-stamp--lg">RESERVADA</span>}
           {gallery.length > 1 && (
@@ -164,7 +180,7 @@ export const PublicPropertyDetail = () => {
                   className={`vera-pub-detail__thumb ${i === active ? 'vera-pub-detail__thumb--active' : ''}`.trim()}
                   onClick={() => setActive(i)}
                 >
-                  <img src={g.url} alt="" loading="lazy" />
+                  <img src={smallVariant(g.variants, g.url)} alt="" loading="lazy" width={84} height={60} />
                 </button>
               ))}
             </div>

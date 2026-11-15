@@ -13,6 +13,7 @@ import { REVIEWS, GOOGLE_RATING, GOOGLE_TOTAL, GOOGLE_REVIEW_URL } from './revie
 import { ListingsMap } from './ListingsMap';
 import { formatLocation } from './formatLocation';
 import { trackPageView } from './analytics';
+import { buildSrcSet } from './imageVariants';
 // Logo, foto, fuente del H1 y hero/banda de alquileres: importados por JS para que
 // webpack los emita hasheados en /static/media/ (caché de 1 año) en vez de los 5 min que
 // da el hosting a todo lo que vive directo en /public. Varios anchos en AVIF (mejor
@@ -135,7 +136,7 @@ const BUSINESS_JSONLD = {
 interface Listing {
   id: string; code: string; title: string; type: string; operation: string;
   price: number; currency: string; address: string; city: string; neighborhood: string;
-  coverImage: string; bedrooms: number; bathrooms: number; areaM2: number;
+  coverImage: string; coverImageVariants?: Record<string, string>; bedrooms: number; bathrooms: number; areaM2: number;
   lotAreaM2: number; rooms: number; status: string; radar: boolean; whatsappUrl: string; publicUrl: string;
   autoStamp?: boolean; hasVideo?: boolean; latitude?: number | null; longitude?: number | null;
 }
@@ -150,6 +151,9 @@ const STAMP: Record<string, { label: string; cls: string }> = {
 };
 const PRICE_STEPS = [50000, 100000, 150000, 200000, 300000, 500000];
 const ROOM_STEPS = ['2', '3', '4'];
+// Tarjetas en grilla (minmax 300px, 1fr): ancho real varía de ~94vw en celular a
+// ~360px en desktop con varias columnas.
+const CARD_SIZES = '(max-width: 640px) 94vw, (max-width: 1024px) 46vw, 360px';
 
 /** Cuenta ascendente al entrar en viewport. */
 const useCountUp = (target: number, run: boolean, ms = 1400) => {
@@ -199,7 +203,17 @@ const PropCard = ({ p }: { p: Listing }) => {
   return (
     <Link to={`/web/${p.id}`} className="vh-card" data-testid={`home-card-${p.id}`}>
       <div className="vh-card__media">
-        {p.coverImage ? <img src={p.coverImage} alt={p.title} loading="lazy" /> : <div className="vh-card__noimg" />}
+        {p.coverImage ? (
+          <img
+            src={p.coverImage}
+            srcSet={buildSrcSet(p.coverImageVariants)}
+            sizes={CARD_SIZES}
+            alt={p.title}
+            loading="lazy"
+            width={400}
+            height={300}
+          />
+        ) : <div className="vh-card__noimg" />}
         <span className="vh-card__op">{cap(p.operation)}</span>
         {p.hasVideo && <span className="vera-pub-card__video"><Play size={11} /> Video</span>}
         {stamp && <span className={`vera-pub-stamp vera-pub-stamp--card ${stamp.cls}`}>{stamp.label}</span>}

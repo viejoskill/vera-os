@@ -4,6 +4,7 @@ import asyncio
 import time
 
 import config
+import public_photos
 from schemas import DocumentResponse, ImageResponse, PropertyDetailResponse, PropertyResponse, VisitResponse
 from storage_service import get_storage
 
@@ -52,7 +53,11 @@ async def _sign(bucket: str, object_path: str) -> str:
         return ""
 
 
-async def image_to_response(img: dict) -> ImageResponse:
+async def image_to_response(img: dict, variant_widths: list[int] | None = None) -> ImageResponse:
+    variants = {}
+    if variant_widths:
+        all_urls = public_photos.public_variant_urls(img["object_path"])
+        variants = {str(w): all_urls[str(w)] for w in variant_widths if str(w) in all_urls}
     return ImageResponse(
         id=img["id"],
         original_name=img.get("original_name", ""),
@@ -61,6 +66,7 @@ async def image_to_response(img: dict) -> ImageResponse:
         position=img.get("position", 0),
         is_cover=img.get("is_cover", False),
         url=await _sign(img["bucket"], img["object_path"]),
+        variants=variants,
     )
 
 
@@ -83,6 +89,13 @@ async def property_to_response(prop: dict) -> PropertyResponse:
         images[0] if images else None
     )
     cover_url = await _sign(cover["bucket"], cover["object_path"]) if cover else ""
+    cover_variants = {}
+    if cover:
+        manifest = await public_photos.read_manifest(prop["id"])
+        widths = manifest.get(cover["id"])
+        if widths:
+            all_urls = public_photos.public_variant_urls(cover["object_path"])
+            cover_variants = {str(w): all_urls[str(w)] for w in widths if str(w) in all_urls}
     return PropertyResponse(
         id=prop["id"],
         code=(prop.get("codigo") or "").strip() or _property_code(prop["id"]),
@@ -101,6 +114,7 @@ async def property_to_response(prop: dict) -> PropertyResponse:
         video_url=prop.get("video_url", "") or "",
         status=prop.get("status", "active"),
         cover_image=cover_url,
+        cover_image_variants=cover_variants,
         description=prop.get("description", "") or "",
         owner_id=prop.get("owner_id", "") or "",
         owner_observations=prop.get("owner_observations", "") or "",
@@ -136,8 +150,12 @@ async def property_to_response(prop: dict) -> PropertyResponse:
 async def property_to_detail(prop: dict) -> PropertyDetailResponse:
     base = await property_to_response(prop)
     images_rows = sorted(prop.get("property_images") or [], key=lambda i: i.get("position", 0))
+    # manifest ya quedó cacheado en memoria por property_to_response() (TTL 60s).
+    manifest = await public_photos.read_manifest(prop["id"])
     # Firmamos imágenes y documentos en paralelo (evita el N+1 secuencial).
-    images = list(await asyncio.gather(*(image_to_response(i) for i in images_rows)))
+    images = list(await asyncio.gather(
+        *(image_to_response(i, manifest.get(i["id"])) for i in images_rows)
+    ))
     documents = list(await asyncio.gather(
         *(document_to_response(d) for d in (prop.get("property_documents") or []))
     ))

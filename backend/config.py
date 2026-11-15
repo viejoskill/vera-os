@@ -12,6 +12,9 @@ SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or None
 
 BUCKET_IMAGES = os.environ.get("SUPABASE_BUCKET_IMAGES", "property-images")
 BUCKET_DOCUMENTS = os.environ.get("SUPABASE_BUCKET_DOCUMENTS", "property-documents")
+# Bucket PÚBLICO (sin firmar) solo con copias WebP livianas de fotos de propiedades
+# publicadas en la web — nunca el original ni documentos. Ver public_photos.py.
+BUCKET_IMAGES_PUBLIC = os.environ.get("SUPABASE_BUCKET_IMAGES_PUBLIC", "property-images-public")
 SIGNED_URL_TTL_SECONDS = int(os.environ.get("SIGNED_URL_TTL_SECONDS", "3600"))
 DEFAULT_WORKSPACE_ID = os.environ.get("DEFAULT_WORKSPACE_ID", "vera-default")
 

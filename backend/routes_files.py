@@ -10,6 +10,8 @@ from fastapi.responses import Response
 
 import config
 import property_export
+import public_photos
+from inquiries import is_web_published
 from property_repository import property_repository
 from schemas import DocumentResponse, ImageResponse, ReorderRequest
 from serializers import document_to_response, image_to_response
@@ -83,7 +85,17 @@ async def upload_image(property_id: str, file: UploadFile = File(...)):
         }
     )
     await property_repository.touch(property_id)
-    return await image_to_response(row)
+    # Si la propiedad ya está publicada en la web, generamos de una las variantes
+    # WebP públicas de esta foto nueva (si no, quedan pendientes del backfill/del
+    # próximo "Publicar en Web"). Best-effort: nunca bloquea la subida.
+    variant_widths: list[int] = []
+    if is_web_published(prop):
+        try:
+            sizes = await public_photos.sync_single_image(property_id, row)
+            variant_widths = sorted(sizes)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("No se pudieron generar variantes públicas de la foto %s: %s", row.get("id"), e)
+    return await image_to_response(row, variant_widths)
 
 
 @router.post("/{property_id}/documents", response_model=DocumentResponse, status_code=201)
@@ -151,6 +163,12 @@ async def delete_image(property_id: str, image_id: str):
         await get_storage().delete(image["bucket"], image["object_path"])
     except Exception:  # noqa: BLE001
         logger.warning("No se pudo borrar el objeto de storage de la imagen %s (se elimina igual el registro)", image_id)
+    prop = await property_repository.get(property_id)
+    if prop and is_web_published(prop):
+        try:
+            await public_photos.remove_single_image(property_id, image)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("No se pudieron borrar las variantes públicas de la foto %s: %s", image_id, e)
     await property_repository.delete_image(image_id)
     await property_repository.touch(property_id)
 

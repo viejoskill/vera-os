@@ -19,8 +19,8 @@ router = APIRouter(prefix="/public", tags=["public"])
 
 _SUMMARY_KEYS = {
     "id", "code", "title", "type", "operation", "price", "currency", "address", "city",
-    "neighborhood", "coverImage", "bedrooms", "bathrooms", "areaM2", "lotAreaM2", "rooms", "status", "radar",
-    "autoStamp", "latitude", "longitude",
+    "neighborhood", "coverImage", "coverImageVariants", "bedrooms", "bathrooms", "areaM2", "lotAreaM2", "rooms",
+    "status", "radar", "autoStamp", "latitude", "longitude",
 }
 # Nunca exponer datos internos/privados al público.
 _DETAIL_DROP = {

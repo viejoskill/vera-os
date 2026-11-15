@@ -16,10 +16,19 @@ from supabase_client import get_supabase
 
 class StorageService(ABC):
     @abstractmethod
-    async def upload(self, bucket: str, object_path: str, content: bytes, content_type: str) -> None: ...
+    async def upload(
+        self, bucket: str, object_path: str, content: bytes, content_type: str,
+        upsert: bool = False, cache_control: str | None = None,
+    ) -> None: ...
 
     @abstractmethod
     async def signed_url(self, bucket: str, object_path: str, expires_in: int) -> str: ...
+
+    @abstractmethod
+    def get_public_url(self, bucket: str, object_path: str) -> str: ...
+
+    @abstractmethod
+    async def create_bucket_if_missing(self, bucket: str) -> None: ...
 
     @abstractmethod
     async def download(self, bucket: str, object_path: str) -> bytes: ...
@@ -44,12 +53,18 @@ class SupabaseStorageService(StorageService):
     def __init__(self) -> None:
         self.client = get_supabase()
 
-    async def upload(self, bucket: str, object_path: str, content: bytes, content_type: str, upsert: bool = False) -> None:
+    async def upload(
+        self, bucket: str, object_path: str, content: bytes, content_type: str,
+        upsert: bool = False, cache_control: str | None = None,
+    ) -> None:
         def _do():
+            file_options = {"content-type": content_type, "upsert": "true" if upsert else "false"}
+            if cache_control:
+                file_options["cache-control"] = cache_control
             return self.client.storage.from_(bucket).upload(
                 path=object_path,
                 file=content,
-                file_options={"content-type": content_type, "upsert": "true" if upsert else "false"},
+                file_options=file_options,
             )
 
         await asyncio.to_thread(_do)
@@ -60,6 +75,22 @@ class SupabaseStorageService(StorageService):
 
         res = await asyncio.to_thread(_do)
         return res.get("signedURL") or res.get("signedUrl") or ""
+
+    def get_public_url(self, bucket: str, object_path: str) -> str:
+        """Solo tiene sentido para buckets marcados 'public' (sin firma, cacheable).
+        Construcción de URL pura (sin red): no implica que el objeto exista."""
+        return self.client.storage.from_(bucket).get_public_url(object_path)
+
+    async def create_bucket_if_missing(self, bucket: str) -> None:
+        def _do():
+            try:
+                self.client.storage.create_bucket(bucket, options={"public": True})
+            except Exception as e:  # noqa: BLE001
+                msg = str(e).lower()
+                if "already exist" not in msg and "duplicate" not in msg:
+                    raise
+
+        await asyncio.to_thread(_do)
 
     async def download(self, bucket: str, object_path: str) -> bytes:
         """Descarga el objeto ORIGINAL tal cual fue subido (nunca un derivado)."""

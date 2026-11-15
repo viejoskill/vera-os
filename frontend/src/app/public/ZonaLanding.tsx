@@ -8,10 +8,12 @@ import { usePageMeta, SITE_URL } from './usePageMeta';
 import { LandingConfig, LANDING_LIST, LANDINGS } from './landingConfigs';
 import { formatLocation } from './formatLocation';
 import { trackPageView } from './analytics';
+import { buildSrcSet } from './imageVariants';
 
 interface Listing {
   id: string; code: string; title: string; type: string; operation: string;
   price: number; currency: string; address: string; city: string; neighborhood: string; coverImage: string;
+  coverImageVariants?: Record<string, string>;
   bedrooms: number; bathrooms: number; areaM2: number; lotAreaM2: number; rooms: number;
   status: string; whatsappUrl: string;
   autoStamp?: boolean;
@@ -27,6 +29,7 @@ const STAMP: Record<string, { label: string; cls: string }> = {
 };
 
 const isCDE = (c: string) => (c || '').trim().toLowerCase() === 'costa del este';
+const CARD_SIZES = '(max-width: 640px) 94vw, (max-width: 1024px) 46vw, 360px';
 
 /** Landing por zona/tipo para SEO local. Reusa la cartera en vivo filtrada por tipo,
  *  con H1 + copy únicos, meta/canonical propios y JSON-LD CollectionPage + Breadcrumb. */
@@ -121,7 +124,17 @@ export const ZonaLanding = ({ config }: { config: LandingConfig }) => {
             return (
               <Link key={p.id} to={`/web/${p.id}`} className="vera-pub-card" data-testid={`zona-card-${p.id}`}>
                 <div className="vera-pub-card__media">
-                  {p.coverImage ? <img src={p.coverImage} alt={p.title} loading="lazy" /> : <div className="vera-pub-card__noimg" />}
+                  {p.coverImage ? (
+                    <img
+                      src={p.coverImage}
+                      srcSet={buildSrcSet(p.coverImageVariants)}
+                      sizes={CARD_SIZES}
+                      alt={p.title}
+                      loading="lazy"
+                      width={400}
+                      height={300}
+                    />
+                  ) : <div className="vera-pub-card__noimg" />}
                   <span className="vera-pub-card__op">{p.operation}</span>
                   {p.hasVideo && <span className="vera-pub-card__video"><Play size={11} /> Video</span>}
                   {stamp && <span className={`vera-pub-stamp ${stamp.cls}`}>{stamp.label}</span>}

@@ -8,6 +8,7 @@ import { usePageMeta, SITE_URL } from './usePageMeta';
 import { ListingsMap } from './ListingsMap';
 import { formatLocation } from './formatLocation';
 import { trackPageView } from './analytics';
+import { buildSrcSet } from './imageVariants';
 
 interface Listing {
   id: string;
@@ -21,6 +22,7 @@ interface Listing {
   neighborhood: string;
   address: string;
   coverImage: string;
+  coverImageVariants?: Record<string, string>;
   bedrooms: number;
   bathrooms: number;
   areaM2: number;
@@ -46,6 +48,7 @@ const STAMP: Record<string, { label: string; cls: string }> = {
 const PRICE_STEPS = [50000, 100000, 150000, 200000, 300000, 500000, 1000000];
 const ROOM_STEPS = ['1', '2', '3', '4', '5'];
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+const CARD_SIZES = '(max-width: 640px) 94vw, (max-width: 1024px) 46vw, 360px';
 
 /** Vista pública de VERA — lee EN VIVO la cartera. Muestra también Vendidas/Reservadas
  * (con sello) para transmitir que Varela vende. Filtros públicos para interesados. */
@@ -188,7 +191,15 @@ export const PublicListing = () => {
               <Link key={p.id} to={`/web/${p.id}`} className="vera-pub-card" data-testid={`public-card-${p.id}`}>
                 <div className="vera-pub-card__media">
                   {p.coverImage ? (
-                    <img src={p.coverImage} alt={p.title} loading="lazy" />
+                    <img
+                      src={p.coverImage}
+                      srcSet={buildSrcSet(p.coverImageVariants)}
+                      sizes={CARD_SIZES}
+                      alt={p.title}
+                      loading="lazy"
+                      width={400}
+                      height={300}
+                    />
                   ) : (
                     <div className="vera-pub-card__noimg" />
                   )}

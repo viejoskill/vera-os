@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response, HTMLResponse
 
 import config
+import public_photos
 import web_publisher
 from property_repository import property_repository
 from schemas import (
@@ -309,6 +310,10 @@ async def set_publication(property_id: str, channel: str, payload: PublicationAc
                 await web_publisher.unpublish(prop)
             except Exception as e:  # noqa: BLE001
                 raise HTTPException(502, f"No se pudo despublicar de la web: {e}")
+            try:
+                await public_photos.unsync_property(prop)
+            except Exception as e:  # noqa: BLE001
+                logger.warning("No se pudieron borrar las variantes públicas al despublicar %s: %s", property_id, e)
         publications[channel] = {"status": "none", "lastSync": None, "url": ""}
     else:  # publish | update
         url_value = existing.get("url", "")
@@ -324,6 +329,10 @@ async def set_publication(property_id: str, channel: str, payload: PublicationAc
                 }
                 await property_repository.update(property_id, {"publications": publications})
                 raise HTTPException(502, f"No se pudo publicar en la web: {e}")
+            try:
+                await public_photos.sync_property(prop)
+            except Exception as e:  # noqa: BLE001
+                logger.warning("No se pudieron generar las variantes públicas al publicar %s: %s", property_id, e)
         elif payload.url is not None:
             url_value = payload.url
         publications[channel] = {

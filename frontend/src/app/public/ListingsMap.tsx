@@ -5,6 +5,7 @@ import { MapPin } from 'lucide-react';
 import { env } from '@vera/config';
 import { DARK_MAP_STYLE, mapPinIcon } from './googleMapTheme';
 import { formatLocation } from './formatLocation';
+import { smallVariant } from './imageVariants';
 
 interface MapListing {
   id: string;
@@ -16,6 +17,7 @@ interface MapListing {
   city: string;
   neighborhood: string;
   coverImage: string;
+  coverImageVariants?: Record<string, string>;
   latitude?: number | null;
   longitude?: number | null;
 }
@@ -63,7 +65,7 @@ const MapaInner = ({ listings, getHref }: { listings: MapListing[]; getHref: (id
           <div className="vera-map-popup" data-testid={`map-popup-${active.id}`}>
             <div className="vera-map-popup__media">
               {active.coverImage ? (
-                <img src={active.coverImage} alt={active.title} />
+                <img src={smallVariant(active.coverImageVariants, active.coverImage)} alt={active.title} width={120} height={90} />
               ) : (
                 <div className="vera-map-popup__noimg"><MapPin size={20} /></div>
               )}

@@ -101,6 +101,10 @@ class ImageResponse(CamelModel):
     position: int
     is_cover: bool
     url: str = ""
+    # Copias WebP livianas (480/960/1600px) listas para <img srcset> en la web
+    # pública. Vacío si la propiedad no está publicada o aún no se generaron
+    # (el front cae a `url`, el original firmado). Ver public_photos.py.
+    variants: dict[str, str] = {}
 
 
 class DocumentResponse(CamelModel):
@@ -130,6 +134,7 @@ class PropertyResponse(CamelModel):
     video_url: str
     status: str
     cover_image: str = ""
+    cover_image_variants: dict[str, str] = {}
     description: str
     owner_id: str = ""
     owner_observations: str = ""
