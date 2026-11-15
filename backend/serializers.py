@@ -83,6 +83,7 @@ async def document_to_response(doc: dict) -> DocumentResponse:
 
 async def property_to_response(prop: dict) -> PropertyResponse:
     import web_publisher  # deferido para evitar ciclo
+    from inquiries import is_web_published  # deferido: inquiries importa de este módulo
 
     images = prop.get("property_images") or []
     cover = next((i for i in images if i.get("is_cover")), None) or (
@@ -90,7 +91,10 @@ async def property_to_response(prop: dict) -> PropertyResponse:
     )
     cover_url = await _sign(cover["bucket"], cover["object_path"]) if cover else ""
     cover_variants = {}
-    if cover:
+    # El manifest solo existe para propiedades publicadas — nos ahorramos un GET
+    # a Storage por propiedad (en una lista de 30+, era el grueso del tiempo) para
+    # las que nunca lo van a tener.
+    if cover and is_web_published(prop):
         manifest = await public_photos.read_manifest(prop["id"])
         widths = manifest.get(cover["id"])
         if widths:
@@ -148,10 +152,13 @@ async def property_to_response(prop: dict) -> PropertyResponse:
 
 
 async def property_to_detail(prop: dict) -> PropertyDetailResponse:
+    from inquiries import is_web_published  # deferido: inquiries importa de este módulo
+
     base = await property_to_response(prop)
     images_rows = sorted(prop.get("property_images") or [], key=lambda i: i.get("position", 0))
-    # manifest ya quedó cacheado en memoria por property_to_response() (TTL 60s).
-    manifest = await public_photos.read_manifest(prop["id"])
+    # manifest ya quedó cacheado en memoria por property_to_response() si está
+    # publicada (TTL 60s); si no lo está, directamente no hay variantes que leer.
+    manifest = await public_photos.read_manifest(prop["id"]) if is_web_published(prop) else {}
     # Firmamos imágenes y documentos en paralelo (evita el N+1 secuencial).
     images = list(await asyncio.gather(
         *(image_to_response(i, manifest.get(i["id"])) for i in images_rows)

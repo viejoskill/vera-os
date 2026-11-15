@@ -1,5 +1,33 @@
 # VERA OS — Product Requirements & Architecture
 
+## Tercera tanda: fotos de propiedades en la web pública (2026-11-15)
+Disparado por el PSI de producción tras la 2da tanda: Performance 71→87, Accessibility 100, LCP 7.5s→3.4s — lo que más pesaba ahora eran las FOTOS de propiedades (Supabase Storage, originales PNG/JPG en alta, URLs firmadas que vencen y nunca se cachean).
+
+**Decisión de seguridad tomada con el usuario** (`ask_human`): bucket Storage NUEVO y separado (`property-images-public`), público, con copias WebP (480/960/1600px) SOLO de fotos de propiedades PUBLICADAS. Nunca el original en alta, nunca documentos. Al despublicar, se borran sus variantes públicas.
+
+**Backend** (`image_variants.py`, `public_photos.py`, `storage_service.py`, `schemas.py`, `serializers.py`, `routes_files.py`, `routes_properties.py`):
+- Pillow genera 3 variantes WebP (q75, `exif_transpose` + sin metadatos, nunca agranda una foto más chica que el ancho pedido).
+- El manifest.json por propiedad (en el mismo bucket público, GET sin auth, cacheado en memoria 60s) es la única fuente de verdad de "qué variantes existen" — evita HEAD por imagen en cada request pública. `sync_property`/`sync_single_image`/`remove_single_image`/`unsync_property` lo mantienen al día.
+- Hooks: subir foto a propiedad YA publicada → genera esa variante al toque; borrar foto o propiedad publicada → borra sus variantes; publicar canal `web-varela` → genera todas; despublicar → borra todas.
+- `property_to_response`/`property_to_detail` exponen `coverImageVariants`/`ImageResponse.variants` (dict ancho→URL pública) solo si la propiedad está publicada — evita el costo de leer el manifest en listados internos de VERA OS.
+- Bug encontrado y corregido en testing: el manifest tenía `cache-control: 60s` en el bucket público — un `upsert` que pisa el mismo path no invalida el cache de Cloudflare igual que un `delete` sí lo hace, así que un GET justo después de escribir devolvía el manifest viejo (se perdía la entrada de la otra foto si se subían 2 en paralelo). Fix: `cache-control: no-store` en el manifest (las variantes de imagen sí mantienen 1 año, ésas nunca cambian de contenido en el mismo path).
+- Lock por propiedad (`asyncio.Lock`) + merge con el manifest existente (en vez de pisarlo entero) para que una corrida parcialmente fallida no "pierda" variantes ya generadas antes.
+- Reintentos (5, backoff corto) + concurrencia limitada (semáforo=3) contra "Server disconnected" intermitentes de Supabase Storage bajo carga sostenida (ambiente de preview specifically).
+- Backfill idempotente (`scripts/backfill_public_photo_variants.py`): **365 de 368 fotos (99.2%) de las 31 propiedades publicadas** ya tienen variantes generadas (488MB de originales procesados). Las 3 restantes fallaron por cortes de red transitorios del backfill masivo — correr el script de nuevo (seguro, upsert) debería terminar de cubrirlas.
+
+**Frontend** (`imageVariants.ts` nuevo + `PublicHome.tsx`, `PublicListing.tsx`, `ZonaLanding.tsx`, `ListingsMap.tsx`, `PublicPropertyDetail.tsx`): `<img srcSet/sizes>` con las variantes WebP en todas las cards de "Destacados"/listado/zona, popup del mapa (variante 480 fija) y ficha de propiedad (imagen principal con srcset, miniaturas con la variante 480 fija). `width`/`height` en todas (CLS 0, mismo aspect-ratio que el CSS existente). Si la propiedad no está publicada o no tiene variantes aún, cae sola al `src`/`url` original firmado — nunca rompe.
+
+**Resultados medidos** (ver entregables abajo): la foto "UF2" que reportó el usuario (2,509KB) ahora pesa 27.8KB en la card; home en celular (412px, hero + 11 fotos de Destacados cargadas) pesa 560KB totales, de los cuales las fotos son 296KB (antes, esas mismas 11 fotos solas pesaban ~15MB).
+
+**Por qué las 2 fotos "lazy" bajaban igual en la carga inicial** (investigado, no es bug de `loading="lazy"`): la grilla "Destacados" está a 1-2 pantallas del hero, dentro de la distancia de pre-fetch que usan los navegadores para imágenes lazy en conexiones rápidas. La solución no fue forzar el lazy a esperar más (frágil, depende del navegador) — fue hacer que lo que baja "antes de tiempo" pese 30-80KB en vez de 2.5MB, con lo cual deja de importar.
+
+**No implementado / limitaciones**:
+- 3/368 fotos sin variante por fallas de red transitorias del backfill (re-correr el script las cubre).
+- Variante "nativa" para fotos muy chicas (≤480px, raras en inmobiliaria) o de ancho intermedio raro (961-1599px): no se generó un variant al tamaño exacto original — quedan servidas por la variante de 960/1600 más cercana (buena calidad igual, no es error).
+- Purga manual de CDN al borrar/despublicar: no hizo falta — confirmado que Supabase Storage invalida sola el cache del CDN en ~60s tras un `delete` real (verificado con backend, no solo con `curl -I` que da un resultado engañoso en HEAD).
+- No se desplegó a producción (pedido explícito del usuario de avisar antes).
+- Testing agent (iteración 97): encontró 1 MEDIUM (manifest overwrite sin merge, corregido) + varios LOW (perf del `is_web_published` guard, delete de propiedad no limpiaba variantes, re-descarga innecesaria al subir, requirements.txt con `scipy` colado) — todos corregidos y re-testeados con pytest (`tests/test_public_photo_variants.py`, 12/12 OK).
+
 ## Segunda tanda: velocidad + accesibilidad del sitio público (2026-11-15)
 Mismo alcance acotado que la tanda anterior (solo páginas públicas, sin tocar `/veraos`, el portal del propietario ni el backend de alquileres). Disparado por el PSI de producción del usuario: Performance 71, Accessibility 89, Best Practices 92, SEO 100 (móvil), LCP 7.5s con `<img class="vh-hero__bg">` como elemento LCP.
 

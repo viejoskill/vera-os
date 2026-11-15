@@ -91,7 +91,7 @@ async def upload_image(property_id: str, file: UploadFile = File(...)):
     variant_widths: list[int] = []
     if is_web_published(prop):
         try:
-            sizes = await public_photos.sync_single_image(property_id, row)
+            sizes = await public_photos.sync_single_image(property_id, row, content=content)
             variant_widths = sorted(sizes)
         except Exception as e:  # noqa: BLE001
             logger.warning("No se pudieron generar variantes públicas de la foto %s: %s", row.get("id"), e)

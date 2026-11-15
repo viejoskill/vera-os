@@ -11,6 +11,7 @@ from fastapi.responses import Response, HTMLResponse
 import config
 import public_photos
 import web_publisher
+from inquiries import is_web_published
 from property_repository import property_repository
 from schemas import (
     PropertyCreate,
@@ -387,6 +388,11 @@ async def delete_property(property_id: str):
             await get_storage().delete(asset["bucket"], asset["object_path"])
         except Exception:
             pass
+    if is_web_published(prop):
+        try:
+            await public_photos.unsync_property(prop)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("No se pudieron borrar las variantes públicas al borrar %s: %s", property_id, e)
     await property_repository.delete(property_id)
     # Si esta ficha de Ventas había sido creada como duplicado de una propiedad de Alquileres,
     # limpiamos la referencia para que el aviso "Ya fue duplicada en Ventas" no apunte a un 404.

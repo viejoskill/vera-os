@@ -1,0 +1,43 @@
+{
+  "summary": "Tested the new public photo WebP variants feature: image_variants.py, public_photos.py, the public bucket 'property-images-public', manifest.json per property, the serializers and routes_files/routes_properties hooks, and the frontend srcSet/smallVariant changes in PublicHome, PublicListing, PublicPropertyDetail, ZonaLanding and ListingsMap. Backend: 12 of 12 pytest pass (tests/test_public_photo_variants.py). Covered: unit tests for widths, small-image skip, garbage input, RGBA, and EXIF transpose; /api/public/listings and /listings/{id} return coverImageVariants and images[].variants with public URLs; the variant files are served as 200 image/webp with cache-control max-age=31536000 and the correct pixel width; the original image is still a private signed URL; upload to an UNPUBLISHED TEST property returns variants={} and writes no manifest; the CRM list returns the new field; and service-level sync_single_image/remove_single_image on a TEST id creates and then removes the files and the manifest entry. Frontend: on /web at desktop, all 21 loaded cards use _w480.webp and 0 signed originals are requested. The detail main image picks _w960, all 10 thumbnails use _w480, and clicking a thumbnail swaps to its _w960. The mobile home cards use _w480. The V551 cover has no variants and correctly falls back to the signed original. The map renders. CRM login as qa_varela works. One real data gap: the backfill dropped 10 large photos from the manifests (details below).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "scripts/backfill_public_photo_variants.py + public_photos.sync_property", "issue": "Backfill run 9 (/tmp/backfill9.log) logged 10 photos failing with 'Server disconnected' even after 5 retries: V900 x2, V670 x4, V236 x2, V551 x2. sync_property REWRITES the manifest with only the images that succeeded in the current run. Several of those images already had their webp files in the public bucket from earlier runs (for example V551 6a9cf..._w480/960/1600 and d9292274..._w480/960), but they are now missing from the manifest, so they are never served. Among them are the V551 COVER (1920x1080 jpg) and the heaviest originals: 2.5-3.7MB PNGs in V900/V670, which is exactly where the savings matter most. The script still prints 'OK' for these properties and gives no failed count."},
+      {"endpoint": "DELETE /api/properties/{id}", "issue": "Deleting a web-published property does not call public_photos.unsync_property. Its webp variants and manifest stay publicly readable (unsigned) after the property is deleted. The same happens when a property leaves the public set without the 'unpublish' action, for example when archived or set to draft via PATCH, because only set_publication(unpublish) cleans up."},
+      {"endpoint": "serializers.property_to_response (used by GET /api/properties and /api/public/listings)", "issue": "One manifest HTTP GET is made per property on a cold cache (60s TTL), including UNPUBLISHED CRM properties that can never have a manifest. Measured: CRM /api/properties takes 1.93s cold vs 0.74s warm (33 properties), and /api/public/listings takes 2.78s cold vs 0.16s warm. Suggest skipping read_manifest when not is_web_published(prop), and/or caching misses longer."},
+      {"endpoint": "public_photos.sync_single_image / remove_single_image", "issue": "Manifest updates are read-modify-write with no lock. Uploading several photos at once to a published property (the UI uploads in parallel) can lose manifest entries: the last writer wins. Each property also has a 60s in-process cache, so a multi-worker deploy could read a stale manifest."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Public detail / cards (image quality)", "issues": [
+        "Variants are only generated for widths strictly smaller than the original. For originals 961-1599px wide, the srcset tops out at 960, so the detail image on a high-DPR desktop or tablet is upscaled from 960. Consider adding the original width (capped) as a webp variant.",
+        "Originals 480px wide or narrower get no variants at all (V211 x2, V595 cover), even though re-encoding them to webp at their native width would still cut their size (197KB jpg)."
+      ]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_public_photo_variants.py", "/app/test_reports/pytest/pytest_iter97.xml"],
+  "action_items": [
+    "MEDIUM: Make sync_property resilient. Retry the failed images, or merge with the existing manifest when the variant files exist, instead of dropping them. Have the backfill report failed counts. Then re-run the backfill for V900, V670, V236 and V551 (the V551 cover is missing its variants).",
+    "LOW: In DELETE /api/properties/{id}, call public_photos.unsync_property for published properties. Consider also unsyncing when a property is archived or moved out of the public statuses.",
+    "LOW: In property_to_response, skip read_manifest for properties that are not web-published. This avoids N cold HTTP GETs on the CRM list.",
+    "LOW: Serialize the manifest read-modify-write per property (an asyncio.Lock keyed by property_id) to avoid lost entries on parallel uploads.",
+    "OPTIONAL: Add a native-width webp variant for originals that fall between the standard widths or are 480px or narrower."
+  ],
+  "critical_code_review_comments": [
+    "requirements.txt adds scipy==1.17.1, but no new code imports it. This is a heavy, unrelated dependency; remove it unless it is needed.",
+    "public_photos._with_retries docstring says 'reintentar 2 veces' but attempts=5. 'Server disconnected' still happens with 5 attempts. The likely root cause is the shared sync supabase client (HTTP/2 httpx) being used from many to_thread workers at once. A per-call client, or lowering _CONCURRENCY for uploads, may fix it better than retries.",
+    "delete_variants does not use the _CONCURRENCY semaphore (unsync of a property with 20 photos sends 60 deletes at once). Same disconnect risk.",
+    "routes_files.upload_image runs sync_single_image inline, which adds a re-download of the just-uploaded original plus 3 encodes and uploads to the request latency. Pass the already-read `content` instead of downloading it again."
+  ],
+  "updated_files": ["/app/backend/tests/test_public_photo_variants.py"],
+  "success_rate": {"backend": "100% (12/12 tests); 10 of ~355 real photos missing variants due to backfill", "frontend": "100%"},
+  "test_credentials": "qa_varela@vera.test / VeraQA!2026ml (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created one TEST_variants_unpublished draft property via the API (deleted in teardown) and one temporary TEST-<uuid> object, variants and manifest in storage (deleted in finally). No real property was published, unpublished or modified, and the backfill was NOT run.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Public variants live in the Supabase public bucket property-images-public at <object_path_without_ext>_w{480|960|1600}.webp, with manifests at manifests/{property_id}.json. Supabase is SHARED between preview and prod, so do not publish TEST properties (web_publisher writes to the live website's table). Use the service-level test for the published path. The backfill logs are /tmp/backfill3..9.log. Run: cd /app/backend && python -m pytest tests/test_public_photo_variants.py -o addopts=''. Use wait_until='domcontentloaded' in Playwright; networkidle never settles on the public site."
+}
