@@ -16,6 +16,12 @@ API = f"{BASE_URL}/api/rentals"
 A161 = "6744cf8a907f4a239a7504101c66a2df"
 
 
+def _mongo_col():
+    from pymongo import MongoClient
+    client = MongoClient(os.environ["MONGO_URL"])
+    return client[os.environ["DB_NAME"]]["rental_reservations"]
+
+
 def _pdf_text(content: bytes) -> str:
     return "\n".join(p.extract_text() or "" for p in PdfReader(io.BytesIO(content)).pages)
 
@@ -176,3 +182,46 @@ def test_a161_liquidables_roundtrip():
             requests.delete(f"{API}/reservations/{rid}/liquidacion/pagos/{pago_id}")
     liq_final = requests.get(f"{API}/reservations/{rid}/liquidacion").json()
     assert liq_final["pagosPropietario"] == [] and liq_final["estadoLiquidacion"] == "pendiente"
+
+
+def test_migracion_pago_legado_con_comprobante(reserva):
+    """Reservas con el pago viejo singular (pagoPropietario, formato anterior a esta
+    migración) deben migrarse SOLAS la primera vez que se abre el detalle: el pago pasa
+    a la lista nueva con un id real (no 'legado') y, si tenía comprobante embebido, ese
+    comprobante se mueve al array compartido para seguir siendo descargable."""
+    _, rid = reserva
+    col = _mongo_col()
+    col.update_one({"_id": rid}, {"$set": {"pagoPropietario": {
+        "estado": "pagado", "monto": 45000, "metodo": "transferencia", "fecha": "2026-10-06",
+        "notas": "Pago legado pre-migracion",
+        "comprobante": {"bucket": "test-bucket", "object_path": "rentals/test/legado.jpg", "contentType": "image/jpeg"},
+    }}})
+    liq = requests.get(f"{API}/reservations/{rid}/liquidacion").json()
+    assert len(liq["pagosPropietario"]) == 1
+    pago = liq["pagosPropietario"][0]
+    assert pago["id"] != "legado" and pago["monto"] == 45000 and pago["comprobanteId"]
+    doc = col.find_one({"_id": rid})
+    assert "pagoPropietario" not in doc
+    comp = next((c for c in doc.get("comprobantes", []) if c["id"] == pago["comprobanteId"]), None)
+    assert comp is not None and comp["object_path"] == "rentals/test/legado.jpg"
+    # segunda lectura: no debe duplicarse
+    liq2 = requests.get(f"{API}/reservations/{rid}/liquidacion").json()
+    assert len(liq2["pagosPropietario"]) == 1
+    # se puede borrar como cualquier pago nuevo
+    d = requests.delete(f"{API}/reservations/{rid}/liquidacion/pagos/{pago['id']}")
+    assert d.status_code == 204
+    liq3 = requests.get(f"{API}/reservations/{rid}/liquidacion").json()
+    assert liq3["pagosPropietario"] == [] and liq3["estadoLiquidacion"] == "pendiente"
+
+
+def test_borrar_pago_o_reserva_inexistente_404(reserva):
+    _, rid = reserva
+    assert requests.delete(f"{API}/reservations/{rid}/liquidacion/pagos/no-existe").status_code == 404
+    assert requests.delete(f"{API}/reservations/no-existe/liquidacion/pagos/no-existe").status_code == 404
+
+
+def test_pendientes_incluye_total_pagado_propietario():
+    r = requests.get(f"{API}/liquidaciones/pendientes", params={"dias": 7})
+    assert r.status_code == 200
+    for item in r.json():
+        assert "totalPagadoPropietario" in item

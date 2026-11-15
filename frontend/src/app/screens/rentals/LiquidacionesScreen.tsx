@@ -63,7 +63,10 @@ export const LiquidacionesScreen = () => {
     setGuardandoPago(true); setErr('');
     try {
       await api.registrarPagoPropietario(sel, Number(pagoForm.monto), pagoForm.metodo, pagoForm.fecha || hoyAR(), pagoForm.notas, pagoFile);
-      await recargar();
+      const fresh = await api.liquidacionReserva(sel);
+      setLiq(fresh);
+      setPagoForm({ fecha: hoyAR(), metodo: 'transferencia', monto: String(fresh.saldoLiquidacion || ''), notas: '' });
+      setPagoFile(null);
       const r = await api.liquidables(pid); setReservas(r);
       recargarPendientes();
     } catch (e) { setErr((e as Error).message); }
@@ -98,7 +101,7 @@ export const LiquidacionesScreen = () => {
         <div className="rt-liq__recordatorio" data-testid="rt-liq-recordatorio">
           <AlertTriangle size={17} />
           <div className="rt-liq__recordatorio-body">
-            <strong>{pendientes.length} reserva{pendientes.length === 1 ? '' : 's'} con la seña cobrada hace más de una semana, sin liquidar todavía</strong>
+            <strong>{pendientes.length} reserva{pendientes.length === 1 ? '' : 's'} con la seña cobrada hace más de una semana, sin liquidar o con saldo pendiente</strong>
             <ul className="rt-liq__recordatorio-list">
               {pendientes.slice(0, 6).map((p) => (
                 <li key={p.reservaId}>

@@ -1,0 +1,43 @@
+{
+  "summary": "Tested the fix for 'only 1 owner payment' in Liquidaciones, where pagoPropietario (one payment) became the pagosPropietario list. BACKEND: the main agent's 20 tests pass (pago_propietario + liquidaciones_pendientes + liq_recordatorio_extra), and the new file test_rentals_pagos_propietario_iter93.py passes 7/7. It checks: the reported case (net 180k, then a 100k payment gives 'parcial' with 80k left, then 80k more gives 'pagado' with 0 left and both payments listed); paying too much (balance stays 0, never negative); deleting one payment that has a receipt (the other payment is unaffected and GET comprobantes/{cid} gives 404 afterwards); validation (bad method 400, amount 0 or negative 400, missing amount 422, unknown reservation 404); the old endpoints (marcar-pagada, revertir, pagar, pago, GET liquidacion/comprobante) give 404/405; old single-payment ('legado') data, injected directly in Mongo: shown as id 'legado', added up with new payments, deletable with DELETE .../pagos/legado; pendientes includes 'parcial' reservations with the right saldoLiquidacion and drops them once fully paid; the PDF lists each payment with capitalized methods (Transferencia/Efectivo/Cheque) plus 'Liquidación completa' or 'Saldo pendiente de pago'. FRONTEND (/veraos/liquidaciones as qa_varela, on a TEST_ property with net 180k): status lines, payment chips, form that stays visible after full payment, Liquidada/Parcial/Sin liquidar badges, Pendientes/Historial tabs, Historial total, reminder banner with 'falta $X', opening a reservation from the banner, deleting one chip and validation message all work. One UX issue: after adding a payment the form keeps the old amount and notes.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "DELETE /api/rentals/reservations/{rid}/liquidacion/pagos/{pagoId}", "issue": "Returns 204 for an unknown pagoId and for an unknown reservation; 404 would be clearer. Deleting a receipt only removes the entry from the reservation's comprobantes list; the file stays in Supabase storage as an orphan."},
+      {"endpoint": "Legacy compat (_pagos_propietario / DELETE pagos/legado)", "issue": "Old single payments stored their receipt inline (pagoPropietario.comprobante with bucket/object_path), and the old GET /liquidacion/comprobante endpoint was removed. The 'legado' payment is always shown with comprobanteId=None, so receipts already uploaded in production can no longer be opened from the UI. DELETE legado clears the field but leaves the storage object. Suggested fix: when reading legacy data, move the inline comprobante into r.comprobantes and expose its id."},
+      {"endpoint": "GET /api/rentals/liquidaciones/pendientes", "issue": "Items include estadoLiquidacion and saldoLiquidacion but not totalPagadoPropietario, although the review request says they do. Each reservation also triggers its own movements query and property lookup (N+1); fine at the current size."},
+      {"endpoint": "POST /api/rentals/reservations/{rid}/liquidacion/pagos", "issue": "If Supabase is not configured, an uploaded file is silently dropped and the payment is saved without a receipt."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "LiquidacionesScreen payment form", "issue": "After 'Agregar pago' succeeds, the amount and notes keep the values just submitted instead of being refilled with the new remaining balance. Reproduced: net 180k, pay 100k; the amount field still shows 100000 and the notes 'TEST transf 1'. A second click would record a duplicate payment, and the next payment is not prefilled with the 80k left. Cause: the useEffect that sets pagoForm only depends on liq?.reserva.id. Fix: in agregarPago(), after recargar(), reset pagoForm (monto = new saldoLiquidacion, notas = '') and setPagoFile(null).", "selector": "[data-testid='rt-liqpago-monto'], [data-testid='rt-liqpago-notas']", "priority": "MEDIUM"},
+      {"component": "Payment chip delete", "issue": "The trash button deletes the payment immediately, with no confirmation and no undo. On mobile it is easy to tap by accident.", "selector": "[data-testid^='rt-liq-pago-del-']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Liquidaciones detail", "issues": [
+        "The payment form inputs (date, method, amount, notes) are smaller and visually different from the 'Ajustar movimientos' row just below.",
+        "The banner title always says '...sin liquidar todavía', even when the list includes partially paid reservations. Consider '...sin liquidar o con saldo pendiente'.",
+        "The chip text (green on dark green, small font) is readable but low in contrast."
+      ]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_rentals_pagos_propietario_iter93.py", "/app/backend/tests/test_rentals_pago_propietario.py", "/app/backend/tests/test_rentals_liquidaciones_pendientes.py", "/app/test_reports/pytest/iter93_pagos.xml"],
+  "action_items": [
+    "Reset or refill the payment form after a successful 'Agregar pago' (amount = new saldoLiquidacion, notes empty, file cleared) to prevent duplicate payments.",
+    "Legacy compat: expose the old inline pagoPropietario.comprobante (move it into r.comprobantes with an id) so receipts uploaded in production can still be opened.",
+    "Optional: return 404 from DELETE pagos/{id} when the payment or reservation does not exist; delete the storage object when a receipt is removed; add a confirmation before deleting a payment chip."
+  ],
+  "critical_code_review_comments": [
+    "_neto_y_estado_liquidacion() and _liquidacion_reserva() duplicate the neto, total paid, balance and status logic; _liquidacion_reserva should call the helper.",
+    "routes_rentals.py is about 2000 lines; consider splitting the liquidaciones routes into their own module.",
+    "Adding payments with $push is atomic, so concurrent adds are safe."
+  ],
+  "updated_files": ["/app/backend/tests/test_rentals_pagos_propietario_iter93.py", "/app/backend/tests/_iter93_ui_setup.py"],
+  "success_rate": {"backend": "100% (27/27)", "frontend": "~95% (all flows work; 1 medium UX bug in the form reset)"},
+  "seed_data_creation": "Created temporary TEST_ properties and reservations only, deleted afterwards by id. A161 is back to its original state: 4 reservations, all pendiente, 0 payments. No TEST_ properties remain.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Login at /veraos/login (not /login). The liquidables endpoint only lists reservations whose pago.estado is 'pagado'. A manual reservation created without a seña does not set this, so tests set pago.estado and pago.pagadoEl directly in Mongo (see the _mongo helper in the iter93 test file). _iter93_ui_setup.py setup|cleanup creates and removes a TEST property and reservation with net 180k for UI tests. The environment date is about 2026-11-14."
+}
