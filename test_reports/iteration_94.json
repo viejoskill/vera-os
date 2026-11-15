@@ -1,0 +1,36 @@
+{
+  "summary": "Retest of the iter93 Liquidaciones fixes for multiple owner payments. BACKEND: 34/35 pass. Checked: PDF shows the method (Cheque), the notes (Nota QA) and the date as 'Pagado el 11/12/2026'; old single-payment data migrates lazily on the first GET of the detail, including a stored receipt; 6 concurrent GETs did not duplicate the migration (passed 4 times); DELETE pagos returns 404 for an unknown payment, an unknown reservation and 'legado' when there is no old payment; pendientes now returns totalPagadoPropietario; the 180k = 100k + 80k case still works. One failure: when an old payment and new payments exist together, the list and the total disagree. FRONTEND (/veraos/liquidaciones as qa_varela, on a TEST property with net 180k): the form-reset bug is FIXED. After paying 100k by cheque with notes, the amount refills to 80000 and notes, method (transferencia), date (today) and file are reset. A second click pays the 80k and shows 'Liquidación completa · $180.000 pagados en 2 pagos'. After that the amount is empty and an empty save adds nothing. The banner now reads '...sin liquidar o con saldo pendiente', shows 'falta $80.000' for the partly paid reservation, and drops it once fully paid.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/rentals/reservations/{rid}/liquidacion (_migrar_pago_legado)", "issue": "Old and new payments together: if a reservation has the old pagoPropietario (estado=pagado) AND already has items in pagosPropietario (possible if a new payment was added while iter93 was deployed, before this fix), the migration is skipped. The detail then lists only the new payments (r['pagosPropietario']), but _calc_neto_y_estado still uses _pagos_propietario(r), which includes the old one. Reproduced: old 100k + new 50k gives a list summing 50k but totalPagadoPropietario=150000. The old payment is invisible and cannot be deleted from the UI, while it still counts toward the 'pagado' status. Fix: in _migrar_pago_legado, drop the `or r.get('pagosPropietario')` guard and $push the migrated payment as long as pagoPropietario exists (the $unset keeps it idempotent), or build the detail list with _pagos_propietario(r). The preview DB has 0 such documents; production should be checked."},
+      {"endpoint": "_migrar_pago_legado concurrency", "issue": "Read-then-update without a guard. Two simultaneous first GETs could in theory both push the payment. It did not reproduce in 4 runs of 6 parallel GETs. To harden it, add the filter {'_id': rid, 'pagoPropietario': {'$exists': True}} to update_one and only use the result if modified_count == 1."},
+      {"endpoint": "Lists (liquidables/pendientes/_res_out)", "issue": "These still use _pagos_propietario(), which shows id 'legado' until the detail is opened once. That is fine, but it is mixed behavior."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Payment chip delete", "issue": "Still deletes with no confirmation (carried over from iter93).", "selector": "[data-testid^='rt-liq-pago-del-']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Liquidaciones detail", "issues": ["The payment form inputs are still smaller than the 'Ajustar movimientos' row below them.", "The validation message ('Ingresá un monto válido') appears in the top flash area above the property select, not next to the payment form."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_rentals_pagos_propietario_iter94.py", "/app/backend/tests/test_rentals_pagos_propietario_iter93.py", "/app/backend/tests/test_rentals_pago_propietario.py", "/app/test_reports/pytest/iter94.xml"],
+  "action_items": [
+    "Fix the old + new payments case in _migrar_pago_legado: migrate even when pagosPropietario is not empty, so the detail list and totals agree (test: test_rentals_pagos_propietario_iter94.py::test_legado_coexistiendo_con_pagos_nuevos).",
+    "Optional: make the migration atomic with a conditional update filter (pagoPropietario $exists).",
+    "Optional: add a confirmation before deleting a payment chip; show validation errors next to the payment form."
+  ],
+  "critical_code_review_comments": [
+    "_calc_neto_y_estado (uses _pagos_propietario, which includes the old payment) and _liquidacion_reserva (lists only r['pagosPropietario']) read payments from two different sources. They should share one source.",
+    "routes_rentals.py is still about 2000 lines; consider splitting out the liquidaciones routes."
+  ],
+  "updated_files": ["/app/backend/tests/test_rentals_pagos_propietario_iter93.py (test_compat_legado updated to the new lazy-migration behavior)", "/app/backend/tests/test_rentals_pagos_propietario_iter94.py (new)"],
+  "success_rate": {"backend": "97% (34/35)", "frontend": "100% of retested flows"},
+  "seed_data_creation": "Only temporary TEST_ properties and reservations, deleted by id (UI fixture A767 TEST_iter93_UI deleted, both deletes returned 204). No TEST_ properties remain. qa_varela app_access was not changed (it already has the liquidaciones section).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: export MONGO_URL/DB_NAME from backend/.env and REACT_APP_BACKEND_URL, then pytest on tests/test_rentals_pago*_*.py and tests/test_rentals_liq*.py. Do not use -p no:xdist (pytest.ini already passes -n). For UI, use tests/_iter93_ui_setup.py setup|cleanup and log in at /veraos/login as qa_varela. The environment date is about 2026-11-14."
+}

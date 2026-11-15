@@ -136,25 +136,28 @@ def test_endpoints_viejos_no_existen(res180):
     assert _liq(rid)["pagosPropietario"] == []
 
 
-# Compat con el modelo viejo singular
+# Compat con el modelo viejo singular (iter94: se migra lazy a un id real al abrir el detalle)
 def test_compat_legado(res180):
     pid, rid = res180
     _mongo(rid, {"$set": {"pagoPropietario": {"estado": "pagado", "monto": 100000, "metodo": "cheque",
                                                "fecha": "2026-10-01", "notas": "TEST legado", "comprobante": None,
                                                "pagadoEl": "2026-10-01T10:00:00+00:00"}}})
     liq = _liq(rid)
-    assert len(liq["pagosPropietario"]) == 1 and liq["pagosPropietario"][0]["id"] == "legado"
+    assert len(liq["pagosPropietario"]) == 1 and liq["pagosPropietario"][0]["id"] != "legado"
+    assert liq["pagosPropietario"][0]["comprobanteId"] is None
     assert liq["estadoLiquidacion"] == "parcial" and liq["totalPagadoPropietario"] == 100000
+    migrated_id = liq["pagosPropietario"][0]["id"]
     requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"monto": "80000", "metodo": "efectivo"})
     liq = _liq(rid)
-    assert [p["id"] == "legado" for p in liq["pagosPropietario"]] == [True, False]
+    assert [p["id"] for p in liq["pagosPropietario"]][0] == migrated_id and len(liq["pagosPropietario"]) == 2
     assert liq["estadoLiquidacion"] == "pagado"
     L = requests.get(f"{API}/properties/{pid}/liquidables").json()
     assert next(x for x in L if x["id"] == rid)["estadoLiquidacion"] == "pagado"
     assert "Cheque" in _pdf_text(requests.get(f"{API}/reservations/{rid}/liquidacion/pdf").content)
-    assert requests.delete(f"{API}/reservations/{rid}/liquidacion/pagos/legado").status_code == 204
+    assert requests.delete(f"{API}/reservations/{rid}/liquidacion/pagos/legado").status_code == 404
+    assert requests.delete(f"{API}/reservations/{rid}/liquidacion/pagos/{migrated_id}").status_code == 204
     liq = _liq(rid)
-    assert len(liq["pagosPropietario"]) == 1 and liq["pagosPropietario"][0]["id"] != "legado"
+    assert len(liq["pagosPropietario"]) == 1
     assert liq["totalPagadoPropietario"] == 80000 and liq["estadoLiquidacion"] == "parcial"
 
 

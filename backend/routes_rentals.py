@@ -1291,11 +1291,12 @@ async def _neto_y_estado_liquidacion(r: dict) -> dict:
 async def _migrar_pago_legado(r: dict) -> dict:
     """Migra, una sola vez y en el momento (lazy), el pago viejo en formato singular
     (pagoPropietario, anterior a esta migración) al nuevo formato de lista
-    (pagosPropietario). Si tenía un comprobante embebido, se mueve al array compartido
-    de comprobantes con un id real para que se pueda seguir viendo/descargando desde la
-    UI (antes quedaba con comprobanteId=None y el comprobante viejo era inaccesible)."""
+    (pagosPropietario), aunque ya existan pagos nuevos cargados después de esa fecha.
+    Si tenía un comprobante embebido, se mueve al array compartido de comprobantes con
+    un id real para que se pueda seguir viendo/descargando desde la UI (antes quedaba
+    con comprobanteId=None y el comprobante viejo era inaccesible)."""
     legado = r.get("pagoPropietario")
-    if not legado or legado.get("estado") != "pagado" or r.get("pagosPropietario"):
+    if not legado or legado.get("estado") != "pagado":
         return r
     comp = legado.get("comprobante")
     comprobante_id = None
@@ -1308,10 +1309,15 @@ async def _migrar_pago_legado(r: dict) -> dict:
     pago = {"id": uuid4().hex, "monto": legado.get("monto"), "metodo": legado.get("metodo"),
             "fecha": legado.get("fecha"), "notas": legado.get("notas"), "comprobanteId": comprobante_id,
             "createdAt": legado.get("pagadoEl") or _now()}
-    push["pagosPropietario"] = pago
-    await _res().update_one({"_id": r["_id"]}, {"$push": push, "$unset": {"pagoPropietario": ""}})
+    push["pagosPropietario"] = {"$each": [pago], "$position": 0}
+    res = await _res().update_one(
+        {"_id": r["_id"], "pagoPropietario": {"$exists": True}},
+        {"$push": push, "$unset": {"pagoPropietario": ""}},
+    )
+    if res.modified_count == 0:
+        return r  # otra request ya migró este pago justo antes; no duplicar
     r = dict(r)
-    r["pagosPropietario"] = [pago]
+    r["pagosPropietario"] = [pago] + (r.get("pagosPropietario") or [])
     r.pop("pagoPropietario", None)
     if comprobante_id:
         r["comprobantes"] = (r.get("comprobantes") or []) + [push["comprobantes"]]
