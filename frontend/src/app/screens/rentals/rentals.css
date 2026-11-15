@@ -348,11 +348,9 @@
 .rt-liq__pagoform input[type="text"] { width: 180px; }
 .rt-mini--file { position: relative; overflow: hidden; }
 .rt-mini--file input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-.rt-liq__pagook { display: flex; align-items: flex-start; gap: 12px; background: rgba(70,160,90,.1); border: 1px solid rgba(70,160,90,.35); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; color: #4bbf6b; }
-.rt-liq__pagook-info { display: flex; flex-direction: column; gap: 2px; flex: 1; color: var(--vera-color-text); }
-.rt-liq__pagook-info strong { color: #4bbf6b; font-size: .95rem; }
-.rt-liq__pagook-info span { font-size: .85rem; color: var(--vera-color-text-secondary); }
-.rt-liq__pagook-acc { display: flex; gap: 8px; flex-wrap: wrap; }
+.rt-liq__pagook-mini { display: flex; align-items: center; gap: 8px; color: #4bbf6b; font-size: .9rem; font-weight: 600; margin: 0 0 10px; }
+.rt-liq__pagopend { color: var(--vera-color-text-secondary); font-size: .88rem; margin: 0 0 10px; }
+.rt-liq__pagopend strong { color: var(--vera-color-text); }
 
 /* Liquidaciones: recordatorio de reservas con seña cobrada hace >7 días sin liquidar */
 .rt-liq__recordatorio { display: flex; align-items: flex-start; gap: 12px; background: rgba(214,170,40,.1); border: 1px solid rgba(214,170,40,.4); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; color: #e3b93c; }

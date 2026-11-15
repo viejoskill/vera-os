@@ -29,6 +29,7 @@ export interface Movimiento {
 export interface LiquidacionPendiente {
   reservaId: string; propertyId: string; propertyCodigo?: string; propertyTitulo?: string;
   huesped?: string; checkIn: string; checkOut: string; pagadoEl: string; diasSinLiquidar: number;
+  estadoLiquidacion?: 'pendiente' | 'parcial'; saldoLiquidacion?: number;
 }
 export interface Liquidacion {
   propiedad: { id: string; codigo?: string; titulo: string; moneda: string };
@@ -38,14 +39,14 @@ export interface Liquidacion {
   netoPropietario: number; movimientos: Movimiento[];
 }
 export interface PagoPropietario {
-  estado?: string; monto?: number; metodo?: string; fecha?: string; notas?: string | null;
-  pagadoEl?: string | null; comprobante?: { bucket: string; object_path: string } | null;
+  id: string; monto: number; metodo: string; fecha?: string; notas?: string | null; comprobanteId?: string | null;
 }
 export interface LiquidacionReserva extends Liquidacion {
   reserva: { id: string; checkIn: string; checkOut: string; noches: number };
   huesped: { nombre?: string; telefono?: string; dni?: string };
   pago: Pago;
-  pagoPropietario?: PagoPropietario;
+  pagosPropietario: PagoPropietario[];
+  totalPagadoPropietario: number; saldoLiquidacion: number; estadoLiquidacion: 'pendiente' | 'parcial' | 'pagado';
   alquiler: number;
 }
 export const TIPO_MOV: Record<string, string> = {
@@ -82,7 +83,8 @@ export interface Reservation {
   depositoOverride?: number | null; limpiezaOverride?: number | null;
   huesped: { nombre?: string; telefono?: string; email?: string; dni?: string; domicilio?: string; localidad?: string; huespedes?: number; comentario?: string };
   historial?: HistorialEntry[];
-  pagoPropietario?: PagoPropietario;
+  pagosPropietario?: PagoPropietario[];
+  totalPagadoPropietario?: number; saldoLiquidacion?: number; estadoLiquidacion?: 'pendiente' | 'parcial' | 'pagado';
 }
 
 const json = async (r: Response) => {
@@ -186,18 +188,17 @@ export const api = {
   },
   deleteSaldo: (rid: string, sid: string) => fetch(`${RENTALS_API}/reservations/${rid}/saldos/${sid}`, { method: 'DELETE' }).then(json),
   reciboSaldoUrl: (rid: string, sid: string): string => `${RENTALS_API}/reservations/${rid}/saldos/${sid}/recibo`,
-  marcarLiquidacionPagada: (rid: string, monto: number, metodo: string, fecha: string, notas?: string, file?: File | null): Promise<Reservation> => {
+  registrarPagoPropietario: (rid: string, monto: number, metodo: string, fecha: string, notas?: string, file?: File | null): Promise<Reservation> => {
     const fd = new FormData();
     fd.append('monto', String(monto || 0));
     fd.append('metodo', metodo);
     fd.append('fecha', fecha);
     if (notas) fd.append('notas', notas);
     if (file) fd.append('file', file);
-    return fetch(`${RENTALS_API}/reservations/${rid}/liquidacion/marcar-pagada`, { method: 'POST', body: fd }).then(json);
+    return fetch(`${RENTALS_API}/reservations/${rid}/liquidacion/pagos`, { method: 'POST', body: fd }).then(json);
   },
-  revertirLiquidacionPago: (rid: string): Promise<Reservation> =>
-    fetch(`${RENTALS_API}/reservations/${rid}/liquidacion/revertir`, { method: 'POST' }).then(json),
-  liquidacionComprobanteUrl: (rid: string): string => `${RENTALS_API}/reservations/${rid}/liquidacion/comprobante`,
+  borrarPagoPropietario: (rid: string, pagoId: string) =>
+    fetch(`${RENTALS_API}/reservations/${rid}/liquidacion/pagos/${pagoId}`, { method: 'DELETE' }).then(json),
   documentoReservaUrl: (rid: string): string => `${RENTALS_API}/reservations/${rid}/documento/reserva`,
   documentoContratoUrl: (rid: string): string => `${RENTALS_API}/reservations/${rid}/documento/contrato`,
   createManualReservation: (body: Record<string, unknown>): Promise<Reservation> =>

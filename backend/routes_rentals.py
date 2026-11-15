@@ -351,6 +351,21 @@ def _pagos_calc(r: dict) -> dict:
     }
 
 
+def _pagos_propietario(r: dict) -> list[dict]:
+    """Pagos al propietario de una reserva (lista nueva `pagosPropietario`), con compat hacia
+    el campo viejo singular `pagoPropietario` (anterior a esta migración): si todavía existe,
+    se antepone como un pago más con id sintético 'legado', para no perder el registro ni
+    duplicarlo (se puede borrar como cualquier otro pago)."""
+    pagos = list(r.get("pagosPropietario") or [])
+    legado = r.get("pagoPropietario")
+    if legado and legado.get("estado") == "pagado":
+        pagos = [{
+            "id": "legado", "monto": legado.get("monto"), "metodo": legado.get("metodo"),
+            "fecha": legado.get("fecha"), "notas": legado.get("notas"), "comprobanteId": None,
+        }] + pagos
+    return pagos
+
+
 def _res_out(r: dict, codigo: str | None = None) -> dict:
     calc = _pagos_calc(r)
     return {
@@ -369,7 +384,11 @@ def _res_out(r: dict, codigo: str | None = None) -> dict:
         "depositoOverride": r.get("depositoOverride"),
         "limpiezaOverride": r.get("limpiezaOverride"),
         "historial": r.get("historial") or [],
-        "pagoPropietario": r.get("pagoPropietario"),
+        "pagosPropietario": [
+            {"id": p.get("id"), "monto": p.get("monto"), "metodo": p.get("metodo"),
+             "fecha": p.get("fecha"), "notas": p.get("notas"), "comprobanteId": p.get("comprobanteId")}
+            for p in _pagos_propietario(r)
+        ],
     }
 
 
@@ -1183,7 +1202,12 @@ async def liquidables(pid: str):
     """Reservas efectuadas (seña pagada) de una propiedad, para liquidar al propietario."""
     await _get_prop(pid)
     cur = _res().find({"propertyId": pid, "pago.estado": "pagado"})
-    out = [_res_out(r) async for r in cur]
+    rows = [r async for r in cur]
+    out = []
+    for r in rows:
+        item = _res_out(r)
+        item.update(await _neto_y_estado_liquidacion(r))
+        out.append(item)
     out.sort(key=lambda r: (r.get("pago") or {}).get("pagadoEl") or r.get("checkIn") or "", reverse=True)
     return out
 
@@ -1191,16 +1215,16 @@ async def liquidables(pid: str):
 @router.get("/liquidaciones/pendientes")
 async def liquidaciones_pendientes(dias: int = Query(7, ge=1)):
     """Recordatorio: reservas de TODA la cartera con la seña cobrada hace más de `dias` días
-    que todavía no tienen el pago al propietario registrado. Para no olvidarse de liquidar."""
+    cuya liquidación todavía no está completa (sin pagos, o con pagos parciales que no
+    cubren el neto a liquidar). Para no olvidarse de liquidar."""
     ahora = datetime.now(timezone.utc)
     limite = (ahora - timedelta(days=dias)).isoformat()
-    cur = _res().find({
-        "pago.estado": "pagado",
-        "pago.pagadoEl": {"$lte": limite},
-        "$or": [{"pagoPropietario": {"$exists": False}}, {"pagoPropietario.estado": {"$ne": "pagado"}}],
-    }).sort("pago.pagadoEl", 1)
+    cur = _res().find({"pago.estado": "pagado", "pago.pagadoEl": {"$lte": limite}}).sort("pago.pagadoEl", 1)
     out = []
     async for r in cur:
+        calc = await _neto_y_estado_liquidacion(r)
+        if calc["estadoLiquidacion"] == "pagado":
+            continue
         prop = await _props().find_one({"_id": r.get("propertyId")})
         pagado_el = (r.get("pago") or {}).get("pagadoEl") or ""
         try:
@@ -1217,23 +1241,19 @@ async def liquidaciones_pendientes(dias: int = Query(7, ge=1)):
             "huesped": (r.get("huesped") or {}).get("nombre"),
             "checkIn": r.get("checkIn"), "checkOut": r.get("checkOut"),
             "pagadoEl": pagado_el, "diasSinLiquidar": dias_sin,
+            "estadoLiquidacion": calc["estadoLiquidacion"], "saldoLiquidacion": calc["saldoLiquidacion"],
         })
     return out
 
 
-async def _liquidacion_reserva(rid: str) -> dict:
-    r = await _res().find_one({"_id": rid})
-    if not r:
-        raise HTTPException(404, "Reserva no encontrada")
-    prop = await _get_prop(r.get("propertyId"))
-    mon = r.get("moneda", "ARS")
+async def _movs_y_totales(r: dict) -> tuple[dict, list]:
+    """Movimientos de una reserva (propios + gastos de ficha financiera sin reserva que
+    caen dentro de la estadía) + totales por tipo. Base para el neto a liquidar."""
     tot = {"ingreso": 0.0, "gasto_prop": 0.0, "gasto_nuestro": 0.0, "comision": 0.0}
     movs = []
-    # Imputamos los movimientos atados a la reserva + los gastos de la Ficha financiera
-    # de la propiedad (sin reserva) que caen dentro de las fechas de la estadía.
     ci, co = r.get("checkIn"), r.get("checkOut")
     query = {"$or": [
-        {"reservaId": rid},
+        {"reservaId": r["_id"]},
         {"propertyId": r.get("propertyId"), "reservaId": None, "fecha": {"$gte": ci, "$lte": co}},
     ]}
     cur = _movs().find(query).sort("fecha", 1)
@@ -1242,14 +1262,48 @@ async def _liquidacion_reserva(rid: str) -> dict:
         if t in tot:
             tot[t] += float(m.get("monto") or 0)
         movs.append(_mov_out(m))
+    return tot, movs
+
+
+async def _neto_y_estado_liquidacion(r: dict) -> dict:
+    """Neto a liquidar de una reserva + cuánto se le pagó ya al propietario (puede ser en
+    varios pagos parciales) y si la liquidación queda pendiente, parcial o completa."""
+    tot, _ = await _movs_y_totales(r)
+    alquiler = float(r.get("montoEstimado") or 0)
+    ingresos = alquiler + tot["ingreso"]
+    neto = round(ingresos - tot["comision"] - tot["gasto_prop"])
+    pagos = _pagos_propietario(r)
+    total_pagado = round(sum(float(p.get("monto") or 0) for p in pagos))
+    saldo = max(neto - total_pagado, 0)
+    estado = "pagado" if (total_pagado > 0 and saldo <= 0) else ("parcial" if total_pagado > 0 else "pendiente")
+    return {"netoPropietario": neto, "totalPagadoPropietario": total_pagado,
+            "saldoLiquidacion": saldo, "estadoLiquidacion": estado}
+
+
+async def _liquidacion_reserva(rid: str) -> dict:
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    prop = await _get_prop(r.get("propertyId"))
+    mon = r.get("moneda", "ARS")
+    tot, movs = await _movs_y_totales(r)
     alquiler = float(r.get("montoEstimado") or 0)
     ingresos = round(alquiler + tot["ingreso"])
     neto = round(ingresos - tot["comision"] - tot["gasto_prop"])
+    pagos = _pagos_propietario(r)
+    total_pagado = round(sum(float(p.get("monto") or 0) for p in pagos))
+    saldo = max(neto - total_pagado, 0)
+    estado = "pagado" if (total_pagado > 0 and saldo <= 0) else ("parcial" if total_pagado > 0 else "pendiente")
     h = r.get("huesped") or {}
     return {
         "reserva": {"id": r["_id"], "checkIn": r.get("checkIn"), "checkOut": r.get("checkOut"), "noches": r.get("noches")},
         "huesped": h, "pago": r.get("pago") or {},
-        "pagoPropietario": r.get("pagoPropietario") or {},
+        "pagosPropietario": [
+            {"id": p.get("id"), "monto": p.get("monto"), "metodo": p.get("metodo"),
+             "fecha": p.get("fecha"), "notas": p.get("notas"), "comprobanteId": p.get("comprobanteId")}
+            for p in pagos
+        ],
+        "totalPagadoPropietario": total_pagado, "saldoLiquidacion": saldo, "estadoLiquidacion": estado,
         "propiedad": {"id": prop["_id"], "codigo": prop.get("codigo"), "titulo": prop.get("titulo"), "moneda": mon},
         "propietario": prop.get("propietario") or {},
         "periodo": {"desde": r.get("checkIn"), "hasta": r.get("checkOut")},
@@ -1587,8 +1641,8 @@ def _hoy_ar() -> str:
     return datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")).date().isoformat()
 
 
-@router.post("/reservations/{rid}/liquidacion/marcar-pagada")
-async def marcar_liquidacion_pagada(
+@router.post("/reservations/{rid}/liquidacion/pagos")
+async def registrar_pago_propietario(
     rid: str,
     monto: float = Form(...),
     metodo: str = Form("transferencia"),
@@ -1596,51 +1650,51 @@ async def marcar_liquidacion_pagada(
     notas: str | None = Form(None),
     file: UploadFile | None = File(None),
 ):
-    """Registra el pago de la liquidación al propietario (transferencia/efectivo/cheque/otro),
-    con fecha y comprobante opcional. Esto es lo que contesta '¿dónde consta que le pagué al
-    dueño?' — antes la app solo calculaba el neto a liquidar, pero no dejaba rastro del pago."""
+    """Registra UN pago al propietario (transferencia/efectivo/cheque/otro). Se pueden cargar
+    VARIOS pagos para la misma reserva (a veces se liquida en partes) — se acumulan en
+    `pagosPropietario`, y la liquidación queda completa cuando la suma cubre el neto a
+    liquidar. Esto es lo que contesta '¿dónde consta que le pagué al dueño?' — antes la app
+    solo calculaba el neto, pero no dejaba rastro del pago (y solo admitía UNO solo)."""
     r = await _res().find_one({"_id": rid})
     if not r:
         raise HTTPException(404, "Reserva no encontrada")
     if not monto or float(monto) <= 0:
-        raise HTTPException(400, "El monto liquidado debe ser mayor a cero.")
+        raise HTTPException(400, "El monto pagado debe ser mayor a cero.")
     if metodo not in METODOS_PAGO_PROPIETARIO:
         raise HTTPException(400, "Método de pago inválido, usá transferencia, efectivo, cheque u otro.")
-    comp = None
+    comprobante_id = None
+    push: dict = {}
     if file is not None and appconfig.supabase_configured():
         ext = Path(file.filename or "comp.jpg").suffix.lower() or ".jpg"
         obj = f"rentals/{r.get('propertyId')}/liquidaciones/{uuid4().hex}{ext}"
         content = await file.read()
         await get_storage().upload(appconfig.BUCKET_IMAGES, obj, content, file.content_type or "image/jpeg")
-        comp = {"bucket": appconfig.BUCKET_IMAGES, "object_path": obj, "contentType": file.content_type or "image/jpeg",
-                "nombre": file.filename or "comprobante liquidación"}
-    pago_prop = {
-        "estado": "pagado", "monto": round(float(monto)), "metodo": metodo,
-        "fecha": fecha or _hoy_ar(), "notas": notas or None,
-        "comprobante": comp, "pagadoEl": _now(),
-    }
-    await _res().update_one({"_id": rid}, {"$set": {"pagoPropietario": pago_prop}})
+        comprobante_id = uuid4().hex
+        push["comprobantes"] = {"id": comprobante_id, "bucket": appconfig.BUCKET_IMAGES, "object_path": obj,
+                                 "contentType": file.content_type or "image/jpeg",
+                                 "nombre": file.filename or "comprobante liquidación", "fecha": _now()}
+    pago = {"id": uuid4().hex, "monto": round(float(monto)), "metodo": metodo,
+            "fecha": fecha or _hoy_ar(), "notas": notas or None, "comprobanteId": comprobante_id, "createdAt": _now()}
+    push["pagosPropietario"] = pago
+    await _res().update_one({"_id": rid}, {"$push": push})
     return _res_out(await _res().find_one({"_id": rid}))
 
 
-@router.post("/reservations/{rid}/liquidacion/revertir")
-async def revertir_liquidacion_pago(rid: str):
-    """Deshace el registro de pago al propietario (por error de carga)."""
+@router.delete("/reservations/{rid}/liquidacion/pagos/{pago_id}", status_code=204)
+async def borrar_pago_propietario(rid: str, pago_id: str):
+    """Elimina UN pago cargado por error (p.ej. duplicado), sin afectar los demás pagos
+    de la misma reserva. pago_id puede ser 'legado' (el pago viejo en formato singular,
+    anterior a esta migración), en cuyo caso se limpia ese campo directamente."""
     r = await _res().find_one({"_id": rid})
-    if not r:
-        raise HTTPException(404, "Reserva no encontrada")
-    await _res().update_one({"_id": rid}, {"$unset": {"pagoPropietario": ""}})
-    return _res_out(await _res().find_one({"_id": rid}))
-
-
-@router.get("/reservations/{rid}/liquidacion/comprobante")
-async def liquidacion_comprobante(rid: str):
-    r = await _res().find_one({"_id": rid})
-    comp = ((r or {}).get("pagoPropietario") or {}).get("comprobante")
-    if not comp:
-        raise HTTPException(404, "Sin comprobante")
-    data = await get_storage().download(comp["bucket"], comp["object_path"])
-    return Response(content=data, media_type=comp.get("contentType", "image/jpeg"))
+    if pago_id == "legado":
+        await _res().update_one({"_id": rid}, {"$unset": {"pagoPropietario": ""}})
+        return None
+    if r:
+        pago = next((p for p in (r.get("pagosPropietario") or []) if p.get("id") == pago_id), None)
+        if pago and pago.get("comprobanteId"):
+            await _res().update_one({"_id": rid}, {"$pull": {"comprobantes": {"id": pago["comprobanteId"]}}})
+    await _res().update_one({"_id": rid}, {"$pull": {"pagosPropietario": {"id": pago_id}}})
+    return None
 
 
 async def _next_numero(tipo: str) -> int:
