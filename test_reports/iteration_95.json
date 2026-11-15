@@ -1,0 +1,34 @@
+{
+  "summary": "Frontend-only test of the public-site performance refactor: OS and public rentals routes moved into lazy chunks (OsRoutes.tsx, RentalsPublicRoutes.tsx), fonts now self-hosted, hero/rentals images served as <img srcset> from /public, the hero preloaded from index.html, gtag deferred to window.load, a new 404 page (NotFoundPublic) with noindex, and a hero kicker line. The backend was not changed and no backend tests were run. What works: tsc is clean and webpack compiles. All new static assets return 200 with the right content-type. The home page (desktop 1920 and mobile 390) renders the hero, logo, rentals band and featured listings with no app console errors and no requests to Google Fonts. Manrope and Clash Display load. The CRM chunk (OsRoutes) is NOT downloaded on the public home; it loads only under /veraos, and RentalsPublicRoutes only under /alquileres. gtag is injected after load and dataLayer is filled. /no-existe-xyz shows the 404 page with title 'Página no encontrada', robots 'noindex, follow' and a self canonical. 'Ir al inicio' goes to the home page and removes the robots meta. /web, /tasar, /venta/costa-del-este, /privacidad and /inicio still render with no robots meta. /alquileres, /alquileres/pago/resultado and the /alquileres/* fallback work. /veraos without a session redirects to /login. Logging in as qa_varela works; the allowed sections (alquileres, liquidaciones, studio) render, a forbidden or unknown route redirects to the default section, and the session survives a reload. Two defects found: (1) the hero kicker text is cramped and hard to read, (2) the hero preload does not match the image the browser picks on high-DPR phones, so the hero downloads twice.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "PublicHome hero kicker (.vh-hero__kicker inside h1.vh-h1)", "issue": "The new kicker 'Inmobiliaria en Costa del Este y Mar del Tuyú' inherits the h1 font (Clash Display) and its letter-spacing of -0.02em at 13px. Measured: fontFamily='Clash Display', letterSpacing=-0.83px. The words run together ('InmobiliariaenCostadelEsteyMardelTuyú') and are barely readable on both desktop and mobile. Fix: add font-family: 'Manrope', sans-serif; letter-spacing: normal (or 0.02em); font-weight: 600 to .vh-hero__kicker.", "selector": ".vh-hero__kicker", "priority": "HIGH"}
+    ],
+    "integration_issues": [
+      {"flow": "Hero preload (LCP) on mobile", "issue": "index.html preloads /hero/hero-mobile.webp when max-width is 768px. The <img> uses srcset 640w/1264w with sizes=100vw, so on any phone with DPR 2 or 3 (390*3 = 1170px) the browser picks hero-desktop.webp. Verified at 390x844 with DPR 3: requests were hero-mobile.webp (preload, wasted 75KB) then hero-desktop.webp (212KB). The preload is wasted, LCP is not improved, and the hero downloads twice. Fix: make the preload use the same candidates, e.g. link.imageSrcset = '/hero/hero-mobile.webp 640w, /hero/hero-desktop.webp 1264w'; link.imageSizes = '100vw'; and drop the matchMedia branch (or use <picture> with media queries matching the preload).", "affected_selectors": [".vh-hero__bg"]}
+    ],
+    "design_issues": [
+      {"screen": "PublicHome footer", "issues": ["The footer logo is drawn at 40px high, but the new PNG is only 147x68. That is below 2x for retina (needs at least 80px), so it is slightly soft on high-DPR screens. The nav logo at 34px high is fine."]},
+      {"screen": "index.html", "issues": ["The Clash Display stylesheet from api.fontshare.com is still a render-blocking <link rel=stylesheet> in <head> on every page, including /veraos. Consider preload with onload swap, or self-hosting it like DM Sans and Manrope."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Fix the .vh-hero__kicker typography: reset font-family to Manrope and letter-spacing to normal; it currently inherits the h1's Clash Display and -0.02em.",
+    "Make the index.html hero preload use imagesrcset/imagesizes matching the <img srcset> (or use a <picture> with media queries), so high-DPR phones do not download the hero twice.",
+    "Optional: use a 2x footer logo (at least 80px high) and make the fontshare CSS non-render-blocking."
+  ],
+  "critical_code_review_comments": [
+    "Lazy split is correct: Suspense fallback={null} wraps both lazy route trees, and the home bundle does not include OsRoutes or supabase.",
+    "NotFoundPublic: usePageMeta's setRobots removes the meta when noindex=false, so SPA navigation away from the 404 page cleans up correctly (verified).",
+    "The hero preload script checks only '/' and '/inicio'. That is fine, but it does not run on SPA navigation back to the home page (not an issue, since the image is then just requested by the <img>).",
+    "The console error '<span> cannot be a child of <option>' on /web comes from the visual-edit dev instrumentation (x-file-name spans), not from app code."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (not changed, not tested)", "frontend": "90% (2 defects across ~20 checks)"},
+  "seed_data_creation": "None. Logged in with the existing qa_varela@vera.test account (read-only navigation).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Iteration 95 covered the public-site perf refactor in commit a3723d2 (lazy OsRoutes/RentalsPublicRoutes, self-hosted fonts, /public/hero webp, 404 page). To check the kicker fix: read getComputedStyle('.vh-hero__kicker'). To check the preload fix: open a new context with device_scale_factor=3 and viewport 390x844, and confirm that only one hero image is requested. The /alquileres public list is empty in preview because /api/rentals/public/properties returns []; that is a data condition, not a bug."
+}

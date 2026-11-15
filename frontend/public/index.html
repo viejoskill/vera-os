@@ -149,12 +149,14 @@
         <script>
           (function () {
             if (location.pathname !== "/" && location.pathname !== "/inicio") return;
-            var small = window.matchMedia && window.matchMedia("(max-width: 768px)").matches;
             var link = document.createElement("link");
             link.rel = "preload";
             link.as = "image";
-            link.type = "image/webp";
-            link.href = small ? "/hero/hero-mobile.webp" : "/hero/hero-desktop.webp";
+            // Mismos candidatos/criterio que el <img srcset> real del hero, para que el
+            // navegador precargue EXACTAMENTE el archivo que después va a pedir (si no
+            // coinciden, en pantallas de alta densidad el hero se termina bajando 2 veces).
+            link.imageSrcset = "/hero/hero-mobile.webp 640w, /hero/hero-desktop.webp 1264w";
+            link.imageSizes = "100vw";
             link.fetchPriority = "high";
             document.head.appendChild(link);
           })();

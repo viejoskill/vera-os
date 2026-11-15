@@ -266,7 +266,7 @@ export const PublicHome = () => {
       <header className="vh-nav" data-testid="home-nav">
         <div className="vh-nav__inner">
           <a href="#top" className="vh-nav__brand" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-            <img src={LOGO} alt="Varela Inmobiliaria" width={147} height={68} />
+            <img src={LOGO} alt="Varela Inmobiliaria" width={173} height={80} />
           </a>
           <nav className={`vh-nav__links ${menuOpen ? 'is-open' : ''}`}>
             <button type="button" onClick={() => nav('cartera')} data-testid="nav-propiedades">Propiedades</button>
@@ -568,7 +568,7 @@ export const PublicHome = () => {
       <footer className="vh-footer">
         <div className="vh-footer__inner">
           <div className="vh-footer__brand">
-            <img src={LOGO} alt="Varela Inmobiliaria" width={147} height={68} />
+            <img src={LOGO} alt="Varela Inmobiliaria" width={173} height={80} />
             <p>Inmobiliaria en Costa del Este y Mar del Tuyú.</p>
           </div>
           <div className="vh-footer__links">
