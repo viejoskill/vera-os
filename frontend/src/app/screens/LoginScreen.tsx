@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { Input, Button } from '@vera/ui';
+import { env } from '@vera/config';
 import logoHorizontal from '../../assets/brand/logo-horizontal.png';
 import { supabase } from '../auth/supabase-client';
 import { useAuth } from '../auth/AuthProvider';
@@ -10,18 +11,14 @@ interface FromState {
   from?: { pathname: string; search?: string };
 }
 
-type Mode = 'signin' | 'signup';
-
 export const LoginScreen = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { session, ready, bootAuthed } = useAuth();
 
-  const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const from = (location.state as FromState | null)?.from;
@@ -36,36 +33,33 @@ export const LoginScreen = () => {
     e.preventDefault();
     setSubmitting(true);
     setMessage(null);
-    setNotice(null);
+    const cleanEmail = email.trim();
 
-    if (mode === 'signin') {
-      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    const lockCheck = await fetch(`${env.backendUrl}/api/auth/login-check`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: cleanEmail }),
+    }).then((r) => (r.ok ? r.json() : { locked: false }));
+
+    if (lockCheck.locked) {
       setSubmitting(false);
-      if (error) {
-        setMessage('No pudimos ingresar. Revisá el email y la contraseña.');
-        return;
-      }
-      navigate(redirectTo, { replace: true });
+      const mins = Math.ceil((lockCheck.retryAfterSeconds ?? 0) / 60) || 1;
+      setMessage(`Demasiados intentos fallidos. Probá de nuevo en ${mins} minuto(s).`);
       return;
     }
 
-    // sign up
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-      options: { emailRedirectTo: `${window.location.origin}/login` },
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
     setSubmitting(false);
     if (error) {
-      setMessage(error.message || 'No pudimos crear la cuenta.');
+      fetch(`${env.backendUrl}/api/auth/login-failed`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail }),
+      }).catch(() => {});
+      setMessage('No pudimos ingresar. Revisá el email y la contraseña.');
       return;
     }
-    if (data.session) {
-      // Confirmación de email desactivada → sesión inmediata.
-      navigate(redirectTo, { replace: true });
-      return;
-    }
-    setNotice('¡Listo! Revisá tu email para confirmar la cuenta. Después, un administrador te habilita el acceso.');
+    navigate(redirectTo, { replace: true });
   };
 
   const googleSignIn = async () => {
@@ -90,14 +84,8 @@ export const LoginScreen = () => {
         </div>
 
         <div className="vera-login__intro">
-          <h1 className="vera-login__title">
-            {mode === 'signin' ? 'Tu operación, en un solo lugar.' : 'Creá tu cuenta en VERA.'}
-          </h1>
-          <p className="vera-login__subtitle">
-            {mode === 'signin'
-              ? 'Ingresá para continuar donde lo dejaste.'
-              : 'Registrate y un administrador te habilitará el acceso.'}
-          </p>
+          <h1 className="vera-login__title">Tu operación, en un solo lugar.</h1>
+          <p className="vera-login__subtitle">Ingresá para continuar donde lo dejaste.</p>
         </div>
 
         <Button
@@ -133,7 +121,7 @@ export const LoginScreen = () => {
           <Input
             label="Contraseña"
             type="password"
-            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+            autoComplete="current-password"
             placeholder="••••••••"
             data-testid="login-password"
             value={password}
@@ -147,11 +135,6 @@ export const LoginScreen = () => {
               {message}
             </p>
           )}
-          {notice && (
-            <p className="vera-login__notice" data-testid="login-notice" role="status">
-              {notice}
-            </p>
-          )}
 
           <Button
             type="submit"
@@ -161,27 +144,10 @@ export const LoginScreen = () => {
             data-testid="login-submit"
             disabled={submitting}
           >
-            {submitting
-              ? mode === 'signin' ? 'Ingresando…' : 'Creando…'
-              : mode === 'signin' ? 'Ingresar a VERA' : 'Crear cuenta'}
+            {submitting ? 'Ingresando…' : 'Ingresar a VERA'}
             {!submitting && <ArrowRight size={16} />}
           </Button>
         </form>
-
-        <button
-          type="button"
-          className="vera-login__switch"
-          data-testid="login-toggle-mode"
-          onClick={() => {
-            setMode(mode === 'signin' ? 'signup' : 'signin');
-            setMessage(null);
-            setNotice(null);
-          }}
-        >
-          {mode === 'signin'
-            ? '¿No tenés cuenta? Registrate'
-            : '¿Ya tenés cuenta? Ingresá'}
-        </button>
 
         <p className="vera-login__foot">Sistema Operativo Comercial</p>
       </div>

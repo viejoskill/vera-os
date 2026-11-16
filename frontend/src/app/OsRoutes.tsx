@@ -14,7 +14,8 @@ import { VeraBotWorkspace } from '@app/vera-bot';
 import { IntegrationsScreen } from '@app/integraciones';
 import { LoginScreen } from '@app/screens/LoginScreen';
 import { StudioScreen } from '@app/screens/StudioScreen';
-import { TeamScreen } from '@app/screens/TeamScreen';
+import { UsersRolesScreen } from '@app/screens/users-roles/UsersRolesScreen';
+import { ChangePasswordScreen } from '@app/screens/ChangePasswordScreen';
 import { TasacionesScreen } from '@app/screens/TasacionesScreen';
 import { AlquileresScreen } from '@app/screens/rentals/AlquileresScreen';
 import { KeysBoardScreen } from '@app/screens/KeysBoardScreen';
@@ -36,6 +37,7 @@ const OsRoutes = () => (
     <Routes>
       <Route path="/login" element={<LoginScreen />} />
       <Route element={<RequireAuth />}>
+        <Route path="cambiar-clave" element={<ChangePasswordScreen />} />
         <Route element={<AppLayout />}>
           <Route index element={<Navigate to="/hoy" replace />} />
           <Route path="hoy" element={<WorkspaceHome />} />
@@ -52,7 +54,7 @@ const OsRoutes = () => (
           <Route path="documentos/:id" element={<DocumentDetail />} />
           <Route path="studio" element={<StudioScreen />} />
           <Route path="integraciones" element={<IntegrationsScreen />} />
-          <Route path="equipo" element={<TeamScreen />} />
+          <Route path="equipo" element={<UsersRolesScreen />} />
           <Route path="tasaciones" element={<TasacionesScreen />} />
           <Route path="llaves" element={<KeysBoardScreen />} />
           <Route path="bot-alquileres" element={<RentalBotSimulator />} />

@@ -30,6 +30,8 @@ import routes_sign
 import routes_notifications
 import routes_studio
 import routes_auth
+import routes_users
+import routes_roles
 import routes_tasacion
 import routes_tasacion_online
 import routes_rentals
@@ -39,6 +41,8 @@ import whatsapp_webhook
 import whatsapp_connect
 import routes_contabilidad
 import routes_sitemap
+from authz import migrate_legacy_app_access, seed_roles
+from route_permissions import apply_authorization
 
 app = FastAPI(title="VERA OS API")
 
@@ -74,6 +78,8 @@ api_router.include_router(routes_sign.router)
 api_router.include_router(routes_notifications.router)
 api_router.include_router(routes_studio.router)
 api_router.include_router(routes_auth.router)
+api_router.include_router(routes_users.router)
+api_router.include_router(routes_roles.router)
 api_router.include_router(routes_tasacion.router)
 api_router.include_router(routes_tasacion_online.router)
 api_router.include_router(routes_rentals.router)
@@ -84,6 +90,8 @@ api_router.include_router(whatsapp_connect.router)
 api_router.include_router(routes_contabilidad.router)
 api_router.include_router(routes_sitemap.router)
 app.include_router(api_router)
+
+apply_authorization(app)
 
 app.add_middleware(
     CORSMiddleware,
@@ -103,3 +111,9 @@ logger = logging.getLogger("vera")
 @app.on_event("startup")
 async def _start_bot_scheduler():
     rentals_bot.start_scheduler()
+
+
+@app.on_event("startup")
+async def _bootstrap_authz():
+    await seed_roles()
+    await migrate_legacy_app_access()

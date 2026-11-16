@@ -127,7 +127,7 @@ export const navRoutes: NavRoute[] = [
   },
   {
     id: 'equipo',
-    label: 'Equipo',
+    label: 'Usuarios y Roles',
     path: '/equipo',
     icon: createElement(UserCog, { size: 18 }),
     enabled: true,

@@ -6,10 +6,11 @@ import { PendingApproval } from './PendingApproval';
  * Route guard. No session → Login (preserving the intended location so we can
  * return there after signing in). Returning users with a stored session render
  * the app instantly; we only redirect once hydration confirms there is no session.
- * Authenticated-but-not-approved users see a "pending approval" screen.
+ * Sin perfil activo en `app_access` (pendiente o desactivado) → pantalla de aviso.
+ * Clave temporal pendiente de cambio → pantalla de cambio obligatorio.
  */
 export const RequireAuth = () => {
-  const { session, ready, bootAuthed, approval, approvalReady } = useAuth();
+  const { session, ready, bootAuthed, profile, profileReady } = useAuth();
   const location = useLocation();
 
   if (!ready) {
@@ -22,9 +23,13 @@ export const RequireAuth = () => {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  // Team access gate: block until we know the approval status.
-  if (!approvalReady) return null;
-  if (approval && !approval.approved) return <PendingApproval />;
+  // Gate de acceso: bloquea hasta saber si el usuario tiene perfil activo.
+  if (!profileReady) return null;
+  if (!profile || !profile.active) return <PendingApproval />;
+
+  if (profile.mustChangePassword && location.pathname !== '/cambiar-clave') {
+    return <Navigate to="/cambiar-clave" replace />;
+  }
 
   return <Outlet />;
 };

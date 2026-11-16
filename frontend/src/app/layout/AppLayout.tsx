@@ -14,27 +14,24 @@ export const AppLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { displayName } = useAuthUser();
-  const { approval, approvalReady, signOut } = useAuth();
+  const { profile, profileReady, can, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Empleados (aprobados, no admin): acceso restringido a ciertas secciones del menú.
-  // Por defecto, Alquileres + Studio (editor de fotos); un admin puede personalizarlo
-  // por usuario desde "Equipo" (approval.sections).
-  const isEmployee = approvalReady && approval && !approval.isAdmin;
-  const employeeSectionIds = approval?.sections ?? ['alquileres', 'studio'];
-  const EMPLOYEE_PATHS = navRoutes.filter((r) => employeeSectionIds.includes(r.id)).map((r) => r.path);
-  const noSectionsAssigned = Boolean(isEmployee && EMPLOYEE_PATHS.length === 0);
+  // Secciones del menú que el usuario puede VER (admin: todas). Un admin puede
+  // personalizar esto por rol desde "Usuarios y Roles".
+  const visiblePaths = navRoutes.filter((r) => can(r.id, 'ver')).map((r) => r.path);
+  const noSectionsAssigned = Boolean(profileReady && profile && !profile.isAdmin && visiblePaths.length === 0);
   useEffect(() => {
-    if (isEmployee && EMPLOYEE_PATHS.length > 0 && !EMPLOYEE_PATHS.some((p) => location.pathname.startsWith(p))) {
-      navigate(EMPLOYEE_PATHS[0], { replace: true });
+    if (profile && !profile.isAdmin && visiblePaths.length > 0 && !visiblePaths.some((p) => location.pathname.startsWith(p))) {
+      navigate(visiblePaths[0], { replace: true });
     }
-  }, [isEmployee, location.pathname, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile, location.pathname, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const active = navRoutes.find((r) => location.pathname.startsWith(r.path)) ?? navRoutes[1];
 
   const items: SidebarItem[] = navRoutes
     .filter((r) => r.enabled !== false)
-    .filter((r) => (approval?.isAdmin ? true : employeeSectionIds.includes(r.id)))
+    .filter((r) => can(r.id, 'ver'))
     .map((r) => ({
       id: r.id,
       label: r.label,

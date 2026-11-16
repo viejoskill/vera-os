@@ -6,9 +6,9 @@ import { useAuth } from '@app/auth/AuthProvider';
  *  usuario logueado (?u=) para que su estado (identidad, logo, plan del mes) se
  *  sincronice en el backend de VERA y lo siga entre dispositivos. */
 export const StudioScreen = () => {
-  const { session, approval } = useAuth();
+  const { session, profile } = useAuth();
   const uid = session?.user?.id ?? '';
-  const soloFotos = approval ? !approval.isAdmin : false;
+  const soloFotos = profile ? !profile.isAdmin : false;
   const params = new URLSearchParams();
   if (uid) params.set('u', uid);
   if (soloFotos) params.set('only', 'fotos');

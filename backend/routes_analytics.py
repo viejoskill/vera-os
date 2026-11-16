@@ -13,7 +13,6 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field
 
 import config
-from routes_auth import _require_admin
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -76,8 +75,7 @@ async def track(body: TrackBody):
 
 
 @router.get("/summary")
-async def summary(actorEmail: str, days: int = 30):
-    await _require_admin(actorEmail)
+async def summary(days: int = 30):
     await _ensure_indexes()
     days = max(1, min(days, 365))
     since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
