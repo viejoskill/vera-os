@@ -28,6 +28,7 @@ import { useProperties } from '@app/hooks/useProperties';
 import { PropertyFilters, emptyFilters, countActiveFilters, type AdvFilters } from './PropertyFilters';
 import { LegacyImportModal } from './LegacyImportModal';
 import { VisitModal } from './property-workspace/VisitModal';
+import { useAuth } from '@app/auth/AuthProvider';
 
 type StatusFilter = PropertyStatus | 'all' | 'archived';
 
@@ -269,6 +270,7 @@ const PropertyCard = ({ property, actions }: { property: Property; actions: Card
 
 export const PropertiesScreen = () => {
   const navigate = useNavigate();
+  const { can } = useAuth();
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<StatusFilter>('all');
   const [query, setQuery] = useState('');
@@ -366,12 +368,16 @@ export const PropertiesScreen = () => {
             </Button>
           ))}
         </div>
-        <Button size="md" variant="ghost" data-testid="import-legacy-button" onClick={() => setShowImport(true)}>
-          <DownloadCloud size={16} /> Importar desde CRM Varela
-        </Button>
-        <Button size="md" data-testid="new-property-button" onClick={() => navigate('/propiedades/nueva')}>
-          <Plus size={16} /> Nueva propiedad
-        </Button>
+        {can('propiedades', 'crear') && (
+          <Button size="md" variant="ghost" data-testid="import-legacy-button" onClick={() => setShowImport(true)}>
+            <DownloadCloud size={16} /> Importar desde CRM Varela
+          </Button>
+        )}
+        {can('propiedades', 'crear') && (
+          <Button size="md" data-testid="new-property-button" onClick={() => navigate('/propiedades/nueva')}>
+            <Plus size={16} /> Nueva propiedad
+          </Button>
+        )}
       </div>
 
       <div className="vera-toolbar__secondary">

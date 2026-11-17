@@ -20,6 +20,7 @@ import { useDocuments } from '@app/hooks/useDocuments';
 import { useProperty } from '@app/hooks/useProperty';
 import { useWorkspaceGallery, type LiveStatus } from '@app/hooks/useWorkspaceGallery';
 import { useWorkspaceDocuments } from '@app/hooks/useWorkspaceDocuments';
+import { downloadWithAuth } from '@app/lib/downloadWithAuth';
 import { propertyFormSchema, defaultPropertyForm, type PropertyFormValues } from './form-schema';
 import { BasicInfoSection } from './BasicInfoSection';
 import { FeaturesSection } from './FeaturesSection';
@@ -42,14 +43,9 @@ interface ToastState {
   tone: 'default' | 'success';
 }
 
-/** Dispara la descarga de un archivo desde el navegador (sin navegar de página). */
+/** Dispara la descarga de un archivo protegido (fetch con Bearer + blob). */
 const triggerBrowserDownload = (url: string) => {
-  const a = document.createElement('a');
-  a.href = url;
-  a.rel = 'noopener';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  downloadWithAuth(url).catch((e) => window.alert((e as Error).message));
 };
 
 type LifecycleStatus = 'active' | 'reserved' | 'sold' | 'archived';

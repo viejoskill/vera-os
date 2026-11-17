@@ -207,18 +207,32 @@ def _bearer_token(request: Request) -> str:
     return auth.split(" ", 1)[1].strip()
 
 
-async def current_access(request: Request) -> dict:
-    """Valida el JWT, busca el acceso en Mongo y exige que esté activo. Esto
-    corre en CADA request protegido, así que desactivar a alguien corta su
-    acceso inmediato (sin esperar a que expire el JWT)."""
+# Endpoints a los que SÍ puede entrar un usuario con cambio de clave pendiente
+# (si no, se queda sin forma de cambiarla).
+MUST_CHANGE_PASSWORD_ALLOWLIST = {"/api/auth/me", "/api/auth/change-password-done"}
+
+
+async def current_user_raw(request: Request) -> dict | None:
+    """Valida el JWT y devuelve el doc de Mongo tal cual (puede estar inactivo
+    o no existir) — lo usa `/auth/me` para poder mostrarle al frontend el motivo
+    exacto (pendiente / desactivado) en vez de un 401 genérico."""
     token = _bearer_token(request)
     claims = verify_access_token(token)
     email = norm_email(claims.get("email") or "")
     if not email:
         raise HTTPException(401, "Token sin email verificado")
-    doc = await get_access_doc(email)
+    return await get_access_doc(email)
+
+
+async def current_access(request: Request) -> dict:
+    """Exige sesión válida + cuenta activa + (si corresponde) clave ya cambiada.
+    Corre en CADA request protegido, así que desactivar a alguien corta su
+    acceso inmediato (sin esperar a que expire el JWT)."""
+    doc = await current_user_raw(request)
     if not doc or not doc.get("active"):
         raise HTTPException(401, "No tenés acceso activo a VERA OS")
+    if doc.get("mustChangePassword") and request.url.path not in MUST_CHANGE_PASSWORD_ALLOWLIST:
+        raise HTTPException(403, "Tenés que cambiar tu contraseña temporal antes de seguir")
     profile = await build_profile(doc)
     profile["_raw"] = doc
     return profile
@@ -295,3 +309,22 @@ async def record_login_failure(email: str):
     if count >= LOGIN_MAX_ATTEMPTS:
         update["lockedUntil"] = (now + timedelta(minutes=LOGIN_LOCK_MINUTES)).isoformat()
     await _login_col().update_one({"_id": email}, {"$set": update}, upsert=True)
+
+
+# Límite por IP para /login-check y /login-failed — sin esto, cualquiera podía
+# bloquear la cuenta de otra persona a propósito posteando su email muchas veces
+# sin siquiera intentar loguearse.
+IP_MAX_REQUESTS = 30
+IP_WINDOW_MINUTES = 5
+
+
+async def check_ip_abuse(ip: str) -> None:
+    key = f"ip:{ip}"
+    now = datetime.now(timezone.utc)
+    doc = await _login_col().find_one({"_id": key})
+    if not doc or (now - datetime.fromisoformat(doc["firstAt"])) > timedelta(minutes=IP_WINDOW_MINUTES):
+        doc = {"_id": key, "count": 0, "firstAt": now.isoformat()}
+    count = int(doc.get("count", 0)) + 1
+    await _login_col().update_one({"_id": key}, {"$set": {"count": count, "firstAt": doc["firstAt"]}}, upsert=True)
+    if count > IP_MAX_REQUESTS:
+        raise HTTPException(429, "Demasiados intentos. Esperá unos minutos.")

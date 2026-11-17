@@ -27,7 +27,7 @@ interface AuthContextValue {
   profileReady: boolean;
   /** Atajo: ¿el usuario puede `action` en `module`? Admin siempre true. */
   can: (moduleId: string, action: string) => boolean;
-  refreshProfile: () => Promise<void>;
+  refreshProfile: () => Promise<boolean>;
   signOut: () => Promise<void>;
 }
 
@@ -38,7 +38,7 @@ const AuthContext = createContext<AuthContextValue>({
   profile: null,
   profileReady: false,
   can: () => false,
-  refreshProfile: async () => {},
+  refreshProfile: async () => false,
   signOut: async () => {},
 });
 
@@ -58,9 +58,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setReady(true);
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
       setSession(next);
       setReady(true);
+      if (event === 'SIGNED_IN') {
+        fetch(`${env.backendUrl}/api/auth/mark-login`, { method: 'POST' }).catch(() => {});
+      }
     });
 
     return () => {
@@ -72,9 +75,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loadProfile = async () => {
     try {
       const res = await fetch(`${env.backendUrl}/api/auth/me`);
-      setProfile(res.ok ? await res.json() : null);
+      if (res.ok) {
+        setProfile(await res.json());
+        return true;
+      }
+      setProfile(null);
+      return false;
     } catch {
       setProfile(null);
+      return false;
     } finally {
       setProfileReady(true);
     }
@@ -93,13 +102,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.email]);
 
-  // 401 del backend (sesión inválida o cuenta desactivada) -> cerrar sesión ya.
+  // 401 del backend: puede ser sesión realmente inválida O una cuenta que un
+  // admin acaba de desactivar (JWT todavía válido). Primero reintentamos el
+  // perfil (`/auth/me` nunca tira 401 por "desactivado", solo por token roto) —
+  // si YA ahí falla, recién ahí cerramos sesión.
   useEffect(() => {
-    const onUnauthorized = () => {
-      supabase.auth.signOut();
+    const onUnauthorized = async () => {
+      const ok = await loadProfile();
+      if (!ok) supabase.auth.signOut();
     };
     window.addEventListener(UNAUTHORIZED_EVENT, onUnauthorized);
     return () => window.removeEventListener(UNAUTHORIZED_EVENT, onUnauthorized);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const can = (moduleId: string, action: string) => {

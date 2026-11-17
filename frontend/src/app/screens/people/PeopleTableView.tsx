@@ -5,6 +5,7 @@ import { Badge, Button, DataTable, type DataTableColumn } from '@vera/ui';
 import { peopleService } from '@vera/services';
 import { PERSON_ROLE_LABELS, type PeopleTableParams, type PersonTableRow } from '@vera/types';
 import { usePeopleFacets, usePeopleTable } from '@app/hooks/usePeople';
+import { downloadWithAuth } from '@app/lib/downloadWithAuth';
 import { PeopleFilters } from './PeopleFilters';
 
 const PAGE_SIZE = 25;
@@ -180,12 +181,7 @@ export const PeopleTableView = ({ query }: PeopleTableViewProps) => {
   const doExport = (format: 'csv' | 'xlsx') => {
     const ids = selected.size > 0 ? Array.from(selected) : undefined;
     const url = peopleService.exportUrl(format, params, cols, ids);
-    const a = document.createElement('a');
-    a.href = url;
-    a.rel = 'noopener';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    downloadWithAuth(url, `personas.${format}`).catch((e) => window.alert((e as Error).message));
   };
 
   const clearFilters = () => {

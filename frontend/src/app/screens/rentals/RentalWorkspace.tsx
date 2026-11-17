@@ -19,15 +19,12 @@ import { MoneyInput } from './MoneyInput';
 import { MlRentalPublish } from './MlRentalPublish';
 import { RentalLocationField } from './RentalLocationField';
 import { OcupacionPropiedad } from './OcupacionPropiedad';
+import { downloadWithAuth } from '@app/lib/downloadWithAuth';
+import { useAuth } from '@app/auth/AuthProvider';
 import './rentals.css';
 
 const triggerBrowserDownload = (url: string) => {
-  const a = document.createElement('a');
-  a.href = url;
-  a.rel = 'noopener';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  downloadWithAuth(url).catch((e) => window.alert((e as Error).message));
 };
 
 const empty: Partial<RentalProperty> = {
@@ -39,6 +36,7 @@ const empty: Partial<RentalProperty> = {
 export const RentalWorkspace = () => {
   const { id } = useParams();
   const nav = useNavigate();
+  const { can } = useAuth();
   const isNew = !id || id === 'nueva';
   const [f, setF] = useState<Partial<RentalProperty>>(empty);
   const [pid, setPid] = useState<string | null>(isNew ? null : (id as string));
@@ -235,8 +233,8 @@ export const RentalWorkspace = () => {
       <header className="rt__head">
         <h2 className="rt__title">{isNew ? 'Nueva propiedad' : <>{f.codigo && <span className="rt-ws__code">{f.codigo}</span>}{f.titulo}</>}</h2>
         <div className="rt__head-actions">
-          {!isNew && <Button variant="ghost" size="sm" onClick={removeProp} data-testid="rt-delete-prop"><Trash2 size={14} /> Eliminar</Button>}
-          {pid && (
+          {!isNew && can('alquileres', 'borrar') && <Button variant="ghost" size="sm" onClick={removeProp} data-testid="rt-delete-prop"><Trash2 size={14} /> Eliminar</Button>}
+          {pid && can('alquileres', 'exportar') && (
             <Button variant="secondary" size="md" onClick={exportToVentas} disabled={exporting} data-testid="rt-export-ventas">
               <ArrowRightLeft size={16} /> {exporting ? 'Duplicando…' : 'Duplicar a Ventas'}
             </Button>

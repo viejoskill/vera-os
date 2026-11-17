@@ -17,6 +17,7 @@ import { RentalBotInbox } from './RentalBotInbox';
 import { DigestSummaryCard } from './DigestSummaryCard';
 import { OcupacionGeneral } from './OcupacionGeneral';
 import { AudioWidget } from '@app/workspace/widgets';
+import { useAuth } from '@app/auth/AuthProvider';
 import './rentals.css';
 
 const Badge = ({ reserva }: { reserva: Reservation }) => {
@@ -26,6 +27,7 @@ const Badge = ({ reserva }: { reserva: Reservation }) => {
 
 export const AlquileresScreen = () => {
   const nav = useNavigate();
+  const { can } = useAuth();
   const [tab, setTab] = useState<'props' | 'res' | 'bot'>(() => (new URLSearchParams(window.location.search).get('tab') === 'bot' ? 'bot' : 'props'));
   const [props, setProps] = useState<RentalProperty[]>([]);
   const [res, setRes] = useState<Reservation[]>([]);
@@ -273,7 +275,7 @@ export const AlquileresScreen = () => {
                     {r.estado === 'finalizada' && (
                       <button type="button" className="rt-mini" onClick={() => reabrirReserva(r.id)} data-testid={`rt-reabrir-${r.id}`}>Reabrir</button>
                     )}
-                    {(r.estado === 'cancelada' || r.estado === 'finalizada') && (
+                    {(r.estado === 'cancelada' || r.estado === 'finalizada') && can('alquileres', 'borrar') && (
                       <button type="button" className="rt-mini rt-mini--del" onClick={() => removeReserva(r.id)} data-testid={`rt-delres-${r.id}`}><Trash2 size={14} /> Eliminar</button>
                     )}
                   </div>

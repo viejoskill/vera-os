@@ -36,6 +36,9 @@ export const UsersTab = ({ currentEmail }: { currentEmail: string }) => {
   }, [load]);
 
   const toggleActive = async (user: UserRow) => {
+    if (user.active && !window.confirm(`¿Desactivar a ${user.name || user.email}? No va a poder ingresar hasta que lo reactives.`)) {
+      return;
+    }
     setBusy(user.email);
     try {
       if (user.active) await usersApi.deactivate(user.email);

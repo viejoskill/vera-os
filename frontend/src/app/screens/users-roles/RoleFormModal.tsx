@@ -13,7 +13,7 @@ const ACTIONS: { id: string; label: string }[] = [
   { id: 'exportar', label: 'Exportar' },
 ];
 
-const MODULES = navRoutes.map((r) => ({ id: r.id, label: r.label }));
+const MODULES = navRoutes.filter((r) => r.id !== 'equipo').map((r) => ({ id: r.id, label: r.label }));
 
 export const RoleFormModal = ({
   open,

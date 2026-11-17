@@ -64,10 +64,21 @@ def test_all_modules_have_all_five_actions_available():
         ("POST", "/api/rentals/payment-webhook", "PUBLIC"),
         ("GET", "/api/ml/callback", "PUBLIC"),
         ("POST", "/api/analytics/track", "PUBLIC"),
+        ("GET", "/api/rentals/settings", "PUBLIC"),
+        ("GET", "/api/properties/{property_id}/share", "PUBLIC"),
+        ("GET", "/api/rentals/reservations/{rid}/recibo-sena", "PUBLIC"),
+        ("GET", "/api/rentals/reservations/{rid}/documento/reserva", "PUBLIC"),
+        ("GET", "/api/rentals/reservations/{rid}/documento/contrato", "PUBLIC"),
+        ("GET", "/api/rentals/reservations/{rid}/comprobante", "PUBLIC"),
     ],
 )
 def test_public_exceptions_stay_public(method, path, expected):
     assert _resolve(method, path) == expected
+
+
+def test_put_settings_stays_protected_while_get_is_public():
+    assert _resolve("GET", "/api/rentals/settings") == "PUBLIC"
+    assert _resolve("PUT", "/api/rentals/settings") == ("alquileres", None)
 
 
 @pytest.mark.parametrize(

@@ -7,12 +7,21 @@ porque los permisos se recalculan en cada request (ver `authz.current_access`).
 """
 from __future__ import annotations
 
+import re
+import unicodedata
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from authz import ACTIONS, ADMIN_ROLE_ID, MODULES, access_col, audit, now_iso, require_admin, roles_col
 
 router = APIRouter(prefix="/roles", tags=["roles"], dependencies=[Depends(require_admin())])
+
+
+def _slugify(name: str) -> str:
+    ascii_name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")
+    slug = re.sub(r"[^a-z0-9]+", "-", ascii_name.lower()).strip("-")
+    return slug or "rol"
 
 
 class RoleBody(BaseModel):
@@ -54,7 +63,7 @@ async def list_roles():
 @router.post("", status_code=201)
 async def create_role(body: RoleBody, access: dict = Depends(require_admin())):
     _validate_permissions(body.permissions)
-    role_id = body.name.strip().lower().replace(" ", "-")
+    role_id = _slugify(body.name)
     if not role_id:
         raise HTTPException(400, "Nombre inválido")
     if await roles_col().find_one({"_id": role_id}):
@@ -91,10 +100,10 @@ async def duplicate_role(role_id: str, access: dict = Depends(require_admin())):
     if not doc:
         raise HTTPException(404, "Rol no encontrado")
     base_name = f"{doc['name']} (copia)"
-    new_id = base_name.strip().lower().replace(" ", "-")
+    new_id = _slugify(base_name)
     suffix = 2
     while await roles_col().find_one({"_id": new_id}):
-        new_id = f"{base_name.strip().lower().replace(' ', '-')}-{suffix}"
+        new_id = f"{_slugify(base_name)}-{suffix}"
         suffix += 1
     now = now_iso()
     new_doc = {

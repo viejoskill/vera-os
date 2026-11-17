@@ -51,6 +51,10 @@ export const LoginScreen = () => {
     const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
     setSubmitting(false);
     if (error) {
+      if ((error as { code?: string }).code === 'user_banned') {
+        setMessage('Esta cuenta fue desactivada. Pedile a un administrador que te reactive el acceso.');
+        return;
+      }
       fetch(`${env.backendUrl}/api/auth/login-failed`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

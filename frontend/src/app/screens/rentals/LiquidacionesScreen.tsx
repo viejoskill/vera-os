@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Calculator, Download, ArrowLeft, Plus, Trash2, Users, CheckCircle2, Paperclip, AlertTriangle } from 'lucide-react';
 import { Button } from '@vera/ui';
 import { api, fmtMoney, fmtDate, hoyAR, TIPO_MOV, METODO_PAGO, type RentalProperty, type Reservation, type LiquidacionReserva, type LiquidacionPendiente } from './api';
+import { downloadWithAuth } from '@app/lib/downloadWithAuth';
+import { useAuth } from '@app/auth/AuthProvider';
 import './rentals.css';
 
 const ESTADO_BADGE: Record<string, { label: string; cls: string }> = {
@@ -11,6 +13,7 @@ const ESTADO_BADGE: Record<string, { label: string; cls: string }> = {
 };
 
 export const LiquidacionesScreen = () => {
+  const { can } = useAuth();
   const [props, setProps] = useState<RentalProperty[]>([]);
   const [pid, setPid] = useState('');
   const [reservas, setReservas] = useState<Reservation[]>([]);
@@ -179,7 +182,7 @@ export const LiquidacionesScreen = () => {
               <p>Huésped: <strong>{liq.huesped.nombre || '—'}</strong></p>
               <p className="rt-hint">Estadía {fmtDate(liq.periodo.desde)} → {fmtDate(liq.periodo.hasta)} · {liq.reserva.noches} noches</p>
             </div>
-            <Button variant="secondary" size="sm" onClick={() => window.open(api.liquidacionReservaPdfUrl(liq.reserva.id), '_blank')} data-testid="rt-liq-pdf"><Download size={15} /> Descargar PDF</Button>
+            <Button variant="secondary" size="sm" onClick={() => downloadWithAuth(api.liquidacionReservaPdfUrl(liq.reserva.id), `liquidacion-${liq.reserva.id}.pdf`).catch((e) => window.alert((e as Error).message))} data-testid="rt-liq-pdf"><Download size={15} /> Descargar PDF</Button>
           </div>
 
           <div className="rt-liq__grid">
@@ -210,7 +213,7 @@ export const LiquidacionesScreen = () => {
                   {p.comprobanteId && (
                     <a className="rt-saldo__ic" href={api.comprobanteItemUrl(liq.reserva.id, p.comprobanteId)} target="_blank" rel="noreferrer" title="Ver comprobante" data-testid={`rt-liq-pago-comp-${p.id}`}><Paperclip size={12} /></a>
                   )}
-                  <button type="button" className="rt-saldo__del" onClick={() => borrarPago(p.id)} title="Quitar" data-testid={`rt-liq-pago-del-${p.id}`}><Trash2 size={11} /></button>
+                  <button type="button" className="rt-saldo__del" onClick={() => borrarPago(p.id)} title="Quitar" data-testid={`rt-liq-pago-del-${p.id}`} style={{ display: can('liquidaciones', 'borrar') ? undefined : 'none' }}><Trash2 size={11} /></button>
                 </span>
               ))}
             </div>
@@ -248,7 +251,7 @@ export const LiquidacionesScreen = () => {
                 <span className="rt-mov__tipo">{TIPO_MOV[m.tipo] || m.tipo}</span>
                 <span className="rt-mov__desc">{m.descripcion}</span>
                 <span className="rt-mov__monto">{fmtMoney(m.monto, mon)}</span>
-                <button type="button" className="rt-mov__del" onClick={() => delMov(m.id)} data-testid={`rt-liqdelmov-${m.id}`}><Trash2 size={14} /></button>
+                <button type="button" className="rt-mov__del" onClick={() => delMov(m.id)} data-testid={`rt-liqdelmov-${m.id}`} style={{ display: can('liquidaciones', 'borrar') ? undefined : 'none' }}><Trash2 size={14} /></button>
               </div>
             ))}
             {liq.movimientos.length === 0 && <p className="rt-hint">Sin movimientos cargados. La comisión se genera automática al confirmar; agregá gastos si hace falta.</p>}

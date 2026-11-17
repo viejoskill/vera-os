@@ -12,6 +12,7 @@ import {
   type DocumentParticipant,
 } from './useDocuments';
 import { renderBlocks } from './render';
+import { downloadWithAuth } from '@app/lib/downloadWithAuth';
 
 const DOC_STATUS: Record<string, string> = {
   draft: 'Borrador', generated: 'Generado', shared: 'Compartido', signed: 'Firmado', archived: 'Archivado',
@@ -263,7 +264,7 @@ export const DocumentDetail = () => {
             <div className="vera-detail__action-row">
               <Button
                 variant="secondary"
-                onClick={() => window.open(pdfUrl(d.id), '_blank')}
+                onClick={() => downloadWithAuth(pdfUrl(d.id), `documento-${d.id}.pdf`).catch((e) => window.alert((e as Error).message))}
                 data-testid="action-generate-pdf"
               >
                 <FileText size={16} /> Generar / Descargar PDF

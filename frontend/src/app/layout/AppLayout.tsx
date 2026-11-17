@@ -28,6 +28,10 @@ export const AppLayout = () => {
   }, [profile, location.pathname, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const active = navRoutes.find((r) => location.pathname.startsWith(r.path)) ?? navRoutes[1];
+  // Mientras el redirect de la línea de arriba no se disparó todavía, no
+  // montamos la pantalla restringida (evita que dispare sus propios fetches
+  // y tire 403s en consola antes de que React Router navegue).
+  const canViewActive = Boolean(profile?.isAdmin) || visiblePaths.some((p) => location.pathname.startsWith(p));
 
   const items: SidebarItem[] = navRoutes
     .filter((r) => r.enabled !== false)
@@ -52,7 +56,7 @@ export const AppLayout = () => {
           <h2 className="vera-no-sections__title">Sin secciones asignadas</h2>
           <p className="vera-no-sections__text">
             Tu cuenta todavía no tiene ninguna sección habilitada. Pedile a un administrador
-            que te asigne acceso desde Equipo.
+            que te asigne acceso desde Usuarios y Roles.
           </p>
           <button type="button" className="vera-no-sections__signout" data-testid="no-sections-signout" onClick={signOut}>
             Cerrar sesión
@@ -103,7 +107,7 @@ export const AppLayout = () => {
           </>}
         />
         <main className="vera-shell__content">
-          <Outlet />
+          {canViewActive ? <Outlet /> : null}
         </main>
       </div>
       </AudioPlayerProvider>

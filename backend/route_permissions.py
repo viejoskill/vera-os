@@ -77,6 +77,20 @@ EXPLICIT_OVERRIDES: dict[tuple[str, str], tuple[str, str] | str] = {
     ("GET", "/api/rentals/public/image/{img_id}"): "PUBLIC",
     ("POST", "/api/rentals/payment-webhook"): "PUBLIC",
     ("GET", "/api/rentals/payment/verify"): "PUBLIC",
+    ("GET", "/api/rentals/settings"): "PUBLIC",
+    # ---- routes_properties.py: página pública de share (OG / WhatsApp / redes) ----
+    ("GET", "/api/properties/{property_id}/share"): "PUBLIC",
+    # ---- routes_rentals.py: documentos/recibos que se mandan al huésped por
+    # WhatsApp (abre sin sesión, fuera de VERA OS) — el mismo link lo preview-ea
+    # el admin adentro de un iframe, por eso quedan públicos (como ya eran antes
+    # de esta feature; la "seguridad" es el id de reserva no adivinable, igual
+    # que el resto del flujo de reserva pública) ----
+    ("GET", "/api/rentals/reservations/{rid}/recibo-sena"): "PUBLIC",
+    ("GET", "/api/rentals/reservations/{rid}/saldos/{sid}/recibo"): "PUBLIC",
+    ("GET", "/api/rentals/reservations/{rid}/documento/reserva"): "PUBLIC",
+    ("GET", "/api/rentals/reservations/{rid}/documento/contrato"): "PUBLIC",
+    ("GET", "/api/rentals/reservations/{rid}/comprobante"): "PUBLIC",
+    ("GET", "/api/rentals/reservations/{rid}/comprobantes/{cid}"): "PUBLIC",
     # ---- routes_rentals.py: liquidaciones (vive en el mismo router que alquileres) ----
     ("GET", "/api/rentals/properties/{pid}/movimientos"): ("liquidaciones", "ver"),
     ("POST", "/api/rentals/movimientos"): ("liquidaciones", "crear"),

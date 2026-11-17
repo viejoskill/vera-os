@@ -43,7 +43,7 @@ def _generate_temp_password(length: int = 12) -> str:
 
 async def _find_supabase_user_id(email: str) -> str | None:
     def _list():
-        res = get_supabase().auth.admin.list_users()
+        res = get_supabase().auth.admin.list_users(per_page=1000)
         return getattr(res, "users", res) or []
 
     users = await asyncio.to_thread(_list)

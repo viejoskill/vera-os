@@ -2294,7 +2294,7 @@ p {
   border-radius: var(--vera-radius-md); background: var(--vera-color-surface); margin-bottom: 8px;
   flex-wrap: wrap;
 }
-.vera-team__email { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; }
+.vera-team__email { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; flex-wrap: wrap; row-gap: 6px; }
 .vera-team__badge {
   display: inline-flex; align-items: center; gap: 4px; font-size: var(--vera-font-size-xs);
   color: var(--vera-color-primary); border: 1px solid var(--vera-color-border);
