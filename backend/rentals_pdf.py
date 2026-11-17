@@ -97,8 +97,7 @@ def build_liquidacion_pdf(data: dict) -> bytes:
     h = data.get("huesped") or {}
     if h.get("nombre"):
         story.append(Paragraph("Huésped", st["sec"]))
-        hx = " · ".join(x for x in [h.get("telefono"), (f"DNI {h.get('dni')}" if h.get("dni") else None)] if x)
-        story.append(Paragraph(f"<b>{h.get('nombre')}</b>" + (f"<br/>{hx}" if hx else ""), st["body"]))
+        story.append(Paragraph(f"<b>{h.get('nombre')}</b>", st["body"]))
     story.append(Paragraph("Estadía" if h.get("nombre") else "Período", st["sec"]))
     story.append(Paragraph(f"{_fd(per.get('desde'))} → {_fd(per.get('hasta'))}", st["body"]))
 
