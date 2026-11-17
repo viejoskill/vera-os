@@ -305,17 +305,33 @@ async def record_login_failure(email: str):
     if not doc or (now - datetime.fromisoformat(doc["firstAt"])) > timedelta(minutes=LOGIN_WINDOW_MINUTES):
         doc = {"_id": email, "count": 0, "firstAt": now.isoformat()}
     count = int(doc.get("count", 0)) + 1
-    update = {"count": count, "firstAt": doc["firstAt"]}
+    update = {
+        "count": count, "firstAt": doc["firstAt"],
+        "expiresAt": now + timedelta(minutes=max(LOGIN_WINDOW_MINUTES, LOGIN_LOCK_MINUTES) + 5),
+    }
     if count >= LOGIN_MAX_ATTEMPTS:
         update["lockedUntil"] = (now + timedelta(minutes=LOGIN_LOCK_MINUTES)).isoformat()
     await _login_col().update_one({"_id": email}, {"$set": update}, upsert=True)
 
 
-# Límite por IP para /login-check y /login-failed — sin esto, cualquiera podía
-# bloquear la cuenta de otra persona a propósito posteando su email muchas veces
-# sin siquiera intentar loguearse.
-IP_MAX_REQUESTS = 30
+# Límite por IP, solo sobre intentos FALLIDOS reportados (no sobre cada consulta
+# de /login-check, que se dispara también en logins exitosos y penalizaría a una
+# oficina entera detrás del mismo NAT). Sin esto, cualquiera podía bloquear la
+# cuenta de otra persona a propósito posteando /login-failed muchas veces sin
+# siquiera intentar loguearse.
+IP_MAX_FAILURES = 40
 IP_WINDOW_MINUTES = 5
+
+
+def client_ip_from_request(request) -> str:
+    """Usa el ÚLTIMO salto de X-Forwarded-For (el que agrega nuestro propio
+    ingress, no el que declara el cliente) — el primero es spoofeable."""
+    fwd = request.headers.get("x-forwarded-for")
+    if fwd:
+        hops = [h.strip() for h in fwd.split(",") if h.strip()]
+        if hops:
+            return hops[-1]
+    return request.client.host if request.client else "unknown"
 
 
 async def check_ip_abuse(ip: str) -> None:
@@ -325,6 +341,14 @@ async def check_ip_abuse(ip: str) -> None:
     if not doc or (now - datetime.fromisoformat(doc["firstAt"])) > timedelta(minutes=IP_WINDOW_MINUTES):
         doc = {"_id": key, "count": 0, "firstAt": now.isoformat()}
     count = int(doc.get("count", 0)) + 1
-    await _login_col().update_one({"_id": key}, {"$set": {"count": count, "firstAt": doc["firstAt"]}}, upsert=True)
-    if count > IP_MAX_REQUESTS:
+    await _login_col().update_one(
+        {"_id": key},
+        {"$set": {"count": count, "firstAt": doc["firstAt"], "expiresAt": now + timedelta(minutes=IP_WINDOW_MINUTES + 5)}},
+        upsert=True,
+    )
+    if count > IP_MAX_FAILURES:
         raise HTTPException(429, "Demasiados intentos. Esperá unos minutos.")
+
+
+async def ensure_login_attempts_ttl_index():
+    await _login_col().create_index("expiresAt", expireAfterSeconds=0)

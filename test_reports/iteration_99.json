@@ -1,0 +1,64 @@
+{
+  "summary": "Round 2 of the VERA OS roles/permissions feature. Retested every fix from iteration_98. All fixes work. Backend: 85/85 pytest passed (the new test_roles_permissions_round2.py, test_roles_permissions_e2e.py with its stale secretaria password fixed, and test_authz_permissions.py). Frontend: every requested flow was checked in the browser. Problems found: (1) an unhandled-rejection dev overlay appears when a deactivated user navigates (the 'Cuenta desactivada' screen does render under it), (2) the per-IP login rate limit can be bypassed with a spoofed X-Forwarded-For, (3) POST /auth/mark-login returns 403 for users who still have to change their password, (4) the backend still accepts the 'equipo' module in role permissions, plus a few small UX issues.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/auth/login-check, /api/auth/login-failed", "issue": "check_ip_abuse keys on the FIRST X-Forwarded-For entry, which the client controls. Sending 35 requests with random XFF headers all returned 200, never 429. Anyone can still lock a victim's account by posting /login-failed 5 times. Each spoofed IP also creates an 'ip:*' doc in login_attempts with no TTL, so the collection grows without bound. Fix: use the right-most trusted XFF hop (or the ingress-provided real IP), add a TTL index on login_attempts, and ideally only count failures the server can verify."},
+      {"endpoint": "POST /api/auth/mark-login", "issue": "Uses current_access, so it returns 403 when mustChangePassword=true. This happened during the temp-password login. As a result 'Último ingreso' is not recorded for logins with a temporary password. Add '/api/auth/mark-login' to MUST_CHANGE_PASSWORD_ALLOWLIST, or use current_user_raw."},
+      {"endpoint": "POST/PUT /api/roles", "issue": "The backend still accepts permissions for the 'equipo' module ({equipo:['ver']} returns 201). Only the UI removed it. Reject 'equipo' (and unknown modules/actions) server-side for non-system roles."},
+      {"endpoint": "GET /api/rentals/sale-properties", "issue": "The Secretaria (no 'propiedades' permission) can list sales properties through this alquileres endpoint. This feeds the 'Importar de ventas' modal and may be intended, but it exposes sales-CRM data to a role without the propiedades module. Confirm with the product owner."},
+      {"endpoint": "GET /api/rentals/reservations/{rid}/documento/contrato and similar", "issue": "Guest documents are now fully public by reservation id (returned 200 PDF with no token). Acceptable while rids are unguessable 32-hex UUIDs, but contracts contain guest PII (DNI etc.). Consider short-lived signed tokens in the WhatsApp links later."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "LiquidacionesScreen / rentals api json() helper", "issue": "When the account is deactivated mid-session and the user navigates to Liquidaciones, the 'Cuenta desactivada' screen renders correctly underneath. But two uncaught promise rejections ('No tenés acceso activo a VERA OS' from the rentals json helper, RentalCalendar chunk) trigger the CRA 'Uncaught runtime errors' overlay in the preview. After a reload only the clean screen shows. Catch rejections in the data-loading useEffects (or have json() swallow 401s, since the auth handler already deals with them).", "selector": "rentals api json()", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [
+      {"flow": "Rental ficha (Secretaria)", "issue": "The Mercado Libre card shows the 'Conectar Mercado Libre' CTA to the Secretaria, who has no 'integraciones' permission (the ML status call is probably 403 and the UI falls back to 'not connected'). Hide the ML block or the CTA when can('integraciones','ver') is false.", "affected_selectors": ["Mercado Libre card in RentalWorkspace"]},
+      {"flow": "Temp-password screen", "issue": "While on /cambiar-clave the layout still calls /api/notifications and gets 403 (harmless, but adds console noise). Skip it until mustChangePassword=false.", "affected_selectors": ["notifications bell fetch"]},
+      {"flow": "Usuarios list after 'Resetear clave'", "issue": "After a temp-password reset the user row shows no 'cambio de clave pendiente' indicator (no user-status-{email} element rendered). Consider showing a badge or refreshing the list.", "affected_selectors": ["user-status-{email}"]}
+    ],
+    "design_issues": [
+      {"screen": "Liquidaciones detail", "issues": ["Uses native <input type='date'> (browser default picker) for the pago/movimiento dates instead of the design-system date picker."]}
+    ]
+  },
+  "verified_ok": [
+    "GET /api/rentals/settings with no token returns 200; PUT with no token returns 401",
+    "GET /api/properties/{random}/share with no token returns 200/404, never 401",
+    "With no token, guest docs (documento/reserva, documento/contrato, recibo-sena, comprobante) never return 401: a real rid gave 200 PDF for reserva/contrato, 400 for recibo-sena (no seña), 404 for comprobante; a fake rid gave 404. GET /reservations and POST /comprobantes are still 401",
+    "Backend mustChangePassword: after the admin reset the Secretaria's password in the UI ('Resetear clave' > temp; password shown once), logging in with the temp password redirects to /veraos/cambiar-clave. Direct URLs /alquileres and /liquidaciones stay on /cambiar-clave. The API returns 403 'Tenés que cambiar tu contraseña temporal…' on /rentals/reservations while /auth/me returns 200. After the password change, /change-password-done returns 200 and the user lands on Alquileres",
+    "Deactivation mid-session (two browser contexts, admin confirms the window.confirm): the Secretaria's next navigation and a refresh both show the friendly 'Cuenta desactivada' screen with 'Cerrar sesión'; /auth/me returns 200 with active:false; logging in again shows 'Esta cuenta fue desactivada…'. The account was reactivated afterwards",
+    "Direct URL /veraos/propiedades as Secretaria redirects to /veraos/alquileres with no Propiedades buttons ever rendered, 0 console errors and 0 API 4xx",
+    "Secretaria: rt-delete-prop and rt-export-ventas are absent from the rental ficha; the rt-liqdelmov-* trash is hidden (display:none). Admin control: both ficha buttons and the liqdelmov trash are visible",
+    "Admin: new-property-button and import-legacy-button are visible in Propiedades",
+    "Roles tab: the module matrix no longer contains 'equipo'. 'TEST_Atención al Cliente' (propiedades:ver) was created as id 'test-atencion-al-cliente' with no 500, then deleted",
+    "Protected downloads (admin): Liquidación PDF (55KB), Personas CSV and XLSX, and Documento 'Generar / Descargar PDF' (56KB) all downloaded",
+    "Rate limit: 5 wrong logins, then the 6th shows 'Demasiados intentos fallidos. Probá de nuevo en 15 minuto(s).'",
+    "Admin smoke test: 15 sections (Propiedades, Personas, Documentos, Contabilidad, Estadísticas, Usuarios y Roles, Operaciones, Tasaciones, Llaves, Integraciones, Eventos, Vera Bot, Bot Alquileres, Entrenar Vera, Hoy) load with no 401/403"
+  ],
+  "not_verified": [
+    "rt-delres-* and rt-liq-pago-del-*: no visible instance was found for either user (no reservation with estado finalizada/cancelada rendered a delete button; the inspected liquidación had no registered pagos). The code gating with can() was reviewed and looks correct"
+  ],
+  "test_report_links": ["/app/backend/tests/test_roles_permissions_round2.py", "/app/backend/tests/test_roles_permissions_e2e.py", "/app/backend/tests/test_authz_permissions.py", "/app/test_reports/pytest/pytest_iter99.xml"],
+  "action_items": [
+    "MEDIUM: catch 401/403 rejections in the rentals/liquidaciones data loaders so a deactivated session shows no 'Uncaught runtime errors' overlay",
+    "MEDIUM: make check_ip_abuse use a trusted client IP (not the client-controlled first XFF entry) and add a TTL index on login_attempts",
+    "LOW: allow /api/auth/mark-login while mustChangePassword (add it to the allowlist) so lastLoginAt is recorded",
+    "LOW: reject the 'equipo' module and unknown modules/actions in POST/PUT /api/roles on the backend",
+    "LOW: hide the Mercado Libre 'Conectar' CTA in the rental ficha for users without integraciones permission; skip the /api/notifications fetch on /cambiar-clave",
+    "LOW: show a 'cambio de clave pendiente' badge in the Usuarios list after a temp reset"
+  ],
+  "critical_code_review_comments": [
+    "authz.check_ip_abuse: uses request x-forwarded-for[0], which is spoofable; it also increments on every login-check, including successful logins.",
+    "AuthProvider: mark-login fires on every SIGNED_IN event (supabase-js can also emit it on tab refocus or session recovery), so lastLoginAt may still drift a little.",
+    "LiquidacionesScreen: delete buttons are hidden with style display:none rather than not rendered. This works, but conditional rendering would match RentalWorkspace/AlquileresScreen."
+  ],
+  "updated_files": ["/app/backend/tests/test_roles_permissions_round2.py (new)", "/app/backend/tests/test_roles_permissions_e2e.py (SECRE password updated to vL5OHJ9Ez323; it was stale and made 13 tests skip)"],
+  "success_rate": {"backend": "100% (85/85 pytest)", "frontend": "~92% (all requested flows pass; dev overlay on the deactivation navigation)"},
+  "test_credentials": "Admin qa_admin_roles@vera.test / QaRoles!2026Admin. Secretaria qa.secretaria.roles@vera-qa.com / vL5OHJ9Ez323. Both active, mustChangePassword=false at the end, and the password was restored to the same value after the temp-reset test.",
+  "seed_data_creation": "Temporary roles were created and deleted: test-atencion-al-cliente (UI) plus TEST_ roles from pytest. Only administrador and secretaria remain. login_attempts: my test_rl_* doc was deleted; the 'ip:10.x.x.x' docs from the XFF-spoof probe (about 35) remain and are harmless, but they could not be told apart from real ones.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && python -m pytest tests/test_roles_permissions_round2.py tests/test_roles_permissions_e2e.py tests/test_authz_permissions.py -n 0 -q. test_roles_permissions_round2::test_must_change_password_and_deactivation_flow resets the Secretaria password to a temp one, changes it back to vL5OHJ9Ez323 through the Supabase /auth/v1/user PUT, then deactivates and reactivates her. Usuarios y Roles UI: the Desactivar button uses window.confirm, so attach a dialog accept handler in Playwright. Real rental property with liquidaciones: 6744cf8a907f4a239a7504101c66a2df (A161). Signed document for the PDF test: bc245844-7376-4068-8b9f-914208e0782c."
+}

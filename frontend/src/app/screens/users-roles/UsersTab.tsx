@@ -131,7 +131,10 @@ export const UsersTab = ({ currentEmail }: { currentEmail: string }) => {
       />
       <ResetPasswordModal
         open={Boolean(resetEmail)}
-        onClose={() => setResetEmail(null)}
+        onClose={() => {
+          setResetEmail(null);
+          load();
+        }}
         email={resetEmail ?? ''}
       />
     </div>

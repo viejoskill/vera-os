@@ -1,4 +1,8 @@
 # VERA OS — Product Requirements & Architecture
+## Usuarios, roles y autorización de backend (2026-11-17)
+Sistema completo de usuarios/roles con autorización en el backend (no solo UI), pedido…9517 chars truncated…ltados.
+
+
 
 ## Tercera tanda: fotos de propiedades en la web pública (2026-11-15)
 Disparado por el PSI de producción tras la 2da tanda: Performance 71→87, Accessibility 100, LCP 7.5s→3.4s — lo que más pesaba ahora eran las FOTOS de propiedades (Supabase Storage, originales PNG/JPG en alta, URLs firmadas que vencen y nunca se cachean).

@@ -391,7 +391,7 @@ export const RentalWorkspace = () => {
                 {images.length > 1 && <p className="rt-hint">La primera foto es la portada. Usá las flechas para ordenar.</p>}
               </>
             )}
-            {pid && <MlRentalPublish propertyId={pid} />}
+            {pid && can('integraciones', 'ver') && <MlRentalPublish propertyId={pid} />}
           </section>
         </div>
       )}

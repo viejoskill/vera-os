@@ -15,7 +15,7 @@ SB_URL = os.environ.get("REACT_APP_SUPABASE_URL").rstrip("/")
 SB_ANON = os.environ.get("REACT_APP_SUPABASE_ANON_KEY")
 
 ADMIN = ("qa_admin_roles@vera.test", "QaRoles!2026Admin")
-SECRE = ("qa.secretaria.roles@vera-qa.com", "NuevaClaveSecretaria10")
+SECRE = ("qa.secretaria.roles@vera-qa.com", "vL5OHJ9Ez323")
 
 
 def sb_login(email, password):

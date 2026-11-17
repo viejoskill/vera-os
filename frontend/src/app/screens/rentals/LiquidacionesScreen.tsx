@@ -28,7 +28,7 @@ export const LiquidacionesScreen = () => {
   const [err, setErr] = useState('');
   const skipPidReset = useRef(false);
 
-  useEffect(() => { api.listProperties().then((p) => { setProps(p); if (p[0]) setPid(p[0].id); }); }, []);
+  useEffect(() => { api.listProperties().then((p) => { setProps(p); if (p[0]) setPid(p[0].id); }).catch(() => setProps([])); }, []);
   useEffect(() => { api.liquidacionesPendientes(7).then(setPendientes).catch(() => setPendientes([])); }, []);
   useEffect(() => {
     if (!pid) return;
@@ -213,7 +213,9 @@ export const LiquidacionesScreen = () => {
                   {p.comprobanteId && (
                     <a className="rt-saldo__ic" href={api.comprobanteItemUrl(liq.reserva.id, p.comprobanteId)} target="_blank" rel="noreferrer" title="Ver comprobante" data-testid={`rt-liq-pago-comp-${p.id}`}><Paperclip size={12} /></a>
                   )}
-                  <button type="button" className="rt-saldo__del" onClick={() => borrarPago(p.id)} title="Quitar" data-testid={`rt-liq-pago-del-${p.id}`} style={{ display: can('liquidaciones', 'borrar') ? undefined : 'none' }}><Trash2 size={11} /></button>
+                  {can('liquidaciones', 'borrar') && (
+                    <button type="button" className="rt-saldo__del" onClick={() => borrarPago(p.id)} title="Quitar" data-testid={`rt-liq-pago-del-${p.id}`}><Trash2 size={11} /></button>
+                  )}
                 </span>
               ))}
             </div>
@@ -251,7 +253,9 @@ export const LiquidacionesScreen = () => {
                 <span className="rt-mov__tipo">{TIPO_MOV[m.tipo] || m.tipo}</span>
                 <span className="rt-mov__desc">{m.descripcion}</span>
                 <span className="rt-mov__monto">{fmtMoney(m.monto, mon)}</span>
-                <button type="button" className="rt-mov__del" onClick={() => delMov(m.id)} data-testid={`rt-liqdelmov-${m.id}`} style={{ display: can('liquidaciones', 'borrar') ? undefined : 'none' }}><Trash2 size={14} /></button>
+                {can('liquidaciones', 'borrar') && (
+                  <button type="button" className="rt-mov__del" onClick={() => delMov(m.id)} data-testid={`rt-liqdelmov-${m.id}`}><Trash2 size={14} /></button>
+                )}
               </div>
             ))}
             {liq.movimientos.length === 0 && <p className="rt-hint">Sin movimientos cargados. La comisión se genera automática al confirmar; agregá gastos si hace falta.</p>}

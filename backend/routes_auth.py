@@ -16,6 +16,7 @@ from authz import (
     build_profile,
     check_ip_abuse,
     check_login_lock,
+    client_ip_from_request,
     current_access,
     current_user_raw,
     norm_email,
@@ -26,26 +27,20 @@ from authz import (
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-def _client_ip(request: Request) -> str:
-    fwd = request.headers.get("x-forwarded-for")
-    return (fwd.split(",")[0].strip() if fwd else None) or (request.client.host if request.client else "unknown")
-
-
 class EmailBody(BaseModel):
     email: str
 
 
 @router.post("/login-check")
-async def login_check(body: EmailBody, request: Request):
+async def login_check(body: EmailBody):
     """El frontend consulta esto ANTES de intentar el login contra Supabase."""
-    await check_ip_abuse(_client_ip(request))
     return await check_login_lock(body.email)
 
 
 @router.post("/login-failed")
 async def login_failed(body: EmailBody, request: Request):
     """El frontend reporta acá cada intento fallido, para frenar fuerza bruta."""
-    await check_ip_abuse(_client_ip(request))
+    await check_ip_abuse(client_ip_from_request(request))
     await record_login_failure(body.email)
     return {"ok": True}
 
@@ -64,10 +59,13 @@ async def me(doc: dict | None = Depends(current_user_raw)):
 
 
 @router.post("/mark-login")
-async def mark_login(access: dict = Depends(current_access)):
+async def mark_login(doc: dict | None = Depends(current_user_raw)):
     """El frontend llama esto solo en un SIGNED_IN real (no en cada refresh de
-    token), para que 'Último ingreso' sea eso y no 'última actividad'."""
-    await access_col().update_one({"_id": norm_email(access["email"])}, {"$set": {"lastLoginAt": now_iso()}})
+    token), para que 'Último ingreso' sea eso y no 'última actividad'. Usa
+    `current_user_raw` (no `current_access`) para que funcione también con
+    clave temporal pendiente de cambio."""
+    if doc:
+        await access_col().update_one({"_id": norm_email(doc["email"])}, {"$set": {"lastLoginAt": now_iso()}})
     return {"ok": True}
 
 

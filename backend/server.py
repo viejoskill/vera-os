@@ -41,7 +41,7 @@ import whatsapp_webhook
 import whatsapp_connect
 import routes_contabilidad
 import routes_sitemap
-from authz import migrate_legacy_app_access, seed_roles
+from authz import ensure_login_attempts_ttl_index, migrate_legacy_app_access, seed_roles
 from route_permissions import apply_authorization
 
 app = FastAPI(title="VERA OS API")
@@ -117,3 +117,4 @@ async def _start_bot_scheduler():
 async def _bootstrap_authz():
     await seed_roles()
     await migrate_legacy_app_access()
+    await ensure_login_attempts_ttl_index()

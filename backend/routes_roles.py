@@ -24,6 +24,12 @@ def _slugify(name: str) -> str:
     return slug or "rol"
 
 
+# "equipo" (Usuarios y Roles) queda reservado para el rol Administrador —
+# ese acceso lo da el bypass de `isAdmin`, no la matriz de permisos, así que
+# no tiene sentido (ni es seguro) dejárselo asignar a un rol común.
+ASSIGNABLE_MODULES = [m for m in MODULES if m != "equipo"]
+
+
 class RoleBody(BaseModel):
     name: str
     permissions: dict[str, list[str]]
@@ -31,7 +37,7 @@ class RoleBody(BaseModel):
 
 def _validate_permissions(permissions: dict[str, list[str]]):
     for module, actions in permissions.items():
-        if module not in MODULES:
+        if module not in ASSIGNABLE_MODULES:
             raise HTTPException(400, f"Módulo inexistente: {module}")
         bad = set(actions) - set(ACTIONS)
         if bad:
