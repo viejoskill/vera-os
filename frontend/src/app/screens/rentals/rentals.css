@@ -355,6 +355,10 @@
 .rt-liq__pagochk { margin: 0; white-space: nowrap; }
 .rt-liq__pagopreview { font-size: .85rem; color: var(--vera-color-text-secondary); margin: -6px 0 14px; }
 .rt-liq__pagopreview strong { color: var(--vera-color-primary); }
+.rt-liq__pagopreview--warn { color: #e07575; }
+.rt-liq__pagofield { display: flex; flex-direction: column; gap: 3px; min-width: 200px; }
+.rt-liq__pagofield input[type="number"] { width: 160px; }
+.rt-liq__pagolabel { font-size: .72rem; color: var(--vera-color-text-secondary); }
 
 /* Liquidaciones: recordatorio de reservas con seña cobrada hace >7 días sin liquidar */
 .rt-liq__recordatorio { display: flex; align-items: flex-start; gap: 12px; background: rgba(214,170,40,.1); border: 1px solid rgba(214,170,40,.4); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; color: #e3b93c; }

@@ -64,6 +64,7 @@ export const LiquidacionesScreen = () => {
 
   const agregarPago = async () => {
     if (!sel || !pagoForm.montoBruto || Number(pagoForm.montoBruto) <= 0) { setErr('Ingresá un monto válido para registrar el pago.'); return; }
+    if (pagoPreview?.excedeSaldo) { setErr(`Ese neto (${fmtMoney(pagoPreview.neto, mon)}) supera lo que falta liquidar (${fmtMoney(liq?.saldoLiquidacion || 0, mon)}).`); return; }
     setGuardandoPago(true); setErr(''); setWarn('');
     try {
       const resp = await api.registrarPagoPropietario(sel, Number(pagoForm.montoBruto), pagoForm.descuentaComision, pagoForm.metodo, pagoForm.fecha || hoyAR(), pagoForm.notas, pagoFile);
@@ -100,10 +101,13 @@ export const LiquidacionesScreen = () => {
     const bruto = Number(pagoForm.montoBruto) || 0;
     if (!liq || bruto <= 0) return null;
     const pct = liq.comisionPctEfectivo || 0;
-    if (!pagoForm.descuentaComision) return { bruto, pct: 0, comision: 0, neto: bruto, limitado: false };
+    if (!pagoForm.descuentaComision) {
+      return { bruto, pct: 0, comision: 0, neto: bruto, limitado: false, excedeSaldo: bruto > liq.saldoLiquidacion + 1 };
+    }
     const calculada = Math.round((bruto * pct) / 100);
     const comision = Math.min(calculada, liq.comisionPendiente);
-    return { bruto, pct, comision, neto: bruto - comision, limitado: calculada > liq.comisionPendiente };
+    const neto = bruto - comision;
+    return { bruto, pct, comision, neto, limitado: calculada > liq.comisionPendiente, excedeSaldo: neto > liq.saldoLiquidacion + 1 };
   }, [pagoForm.montoBruto, pagoForm.descuentaComision, liq]);
 
   // Movimientos a mostrar: la comisión cruda se reemplaza por líneas sintéticas (una por
@@ -130,7 +134,7 @@ export const LiquidacionesScreen = () => {
         descripcion: 'Comisión pendiente', monto: liq.comisionPendiente, synthetic: true,
       });
     }
-    return [...base, ...sinteticos].sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+    return [...base, ...sinteticos].sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '')).sort((a, b) => (a.id === 'com-pendiente' ? 1 : 0) - (b.id === 'com-pendiente' ? 1 : 0));
   }, [liq, mon]);
 
   return (
@@ -260,8 +264,8 @@ export const LiquidacionesScreen = () => {
             <div className="rt-saldo__list" data-testid="rt-liq-pagos-lista">
               {liq.pagosPropietario.map((p) => (
                 <span key={p.id} className="rt-saldo__chip" data-testid={`rt-liq-pago-item-${p.id}`}>
-                  {fmtMoney(p.monto, mon)}{p.montoBruto ? ' neto' : ''}
-                  {p.descuentaComision && p.montoBruto ? ` · (bruto ${fmtMoney(p.montoBruto, mon)} − com. ${fmtMoney(p.comisionRetenida || 0, mon)})` : ''}
+                  {fmtMoney(p.monto, mon)}{(p.comisionRetenida || 0) > 0 ? ' neto' : ''}
+                  {p.descuentaComision && (p.comisionRetenida || 0) > 0 ? ` · (bruto ${fmtMoney(p.montoBruto || 0, mon)} − com. ${fmtMoney(p.comisionRetenida || 0, mon)})` : ''}
                   {' · '}{METODO_PAGO[p.metodo] || p.metodo}{p.fecha ? ` · ${fmtDate(p.fecha)}` : ''}{p.notas ? ` · ${p.notas}` : ''}
                   {p.comprobanteId && (
                     <a className="rt-saldo__ic" href={api.comprobanteItemUrl(liq.reserva.id, p.comprobanteId)} target="_blank" rel="noreferrer" title="Ver comprobante" data-testid={`rt-liq-pago-comp-${p.id}`}><Paperclip size={12} /></a>
@@ -278,7 +282,10 @@ export const LiquidacionesScreen = () => {
             <select value={pagoForm.metodo} onChange={(e) => setPagoForm({ ...pagoForm, metodo: e.target.value })} data-testid="rt-liqpago-metodo">
               {Object.entries(METODO_PAGO).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
-            <input type="number" placeholder="Monto cobrado al huésped (bruto)" value={pagoForm.montoBruto} onChange={(e) => setPagoForm({ ...pagoForm, montoBruto: e.target.value })} data-testid="rt-liqpago-monto" />
+            <div className="rt-liq__pagofield">
+              <label htmlFor="rt-liqpago-monto-input" className="rt-liq__pagolabel">Monto cobrado al huésped (bruto)</label>
+              <input id="rt-liqpago-monto-input" type="number" placeholder="Ej: 808500" value={pagoForm.montoBruto} onChange={(e) => setPagoForm({ ...pagoForm, montoBruto: e.target.value })} data-testid="rt-liqpago-monto" />
+            </div>
             <label className="rt-chk rt-liq__pagochk">
               <input type="checkbox" checked={pagoForm.descuentaComision} onChange={(e) => setPagoForm({ ...pagoForm, descuentaComision: e.target.checked })} data-testid="rt-liqpago-descuenta" />
               <span>Descontar comisión ({Number((liq.comisionPctEfectivo || 0).toFixed(2))}%)</span>
@@ -293,11 +300,12 @@ export const LiquidacionesScreen = () => {
             </button>
           </div>
           {pagoPreview && (
-            <p className="rt-liq__pagopreview" data-testid="rt-liq-pago-preview">
+            <p className={`rt-liq__pagopreview${pagoPreview.excedeSaldo ? ' rt-liq__pagopreview--warn' : ''}`} data-testid="rt-liq-pago-preview">
               Bruto {fmtMoney(pagoPreview.bruto, mon)}
               {pagoForm.descuentaComision && <> − Comisión {Number(pagoPreview.pct.toFixed(2))}% {fmtMoney(pagoPreview.comision, mon)}</>}
               {' '}= Neto al propietario <strong>{fmtMoney(pagoPreview.neto, mon)}</strong>
               {pagoPreview.limitado && ' · la comisión se limitará al saldo de comisión pendiente de la reserva'}
+              {pagoPreview.excedeSaldo && ` · este neto supera lo que falta liquidar (${fmtMoney(liq.saldoLiquidacion, mon)}); no se va a poder guardar así`}
             </p>
           )}
 

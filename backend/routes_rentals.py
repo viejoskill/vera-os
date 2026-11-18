@@ -1342,7 +1342,10 @@ async def _liquidacion_reserva(rid: str) -> dict:
     pagos = r.get("pagosPropietario") or []
     comision_total = round(tot["comision"])
     comision_retenida = round(sum(float(p.get("comisionRetenida") or 0) for p in pagos))
-    comision_pendiente = max(comision_total - comision_retenida, 0)
+    # Si la liquidación ya está completamente pagada, no queda comisión "pendiente de
+    # retener" aunque algún pago se haya cargado sin descontar comisión (legado o manual):
+    # esa plata ya no se le va a reclamar al propietario en otro pago futuro.
+    comision_pendiente = 0 if calc["estadoLiquidacion"] == "pagado" else max(comision_total - comision_retenida, 0)
     alquiler_base = float(r.get("montoEstimado") or 0)
     comision_pct_efectivo = round(tot["comision"] / alquiler_base * 100, 2) if alquiler_base > 0 else 0.0
     return {
@@ -1728,8 +1731,8 @@ async def registrar_pago_propietario(
     pct_aplicado = 0.0
     comision_retenida = 0.0
     warning: str | None = None
+    tot, _ = await _movs_y_totales(r)
     if descuentaComision:
-        tot, _ = await _movs_y_totales(r)
         alquiler = float(r.get("montoEstimado") or 0)
         comision_total = tot["comision"]
         pct_aplicado = round(comision_total / alquiler * 100, 2) if alquiler > 0 else 0.0
@@ -1745,6 +1748,13 @@ async def registrar_pago_propietario(
         else:
             comision_retenida = calculada
     neto = bruto - comision_retenida
+    calc = _calc_neto_y_estado(r, tot)
+    if neto > calc["saldoLiquidacion"] + 1:
+        raise HTTPException(
+            400,
+            f"El neto de este pago (${_ars(neto)}) supera el saldo pendiente de la liquidación "
+            f"(${_ars(calc['saldoLiquidacion'])}). Revisá el monto o ajustá los movimientos antes de cargarlo.",
+        )
     comprobante_id = None
     push: dict = {}
     if file is not None and appconfig.supabase_configured():

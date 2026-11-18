@@ -1,4 +1,9 @@
 # VERA OS — Product Requirements & Architecture
+## Retención automática de comisión en pagos al propietario (2026-11-18)
+En Alquileres → Liquidaciones (detalle de una reserva), al cargar un "Pago al propietario…6557 chars truncated…n total (ver `rentals_pdf.py`).
+- Pendiente (opcional, no implementado): editar un pago ya cargado para marcarle "descontar comisión" después de creado.
+
+
 ## Usuarios, roles y autorización de backend (2026-11-17)
 Sistema completo de usuarios/roles con autorización en el backend (no solo UI), pedido…9517 chars truncated…ltados.
 

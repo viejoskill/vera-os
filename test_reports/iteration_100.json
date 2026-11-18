@@ -1,0 +1,41 @@
+{
+  "summary": "Note: the review request reached me truncated, so I inferred the scope from git diff fde8eb4..d7a4fa6. Two features under test: (1) Liquidaciones, owner payment from a gross amount with automatic commission retention: montoBruto/descuentaComision, comisionPctEfectivo, cap at the pending commission with comisionWarning, new comisionRetenida/comisionPendiente fields, synthetic movement rows, live preview; (2) the 'Liquidación al propietario' PDF no longer shows the guest's phone/DNI and now has a gross/commission/net table per payment. Backend: 49/49 passing (8 existing comision_retenida tests, 11 new iter100 edge-case tests, 30 regression tests for owner payments and pending liquidations). Frontend: the full admin E2E flow on /veraos/liquidaciones passed (preview, checkbox toggle, save, chip, sub-totals, cap warning, 'Liquidación completa', synthetic rows have no delete button, Historial tab, PDF download, delete payment reverts). The core feature works. Two logic/UX gaps found: overpayment is accepted silently, and pending commission is inconsistent when payments are recorded without the discount.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/rentals/reservations/{rid}/liquidacion/pagos", "issue": "No overpayment guard. On a reservation with neto 1,325,940, a second payment of gross 1,000,000 was accepted: totalPagadoPropietario 1,517,440, so the owner was overpaid by 191,500. The only warning returned was the commission-cap one, and saldo clamps to 0. A bare gross 900,000 on a 410,000-net reservation was also accepted (810,000 recorded). Suggest a 400 error or an 'excede el saldo' warning when the neto exceeds saldoLiquidacion."},
+      {"endpoint": "GET /api/rentals/reservations/{rid}/liquidacion (+ PDF)", "issue": "comisionPendiente is derived only from pagos[].comisionRetenida. Payments without the discount, and legacy payments (old 'monto' was already net, with no comisionRetenida), leave comisionPendiente = full commission even when estadoLiquidacion='pagado'. Reproduced: paid 1,325,940 with the discount unchecked, giving 'Liquidación completa' plus 'Retenida $0 · Pendiente $291.060', a 'Comisión pendiente $291.060' row, and the same text in the PDF. Suggest comisionPendiente = 0 (or treat it as retained) once the saldo is 0, or infer retention for legacy/non-discount payments."},
+      {"endpoint": "POST .../liquidacion/pagos", "issue": "The commission cap is a non-atomic read-then-$push. In my 6-way parallel test the cap held (90,000 = total), but nothing enforces it under true concurrency. Low risk; consider a conditional update."},
+      {"endpoint": "rentals_pdf.py 'Emitido el' / auto commission movement date", "issue": "Dates use UTC while the default payment date uses _hoy_ar(). After 21:00 AR the PDF shows 'Emitido 18/11' and commission dated 18/11, but the payments are dated 17/11. Pre-existing; use the AR timezone consistently."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Liquidación pago preview", "issue": "The preview warns about the commission cap but not about the net exceeding 'Falta'. The UI lets the user overpay the owner with no warning (see backend minor).", "affected_selectors": ["rt-liq-pago-preview", "rt-liqpago-save"]},
+      {"flow": "Pagos chip", "issue": "The chip label says '$X neto' whenever montoBruto is set, even when descuentaComision=false (nothing was deducted). Show 'neto' only when commission was retained.", "affected_selectors": ["rt-liq-pago-item-{id}"]}
+    ],
+    "design_issues": [
+      {"screen": "Liquidaciones detail / pago form", "issues": ["The gross input placeholder 'Monto cobrado al huésped (bruto)' is truncated to 'Monto cobrado' at 1920px, so the 'bruto' hint is lost. Widen the field or add a label.", "The synthetic 'Comisión pendiente' row has an empty date and sorts first, above the dated rows. Consider sorting it last.", "Still uses native <input type='date'> (reported earlier)."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_rentals_comision_retenida.py", "/app/backend/tests/test_rentals_comision_retenida_iter100.py", "/app/test_reports/pytest/iter100.xml"],
+  "action_items": [
+    "Add an overpayment guard or warning when a payment's neto exceeds saldoLiquidacion (backend + preview)",
+    "Fix comisionPendiente for liquidations fully paid without the discount or via legacy payments (UI cell, synthetic row, PDF line)",
+    "Chip: show 'neto' only if comisionRetenida > 0",
+    "Optional: make the commission cap atomic; use the AR timezone for PDF 'Emitido' and the auto commission date; widen the gross-amount input"
+  ],
+  "critical_code_review_comments": [
+    "routes_rentals.py is 2093 lines; split the liquidaciones/pagos into their own module",
+    "_liquidacion_reserva reads r.get('pagosPropietario') directly, while _calc_neto_y_estado uses _pagos_propietario(r) (legacy compat). They should use the same source",
+    "pct_aplicado = comision_total/montoEstimado: if extras (ingreso movements) carry commission, the % is inflated relative to the base rent. Make sure this is intended"
+  ],
+  "updated_files": ["/app/backend/tests/test_rentals_comision_retenida_iter100.py", "/app/backend/tests/_ui_setup_iter100.py"],
+  "success_rate": {"backend": "100% (49/49) — 2 logic gaps reported as minor", "frontend": "100% of tested flows functional; 2 UX/logic issues"},
+  "test_credentials": "qa_admin_roles@vera.test / QaRoles!2026Admin (from test_credentials.md) — worked",
+  "seed_data_creation": "Created TEST_ properties/reservations (TEST_iter100_*, AAA TEST_UI_iter100); all deleted by id after tests.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run tests with `set -a; . /app/backend/.env; set +a` exported (test_rentals_pago_propietario.py needs MONGO_URL). conftest.py injects the QA admin JWT. _ui_setup_iter100.py setup/cleanup creates a property + confirmed reservation (1,617,000 at 18%) for the UI test of /veraos/liquidaciones."
+}

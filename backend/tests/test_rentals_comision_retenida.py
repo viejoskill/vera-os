@@ -96,31 +96,71 @@ def test_pago_sin_descontar_comision_toma_bruto_como_neto(reserva_1617k):
 
 
 def test_comision_retenida_no_supera_la_comision_total(reserva_1617k):
-    """Dos pagos grandes con descuento: el segundo no puede retener más que el saldo de
-    comisión pendiente, aunque el % calculado sobre su bruto sea mayor. Debe limitarse y
-    avisar con `comisionWarning`."""
+    """Si el % de comisión de la reserva se negocia a la baja (vía 'Ajustar movimientos')
+    DESPUÉS de haber retenido comisión en un primer pago, un segundo pago puede calcular
+    una comisión mayor a la que realmente queda pendiente. Debe limitarse al saldo de
+    comisión pendiente y avisar con `comisionWarning`, sin que la retención total supere
+    nunca la comisión (ya reducida) de la reserva."""
     _, rid = reserva_1617k
     r1 = requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={
-        "montoBruto": "1400000", "descuentaComision": "true", "metodo": "transferencia",
+        "montoBruto": "200000", "descuentaComision": "true", "metodo": "transferencia",
     })
-    assert r1.status_code == 200
+    assert r1.status_code == 200, r1.text
     assert "comisionWarning" not in r1.json()
     liq1 = requests.get(f"{API}/reservations/{rid}/liquidacion").json()
-    assert liq1["comisionRetenida"] == 252000  # 18% de 1.400.000
-    pendiente_tras_1 = liq1["comisionPendiente"]
-    assert pendiente_tras_1 == 291060 - 252000  # 39.060
+    assert liq1["comisionRetenida"] == 36000  # 18% de 200.000
+
+    # Se negocia una comisión más baja (5%) para el resto de la reserva.
+    comision_mid = next(m["id"] for m in liq1["movimientos"] if m["tipo"] == "comision")
+    e = requests.put(f"{API}/movimientos/{comision_mid}", json={"comisionPct": 5})
+    assert e.status_code == 200, e.text
+    liq_mid = requests.get(f"{API}/reservations/{rid}/liquidacion").json()
+    assert liq_mid["comision"] == 80850  # 5% de 1.617.000
+    pendiente_tras_1 = liq_mid["comisionPendiente"]
+    assert pendiente_tras_1 == 80850 - 36000  # 44.850
 
     r2 = requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={
-        "montoBruto": "250000", "descuentaComision": "true", "metodo": "transferencia",
+        "montoBruto": "1000000", "descuentaComision": "true", "metodo": "transferencia",
     })
     assert r2.status_code == 200, r2.text
     assert r2.json().get("comisionWarning")  # se avisó que se limitó la retención
     pago2 = r2.json()["pagosPropietario"][1]
-    assert pago2["comisionRetenida"] == pendiente_tras_1  # limitado al saldo pendiente, no al 18% de 250.000 (45.000)
+    assert pago2["comisionRetenida"] == pendiente_tras_1  # limitado al saldo pendiente, no al 5% de 1.000.000 (50.000)
+    assert pago2["monto"] == 1000000 - pendiente_tras_1  # neto
 
     liq2 = requests.get(f"{API}/reservations/{rid}/liquidacion").json()
-    assert liq2["comisionRetenida"] == 291060  # suma total = comisión de la reserva, nunca más
+    assert liq2["comisionRetenida"] == 80850  # suma total = comisión (ya reducida) de la reserva, nunca más
     assert liq2["comisionPendiente"] == 0
+
+
+def test_pago_no_puede_superar_el_saldo_pendiente(reserva_1617k):
+    """Si el neto de un pago (bruto menos la comisión retenida) supera lo que todavía falta
+    liquidarle al propietario, se rechaza con 400 en vez de aceptar un sobrepago silencioso."""
+    _, rid = reserva_1617k
+    # Neto a liquidar: 1.325.940. Un bruto de 2.000.000 sin descontar comisión da un neto
+    # (2.000.000) muy por encima de eso.
+    r = requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={
+        "montoBruto": "2000000", "descuentaComision": "false", "metodo": "transferencia",
+    })
+    assert r.status_code == 400, r.text
+    assert "saldo pendiente" in r.json()["detail"]
+    # No debe haber quedado registrado ningún pago.
+    liq = requests.get(f"{API}/reservations/{rid}/liquidacion").json()
+    assert liq["pagosPropietario"] == []
+
+
+def test_comision_pendiente_en_cero_si_se_liquida_completo_sin_descontar(reserva_1617k):
+    """Si se liquida el NETO completo sin tildar 'descontar comisión' (p.ej. porque la
+    comisión ya se cobró aparte), la comisión no debe quedar mostrada como 'pendiente' para
+    siempre: la liquidación ya está completa."""
+    _, rid = reserva_1617k
+    r = requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={
+        "montoBruto": "1325940", "descuentaComision": "false", "metodo": "transferencia",
+    })
+    assert r.status_code == 200, r.text
+    liq = requests.get(f"{API}/reservations/{rid}/liquidacion").json()
+    assert liq["estadoLiquidacion"] == "pagado"
+    assert liq["comisionPendiente"] == 0
 
 
 def test_borrar_pago_revierte_comision_retenida(reserva_1617k):

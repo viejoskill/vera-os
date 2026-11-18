@@ -87,11 +87,12 @@ def test_caso_central_180k(res180):
     assert pdf.status_code == 200
     txt = _pdf_text(pdf.content)
     assert "Transferencia" in txt and "Efectivo" in txt and "Liquidación completa" in txt
-    # sobrepago: saldo nunca negativo
-    requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"montoBruto": "5000", "metodo": "cheque"})
+    # sobrepago: se rechaza (la liquidación ya está completa, no se acepta un pago de más)
+    over = requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"montoBruto": "5000", "metodo": "cheque"})
+    assert over.status_code == 400, over.text
     liq = _liq(rid)
     assert liq["saldoLiquidacion"] == 0 and liq["estadoLiquidacion"] == "pagado"
-    assert "Cheque" in _pdf_text(requests.get(f"{API}/reservations/{rid}/liquidacion/pdf").content)
+    assert "Cheque" not in _pdf_text(requests.get(f"{API}/reservations/{rid}/liquidacion/pdf").content)
 
 
 # Borrado puntual + comprobante 404 después
