@@ -1,0 +1,43 @@
+{
+  "summary": "The review request was truncated, so scope was inferred from git diff d7a4fa6..b3bc11e: (1) retroactive commission backfill for legacy owner payments (PUT /liquidacion/pagos/{id} with yaTeniaComisionDescontada, GET /liquidacion/pagos-legado, POST /liquidacion/pagos-legado/aplicar, PagosLegadoPanel 'Revisar pagos anteriores', inline edit of a payment); (2) overpayment guard (400 when neto > saldo) plus preview warning; (3) comisionPendiente=0 once liquidation is fully paid; (4) chip shows 'neto' only if comisionRetenida>0; (5) labeled gross input and 'Comisión pendiente' row sorted last. Backend: 6 main-agent backfill tests + 7 new iter101 edge tests + 40 regression tests: 52/53 after updating 1 outdated iter100 test (test_alquiler_cero_no_rompe expected 200, now intentionally 400 by the new guard). 1 real failure: notes can't be cleared. Frontend E2E as admin on /veraos/liquidaciones: panel list/preview, select+apply (confirm dialog), row disappears, inline edit with yaTenia on partial payment, chip update, overpayment preview + blocked save all work. 1 real bug: edit preview is wrong for fully-paid reservations.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "PUT /api/rentals/reservations/{rid}/liquidacion/pagos/{pago_id}", "issue": "Notes cannot be cleared: sending notas='' is coerced to None by FastAPI Form(None), so `if notas is not None` skips the update and the old note stays (reproduced: 'nota vieja' persisted). The UI always sends notas, so emptying the Notas field in the edit form silently does nothing. Fix: use a sentinel/explicit flag, or treat 'notas' present in the form as an update (e.g. read request.form())."},
+      {"endpoint": "GET /api/rentals/liquidacion/pagos-legado", "issue": "Lists payments from reservations with 0% commission (e.g. A259 TEST_iter94_pagos: bruto=neto, comisión $0). Applying them is a no-op that just flips descuentaComision=true. Consider excluding rows where comisionEstimada == 0."},
+      {"endpoint": "GET /api/rentals/liquidacion/pagos-legado", "issue": "Only reads raw `pagosPropietario`. Reservations still holding the old singular `pagoPropietario` field (migrated lazily only when the liquidation is opened) would not be listed. There are currently 0 in the DB, so this is low risk; consider calling _migrar_pago_legado or _pagos_propietario."},
+      {"endpoint": "GET/PUT legacy endpoints", "issue": "Fecha in PUT is not validated (any string accepted)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "LiquidacionesScreen editPreview (inline edit, 'Este pago ya tenía la comisión descontada')", "issue": "On a FULLY PAID reservation (the main legacy scenario), the preview shows 'Neto $1.325.940 → Bruto $1.325.940 · Comisión 18% $0 · se limitará al saldo…', but the backend actually applies Bruto $1.617.000 / Comisión $291.060 (verified via API and via panel apply). Root cause: editPreview caps with liq.comisionPendiente, which is now forced to 0 when estadoLiquidacion='pagado' (new backend change). Fix: cap with round(liq.comision) − sum(comisionRetenida of the OTHER pagos), mirroring _calc_retroactivo.", "selector": "[data-testid='rt-liqedit-preview']", "priority": "HIGH"}
+    ],
+    "integration_issues": [
+      {"flow": "Inline edit → PagosLegadoPanel count", "issue": "After correcting a legacy payment via the inline edit (pencil), the 'Revisar pagos anteriores (3)' count and list stay stale until page reload. PagosLegadoPanel only reloads on mount or after its own apply. Expose a reload trigger (key/prop) and call it after guardarEdicionPago/agregarPago/borrarPago.", "affected_selectors": ["rt-liq-legado-toggle"]}
+    ],
+    "design_issues": [
+      {"screen": "Liquidaciones", "issues": ["The overpayment error (and other errors) appears in the top-of-page flash, far from the payment form the user is looking at. The inline preview warning helps, but the err text should be near the form.", "The panel success message 'Se corrigieron N pago(s).' uses the yellow warning style (rt-liq__pagowarn). Use a success style.", "The legacy panel lists all properties regardless of the selected property. This is fine as a global tool, but consider grouping or filtering by property when the list is long.", "Still uses native <input type='date'> in the edit form."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_rentals_pago_backfill_iter101.py", "/app/backend/tests/test_rentals_pago_propietario_backfill.py", "/app/backend/tests/test_rentals_comision_retenida_iter100.py", "/app/test_reports/pytest/iter101.xml", "/app/test_reports/pytest/iter101_regr.xml"],
+  "action_items": [
+    "HIGH: Fix the editPreview cap for fully-paid reservations: use comision total − retained by other pagos, not liq.comisionPendiente",
+    "Allow clearing notas in PUT pago (empty string is coerced to None)",
+    "Refresh PagosLegadoPanel after inline edits/payments (stale count)",
+    "Optional: exclude 0%-commission rows from pagos-legado; include unmigrated singular pagoPropietario; validate fecha; success styling for the apply message"
+  ],
+  "critical_code_review_comments": [
+    "The retroactive calc is duplicated 3x in the backend (PUT, pagos-legado, aplicar all recompute tot/alquiler/pct/otros) and once in the frontend with a different cap source. Extract a helper and expose the backend-computed preview (e.g. reuse GET pagos-legado data) to avoid divergence like the bug above",
+    "routes_rentals.py keeps growing (>2200 lines). Split liquidaciones/pagos into routes_liquidaciones.py",
+    "aplicar_pagos_legado: body.items is list[dict] with no Pydantic item model. Use a typed model {reservaId:str, pagoId:str}",
+    "PUT/aplicar are read-then-update without guarding descuentaComision in the update filter. A concurrent double-apply could both pass the check; add 'pagosPropietario': {$elemMatch: {id, descuentaComision: {$ne: true}}} to the filter"
+  ],
+  "updated_files": ["/app/backend/tests/test_rentals_pago_backfill_iter101.py", "/app/backend/tests/_ui_setup_iter101.py", "/app/backend/tests/test_rentals_comision_retenida_iter100.py (test_alquiler_cero_no_rompe now expects 400 from the new overpayment guard)"],
+  "success_rate": {"backend": "98% (52/53; 1 minor bug: notes clearing)", "frontend": "~90% of flows correct; 1 HIGH preview bug, 1 stale-count issue"},
+  "test_credentials": "qa_admin_roles@vera.test / QaRoles!2026Admin worked. The Secretaria QA password in test_credentials.md (IJgnZ*prS5WO) no longer works (changed by a previous reset test), so secretaria permission checks for the new routes were NOT executed.",
+  "seed_data_creation": "Created TEST_iter101_* and 'AAA TEST_UI_iter101' properties/reservations with legacy payments inserted directly into Mongo; all deleted by id. The single pre-existing legacy payment in the DB (A259 TEST_iter94_pagos, 0% commission) was not touched.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Export env first: `set -a; . /app/backend/.env; . /app/frontend/.env; set +a`, then run with -n 0. Use `_ui_setup_iter101.py setup` (property + 2 confirmed reservations with seña 808.500 and legacy payments of 662.970 partial and 1.325.940 full) and `cleanup pid r1 r2`. Reservations need a seña to appear in the liquidables list. Retest the edit preview on the fully-paid reservation (Historial tab)."
+}

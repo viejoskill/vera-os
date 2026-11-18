@@ -1,4 +1,21 @@
 # VERA OS — Product Requirements & Architecture
+## Corrección retroactiva de comisión en pagos legados (2026-11-18)
+Pagos al propietario cargados ANTES de la feature de retención automática (arriba) quedaron con `monto = neto`, sin `montoBruto`/`comisionRetenida` — aunque muchos sí tenían la comisión descontada a mano por quien cargó el pago. Se agregó una corrección manual (no automática, porque no se puede asumir que TODOS los legados tenían comisión descontada).
+
+**Backend** (`routes_rentals.py`): `_calc_retroactivo(pago, otros_pagos, comision_total, pct)` despeja `bruto = neto/(1-pct%)` y tapea la comisión retenida a lo que falte de comisión total de la reserva (considerando lo ya retenido en los DEMÁS pagos) — nunca se supera la comisión total.
+- `PUT /reservations/{rid}/liquidacion/pagos/{pago_id}`: edita fecha/método/notas/comprobante de un pago, y con `yaTeniaComisionDescontada=true` aplica la corrección a ESE pago (rechaza con 400 si ya la tenía). Guard `$elemMatch` contra doble-aplicación concurrente.
+- `GET /liquidacion/pagos-legado`: lista TODOS los pagos legados (sin `descuentaComision`/`montoBruto`) de todas las reservas, con el bruto/comisión que resultaría — excluye reservas con comisión 0% (nada para corregir).
+- `POST /liquidacion/pagos-legado/aplicar`: aplica la corrección SOLO a los `{reservaId, pagoId}` explícitamente elegidos (items inválidos/ya corregidos se saltan, no rompen el batch).
+- Auditoría (`authz.audit`) en ambos endpoints: actor, pagoId, before/after.
+- Fix de bug (clearing de notas): `str | None = Form(None)` coincide "" con "campo omitido" (confirmado con TestClient) — se agregó `clearNotas: bool = Form(False)` explícito; el front ahora manda `clearNotas=true` en vez de `notas=""` para vaciar el campo.
+
+**Frontend** (`LiquidacionesScreen.tsx`, `PagosLegadoPanel.tsx` nuevo): ícono de lápiz en cada chip de pago → edición inline (fecha/método/notas/comprobante + checkbox "Este pago ya tenía la comisión descontada" con preview en vivo "Neto $X → Bruto $Y · Comisión Z% $W", tope idéntico al backend). Botón global "Revisar pagos anteriores (N)" (todas las propiedades) con checkboxes por fila y aplicación en lote de solo lo tildado; se refresca solo tras una corrección inline. Estilos reutilizan las clases oscuras existentes (`.rt-liq__pago*`).
+
+**Testing**: 60 tests backend (`test_rentals_pago_propietario_backfill.py`, `test_rentals_pago_backfill_iter101.py` + regresión de comisión/pagos existente) OK. Testing agent (iter101) encontró y se corrigió: 1 bug HIGH (preview de edición mal tapeada en reserva 100% pagada — usaba `comisionPendiente` que se fuerza a 0 cuando ya está pagada, ahora usa comisión total − retenida en otros pagos), bug de notas (arriba), panel desactualizado tras editar inline (ahora recibe `refreshKey`), ruido de reservas 0% comisión en la lista (excluidas). Validado manualmente en pantalla con el caso real del usuario ($662.970 neto → $808.500 bruto, comisión 18% $145.530).
+
+**No implementado / fuera de alcance**: refactor de `routes_rentals.py` (>2300 líneas, señalado por code review), validación de formato de `fecha` en el PUT, unificar el cálculo retroactivo duplicado backend×3/frontend×1 en una sola fuente.
+
+
 ## Retención automática de comisión en pagos al propietario (2026-11-18)
 En Alquileres → Liquidaciones (detalle de una reserva), al cargar un "Pago al propietario…6557 chars truncated…n total (ver `rentals_pdf.py`).
 - Pendiente (opcional, no implementado): editar un pago ya cargado para marcarle "descontar comisión" después de creado.

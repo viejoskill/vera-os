@@ -101,6 +101,7 @@ export const LiquidacionesScreen = () => {
     setErr(''); setWarn('');
   };
   const cerrarEdicionPago = () => { setEditingPagoId(null); setEditFile(null); };
+  const [legadoRefreshKey, setLegadoRefreshKey] = useState(0);
   const guardarEdicionPago = async () => {
     if (!sel || !editingPagoId) return;
     setEditSaving(true); setErr(''); setWarn('');
@@ -112,6 +113,7 @@ export const LiquidacionesScreen = () => {
       if (resp.comisionWarning) setWarn(resp.comisionWarning);
       await recargar();
       cerrarEdicionPago();
+      if (editForm.yaTenia) setLegadoRefreshKey((k) => k + 1);
     } catch (e) { setErr((e as Error).message); }
     setEditSaving(false);
   };
@@ -146,9 +148,15 @@ export const LiquidacionesScreen = () => {
     const neto = pagoEnEdicion.monto;
     const brutoCalc = pct < 100 ? Math.round(neto / (1 - pct / 100)) : neto;
     const comisionCalc = brutoCalc - neto;
-    const comision = Math.min(comisionCalc, liq.comisionPendiente);
-    return { neto, bruto: neto + comision, comision, pct, limitado: comisionCalc > liq.comisionPendiente };
-  }, [liq, pagoEnEdicion, editForm.yaTenia]);
+    // Ojo: liq.comisionPendiente se fuerza a 0 cuando la liquidación ya está pagada (no se
+    // le va a reclamar más al propietario), pero acá necesitamos el mismo tope que usa el
+    // backend al aplicar la corrección: comisión total de la reserva menos lo ya retenido
+    // en los DEMÁS pagos (no en este, que todavía no tiene comisión registrada).
+    const retenidaOtros = liq.pagosPropietario.filter((p) => p.id !== editingPagoId).reduce((acc, p) => acc + (p.comisionRetenida || 0), 0);
+    const pendiente = Math.max(Math.round(liq.comision) - Math.round(retenidaOtros), 0);
+    const comision = Math.min(comisionCalc, pendiente);
+    return { neto, bruto: neto + comision, comision, pct, limitado: comisionCalc > pendiente };
+  }, [liq, pagoEnEdicion, editForm.yaTenia, editingPagoId]);
 
   // Movimientos a mostrar: la comisión cruda se reemplaza por líneas sintéticas (una por
   // pago que retuvo comisión + el saldo pendiente), para que quede clara la relación entre
@@ -215,7 +223,7 @@ export const LiquidacionesScreen = () => {
         </select>
       </div>
       {err && <p className="rt__flash" style={{ color: '#e07575' }}>{err}</p>}
-      {can('liquidaciones', 'editar') && <PagosLegadoPanel onApplied={recargar} />}
+      {can('liquidaciones', 'editar') && <PagosLegadoPanel onApplied={recargar} refreshKey={legadoRefreshKey} />}
 
       {!liq && (
         <>

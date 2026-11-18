@@ -153,8 +153,9 @@ def test_alquiler_cero_no_rompe():
         assert liq.json()["comisionPctEfectivo"] == 0
         r = requests.post(f"{API}/reservations/{rid}/liquidacion/pagos",
                           data={"montoBruto": "5000", "descuentaComision": "true", "metodo": "efectivo"})
-        assert r.status_code == 200, r.text
-        assert r.json()["pagosPropietario"][0]["comisionRetenida"] == 0
+        # iter101: overpayment guard now rejects any payment when saldo is 0 (alquiler 0)
+        assert r.status_code == 400, r.text
+        assert "supera el saldo" in r.json()["detail"]
         assert requests.get(f"{API}/reservations/{rid}/liquidacion/pdf").status_code == 200
     finally:
         requests.delete(f"{API}/reservations/{rid}")

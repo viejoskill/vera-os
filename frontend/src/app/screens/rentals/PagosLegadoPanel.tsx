@@ -7,20 +7,21 @@ import { api, fmtMoney, fmtDate, type PagoLegadoItem } from './api';
  * quedaron con monto = neto, sin comisión registrada, aunque muchos sí la tenían
  * descontada a mano por quien cargó el pago. Esta herramienta los lista para revisar
  * uno por uno (con la corrección que resultaría) y aplicar solo los que correspondan. */
-export const PagosLegadoPanel = ({ onApplied }: { onApplied: () => void }) => {
+export const PagosLegadoPanel = ({ onApplied, refreshKey }: { onApplied: () => void; refreshKey?: number }) => {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<PagoLegadoItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [applying, setApplying] = useState(false);
   const [msg, setMsg] = useState('');
+  const [msgIsError, setMsgIsError] = useState(false);
 
   const cargar = () => {
     setLoading(true);
     api.pagosLegado().then((r) => { setItems(r); setSel(new Set()); }).catch(() => setItems([])).finally(() => setLoading(false));
   };
 
-  useEffect(() => { cargar(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { cargar(); }, [refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggle = (key: string) => {
     const next = new Set(sel);
@@ -32,13 +33,13 @@ export const PagosLegadoPanel = ({ onApplied }: { onApplied: () => void }) => {
     const elegidos = items.filter((i) => sel.has(`${i.reservaId}:${i.pagoId}`)).map((i) => ({ reservaId: i.reservaId, pagoId: i.pagoId }));
     if (elegidos.length === 0) return;
     if (!window.confirm(`¿Aplicar la corrección de comisión a ${elegidos.length} pago(s) seleccionado(s)? Esta acción queda registrada en el historial.`)) return;
-    setApplying(true); setMsg('');
+    setApplying(true); setMsg(''); setMsgIsError(false);
     try {
       const r = await api.aplicarPagosLegado(elegidos);
       setMsg(`Se corrigieron ${r.aplicados.length} pago(s).${r.avisos.length ? ' ' + r.avisos.join(' ') : ''}`);
       cargar();
       onApplied();
-    } catch (e) { setMsg((e as Error).message); }
+    } catch (e) { setMsg((e as Error).message); setMsgIsError(true); }
     setApplying(false);
   };
 
@@ -59,7 +60,7 @@ export const PagosLegadoPanel = ({ onApplied }: { onApplied: () => void }) => {
       <p className="rt-hint">Pagos al propietario cargados antes de que la app calculara sola la comisión. Tildá los que ya tenían la comisión descontada y aplicá la corrección — los demás quedan sin tocar.</p>
       {loading && <p className="rt-hint">Cargando…</p>}
       {!loading && items.length === 0 && <p className="rt-hint">No hay pagos pendientes de revisión.</p>}
-      {msg && <p className="rt-liq__pagowarn" data-testid="rt-liq-legado-msg">{msg}</p>}
+      {msg && <p className={msgIsError ? 'rt-liq__pagowarn' : 'rt-liq__pagook-mini'} data-testid="rt-liq-legado-msg">{msg}</p>}
       {items.map((i) => {
         const key = `${i.reservaId}:${i.pagoId}`;
         return (

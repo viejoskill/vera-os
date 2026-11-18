@@ -1819,6 +1819,7 @@ async def editar_pago_propietario(
     fecha: str | None = Form(None),
     metodo: str | None = Form(None),
     notas: str | None = Form(None),
+    clearNotas: bool = Form(False),
     yaTeniaComisionDescontada: bool = Form(False),
     file: UploadFile | None = File(None),
     access: dict = Depends(current_access),
@@ -1844,7 +1845,9 @@ async def editar_pago_propietario(
             raise HTTPException(400, "Método de pago inválido, usá transferencia, efectivo, cheque u otro.")
         updates["pagosPropietario.$.metodo"] = metodo
     if notas is not None:
-        updates["pagosPropietario.$.notas"] = notas or None
+        updates["pagosPropietario.$.notas"] = notas
+    elif clearNotas:
+        updates["pagosPropietario.$.notas"] = None
     if yaTeniaComisionDescontada:
         if pago.get("descuentaComision"):
             raise HTTPException(400, "Este pago ya tiene la comisión descontada registrada.")
@@ -1872,7 +1875,14 @@ async def editar_pago_propietario(
                                                    "nombre": file.filename or "comprobante liquidación", "fecha": _now()}}
     if not mongo_update:
         raise HTTPException(400, "No hay cambios para guardar.")
-    await _res().update_one({"_id": rid, "pagosPropietario.id": pago_id}, mongo_update)
+    filtro: dict = {"_id": rid}
+    if yaTeniaComisionDescontada:
+        filtro["pagosPropietario"] = {"$elemMatch": {"id": pago_id, "descuentaComision": {"$ne": True}}}
+    else:
+        filtro["pagosPropietario.id"] = pago_id
+    res = await _res().update_one(filtro, mongo_update)
+    if res.matched_count == 0:
+        raise HTTPException(400, "Este pago ya tiene la comisión descontada registrada.")
     after_doc = await _res().find_one({"_id": rid})
     after_pago = next(p for p in (after_doc.get("pagosPropietario") or []) if p.get("id") == pago_id)
     after = {k: after_pago.get(k) for k in ("fecha", "metodo", "notas", "montoBruto", "comisionRetenida", "descuentaComision")}
@@ -1899,6 +1909,8 @@ async def pagos_legado():
         tot, _ = await _movs_y_totales(r)
         alquiler = float(r.get("montoEstimado") or 0)
         pct = round(tot["comision"] / alquiler * 100, 2) if alquiler > 0 else 0.0
+        if pct <= 0:
+            continue  # sin comisión en la reserva, no hay nada para corregir
         prop = await _get_prop(r.get("propertyId")) or {}
         for p in legados:
             otros = [x for x in pagos if x.get("id") != p.get("id")]
@@ -1917,8 +1929,13 @@ async def pagos_legado():
     return out
 
 
+class PagoLegadoRef(BaseModel):
+    reservaId: str | None = None
+    pagoId: str | None = None
+
+
 class AplicarPagosLegadoBody(BaseModel):
-    items: list[dict]
+    items: list[PagoLegadoRef]
 
 
 @router.post("/liquidacion/pagos-legado/aplicar")
@@ -1927,7 +1944,7 @@ async def aplicar_pagos_legado(body: AplicarPagosLegadoBody, access: dict = Depe
     elegidos explícitamente (no se corrige nada sin selección)."""
     aplicados, avisos = [], []
     for item in body.items:
-        rid, pago_id = item.get("reservaId"), item.get("pagoId")
+        rid, pago_id = item.reservaId, item.pagoId
         if not rid or not pago_id:
             continue
         r = await _res().find_one({"_id": rid})
@@ -1942,12 +1959,17 @@ async def aplicar_pagos_legado(body: AplicarPagosLegadoBody, access: dict = Depe
         pct = round(tot["comision"] / alquiler * 100, 2) if alquiler > 0 else 0.0
         otros = [p for p in pagos if p.get("id") != pago_id]
         actualizado, warning = _calc_retroactivo(pago, otros, tot["comision"], pct)
-        await _res().update_one({"_id": rid, "pagosPropietario.id": pago_id}, {"$set": {
-            "pagosPropietario.$.montoBruto": actualizado["montoBruto"],
-            "pagosPropietario.$.comisionPct": actualizado["comisionPct"],
-            "pagosPropietario.$.comisionRetenida": actualizado["comisionRetenida"],
-            "pagosPropietario.$.descuentaComision": True,
-        }})
+        res = await _res().update_one(
+            {"_id": rid, "pagosPropietario": {"$elemMatch": {"id": pago_id, "descuentaComision": {"$ne": True}}}},
+            {"$set": {
+                "pagosPropietario.$.montoBruto": actualizado["montoBruto"],
+                "pagosPropietario.$.comisionPct": actualizado["comisionPct"],
+                "pagosPropietario.$.comisionRetenida": actualizado["comisionRetenida"],
+                "pagosPropietario.$.descuentaComision": True,
+            }},
+        )
+        if res.modified_count == 0:
+            continue  # ya se había corregido justo antes (doble aplicación concurrente)
         await audit(access["email"], "pago_propietario.backfill_comision", "reservation", rid, {
             "pagoId": pago_id, "montoBruto": actualizado["montoBruto"], "comisionRetenida": actualizado["comisionRetenida"],
         })

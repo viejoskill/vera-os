@@ -213,7 +213,10 @@ export const api = {
     const fd = new FormData();
     if (cambios.fecha) fd.append('fecha', cambios.fecha);
     if (cambios.metodo) fd.append('metodo', cambios.metodo);
-    if (cambios.notas !== undefined) fd.append('notas', cambios.notas);
+    if (cambios.notas !== undefined) {
+      if (cambios.notas) fd.append('notas', cambios.notas);
+      else fd.append('clearNotas', 'true');
+    }
     if (cambios.yaTeniaComisionDescontada) fd.append('yaTeniaComisionDescontada', 'true');
     if (cambios.file) fd.append('file', cambios.file);
     return fetch(`${RENTALS_API}/reservations/${rid}/liquidacion/pagos/${pagoId}`, { method: 'PUT', body: fd }).then(json);
