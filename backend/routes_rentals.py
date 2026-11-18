@@ -16,13 +16,14 @@ from datetime import date, datetime, timedelta, timezone
 from uuid import uuid4
 
 import httpx
-from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import Response
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReturnDocument
 from pydantic import BaseModel, Field
 
 import config as appconfig
+from authz import audit, current_access
 from property_export import ExportEntry, build_zip
 from property_repository import property_repository
 from storage_service import get_storage
@@ -1778,6 +1779,182 @@ async def registrar_pago_propietario(
     if warning:
         resp["comisionWarning"] = warning
     return resp
+
+
+def _calc_retroactivo(pago: dict, pagos_otros: list[dict], comision_total: float, pct: float) -> tuple[dict, str | None]:
+    """Dado un pago legado (monto=neto, cargado antes de que la app calculara sola
+    bruto/comisión), calcula el bruto y la comisión retenida que le hubiesen correspondido
+    si en su momento se hubiera descontado el % de comisión efectivo de la reserva.
+    Devuelve una COPIA del pago ya actualizada y un aviso si la comisión tuvo que
+    limitarse al saldo de comisión pendiente (considerando lo ya retenido en los DEMÁS
+    pagos de la reserva)."""
+    neto = float(pago.get("monto") or 0)
+    bruto_calc = round(neto / (1 - pct / 100)) if pct < 100 else neto
+    comision_calc = bruto_calc - neto
+    ya_retenida_otros = sum(float(p.get("comisionRetenida") or 0) for p in pagos_otros)
+    pendiente = max(round(comision_total) - round(ya_retenida_otros), 0)
+    warning: str | None = None
+    if comision_calc > pendiente:
+        comision_final = pendiente
+        bruto_final = neto + comision_final
+        warning = (
+            f"La comisión calculada (${_ars(comision_calc)}) superaba la comisión pendiente de la "
+            f"reserva; se aplicó solo ${_ars(comision_final)}."
+        )
+    else:
+        comision_final = comision_calc
+        bruto_final = bruto_calc
+    updated = dict(pago)
+    updated["montoBruto"] = round(bruto_final)
+    updated["comisionPct"] = pct
+    updated["comisionRetenida"] = round(comision_final)
+    updated["descuentaComision"] = True
+    return updated, warning
+
+
+@router.put("/reservations/{rid}/liquidacion/pagos/{pago_id}")
+async def editar_pago_propietario(
+    rid: str,
+    pago_id: str,
+    fecha: str | None = Form(None),
+    metodo: str | None = Form(None),
+    notas: str | None = Form(None),
+    yaTeniaComisionDescontada: bool = Form(False),
+    file: UploadFile | None = File(None),
+    access: dict = Depends(current_access),
+):
+    """Edita un pago ya cargado: fecha, medio, notas, comprobante y — el caso principal —
+    la corrección retroactiva 'este pago ya tenía la comisión descontada', para pagos
+    cargados ANTES de que la app calculara sola bruto/comisión (quedaron con monto = neto,
+    sin bruto ni comisión registrados, aunque muchos sí la tenían descontada a mano)."""
+    r = await _res().find_one({"_id": rid})
+    if not r:
+        raise HTTPException(404, "Reserva no encontrada")
+    pagos = r.get("pagosPropietario") or []
+    pago = next((p for p in pagos if p.get("id") == pago_id), None)
+    if not pago:
+        raise HTTPException(404, "Pago no encontrado")
+    before = {k: pago.get(k) for k in ("fecha", "metodo", "notas", "montoBruto", "comisionRetenida", "descuentaComision")}
+    warning: str | None = None
+    updates: dict = {}
+    if fecha:
+        updates["pagosPropietario.$.fecha"] = fecha
+    if metodo:
+        if metodo not in METODOS_PAGO_PROPIETARIO:
+            raise HTTPException(400, "Método de pago inválido, usá transferencia, efectivo, cheque u otro.")
+        updates["pagosPropietario.$.metodo"] = metodo
+    if notas is not None:
+        updates["pagosPropietario.$.notas"] = notas or None
+    if yaTeniaComisionDescontada:
+        if pago.get("descuentaComision"):
+            raise HTTPException(400, "Este pago ya tiene la comisión descontada registrada.")
+        tot, _ = await _movs_y_totales(r)
+        alquiler = float(r.get("montoEstimado") or 0)
+        pct = round(tot["comision"] / alquiler * 100, 2) if alquiler > 0 else 0.0
+        otros = [p for p in pagos if p.get("id") != pago_id]
+        actualizado, warning = _calc_retroactivo(pago, otros, tot["comision"], pct)
+        updates["pagosPropietario.$.montoBruto"] = actualizado["montoBruto"]
+        updates["pagosPropietario.$.comisionPct"] = actualizado["comisionPct"]
+        updates["pagosPropietario.$.comisionRetenida"] = actualizado["comisionRetenida"]
+        updates["pagosPropietario.$.descuentaComision"] = True
+    mongo_update: dict = {}
+    if updates:
+        mongo_update["$set"] = updates
+    if file is not None and appconfig.supabase_configured():
+        ext = Path(file.filename or "comp.jpg").suffix.lower() or ".jpg"
+        obj = f"rentals/{r.get('propertyId')}/liquidaciones/{uuid4().hex}{ext}"
+        content = await file.read()
+        await get_storage().upload(appconfig.BUCKET_IMAGES, obj, content, file.content_type or "image/jpeg")
+        comprobante_id = uuid4().hex
+        mongo_update.setdefault("$set", {})["pagosPropietario.$.comprobanteId"] = comprobante_id
+        mongo_update["$push"] = {"comprobantes": {"id": comprobante_id, "bucket": appconfig.BUCKET_IMAGES, "object_path": obj,
+                                                   "contentType": file.content_type or "image/jpeg",
+                                                   "nombre": file.filename or "comprobante liquidación", "fecha": _now()}}
+    if not mongo_update:
+        raise HTTPException(400, "No hay cambios para guardar.")
+    await _res().update_one({"_id": rid, "pagosPropietario.id": pago_id}, mongo_update)
+    after_doc = await _res().find_one({"_id": rid})
+    after_pago = next(p for p in (after_doc.get("pagosPropietario") or []) if p.get("id") == pago_id)
+    after = {k: after_pago.get(k) for k in ("fecha", "metodo", "notas", "montoBruto", "comisionRetenida", "descuentaComision")}
+    await audit(access["email"], "pago_propietario.edit", "reservation", rid, {"pagoId": pago_id, "before": before, "after": after})
+    resp = _res_out(after_doc)
+    if warning:
+        resp["comisionWarning"] = warning
+    return resp
+
+
+@router.get("/liquidacion/pagos-legado")
+async def pagos_legado():
+    """Pagos al propietario cargados ANTES de que la app calculara sola bruto/comisión
+    (quedaron con descuentaComision=false y sin montoBruto). Se listan con la corrección
+    que resultaría, para revisar uno por uno y aplicar solo los que correspondan — no se
+    asume que todos tenían la comisión descontada."""
+    out = []
+    cur = _res().find({"pagosPropietario.0": {"$exists": True}})
+    async for r in cur:
+        pagos = r.get("pagosPropietario") or []
+        legados = [p for p in pagos if not p.get("descuentaComision") and not p.get("montoBruto")]
+        if not legados:
+            continue
+        tot, _ = await _movs_y_totales(r)
+        alquiler = float(r.get("montoEstimado") or 0)
+        pct = round(tot["comision"] / alquiler * 100, 2) if alquiler > 0 else 0.0
+        prop = await _get_prop(r.get("propertyId")) or {}
+        for p in legados:
+            otros = [x for x in pagos if x.get("id") != p.get("id")]
+            preview, limitado = _calc_retroactivo(p, otros, tot["comision"], pct)
+            out.append({
+                "reservaId": r["_id"], "pagoId": p.get("id"),
+                "propiedad": {"codigo": prop.get("codigo"), "titulo": prop.get("titulo")},
+                "propietario": (prop.get("propietario") or {}).get("nombre"),
+                "huesped": (r.get("huesped") or {}).get("nombre"),
+                "fecha": p.get("fecha"), "monto": round(float(p.get("monto") or 0)),
+                "comisionPctEfectivo": pct,
+                "montoBrutoEstimado": preview["montoBruto"], "comisionEstimada": preview["comisionRetenida"],
+                "limitado": bool(limitado),
+            })
+    out.sort(key=lambda x: x.get("fecha") or "")
+    return out
+
+
+class AplicarPagosLegadoBody(BaseModel):
+    items: list[dict]
+
+
+@router.post("/liquidacion/pagos-legado/aplicar")
+async def aplicar_pagos_legado(body: AplicarPagosLegadoBody, access: dict = Depends(current_access)):
+    """Aplica la corrección 'ya tenía comisión descontada' SOLO a los pagos legados
+    elegidos explícitamente (no se corrige nada sin selección)."""
+    aplicados, avisos = [], []
+    for item in body.items:
+        rid, pago_id = item.get("reservaId"), item.get("pagoId")
+        if not rid or not pago_id:
+            continue
+        r = await _res().find_one({"_id": rid})
+        if not r:
+            continue
+        pagos = r.get("pagosPropietario") or []
+        pago = next((p for p in pagos if p.get("id") == pago_id), None)
+        if not pago or pago.get("descuentaComision"):
+            continue
+        tot, _ = await _movs_y_totales(r)
+        alquiler = float(r.get("montoEstimado") or 0)
+        pct = round(tot["comision"] / alquiler * 100, 2) if alquiler > 0 else 0.0
+        otros = [p for p in pagos if p.get("id") != pago_id]
+        actualizado, warning = _calc_retroactivo(pago, otros, tot["comision"], pct)
+        await _res().update_one({"_id": rid, "pagosPropietario.id": pago_id}, {"$set": {
+            "pagosPropietario.$.montoBruto": actualizado["montoBruto"],
+            "pagosPropietario.$.comisionPct": actualizado["comisionPct"],
+            "pagosPropietario.$.comisionRetenida": actualizado["comisionRetenida"],
+            "pagosPropietario.$.descuentaComision": True,
+        }})
+        await audit(access["email"], "pago_propietario.backfill_comision", "reservation", rid, {
+            "pagoId": pago_id, "montoBruto": actualizado["montoBruto"], "comisionRetenida": actualizado["comisionRetenida"],
+        })
+        aplicados.append({"reservaId": rid, "pagoId": pago_id})
+        if warning:
+            avisos.append(warning)
+    return {"aplicados": aplicados, "avisos": avisos}
 
 
 @router.delete("/reservations/{rid}/liquidacion/pagos/{pago_id}", status_code=204)

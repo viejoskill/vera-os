@@ -42,6 +42,13 @@ export interface PagoPropietario {
   id: string; monto: number; metodo: string; fecha?: string; notas?: string | null; comprobanteId?: string | null;
   montoBruto?: number | null; comisionPct?: number | null; comisionRetenida?: number; descuentaComision?: boolean;
 }
+export interface PagoLegadoItem {
+  reservaId: string; pagoId: string;
+  propiedad: { codigo?: string; titulo?: string };
+  propietario?: string; huesped?: string;
+  fecha?: string; monto: number; comisionPctEfectivo: number;
+  montoBrutoEstimado: number; comisionEstimada: number; limitado: boolean;
+}
 export interface LiquidacionReserva extends Liquidacion {
   reserva: { id: string; checkIn: string; checkOut: string; noches: number };
   huesped: { nombre?: string; telefono?: string; dni?: string };
@@ -202,6 +209,18 @@ export const api = {
   },
   borrarPagoPropietario: (rid: string, pagoId: string) =>
     fetch(`${RENTALS_API}/reservations/${rid}/liquidacion/pagos/${pagoId}`, { method: 'DELETE' }).then(json),
+  editarPagoPropietario: (rid: string, pagoId: string, cambios: { fecha?: string; metodo?: string; notas?: string; yaTeniaComisionDescontada?: boolean; file?: File | null }): Promise<Reservation & { comisionWarning?: string }> => {
+    const fd = new FormData();
+    if (cambios.fecha) fd.append('fecha', cambios.fecha);
+    if (cambios.metodo) fd.append('metodo', cambios.metodo);
+    if (cambios.notas !== undefined) fd.append('notas', cambios.notas);
+    if (cambios.yaTeniaComisionDescontada) fd.append('yaTeniaComisionDescontada', 'true');
+    if (cambios.file) fd.append('file', cambios.file);
+    return fetch(`${RENTALS_API}/reservations/${rid}/liquidacion/pagos/${pagoId}`, { method: 'PUT', body: fd }).then(json);
+  },
+  pagosLegado: (): Promise<PagoLegadoItem[]> => fetch(`${RENTALS_API}/liquidacion/pagos-legado`).then(json),
+  aplicarPagosLegado: (items: Array<{ reservaId: string; pagoId: string }>): Promise<{ aplicados: Array<{ reservaId: string; pagoId: string }>; avisos: string[] }> =>
+    fetch(`${RENTALS_API}/liquidacion/pagos-legado/aplicar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items }) }).then(json),
   documentoReservaUrl: (rid: string): string => `${RENTALS_API}/reservations/${rid}/documento/reserva`,
   documentoContratoUrl: (rid: string): string => `${RENTALS_API}/reservations/${rid}/documento/contrato`,
   createManualReservation: (body: Record<string, unknown>): Promise<Reservation> =>

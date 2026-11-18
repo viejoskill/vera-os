@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Calculator, Download, ArrowLeft, Plus, Trash2, Users, CheckCircle2, Paperclip, AlertTriangle } from 'lucide-react';
+import { Calculator, Download, ArrowLeft, Plus, Trash2, Pencil, Users, CheckCircle2, Paperclip, AlertTriangle } from 'lucide-react';
 import { Button } from '@vera/ui';
-import { api, fmtMoney, fmtDate, hoyAR, TIPO_MOV, METODO_PAGO, type RentalProperty, type Reservation, type LiquidacionReserva, type LiquidacionPendiente, type Movimiento } from './api';
+import { api, fmtMoney, fmtDate, hoyAR, TIPO_MOV, METODO_PAGO, type RentalProperty, type Reservation, type LiquidacionReserva, type LiquidacionPendiente, type Movimiento, type PagoPropietario } from './api';
 import { downloadWithAuth } from '@app/lib/downloadWithAuth';
 import { useAuth } from '@app/auth/AuthProvider';
+import { PagosLegadoPanel } from './PagosLegadoPanel';
 import './rentals.css';
 
 const ESTADO_BADGE: Record<string, { label: string; cls: string }> = {
@@ -27,6 +28,10 @@ export const LiquidacionesScreen = () => {
   const [pendientes, setPendientes] = useState<LiquidacionPendiente[]>([]);
   const [err, setErr] = useState('');
   const [warn, setWarn] = useState('');
+  const [editingPagoId, setEditingPagoId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ fecha: '', metodo: 'transferencia', notas: '', yaTenia: false });
+  const [editFile, setEditFile] = useState<File | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
   const skipPidReset = useRef(false);
 
   useEffect(() => { api.listProperties().then((p) => { setProps(p); if (p[0]) setPid(p[0].id); }).catch(() => setProps([])); }, []);
@@ -89,6 +94,28 @@ export const LiquidacionesScreen = () => {
     } catch (e) { setErr((e as Error).message); }
   };
 
+  const abrirEdicionPago = (p: PagoPropietario) => {
+    setEditingPagoId(p.id);
+    setEditForm({ fecha: p.fecha || hoyAR(), metodo: p.metodo, notas: p.notas || '', yaTenia: false });
+    setEditFile(null);
+    setErr(''); setWarn('');
+  };
+  const cerrarEdicionPago = () => { setEditingPagoId(null); setEditFile(null); };
+  const guardarEdicionPago = async () => {
+    if (!sel || !editingPagoId) return;
+    setEditSaving(true); setErr(''); setWarn('');
+    try {
+      const resp = await api.editarPagoPropietario(sel, editingPagoId, {
+        fecha: editForm.fecha, metodo: editForm.metodo, notas: editForm.notas,
+        yaTeniaComisionDescontada: editForm.yaTenia, file: editFile,
+      });
+      if (resp.comisionWarning) setWarn(resp.comisionWarning);
+      await recargar();
+      cerrarEdicionPago();
+    } catch (e) { setErr((e as Error).message); }
+    setEditSaving(false);
+  };
+
   const mon = liq?.propiedad.moneda || 'ARS';
   const propMoneda = props.find((p) => p.id === pid)?.moneda || 'ARS';
   const reservasFiltradas = reservas.filter((r) => (tab === 'historial' ? r.estadoLiquidacion === 'pagado' : r.estadoLiquidacion !== 'pagado'));
@@ -109,6 +136,19 @@ export const LiquidacionesScreen = () => {
     const neto = bruto - comision;
     return { bruto, pct, comision, neto, limitado: calculada > liq.comisionPendiente, excedeSaldo: neto > liq.saldoLiquidacion + 1 };
   }, [pagoForm.montoBruto, pagoForm.descuentaComision, liq]);
+
+  // Vista previa de la corrección retroactiva "este pago ya tenía la comisión descontada":
+  // el monto cargado se toma como NETO y se despeja el bruto (igual fórmula que el backend).
+  const pagoEnEdicion = liq?.pagosPropietario.find((p) => p.id === editingPagoId) || null;
+  const editPreview = useMemo(() => {
+    if (!liq || !pagoEnEdicion || !editForm.yaTenia) return null;
+    const pct = liq.comisionPctEfectivo || 0;
+    const neto = pagoEnEdicion.monto;
+    const brutoCalc = pct < 100 ? Math.round(neto / (1 - pct / 100)) : neto;
+    const comisionCalc = brutoCalc - neto;
+    const comision = Math.min(comisionCalc, liq.comisionPendiente);
+    return { neto, bruto: neto + comision, comision, pct, limitado: comisionCalc > liq.comisionPendiente };
+  }, [liq, pagoEnEdicion, editForm.yaTenia]);
 
   // Movimientos a mostrar: la comisión cruda se reemplaza por líneas sintéticas (una por
   // pago que retuvo comisión + el saldo pendiente), para que quede clara la relación entre
@@ -175,6 +215,7 @@ export const LiquidacionesScreen = () => {
         </select>
       </div>
       {err && <p className="rt__flash" style={{ color: '#e07575' }}>{err}</p>}
+      {can('liquidaciones', 'editar') && <PagosLegadoPanel onApplied={recargar} />}
 
       {!liq && (
         <>
@@ -262,13 +303,44 @@ export const LiquidacionesScreen = () => {
           {warn && <p className="rt-liq__pagowarn" data-testid="rt-liq-pago-warn">{warn}</p>}
           {liq.pagosPropietario.length > 0 && (
             <div className="rt-saldo__list" data-testid="rt-liq-pagos-lista">
-              {liq.pagosPropietario.map((p) => (
+              {liq.pagosPropietario.map((p) => editingPagoId === p.id ? (
+                <div key={p.id} className="rt-liq__editpago" data-testid={`rt-liq-pago-edit-${p.id}`}>
+                  <input type="date" value={editForm.fecha} onChange={(e) => setEditForm({ ...editForm, fecha: e.target.value })} data-testid="rt-liqedit-fecha" />
+                  <select value={editForm.metodo} onChange={(e) => setEditForm({ ...editForm, metodo: e.target.value })} data-testid="rt-liqedit-metodo">
+                    {Object.entries(METODO_PAGO).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                  <input type="text" placeholder="Notas" value={editForm.notas} onChange={(e) => setEditForm({ ...editForm, notas: e.target.value })} data-testid="rt-liqedit-notas" />
+                  <label className="rt-mini rt-mini--file">
+                    <Paperclip size={13} /> {editFile ? editFile.name.slice(0, 16) : 'Comprobante'}
+                    <input type="file" accept="image/*,.pdf" onChange={(e) => setEditFile(e.target.files?.[0] || null)} data-testid="rt-liqedit-file" />
+                  </label>
+                  {!p.descuentaComision && (
+                    <label className="rt-chk rt-liq__editchk">
+                      <input type="checkbox" checked={editForm.yaTenia} onChange={(e) => setEditForm({ ...editForm, yaTenia: e.target.checked })} data-testid="rt-liqedit-yatenia" />
+                      <span>Este pago ya tenía la comisión descontada (el monto cargado es el neto)</span>
+                    </label>
+                  )}
+                  {editPreview && (
+                    <p className="rt-liq__pagopreview" data-testid="rt-liqedit-preview">
+                      Neto {fmtMoney(editPreview.neto, mon)} → Bruto {fmtMoney(editPreview.bruto, mon)} · Comisión {Number(editPreview.pct.toFixed(2))}% {fmtMoney(editPreview.comision, mon)}
+                      {editPreview.limitado && ' · se limitará al saldo de comisión pendiente de la reserva'}
+                    </p>
+                  )}
+                  <div className="rt-liq__editbtns">
+                    <button type="button" className="rt-mini" onClick={cerrarEdicionPago} data-testid="rt-liqedit-cancel">Cancelar</button>
+                    <button type="button" className="rt-mini rt-mini--ok" onClick={guardarEdicionPago} disabled={editSaving} data-testid="rt-liqedit-save">{editSaving ? 'Guardando…' : 'Guardar'}</button>
+                  </div>
+                </div>
+              ) : (
                 <span key={p.id} className="rt-saldo__chip" data-testid={`rt-liq-pago-item-${p.id}`}>
                   {fmtMoney(p.monto, mon)}{(p.comisionRetenida || 0) > 0 ? ' neto' : ''}
                   {p.descuentaComision && (p.comisionRetenida || 0) > 0 ? ` · (bruto ${fmtMoney(p.montoBruto || 0, mon)} − com. ${fmtMoney(p.comisionRetenida || 0, mon)})` : ''}
                   {' · '}{METODO_PAGO[p.metodo] || p.metodo}{p.fecha ? ` · ${fmtDate(p.fecha)}` : ''}{p.notas ? ` · ${p.notas}` : ''}
                   {p.comprobanteId && (
                     <a className="rt-saldo__ic" href={api.comprobanteItemUrl(liq.reserva.id, p.comprobanteId)} target="_blank" rel="noreferrer" title="Ver comprobante" data-testid={`rt-liq-pago-comp-${p.id}`}><Paperclip size={12} /></a>
+                  )}
+                  {can('liquidaciones', 'editar') && (
+                    <button type="button" className="rt-saldo__del" onClick={() => abrirEdicionPago(p)} title="Editar" data-testid={`rt-liq-pago-edit-btn-${p.id}`}><Pencil size={11} /></button>
                   )}
                   {can('liquidaciones', 'borrar') && (
                     <button type="button" className="rt-saldo__del" onClick={() => borrarPago(p.id)} title="Quitar" data-testid={`rt-liq-pago-del-${p.id}`}><Trash2 size={11} /></button>

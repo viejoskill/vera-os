@@ -360,6 +360,24 @@
 .rt-liq__pagofield input[type="number"] { width: 160px; }
 .rt-liq__pagolabel { font-size: .72rem; color: var(--vera-color-text-secondary); }
 
+/* Edición inline de un pago ya cargado (corrección de comisión retroactiva) */
+.rt-liq__editpago { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--vera-color-surface); border: 1px solid var(--vera-color-primary); border-radius: 10px; padding: 10px 12px; width: 100%; margin-bottom: 8px; }
+.rt-liq__editpago input[type="date"], .rt-liq__editpago input[type="text"], .rt-liq__editpago select {
+  background: var(--vera-color-bg); border: 1px solid var(--vera-color-border); border-radius: 8px; color: var(--vera-color-text); padding: 7px 9px; font-size: .83rem;
+}
+.rt-liq__editchk { width: 100%; font-size: .85rem; }
+.rt-liq__editbtns { display: flex; gap: 8px; width: 100%; justify-content: flex-end; }
+
+/* Herramienta "Revisar pagos anteriores" (corrección masiva de comisión retroactiva) */
+.rt-liq__legadobtn { display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 1px dashed var(--vera-color-border); border-radius: 8px; color: var(--vera-color-text-secondary); font-size: .82rem; padding: 7px 12px; margin-bottom: 14px; cursor: pointer; transition: border-color .15s, color .15s; }
+.rt-liq__legadobtn:hover { border-color: var(--vera-color-primary); color: var(--vera-color-primary); }
+.rt-liq__legado { background: var(--vera-color-surface); border: 1px solid var(--vera-color-border); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
+.rt-liq__legadohead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.rt-liq__legadorow { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-top: 1px solid var(--vera-color-border); cursor: pointer; }
+.rt-liq__legadorow input[type="checkbox"] { margin-top: 3px; }
+.rt-liq__legadoinfo { font-size: .83rem; color: var(--vera-color-text-secondary); line-height: 1.5; }
+.rt-liq__legadoinfo strong { color: var(--vera-color-text); }
+
 /* Liquidaciones: recordatorio de reservas con seña cobrada hace >7 días sin liquidar */
 .rt-liq__recordatorio { display: flex; align-items: flex-start; gap: 12px; background: rgba(214,170,40,.1); border: 1px solid rgba(214,170,40,.4); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; color: #e3b93c; }
 .rt-liq__recordatorio-body { flex: 1; }

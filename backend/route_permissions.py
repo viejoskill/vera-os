@@ -103,7 +103,10 @@ EXPLICIT_OVERRIDES: dict[tuple[str, str], tuple[str, str] | str] = {
     ("GET", "/api/rentals/reservations/{rid}/liquidacion"): ("liquidaciones", "ver"),
     ("GET", "/api/rentals/reservations/{rid}/liquidacion/pdf"): ("liquidaciones", "ver"),
     ("POST", "/api/rentals/reservations/{rid}/liquidacion/pagos"): ("liquidaciones", "crear"),
+    ("PUT", "/api/rentals/reservations/{rid}/liquidacion/pagos/{pago_id}"): ("liquidaciones", "editar"),
     ("DELETE", "/api/rentals/reservations/{rid}/liquidacion/pagos/{pago_id}"): ("liquidaciones", "borrar"),
+    ("GET", "/api/rentals/liquidacion/pagos-legado"): ("liquidaciones", "ver"),
+    ("POST", "/api/rentals/liquidacion/pagos-legado/aplicar"): ("liquidaciones", "editar"),
     # ---- routes_rentals.py: acciones de pago sobre una reserva existente = editar ----
     ("POST", "/api/rentals/reservations/{rid}/payment-link"): ("alquileres", "editar"),
     ("POST", "/api/rentals/reservations/{rid}/verificar-pago"): ("alquileres", "editar"),
