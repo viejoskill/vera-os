@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Calculator, Download, ArrowLeft, Plus, Trash2, Users, CheckCircle2, Paperclip, AlertTriangle } from 'lucide-react';
 import { Button } from '@vera/ui';
-import { api, fmtMoney, fmtDate, hoyAR, TIPO_MOV, METODO_PAGO, type RentalProperty, type Reservation, type LiquidacionReserva, type LiquidacionPendiente } from './api';
+import { api, fmtMoney, fmtDate, hoyAR, TIPO_MOV, METODO_PAGO, type RentalProperty, type Reservation, type LiquidacionReserva, type LiquidacionPendiente, type Movimiento } from './api';
 import { downloadWithAuth } from '@app/lib/downloadWithAuth';
 import { useAuth } from '@app/auth/AuthProvider';
 import './rentals.css';
@@ -21,11 +21,12 @@ export const LiquidacionesScreen = () => {
   const [sel, setSel] = useState<string | null>(null);
   const [liq, setLiq] = useState<LiquidacionReserva | null>(null);
   const [nm, setNm] = useState({ fecha: hoyAR(), tipo: 'gasto_prop', monto: '', descripcion: '' });
-  const [pagoForm, setPagoForm] = useState({ fecha: hoyAR(), metodo: 'transferencia', monto: '', notas: '' });
+  const [pagoForm, setPagoForm] = useState({ fecha: hoyAR(), metodo: 'transferencia', montoBruto: '', descuentaComision: true, notas: '' });
   const [pagoFile, setPagoFile] = useState<File | null>(null);
   const [guardandoPago, setGuardandoPago] = useState(false);
   const [pendientes, setPendientes] = useState<LiquidacionPendiente[]>([]);
   const [err, setErr] = useState('');
+  const [warn, setWarn] = useState('');
   const skipPidReset = useRef(false);
 
   useEffect(() => { api.listProperties().then((p) => { setProps(p); if (p[0]) setPid(p[0].id); }).catch(() => setProps([])); }, []);
@@ -37,13 +38,13 @@ export const LiquidacionesScreen = () => {
   }, [pid]);
   useEffect(() => {
     if (liq) {
-      setPagoForm({ fecha: hoyAR(), metodo: 'transferencia', monto: String(liq.saldoLiquidacion || ''), notas: '' });
+      setPagoForm({ fecha: hoyAR(), metodo: 'transferencia', montoBruto: '', descuentaComision: true, notas: '' });
       setPagoFile(null);
     }
   }, [liq?.reserva.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const abrir = async (rid: string) => {
-    setSel(rid); setErr('');
+    setSel(rid); setErr(''); setWarn('');
     try { setLiq(await api.liquidacionReserva(rid)); } catch (e) { setErr((e as Error).message); }
   };
   const abrirDesdeRecordatorio = async (propertyId: string, rid: string) => {
@@ -62,13 +63,14 @@ export const LiquidacionesScreen = () => {
   const delMov = async (mid: string) => { await api.deleteMovimiento(mid); await recargar(); };
 
   const agregarPago = async () => {
-    if (!sel || !pagoForm.monto || Number(pagoForm.monto) <= 0) { setErr('Ingresá un monto válido para registrar el pago.'); return; }
-    setGuardandoPago(true); setErr('');
+    if (!sel || !pagoForm.montoBruto || Number(pagoForm.montoBruto) <= 0) { setErr('Ingresá un monto válido para registrar el pago.'); return; }
+    setGuardandoPago(true); setErr(''); setWarn('');
     try {
-      await api.registrarPagoPropietario(sel, Number(pagoForm.monto), pagoForm.metodo, pagoForm.fecha || hoyAR(), pagoForm.notas, pagoFile);
+      const resp = await api.registrarPagoPropietario(sel, Number(pagoForm.montoBruto), pagoForm.descuentaComision, pagoForm.metodo, pagoForm.fecha || hoyAR(), pagoForm.notas, pagoFile);
+      if (resp.comisionWarning) setWarn(resp.comisionWarning);
       const fresh = await api.liquidacionReserva(sel);
       setLiq(fresh);
-      setPagoForm({ fecha: hoyAR(), metodo: 'transferencia', monto: String(fresh.saldoLiquidacion || ''), notas: '' });
+      setPagoForm({ fecha: hoyAR(), metodo: 'transferencia', montoBruto: '', descuentaComision: true, notas: '' });
       setPagoFile(null);
       const r = await api.liquidables(pid); setReservas(r);
       recargarPendientes();
@@ -77,7 +79,7 @@ export const LiquidacionesScreen = () => {
   };
   const borrarPago = async (pagoId: string) => {
     if (!sel) return;
-    setErr('');
+    setErr(''); setWarn('');
     try {
       await api.borrarPagoPropietario(sel, pagoId);
       await recargar();
@@ -90,6 +92,46 @@ export const LiquidacionesScreen = () => {
   const propMoneda = props.find((p) => p.id === pid)?.moneda || 'ARS';
   const reservasFiltradas = reservas.filter((r) => (tab === 'historial' ? r.estadoLiquidacion === 'pagado' : r.estadoLiquidacion !== 'pagado'));
   const totalHistorial = reservasFiltradas.reduce((acc, r) => acc + (r.totalPagadoPropietario || 0), 0);
+
+  // Vista previa del pago (bruto - comisión = neto), con tope en la comisión pendiente de la
+  // reserva (igual al cálculo del backend, para no mostrarle al usuario un número que después
+  // el servidor va a recortar sin avisarle antes de guardar).
+  const pagoPreview = useMemo(() => {
+    const bruto = Number(pagoForm.montoBruto) || 0;
+    if (!liq || bruto <= 0) return null;
+    const pct = liq.comisionPctEfectivo || 0;
+    if (!pagoForm.descuentaComision) return { bruto, pct: 0, comision: 0, neto: bruto, limitado: false };
+    const calculada = Math.round((bruto * pct) / 100);
+    const comision = Math.min(calculada, liq.comisionPendiente);
+    return { bruto, pct, comision, neto: bruto - comision, limitado: calculada > liq.comisionPendiente };
+  }, [pagoForm.montoBruto, pagoForm.descuentaComision, liq]);
+
+  // Movimientos a mostrar: la comisión cruda se reemplaza por líneas sintéticas (una por
+  // pago que retuvo comisión + el saldo pendiente), para que quede clara la relación entre
+  // "cuánto se retuvo" y "en qué pago". No se toca el movimiento real guardado en la base.
+  const movimientosMostrados = useMemo(() => {
+    if (!liq) return [];
+    type MovRow = Movimiento & { synthetic: boolean };
+    const base: MovRow[] = liq.movimientos
+      .filter((m) => m.tipo !== 'comision')
+      .map((m) => ({ ...m, synthetic: false }));
+    const sinteticos: MovRow[] = [];
+    liq.pagosPropietario.filter((p) => (p.comisionRetenida || 0) > 0).forEach((p) => {
+      const pct = p.comisionPct ? `${Number(p.comisionPct.toFixed(2))}%` : '';
+      sinteticos.push({
+        id: `com-ret-${p.id}`, propertyId: liq.propiedad.id, fecha: p.fecha || '', tipo: 'comision',
+        descripcion: `Comisión retenida en pago (${pct} sobre seña ${fmtMoney(p.montoBruto || 0, mon)})`,
+        monto: p.comisionRetenida || 0, synthetic: true,
+      });
+    });
+    if (liq.comisionPendiente > 0) {
+      sinteticos.push({
+        id: 'com-pendiente', propertyId: liq.propiedad.id, fecha: '', tipo: 'comision',
+        descripcion: 'Comisión pendiente', monto: liq.comisionPendiente, synthetic: true,
+      });
+    }
+    return [...base, ...sinteticos].sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+  }, [liq, mon]);
 
   return (
     <div className="vera-screen rt" data-testid="liquidaciones-screen">
@@ -187,9 +229,17 @@ export const LiquidacionesScreen = () => {
 
           <div className="rt-liq__grid">
             <div className="rt-liq__cell"><span>Alquiler {liq.ingresos !== liq.alquiler ? '+ extras' : ''}</span><strong>{fmtMoney(liq.ingresos, mon)}</strong></div>
-            <div className="rt-liq__cell"><span>− Comisión</span><strong>-{fmtMoney(liq.comision, mon)}</strong></div>
+            <div className="rt-liq__cell">
+              <span>− Comisión</span><strong>-{fmtMoney(liq.comision, mon)}</strong>
+              {liq.comision > 0 && (
+                <small className="rt-liq__cellsub" data-testid="rt-liq-comision-sub">Retenida: {fmtMoney(liq.comisionRetenida, mon)} · Pendiente: {fmtMoney(liq.comisionPendiente, mon)}</small>
+              )}
+            </div>
             <div className="rt-liq__cell"><span>− Gastos del propietario</span><strong>-{fmtMoney(liq.gastosPropietario, mon)}</strong></div>
-            <div className="rt-liq__cell rt-liq__cell--net"><span>Neto a liquidar</span><strong data-testid="rt-liq-neto">{fmtMoney(liq.netoPropietario, mon)}</strong></div>
+            <div className="rt-liq__cell rt-liq__cell--net">
+              <span>Neto a liquidar</span><strong data-testid="rt-liq-neto">{fmtMoney(liq.netoPropietario, mon)}</strong>
+              <small className="rt-liq__cellsub" data-testid="rt-liq-neto-sub">Pagado: {fmtMoney(liq.totalPagadoPropietario, mon)} · Falta: {fmtMoney(liq.saldoLiquidacion, mon)}</small>
+            </div>
           </div>
           <p className="rt-hint">Gastos a cargo de la agencia: {fmtMoney(liq.gastosNuestros, mon)} (no se descuentan al propietario).</p>
 
@@ -205,11 +255,14 @@ export const LiquidacionesScreen = () => {
                 : <>Todavía no se registró ningún pago al propietario.</>}
             </p>
           )}
+          {warn && <p className="rt-liq__pagowarn" data-testid="rt-liq-pago-warn">{warn}</p>}
           {liq.pagosPropietario.length > 0 && (
             <div className="rt-saldo__list" data-testid="rt-liq-pagos-lista">
               {liq.pagosPropietario.map((p) => (
                 <span key={p.id} className="rt-saldo__chip" data-testid={`rt-liq-pago-item-${p.id}`}>
-                  {fmtMoney(p.monto, mon)} · {METODO_PAGO[p.metodo] || p.metodo}{p.fecha ? ` · ${fmtDate(p.fecha)}` : ''}{p.notas ? ` · ${p.notas}` : ''}
+                  {fmtMoney(p.monto, mon)}{p.montoBruto ? ' neto' : ''}
+                  {p.descuentaComision && p.montoBruto ? ` · (bruto ${fmtMoney(p.montoBruto, mon)} − com. ${fmtMoney(p.comisionRetenida || 0, mon)})` : ''}
+                  {' · '}{METODO_PAGO[p.metodo] || p.metodo}{p.fecha ? ` · ${fmtDate(p.fecha)}` : ''}{p.notas ? ` · ${p.notas}` : ''}
                   {p.comprobanteId && (
                     <a className="rt-saldo__ic" href={api.comprobanteItemUrl(liq.reserva.id, p.comprobanteId)} target="_blank" rel="noreferrer" title="Ver comprobante" data-testid={`rt-liq-pago-comp-${p.id}`}><Paperclip size={12} /></a>
                   )}
@@ -225,7 +278,11 @@ export const LiquidacionesScreen = () => {
             <select value={pagoForm.metodo} onChange={(e) => setPagoForm({ ...pagoForm, metodo: e.target.value })} data-testid="rt-liqpago-metodo">
               {Object.entries(METODO_PAGO).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
-            <input type="number" placeholder="Monto pagado" value={pagoForm.monto} onChange={(e) => setPagoForm({ ...pagoForm, monto: e.target.value })} data-testid="rt-liqpago-monto" />
+            <input type="number" placeholder="Monto cobrado al huésped (bruto)" value={pagoForm.montoBruto} onChange={(e) => setPagoForm({ ...pagoForm, montoBruto: e.target.value })} data-testid="rt-liqpago-monto" />
+            <label className="rt-chk rt-liq__pagochk">
+              <input type="checkbox" checked={pagoForm.descuentaComision} onChange={(e) => setPagoForm({ ...pagoForm, descuentaComision: e.target.checked })} data-testid="rt-liqpago-descuenta" />
+              <span>Descontar comisión ({Number((liq.comisionPctEfectivo || 0).toFixed(2))}%)</span>
+            </label>
             <input type="text" placeholder="Notas (opcional)" value={pagoForm.notas} onChange={(e) => setPagoForm({ ...pagoForm, notas: e.target.value })} data-testid="rt-liqpago-notas" />
             <label className="rt-mini rt-mini--file">
               <Paperclip size={13} /> {pagoFile ? pagoFile.name.slice(0, 18) : 'Comprobante'}
@@ -235,6 +292,14 @@ export const LiquidacionesScreen = () => {
               <Plus size={14} /> {guardandoPago ? 'Guardando…' : 'Agregar pago'}
             </button>
           </div>
+          {pagoPreview && (
+            <p className="rt-liq__pagopreview" data-testid="rt-liq-pago-preview">
+              Bruto {fmtMoney(pagoPreview.bruto, mon)}
+              {pagoForm.descuentaComision && <> − Comisión {Number(pagoPreview.pct.toFixed(2))}% {fmtMoney(pagoPreview.comision, mon)}</>}
+              {' '}= Neto al propietario <strong>{fmtMoney(pagoPreview.neto, mon)}</strong>
+              {pagoPreview.limitado && ' · la comisión se limitará al saldo de comisión pendiente de la reserva'}
+            </p>
+          )}
 
           <h4 className="rt-ws__sec">Ajustar movimientos de esta reserva</h4>
           <div className="rt-mov__add" data-testid="rt-liq-movadd">
@@ -247,18 +312,18 @@ export const LiquidacionesScreen = () => {
             <button type="button" className="rt-mini rt-mini--ok" onClick={addMov} data-testid="rt-liqmov-save"><Plus size={14} /> Agregar</button>
           </div>
           <div className="rt-mov">
-            {liq.movimientos.map((m) => (
+            {movimientosMostrados.map((m) => (
               <div className={`rt-mov__row rt-mov__row--${m.tipo}`} key={m.id} data-testid={`rt-liqmov-${m.id}`}>
                 <span className="rt-mov__fecha">{fmtDate(m.fecha)}</span>
                 <span className="rt-mov__tipo">{TIPO_MOV[m.tipo] || m.tipo}</span>
                 <span className="rt-mov__desc">{m.descripcion}</span>
                 <span className="rt-mov__monto">{fmtMoney(m.monto, mon)}</span>
-                {can('liquidaciones', 'borrar') && (
+                {!m.synthetic && can('liquidaciones', 'borrar') && (
                   <button type="button" className="rt-mov__del" onClick={() => delMov(m.id)} data-testid={`rt-liqdelmov-${m.id}`}><Trash2 size={14} /></button>
                 )}
               </div>
             ))}
-            {liq.movimientos.length === 0 && <p className="rt-hint">Sin movimientos cargados. La comisión se genera automática al confirmar; agregá gastos si hace falta.</p>}
+            {movimientosMostrados.length === 0 && <p className="rt-hint">Sin movimientos cargados. La comisión se genera automática al confirmar; agregá gastos si hace falta.</p>}
           </div>
         </div>
       )}

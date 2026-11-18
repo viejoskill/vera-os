@@ -148,29 +148,56 @@ def build_liquidacion_pdf(data: dict) -> bytes:
     ]))
     story.append(rt)
     story.append(Spacer(1, 0.3 * cm))
+    if "reserva" in data:
+        story.append(Paragraph(
+            f"Comisión retenida en pagos ya efectuados: {_fmt(data.get('comisionRetenida'), mon)} · "
+            f"Comisión pendiente de retener: {_fmt(data.get('comisionPendiente'), mon)}.", st["small"]))
     story.append(Paragraph(
         f"Gastos a cargo de la agencia en el período: {_fmt(data.get('gastosNuestros'), mon)} "
         "(no se descuentan al propietario).", st["small"]))
 
     # Pago de la liquidación al propietario (solo aplica a la liquidación de UNA reserva específica).
-    # Puede haber VARIOS pagos (a veces se liquida en partes); listamos cada uno y el saldo.
+    # Puede haber VARIOS pagos (a veces se liquida en partes); se detalla bruto/comisión/neto de cada uno.
     if "reserva" in data:
         pagos = data.get("pagosPropietario") or []
         story.append(Spacer(1, 0.3 * cm))
         story.append(Paragraph("Pago al propietario", st["sec"]))
         if pagos:
+            filas = [["Fecha", "Medio", "Bruto (seña)", "Comisión desc.", "Neto transferido"]]
             for pago in pagos:
                 metodo_label = METODO_LABEL.get(pago.get("metodo"), pago.get("metodo") or "—")
-                story.append(Paragraph(
-                    f"Pagado el <b>{_fd(pago.get('fecha'))}</b> · {metodo_label} · {_fmt(pago.get('monto'), mon)}",
-                    st["body"]))
+                bruto = pago.get("montoBruto")
+                com_pct = pago.get("comisionPct") or 0
+                com_ret = pago.get("comisionRetenida") or 0
+                filas.append([
+                    _fd(pago.get("fecha")), metodo_label,
+                    _fmt(bruto, mon) if bruto is not None else "—",
+                    f"{com_pct:g}% ({_fmt(com_ret, mon)})" if pago.get("descuentaComision") and com_ret else "—",
+                    _fmt(pago.get("monto"), mon),
+                ])
+            pt = Table(filas, colWidths=[2.3 * cm, 2.5 * cm, 3.1 * cm, 4 * cm, 3.5 * cm])
+            pt.setStyle(TableStyle([
+                ("FONT", (0, 0), (-1, 0), "Helvetica-Bold", 8.5),
+                ("FONT", (0, 1), (-1, -1), "Helvetica", 8.5),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#333333")),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f2f2f2")),
+                ("LINEBELOW", (0, 0), (-1, 0), 0.6, colors.HexColor("#cccccc")),
+                ("LINEBELOW", (0, 1), (-1, -1), 0.3, colors.HexColor("#eeeeee")),
+                ("ALIGN", (2, 0), (-1, -1), "RIGHT"),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+            ]))
+            story.append(pt)
+            for pago in pagos:
                 if pago.get("notas"):
                     story.append(Paragraph(pago["notas"], st["small"]))
-            saldo = data.get("saldoLiquidacion")
+            story.append(Spacer(1, 0.2 * cm))
+            story.append(Paragraph(
+                f"<b>Total pagado al propietario:</b> {_fmt(data.get('totalPagadoPropietario'), mon)} · "
+                f"<b>Saldo pendiente a pagar:</b> {_fmt(data.get('saldoLiquidacion'), mon)}.", st["small"]))
             if data.get("estadoLiquidacion") == "pagado":
-                story.append(Paragraph(f"<b>Liquidación completa</b> · total pagado {_fmt(data.get('totalPagadoPropietario'), mon)}.", st["small"]))
-            else:
-                story.append(Paragraph(f"<b>Saldo pendiente de pago:</b> {_fmt(saldo, mon)}.", st["small"]))
+                story.append(Paragraph("<b>Liquidación completa.</b>", st["small"]))
         else:
             story.append(Paragraph("Pendiente de registrar.", st["small"]))
 

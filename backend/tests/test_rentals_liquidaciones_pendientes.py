@@ -86,7 +86,7 @@ def test_desaparece_al_marcar_pagada(vencida):
     r = requests.get(f"{API}/liquidaciones/pendientes", params={"dias": 7})
     assert rid in [x["reservaId"] for x in r.json()]
     neto = requests.get(f"{API}/reservations/{rid}/liquidacion").json()["netoPropietario"]
-    requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"monto": str(neto), "metodo": "efectivo"})
+    requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"montoBruto": str(neto), "descuentaComision": "false", "metodo": "efectivo"})
     r2 = requests.get(f"{API}/liquidaciones/pendientes", params={"dias": 7})
     assert rid not in [x["reservaId"] for x in r2.json()]
 

@@ -40,6 +40,7 @@ export interface Liquidacion {
 }
 export interface PagoPropietario {
   id: string; monto: number; metodo: string; fecha?: string; notas?: string | null; comprobanteId?: string | null;
+  montoBruto?: number | null; comisionPct?: number | null; comisionRetenida?: number; descuentaComision?: boolean;
 }
 export interface LiquidacionReserva extends Liquidacion {
   reserva: { id: string; checkIn: string; checkOut: string; noches: number };
@@ -48,6 +49,7 @@ export interface LiquidacionReserva extends Liquidacion {
   pagosPropietario: PagoPropietario[];
   totalPagadoPropietario: number; saldoLiquidacion: number; estadoLiquidacion: 'pendiente' | 'parcial' | 'pagado';
   alquiler: number;
+  comisionRetenida: number; comisionPendiente: number; comisionPctEfectivo: number;
 }
 export const TIPO_MOV: Record<string, string> = {
   ingreso: 'Seña / Ingreso', gasto_prop: 'Gasto propietario', gasto_nuestro: 'Gasto agencia', comision: 'Comisión',
@@ -188,9 +190,10 @@ export const api = {
   },
   deleteSaldo: (rid: string, sid: string) => fetch(`${RENTALS_API}/reservations/${rid}/saldos/${sid}`, { method: 'DELETE' }).then(json),
   reciboSaldoUrl: (rid: string, sid: string): string => `${RENTALS_API}/reservations/${rid}/saldos/${sid}/recibo`,
-  registrarPagoPropietario: (rid: string, monto: number, metodo: string, fecha: string, notas?: string, file?: File | null): Promise<Reservation> => {
+  registrarPagoPropietario: (rid: string, montoBruto: number, descuentaComision: boolean, metodo: string, fecha: string, notas?: string, file?: File | null): Promise<Reservation & { comisionWarning?: string }> => {
     const fd = new FormData();
-    fd.append('monto', String(monto || 0));
+    fd.append('montoBruto', String(montoBruto || 0));
+    fd.append('descuentaComision', String(descuentaComision));
     fd.append('metodo', metodo);
     fd.append('fecha', fecha);
     if (notas) fd.append('notas', notas);

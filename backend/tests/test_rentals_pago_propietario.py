@@ -67,7 +67,7 @@ def test_un_pago_parcial_queda_en_parcial(reserva):
     neto = liq0["netoPropietario"]
     mitad = round(neto / 2)
     r = requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={
-        "monto": str(mitad), "metodo": "transferencia", "fecha": "2026-12-10", "notas": "Primer pago",
+        "montoBruto": str(mitad), "metodo": "transferencia", "fecha": "2026-12-10", "notas": "Primer pago",
     })
     assert r.status_code == 200, r.text
     liq = requests.get(f"{API}/reservations/{rid}/liquidacion").json()
@@ -82,8 +82,8 @@ def test_dos_pagos_completan_la_liquidacion(reserva):
     _, rid = reserva
     neto = requests.get(f"{API}/reservations/{rid}/liquidacion").json()["netoPropietario"]
     mitad = round(neto / 2)
-    requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"monto": str(mitad), "metodo": "transferencia"})
-    requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"monto": str(neto - mitad), "metodo": "efectivo"})
+    requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"montoBruto": str(mitad), "metodo": "transferencia"})
+    requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"montoBruto": str(neto - mitad), "metodo": "efectivo"})
     liq = requests.get(f"{API}/reservations/{rid}/liquidacion").json()
     assert liq["estadoLiquidacion"] == "pagado"
     assert liq["totalPagadoPropietario"] == neto and liq["saldoLiquidacion"] == 0
@@ -92,8 +92,8 @@ def test_dos_pagos_completan_la_liquidacion(reserva):
 
 def test_borrar_un_pago_no_afecta_los_demas(reserva):
     _, rid = reserva
-    requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"monto": "40000", "metodo": "transferencia"})
-    requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"monto": "30000", "metodo": "efectivo"})
+    requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"montoBruto": "40000", "metodo": "transferencia"})
+    requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"montoBruto": "30000", "metodo": "efectivo"})
     liq = requests.get(f"{API}/reservations/{rid}/liquidacion").json()
     assert len(liq["pagosPropietario"]) == 2
     primero = liq["pagosPropietario"][0]["id"]
@@ -106,25 +106,25 @@ def test_borrar_un_pago_no_afecta_los_demas(reserva):
 
 def test_monto_invalido_rechazado(reserva):
     _, rid = reserva
-    assert requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"monto": "0", "metodo": "efectivo"}).status_code == 400
-    assert requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"monto": "-5", "metodo": "efectivo"}).status_code == 400
+    assert requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"montoBruto": "0", "metodo": "efectivo"}).status_code == 400
+    assert requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"montoBruto": "-5", "metodo": "efectivo"}).status_code == 400
 
 
 def test_metodo_invalido_rechazado(reserva):
     _, rid = reserva
-    r = requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"monto": "500", "metodo": "bitcoin"})
+    r = requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"montoBruto": "500", "metodo": "bitcoin"})
     assert r.status_code == 400
 
 
 def test_reserva_inexistente_404():
-    assert requests.post(f"{API}/reservations/nope123/liquidacion/pagos", data={"monto": "5", "metodo": "efectivo"}).status_code == 404
+    assert requests.post(f"{API}/reservations/nope123/liquidacion/pagos", data={"montoBruto": "5", "metodo": "efectivo"}).status_code == 404
 
 
 def test_comprobante_upload_y_descarga(reserva):
     _, rid = reserva
     png = b"\x89PNG\r\n\x1a\n" + b"0" * 100
     r = requests.post(f"{API}/reservations/{rid}/liquidacion/pagos",
-                       data={"monto": "1000", "metodo": "transferencia"},
+                       data={"montoBruto": "1000", "metodo": "transferencia"},
                        files={"file": ("TEST_comp.png", png, "image/png")})
     assert r.status_code == 200, r.text
     liq = requests.get(f"{API}/reservations/{rid}/liquidacion").json()
@@ -143,11 +143,11 @@ def test_pdf_pendiente_y_pagado(reserva):
     assert "Pago al propietario" in t and "Pendiente de registrar" in t
     neto = requests.get(f"{API}/reservations/{rid}/liquidacion").json()["netoPropietario"]
     requests.post(f"{API}/reservations/{rid}/liquidacion/pagos",
-                  data={"monto": str(neto), "metodo": "cheque", "fecha": "2026-12-11", "notas": "Nota QA"})
+                  data={"montoBruto": str(neto), "metodo": "cheque", "fecha": "2026-12-11", "notas": "Nota QA"})
     r = requests.get(f"{API}/reservations/{rid}/liquidacion/pdf")
     assert r.status_code == 200 and r.headers["content-type"] == "application/pdf"
     t2 = _pdf_text(r.content)
-    assert "Pagado el" in t2 and "11/12/2026" in t2 and "Cheque" in t2 and "Nota QA" in t2
+    assert "11/12/2026" in t2 and "Cheque" in t2 and "Nota QA" in t2
     assert "Liquidación completa" in t2
 
 
@@ -172,7 +172,7 @@ def test_a161_liquidables_roundtrip():
     ids_creados = []
     try:
         r1 = requests.post(f"{API}/reservations/{rid}/liquidacion/pagos",
-                            data={"monto": "777", "metodo": "transferencia", "notas": "TEST_qa"})
+                            data={"montoBruto": "777", "metodo": "transferencia", "notas": "TEST_qa"})
         assert r1.status_code == 200
         liq = requests.get(f"{API}/reservations/{rid}/liquidacion").json()
         assert liq["estadoLiquidacion"] == "parcial"

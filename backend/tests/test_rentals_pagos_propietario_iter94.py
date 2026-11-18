@@ -49,11 +49,11 @@ def res():
 def test_pdf_muestra_notas_fecha_metodo(res):
     _, rid = res
     r = requests.post(f"{API}/reservations/{rid}/liquidacion/pagos",
-                      data={"monto": "60000", "metodo": "cheque", "fecha": "2026-12-11", "notas": "Nota QA"})
+                      data={"montoBruto": "60000", "metodo": "cheque", "fecha": "2026-12-11", "notas": "Nota QA"})
     assert r.status_code == 200, r.text
     txt = _pdf_text(requests.get(f"{API}/reservations/{rid}/liquidacion/pdf").content)
-    assert "Cheque" in txt and "Nota QA" in txt and "Pagado el 11/12/2026" in txt
-    assert "Saldo pendiente de pago" in txt
+    assert "Cheque" in txt and "Nota QA" in txt and "11/12/2026" in txt
+    assert "Saldo pendiente a pagar" in txt
 
 
 # Migración lazy con comprobante embebido + no duplica en lecturas concurrentes
@@ -102,7 +102,7 @@ def test_delete_404s(res):
 
 def test_pendientes_total_pagado(res):
     _, rid = res
-    requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"monto": "40000", "metodo": "transferencia"})
+    requests.post(f"{API}/reservations/{rid}/liquidacion/pagos", data={"montoBruto": "40000", "metodo": "transferencia"})
     items = requests.get(f"{API}/liquidaciones/pendientes", params={"dias": 7}).json()
     it = next((x for x in items if x["reservaId"] == rid), None)
     assert it is not None

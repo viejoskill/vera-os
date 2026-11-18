@@ -322,6 +322,7 @@
 .rt-liq__cell strong { font-size: 1.25rem; }
 .rt-liq__cell--net { background: rgba(214,170,40,.12); border-color: var(--vera-color-primary); }
 .rt-liq__cell--net strong { color: var(--vera-color-primary); }
+.rt-liq__cellsub { font-size: .74rem; color: var(--vera-color-text-secondary); }
 @media (max-width: 860px) { .rt-mov__add, .rt-mov__row { grid-template-columns: 1fr 1fr; } }
 
 
@@ -350,6 +351,10 @@
 .rt-liq__pagook-mini { display: flex; align-items: center; gap: 8px; color: #4bbf6b; font-size: .9rem; font-weight: 600; margin: 0 0 10px; }
 .rt-liq__pagopend { color: var(--vera-color-text-secondary); font-size: .88rem; margin: 0 0 10px; }
 .rt-liq__pagopend strong { color: var(--vera-color-text); }
+.rt-liq__pagowarn { color: #e3b93c; font-size: .85rem; margin: 0 0 10px; background: rgba(214,170,40,.1); border: 1px solid rgba(214,170,40,.35); border-radius: 8px; padding: 8px 12px; }
+.rt-liq__pagochk { margin: 0; white-space: nowrap; }
+.rt-liq__pagopreview { font-size: .85rem; color: var(--vera-color-text-secondary); margin: -6px 0 14px; }
+.rt-liq__pagopreview strong { color: var(--vera-color-primary); }
 
 /* Liquidaciones: recordatorio de reservas con seña cobrada hace >7 días sin liquidar */
 .rt-liq__recordatorio { display: flex; align-items: flex-start; gap: 12px; background: rgba(214,170,40,.1); border: 1px solid rgba(214,170,40,.4); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; color: #e3b93c; }

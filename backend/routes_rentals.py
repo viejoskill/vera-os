@@ -351,6 +351,15 @@ def _pagos_calc(r: dict) -> dict:
     }
 
 
+def _pago_prop_out(p: dict) -> dict:
+    return {
+        "id": p.get("id"), "monto": p.get("monto"), "metodo": p.get("metodo"),
+        "fecha": p.get("fecha"), "notas": p.get("notas"), "comprobanteId": p.get("comprobanteId"),
+        "montoBruto": p.get("montoBruto"), "comisionPct": p.get("comisionPct"),
+        "comisionRetenida": p.get("comisionRetenida") or 0, "descuentaComision": bool(p.get("descuentaComision")),
+    }
+
+
 def _pagos_propietario(r: dict) -> list[dict]:
     """Pagos al propietario de una reserva (lista nueva `pagosPropietario`), con compat hacia
     el campo viejo singular `pagoPropietario` (anterior a esta migración): si todavía existe,
@@ -384,11 +393,7 @@ def _res_out(r: dict, codigo: str | None = None) -> dict:
         "depositoOverride": r.get("depositoOverride"),
         "limpiezaOverride": r.get("limpiezaOverride"),
         "historial": r.get("historial") or [],
-        "pagosPropietario": [
-            {"id": p.get("id"), "monto": p.get("monto"), "metodo": p.get("metodo"),
-             "fecha": p.get("fecha"), "notas": p.get("notas"), "comprobanteId": p.get("comprobanteId")}
-            for p in _pagos_propietario(r)
-        ],
+        "pagosPropietario": [_pago_prop_out(p) for p in _pagos_propietario(r)],
     }
 
 
@@ -1335,21 +1340,24 @@ async def _liquidacion_reserva(rid: str) -> dict:
     calc = _calc_neto_y_estado(r, tot)
     h = r.get("huesped") or {}
     pagos = r.get("pagosPropietario") or []
+    comision_total = round(tot["comision"])
+    comision_retenida = round(sum(float(p.get("comisionRetenida") or 0) for p in pagos))
+    comision_pendiente = max(comision_total - comision_retenida, 0)
+    alquiler_base = float(r.get("montoEstimado") or 0)
+    comision_pct_efectivo = round(tot["comision"] / alquiler_base * 100, 2) if alquiler_base > 0 else 0.0
     return {
         "reserva": {"id": r["_id"], "checkIn": r.get("checkIn"), "checkOut": r.get("checkOut"), "noches": r.get("noches")},
         "huesped": h, "pago": r.get("pago") or {},
-        "pagosPropietario": [
-            {"id": p.get("id"), "monto": p.get("monto"), "metodo": p.get("metodo"),
-             "fecha": p.get("fecha"), "notas": p.get("notas"), "comprobanteId": p.get("comprobanteId")}
-            for p in pagos
-        ],
+        "pagosPropietario": [_pago_prop_out(p) for p in pagos],
         "totalPagadoPropietario": calc["totalPagadoPropietario"], "saldoLiquidacion": calc["saldoLiquidacion"],
         "estadoLiquidacion": calc["estadoLiquidacion"],
         "propiedad": {"id": prop["_id"], "codigo": prop.get("codigo"), "titulo": prop.get("titulo"), "moneda": mon},
         "propietario": prop.get("propietario") or {},
         "periodo": {"desde": r.get("checkIn"), "hasta": r.get("checkOut")},
         "alquiler": round(float(r.get("montoEstimado") or 0)),
-        "ingresos": round(float(r.get("montoEstimado") or 0) + tot["ingreso"]), "comision": round(tot["comision"]),
+        "ingresos": round(float(r.get("montoEstimado") or 0) + tot["ingreso"]), "comision": comision_total,
+        "comisionRetenida": comision_retenida, "comisionPendiente": comision_pendiente,
+        "comisionPctEfectivo": comision_pct_efectivo,
         "gastosPropietario": round(tot["gasto_prop"]), "gastosNuestros": round(tot["gasto_nuestro"]),
         "netoPropietario": calc["netoPropietario"], "movimientos": movs,
     }
@@ -1682,10 +1690,17 @@ def _hoy_ar() -> str:
     return datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")).date().isoformat()
 
 
+def _ars(n: float) -> str:
+    """Formatea un monto con separador de miles estilo argentino (sin símbolo de moneda),
+    para mensajes de validación."""
+    return f"{round(n):,}".replace(",", ".")
+
+
 @router.post("/reservations/{rid}/liquidacion/pagos")
 async def registrar_pago_propietario(
     rid: str,
-    monto: float = Form(...),
+    montoBruto: float = Form(...),
+    descuentaComision: bool = Form(True),
     metodo: str = Form("transferencia"),
     fecha: str | None = Form(None),
     notas: str | None = Form(None),
@@ -1693,16 +1708,43 @@ async def registrar_pago_propietario(
 ):
     """Registra UN pago al propietario (transferencia/efectivo/cheque/otro). Se pueden cargar
     VARIOS pagos para la misma reserva (a veces se liquida en partes) — se acumulan en
-    `pagosPropietario`, y la liquidación queda completa cuando la suma cubre el neto a
-    liquidar. Esto es lo que contesta '¿dónde consta que le pagué al dueño?' — antes la app
-    solo calculaba el neto, pero no dejaba rastro del pago (y solo admitía UNO solo)."""
+    `pagosPropietario`, y la liquidación queda completa cuando la suma de los NETOS cubre el
+    neto a liquidar. Esto es lo que contesta '¿dónde consta que le pagué al dueño?' — antes la
+    app solo calculaba el neto, pero no dejaba rastro del pago (y solo admitía UNO solo).
+
+    `montoBruto` es lo que cobró el huésped (p.ej. la seña); si `descuentaComision` está
+    marcado, se le retiene automáticamente el % de comisión efectivo de la reserva y el
+    propietario recibe el neto. La comisión retenida acumulada entre todos los pagos nunca
+    puede superar la comisión total de la reserva: si el cálculo se pasa, se limita al saldo
+    de comisión pendiente y se avisa con un mensaje (`comisionWarning` en la respuesta)."""
     r = await _res().find_one({"_id": rid})
     if not r:
         raise HTTPException(404, "Reserva no encontrada")
-    if not monto or float(monto) <= 0:
-        raise HTTPException(400, "El monto pagado debe ser mayor a cero.")
+    if not montoBruto or float(montoBruto) <= 0:
+        raise HTTPException(400, "El monto cobrado al huésped debe ser mayor a cero.")
     if metodo not in METODOS_PAGO_PROPIETARIO:
         raise HTTPException(400, "Método de pago inválido, usá transferencia, efectivo, cheque u otro.")
+    bruto = round(float(montoBruto))
+    pct_aplicado = 0.0
+    comision_retenida = 0.0
+    warning: str | None = None
+    if descuentaComision:
+        tot, _ = await _movs_y_totales(r)
+        alquiler = float(r.get("montoEstimado") or 0)
+        comision_total = tot["comision"]
+        pct_aplicado = round(comision_total / alquiler * 100, 2) if alquiler > 0 else 0.0
+        ya_retenida = sum(float(p.get("comisionRetenida") or 0) for p in (r.get("pagosPropietario") or []))
+        pendiente = max(round(comision_total) - round(ya_retenida), 0)
+        calculada = round(bruto * pct_aplicado / 100)
+        if calculada > pendiente:
+            comision_retenida = pendiente
+            warning = (
+                f"La comisión calculada (${_ars(calculada)}) superaba la comisión pendiente de la "
+                f"reserva; se retuvo solo ${_ars(pendiente)}."
+            )
+        else:
+            comision_retenida = calculada
+    neto = bruto - comision_retenida
     comprobante_id = None
     push: dict = {}
     if file is not None and appconfig.supabase_configured():
@@ -1714,11 +1756,18 @@ async def registrar_pago_propietario(
         push["comprobantes"] = {"id": comprobante_id, "bucket": appconfig.BUCKET_IMAGES, "object_path": obj,
                                  "contentType": file.content_type or "image/jpeg",
                                  "nombre": file.filename or "comprobante liquidación", "fecha": _now()}
-    pago = {"id": uuid4().hex, "monto": round(float(monto)), "metodo": metodo,
-            "fecha": fecha or _hoy_ar(), "notas": notas or None, "comprobanteId": comprobante_id, "createdAt": _now()}
+    pago = {
+        "id": uuid4().hex, "monto": round(neto), "metodo": metodo,
+        "fecha": fecha or _hoy_ar(), "notas": notas or None, "comprobanteId": comprobante_id,
+        "montoBruto": bruto, "comisionPct": pct_aplicado, "comisionRetenida": round(comision_retenida),
+        "descuentaComision": descuentaComision, "createdAt": _now(),
+    }
     push["pagosPropietario"] = pago
     await _res().update_one({"_id": rid}, {"$push": push})
-    return _res_out(await _res().find_one({"_id": rid}))
+    resp = _res_out(await _res().find_one({"_id": rid}))
+    if warning:
+        resp["comisionWarning"] = warning
+    return resp
 
 
 @router.delete("/reservations/{rid}/liquidacion/pagos/{pago_id}", status_code=204)
